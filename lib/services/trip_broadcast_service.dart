@@ -1,0 +1,156 @@
+// lib/services/trip_broadcast_service.dart
+import 'package:flutter/foundation.dart';
+import '../core/utils/geohash_helper.dart';
+import 'supabase_service.dart';
+
+/// Handles cell-based trip broadcasting when a user requests a ride.
+/// Uses geohash5 (wider ~5km cells) to find nearby available drivers.
+class TripBroadcastService {
+  TripBroadcastService._();
+  static final TripBroadcastService instance = TripBroadcastService._();
+
+  // FIX P3-03: Helper to avoid unconditional debugPrint in production
+  static void _log(String message) {
+    if (kDebugMode) debugPrint(message);
+  }
+
+  /// Find available drivers within the cell system around the origin point.
+  /// Returns list of driver IDs that match the criteria.
+  Future<List<String>> findNearbyDrivers({
+    required double originLat,
+    required double originLng,
+    required String vehicleType,
+  }) async {
+    _log('🔍 TripBroadcast: ========== START findNearbyDrivers ==========');
+    _log('🔍 TripBroadcast: originLat=$originLat, originLng=$originLng, vehicleType=$vehicleType');
+    
+    // Use precision 5 for wider search radius (~5km cells)
+    final originCell = GeohashHelper.encode(originLat, originLng, precision: 5);
+    final neighbors = GeohashHelper.getNeighborCells(originCell);
+    final searchCells = [originCell, ...neighbors];
+
+    _log(
+        '🔍 TripBroadcast: Searching ${searchCells.length} cells around $originCell for vehicleType="$vehicleType"');
+    _log('🔍 TripBroadcast: Search cells: $searchCells');
+
+    try {
+      _log('🔍 TripBroadcast: Querying Supabase for available drivers...');
+      // Ensure vehicleType is clean for comparison
+      final cleanVehicleType = vehicleType.trim().toLowerCase();
+      
+      final results = await SupabaseService.client
+          .from('drivers_profile')
+          .select('id, geohash, geohash5, vehicle_type')
+          .eq('is_available', true)
+          .inFilter('geohash5', searchCells)
+          .ilike('vehicle_type', cleanVehicleType);
+      
+      _log('🔍 TripBroadcast: Supabase returned ${results.length} available "$cleanVehicleType" drivers total.');
+
+      
+      // Print all drivers found for debugging
+      if (results.isNotEmpty) {
+        _log('🔍 TripBroadcast: All available drivers:');
+        for (final row in results) {
+          _log('   - Driver ${row['id']}: geohash5=${row['geohash5']}, vehicle=${row['vehicle_type']}');
+        }
+      }
+
+      // Filter by cell membership
+      final matchingDriverIds = <String>[];
+      for (final row in results) {
+        // Use geohash5 directly if available, fallback to geohash substring
+        final driverGeohash5 = row['geohash5'] as String?;
+        final driverGeohash = row['geohash'] as String?;
+        final driverId = row['id'] as String;
+
+        String? driverCell;
+        if (driverGeohash5 != null) {
+          driverCell = driverGeohash5;
+        } else if (driverGeohash != null && driverGeohash.length >= 5) {
+          driverCell = driverGeohash.substring(0, 5);
+        }
+
+        if (driverCell == null) {
+          _log('🔍 TripBroadcast: Driver $driverId - geohash5 too short or null: $driverGeohash5 / $driverGeohash');
+          continue;
+        }
+        if (searchCells.contains(driverCell)) {
+          matchingDriverIds.add(driverId);
+          _log('🔍 TripBroadcast: ✅ Driver $driverId in cell $driverCell - MATCHED');
+        } else {
+          _log('🔍 TripBroadcast: ❌ Driver $driverId in cell $driverCell - not in search cells');
+        }
+      }
+
+      _log(
+          '🔍 TripBroadcast: Found ${matchingDriverIds.length} matching drivers after cell filter');
+
+      return matchingDriverIds;
+    } catch (e) {
+      _log('❌ TripBroadcast: Error finding drivers: $e');
+      return [];
+    }
+  }
+
+  /// Create trip offers for all nearby drivers (bulk insert)
+  /// Checks for existing offers to avoid duplicates
+  Future<void> broadcastTripOffers({
+    required String tripId,
+    required List<String> driverIds,
+  }) async {
+    _log('📤 TripBroadcast: Starting broadcast for trip $tripId to ${driverIds.length} drivers: $driverIds');
+    
+    if (driverIds.isEmpty) {
+      _log('⚠️ TripBroadcast: No drivers to send offers to!');
+      return;
+    }
+
+    try {
+      // Check for existing offers for this trip
+      _log('📤 TripBroadcast: Checking for existing offers...');
+      final existing = await SupabaseService.client
+          .from('trip_offers')
+          .select('driver_id')
+          .eq('trip_id', tripId)
+          .eq('status', 'pending');
+      
+      final existingDriverIds = (existing as List)
+          .map((row) => row['driver_id'] as String)
+          .toSet();
+      
+      _log('📤 TripBroadcast: Found ${existingDriverIds.length} existing offers');
+      
+      // Filter out drivers who already have an offer
+      final newDriverIds = driverIds
+          .where((id) => !existingDriverIds.contains(id))
+          .toList();
+      
+      _log('📤 TripBroadcast: ${newDriverIds.length} new drivers to notify: $newDriverIds');
+      
+      if (newDriverIds.isEmpty) {
+        _log('📤 TripBroadcast: All drivers already have offers for trip $tripId');
+        return;
+      }
+
+      final offers = newDriverIds.map((driverId) => {
+            'trip_id': tripId,
+            'driver_id': driverId,
+            'status': 'pending',
+            'created_at': DateTime.now().toIso8601String(),
+          }).toList();
+
+      _log('📤 TripBroadcast: Inserting ${offers.length} offers...');
+      await SupabaseService.client.from('trip_offers').insert(offers);
+
+      _log(
+          '📤 TripBroadcast: ✅ Successfully sent ${offers.length} offers for trip $tripId to drivers: $newDriverIds');
+    } catch (e) {
+      _log('❌ TripBroadcast: Error broadcasting offers: $e');
+      // If it's an RLS error, log it specifically
+      if (e.toString().contains('42501') || e.toString().contains('violates row-level')) {
+        _log('🚨 TripBroadcast: RLS policy error! Check trip_offers table policies.');
+      }
+    }
+  }
+}

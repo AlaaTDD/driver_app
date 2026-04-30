@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "741233752146",
+    "project_id": "arai-449ca",
+    "storage_bucket": "arai-449ca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741233752146:android:0cea4e402b5067a468878b",
+        "android_client_info": {
+          "package_name": "com.alaa.snapix"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "741233752146-dfjpqjoi8l06hah01coghu43ig9n7eq3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRw-PPmQ_7iG6T4cRjTa5kTY7T8BBkPzI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741233752146-dfjpqjoi8l06hah01coghu43ig9n7eq3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "741233752146-rautc8bsdvho77a2r1bfdqd7lq2g41ii.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.arai.AlaaTaha"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741233752146:android:224cab1843582cb468878b",
+        "android_client_info": {
+          "package_name": "com.arai.AlaaTaha"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "741233752146-dfjpqjoi8l06hah01coghu43ig9n7eq3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRw-PPmQ_7iG6T4cRjTa5kTY7T8BBkPzI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741233752146-dfjpqjoi8l06hah01coghu43ig9n7eq3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "741233752146-rautc8bsdvho77a2r1bfdqd7lq2g41ii.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.arai.AlaaTaha"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
