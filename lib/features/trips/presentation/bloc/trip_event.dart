@@ -1,4 +1,4 @@
-// lib/features/trips/presentation/bloc/trip_event.dart
+
 import 'package:equatable/equatable.dart';
 import '../../../../core/utils/trip_status.dart';
 

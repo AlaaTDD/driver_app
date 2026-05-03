@@ -1,4 +1,4 @@
-// lib/features/user/presentation/searching/bloc/searching_bloc.dart
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,13 +8,13 @@ import '../../../../../core/utils/retry_helper.dart';
 import 'searching_event.dart';
 import 'searching_state.dart';
 
-/// Searching BLoC — manages the 3-minute driver search flow.
-///
-/// Uses the cell system (via TripBroadcastService) to:
-/// 1. Find nearby drivers in the same geohash cells
-/// 2. Broadcast trip offers to all matching drivers
-/// 3. Re-broadcast every 15s to newly-online drivers
-/// 4. Listen for trip status changes via Supabase Realtime
+
+
+
+
+
+
+
 class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
   Timer? _countdownTimer;
   Timer? _rebroadcastTimer;
@@ -22,7 +22,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       TripBroadcastService.instance;
   final Set<String> _broadcastedDriverIds = {};
 
-  static const int _searchDurationSeconds = 180; // 3 minutes
+  static const int _searchDurationSeconds = 180; 
   static const int _rebroadcastIntervalSeconds = 15;
 
   SearchingBloc() : super(SearchingInitial()) {
@@ -42,12 +42,12 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     debugPrint('🔍 SearchingBloc: StartSearching for trip ${event.tripId}');
     _broadcastedDriverIds.clear();
 
-    // FIX C06: Cancel any existing timers before creating new ones
+    
     _countdownTimer?.cancel();
     _rebroadcastTimer?.cancel();
     _tripSubscription?.cancel();
 
-    // Start the 3-minute countdown
+    
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final remaining = _searchDurationSeconds - timer.tick;
       if (remaining <= 0) timer.cancel();
@@ -59,7 +59,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       tripId: event.tripId,
     ));
 
-    // Listen to trip status changes via Realtime
+    
     _tripSubscription?.cancel();
     _tripSubscription = SupabaseService.client
         .from('trips')
@@ -71,10 +71,10 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       }
     });
 
-    // Initial broadcast
+    
     await _performBroadcast(event.tripId);
 
-    // Start periodic re-broadcast every 15s to catch newly-online drivers
+    
     _rebroadcastTimer = Timer.periodic(
       const Duration(seconds: _rebroadcastIntervalSeconds),
       (_) => add(RebroadcastTripOffers(event.tripId)),
@@ -104,7 +104,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         vehicleType: (tripDetails['vehicle_type'] as String).trim().toLowerCase(),
       );
 
-      // Only broadcast to drivers we haven't already sent to
+      
       final newDriverIds = driverIds
           .where((id) => !_broadcastedDriverIds.contains(id))
           .toList();
@@ -143,17 +143,21 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     if (event.remainingSeconds <= 0 && state is SearchingInProgress) {
       _countdownTimer?.cancel();
       _rebroadcastTimer?.cancel();
-      // Mark trip as cancelled when timer expires (no driver found)
+      
       try {
         final tripId = (state as SearchingInProgress).tripId;
-        // FIX P0-05: Use cancel_trip RPC for atomic race-safe cancellation
+        
         await withRetry(
-          () => SupabaseService.client.rpc('cancel_trip', params: {
-            'p_trip_id': tripId,
-            'p_user_id': SupabaseService.currentUser!.id,
-            'p_cancelled_by': 'system',
-            'p_cancel_reason': 'timeout',
-          }),
+          () => SupabaseService.client
+              .from('trips')
+              .update({
+                'status': 'cancelled',
+                'cancelled_at': DateTime.now().toIso8601String(),
+                'cancelled_by': 'system',
+                'cancel_reason': 'timeout',
+              })
+              .eq('id', tripId)
+              .eq('user_id', SupabaseService.currentUser!.id),
           maxAttempts: 2,
           onRetry: (e, attempt) => debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
         );
@@ -204,13 +208,17 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     _rebroadcastTimer?.cancel();
     await _tripSubscription?.cancel();
     try {
-      // FIX P0-05: Use cancel_trip RPC for atomic race-safe cancellation
+      
       await withRetry(
-        () => SupabaseService.client.rpc('cancel_trip', params: {
-          'p_trip_id': event.tripId,
-          'p_user_id': SupabaseService.currentUser!.id,
-          'p_cancelled_by': 'user',
-        }),
+        () => SupabaseService.client
+            .from('trips')
+            .update({
+              'status': 'cancelled',
+              'cancelled_at': DateTime.now().toIso8601String(),
+              'cancelled_by': 'user',
+            })
+            .eq('id', event.tripId)
+            .eq('user_id', SupabaseService.currentUser!.id),
         maxAttempts: 2,
         onRetry: (e, attempt) => debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
       );

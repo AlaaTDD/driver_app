@@ -1,4 +1,4 @@
-// lib/features/user/presentation/location_selection/bloc/location_state.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class LocationState extends Equatable {

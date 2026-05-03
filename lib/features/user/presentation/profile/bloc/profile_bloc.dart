@@ -1,4 +1,4 @@
-// lib/features/user/presentation/profile/bloc/profile_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -35,7 +35,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
-  // FIX S05: Whitelist of fields that users are allowed to update on themselves
+  
   static const Set<String> _allowedProfileFields = {
     'name', 'phone', 'avatar_url',
   };
@@ -47,7 +47,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) return;
-      // FIX S05: Only allow whitelisted fields — reject arbitrary keys like is_admin
+      
       final updateData = <String, dynamic>{};
       event.data.forEach((key, value) {
         if (_allowedProfileFields.contains(key)) {

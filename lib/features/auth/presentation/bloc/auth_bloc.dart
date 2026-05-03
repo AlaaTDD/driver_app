@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/bloc/auth_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../services/user_presence_service.dart';
@@ -34,7 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user == null) {
           emit(AuthUnauthenticated());
         } else if (user.isBlocked) {
-          // FIX P2-08: Check blocked status on app resume/restart
+          
           await _authRepository.signOut();
           emit(const AuthError('errorUserBlocked'));
         } else if (user.role == 'driver') {
@@ -148,7 +148,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    // FIX H09: Comprehensive cleanup of all driver/user services before sign-out
+    
     await UserPresenceService.instance.stopBroadcasting();
     await CellSubscriptionService.instance.dispose();
     HeatmapService.instance.dispose();

@@ -1,4 +1,4 @@
-// lib/features/coupons/data/models/coupon_usage_model.dart
+
 import 'package:equatable/equatable.dart';
 
 class CouponUsageModel extends Equatable {

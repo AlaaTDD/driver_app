@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/trips_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -83,7 +83,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
             return CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // Modern Header with Stats
+                
                 SliverToBoxAdapter(
                   child: TripsHeader(
                     total: allTrips.length,
@@ -93,7 +93,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
                     onNewTrip: () => context.push(AppRoutes.userHome),
                   ),
                 ),
-                // Custom Segmented Control
+                
                 SliverToBoxAdapter(
                   child: SegmentedControl(
                     selectedIndex: _selectedIndex,
@@ -105,7 +105,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
                     cancelledCount: cancelled.length,
                   ),
                 ),
-                // Tab Content
+                
                 SliverFillRemaining(
                   hasScrollBody: true,
                   child: TabBarView(
@@ -209,7 +209,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
   }
 }
 
-// ========== Modern UI Components ==========
+
 
 class _ToastWidget extends StatelessWidget {
   final String message;

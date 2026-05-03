@@ -1,8 +1,8 @@
-// lib/features/shared/presentation/screens/complaints_repository.dart
+
 import '../../../../services/supabase_service.dart';
 
-/// Repository that encapsulates Supabase calls for complaints.
-/// This separates UI from data sources (Clean Architecture).
+
+
 class ComplaintsRepository {
   Future<void> submitComplaint({
     required String title,

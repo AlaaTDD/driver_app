@@ -1,4 +1,4 @@
-// lib/features/shared/presentation/chatbot/chatbot_screen.dart
+
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
@@ -75,7 +75,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     await _repository.saveUserMessage(text);
 
-    // FIX H07: Call actual OpenRouter API via repository
+    
     final reply = await _repository.fetchAiReply(text);
 
     if (!mounted) return;

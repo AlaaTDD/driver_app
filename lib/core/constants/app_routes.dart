@@ -1,4 +1,4 @@
-// lib/core/constants/app_routes.dart
+
 class AppRoutes {
   static const String splash = '/splash';
   static const String onboarding = '/onboarding';
@@ -8,7 +8,7 @@ class AppRoutes {
   static const String registerDriver = '/register/driver';
   static const String pendingVerification = '/pending-verification';
 
-  // User Routes
+  
   static const String userHome = '/user/home';
   static const String userProfile = '/user/profile';
   static const String userTrips = '/user/trips';
@@ -24,7 +24,7 @@ class AppRoutes {
   static const String userTripDetails = '/user/trip-details';
   static const String userComplaints = '/user/complaints';
 
-  // Driver Routes
+  
   static const String driverHome = '/driver/home';
   static const String driverProfile = '/driver/profile';
   static const String driverTrips = '/driver/trips';

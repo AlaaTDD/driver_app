@@ -1,10 +1,10 @@
-// lib/core/models/message_model.dart
+
 import 'package:equatable/equatable.dart';
 
-/// Type-safe model for the `messages` table (trip chat).
-///
-/// IMPORTANT: The schema column for message text is `content` (NOT `message`).
-/// The code was previously inserting to `message` which is incorrect.
+
+
+
+
 class MessageModel extends Equatable {
   final String id;
   final String senderId;
@@ -30,7 +30,7 @@ class MessageModel extends Equatable {
       senderId: json['sender_id'] as String,
       receiverId: json['receiver_id'] as String,
       tripId: json['trip_id'] as String?,
-      // Schema column is 'content', but handle legacy 'message' key as fallback
+      
       content: (json['content'] ?? json['message'] ?? '') as String,
       isRead: json['is_read'] as bool? ?? false,
       createdAt: json['created_at'] != null
@@ -39,8 +39,8 @@ class MessageModel extends Equatable {
     );
   }
 
-  /// Convert to JSON for database INSERT.
-  /// Uses the correct schema column name `content`.
+  
+  
   Map<String, dynamic> toInsertJson() {
     return {
       'sender_id': senderId,
@@ -50,7 +50,7 @@ class MessageModel extends Equatable {
     };
   }
 
-  /// Whether this message was sent by the given userId.
+  
   bool isSentBy(String userId) => senderId == userId;
 
   @override

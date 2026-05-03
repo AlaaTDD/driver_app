@@ -1,5 +1,5 @@
-// lib/core/services/connectivity_service.dart
-// FIX: Missing Feature #1 — Internet Connection Monitoring
+
+
 
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';

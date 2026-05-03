@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/screens/onboarding_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_routes.dart';
@@ -46,13 +46,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
   int _currentPage = 0;
   int _prevPage = 0;
-  // +1 = forward (swipe left / tap next), -1 = backward (swipe right)
+  
   int _navDirection = 1;
 
   late final AnimationController _anim;
-  // Camera pans the icon panorama (0=page0, 1=page1, 2=page2)
+  
   late final Animation<double> _cameraAnim;
-  // Text crossfade + parallax slide
+  
   late final Animation<double> _outOpacity;
   late final Animation<double> _inOpacity;
   late final Animation<Offset> _outTextSlide;
@@ -75,7 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       curve: const Interval(0.30, 1.0, curve: Curves.easeOutCubic),
     );
 
-    // Camera: full-range smooth curve for panorama panning
+    
     _cameraAnim   = CurvedAnimation(parent: _anim, curve: Curves.easeInOutCubic);
     _outOpacity   = Tween(begin: 1.0, end: 0.0).animate(out);
     _outTextSlide = Tween(begin: Offset.zero, end: const Offset(-0.20, 0)).animate(out);
@@ -89,7 +89,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
-  /// Navigate by [delta]: +1 = next, -1 = previous.
+  
   void _navigate(int delta) {
     if (_anim.isAnimating) return;
     final target = _currentPage + delta;
@@ -115,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final bottomPad = MediaQuery.of(context).padding.bottom;
     final pages = _getPages(AppLocalizations.of(context)!);
     final isLast = _currentPage == pages.length - 1;
-    final dir = _navDirection.toDouble(); // used by text slide
+    final dir = _navDirection.toDouble(); 
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -128,7 +128,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         },
         child: Stack(
           children: [
-            // ── Atmospheric blue glow (static) ────────────────────────
+            
             Positioned(
               top: 0, left: 0, right: 0,
               child: Container(
@@ -145,11 +145,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
             ),
-            // ── Content ───────────────────────────────────────────────
+            
             SafeArea(
               child: Column(
                 children: [
-                  // ── Skip — top right ─────────────────────────────────
+                  
                   Padding(
                     padding: const EdgeInsets.only(right: 12, top: 4),
                     child: Row(
@@ -174,14 +174,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ],
                     ),
                   ),
-                  // ── Icon panorama — camera pans across 3 connected icons ──
+                  
                   Expanded(
                     flex: 5,
                     child: ClipRect(
                       child: AnimatedBuilder(
                         animation: _anim,
                         builder: (context, _) {
-                          // Camera position: 0 = page0, 1 = page1, 2 = page2
+                          
                           final camPos = _prevPage +
                               (_currentPage - _prevPage) * _cameraAnim.value;
                           return SizedBox.expand(
@@ -210,7 +210,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
                   ),
-                  // ── Text (near parallax layer — moves faster) ─────────
+                  
                   Expanded(
                     flex: 4,
                     child: AnimatedBuilder(
@@ -248,7 +248,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       },
                     ),
                   ),
-                  // ── Bottom row: dots LEFT · button RIGHT ──────────────
+                  
                   Padding(
                     padding:
                         EdgeInsets.fromLTRB(32, 0, 32, bottomPad + 24),
@@ -256,7 +256,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Dots
+                        
                         Row(
                           children: List.generate(
                             pages.length,
@@ -275,7 +275,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             ),
                           ),
                         ),
-                        // Circular next button
+                        
                         _CircleButton(
                           isLast: isLast,
                           onPressed: () => _navigate(1),
@@ -293,7 +293,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-// ── Glowing icon ──────────────────────────────────────────────────────────────
+
 class _IconDisplay extends StatelessWidget {
   final IconData icon;
   const _IconDisplay({required this.icon});
@@ -341,7 +341,7 @@ class _IconDisplay extends StatelessWidget {
   }
 }
 
-// ── Circular next / finish button ─────────────────────────────────────────────
+
 class _CircleButton extends StatelessWidget {
   final bool isLast;
   final VoidCallback onPressed;
@@ -390,7 +390,7 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-// ── Text block ────────────────────────────────────────────────────────────────
+
 class _TextBlock extends StatelessWidget {
   final _PageData page;
   const _TextBlock({required this.page});

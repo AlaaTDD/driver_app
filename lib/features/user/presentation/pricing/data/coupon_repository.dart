@@ -1,18 +1,18 @@
-// lib/features/user/presentation/pricing/data/coupon_repository.dart
+
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 
-/// Repository that encapsulates all coupon-related data access.
-/// Extracted from PricingBloc to follow Clean Architecture principles.
+
+
 class CouponRepository {
   final _client = SupabaseService.client;
 
-  /// Validate and apply a coupon code.
-  ///
-  /// SCHEMA FIX: Uses `discount_type` + `discount_value` (actual schema columns)
-  /// instead of `discount_percent` (which does not exist in the coupons table).
-  ///
-  /// Returns a [CouponResult] with discount details, or an error key.
+  
+  
+  
+  
+  
+  
   Future<CouponResult> validateCoupon({
     required String couponCode,
     required double originalPrice,
@@ -21,7 +21,7 @@ class CouponRepository {
     try {
       final normalizedCode = couponCode.trim().toUpperCase();
 
-      // Call the database function to validate and calculate the discount
+      
       final response = await _client.rpc(
         'validate_coupon',
         params: {
@@ -54,7 +54,7 @@ class CouponRepository {
   }
 }
 
-/// Result of a coupon validation attempt.
+
 class CouponResult {
   final bool isSuccess;
   final String? couponCode;

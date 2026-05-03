@@ -1,4 +1,4 @@
-// lib/features/user/presentation/tracking/tracking_screen.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -26,8 +26,8 @@ class TripTrackingScreen extends StatefulWidget {
 }
 
 class _TripTrackingScreenState extends State<TripTrackingScreen> {
-  // FIX C02: Replaced Completer with nullable controller pattern
-  // Completer fails on re-navigation because isCompleted guard prevents update
+  
+  
   GoogleMapController? _mapController;
 
   static const _defaultCamera = CameraPosition(

@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/widgets/animated_trip_card.dart
+
 import 'package:flutter/material.dart';
 import 'trip_card.dart' as trip_card_widget;
 

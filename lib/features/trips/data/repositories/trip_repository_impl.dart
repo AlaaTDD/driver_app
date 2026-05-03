@@ -1,4 +1,4 @@
-// lib/features/trips/data/repositories/trip_repository_impl.dart
+
 import 'package:dartz/dartz.dart';
 import '../../../../core/utils/trip_status.dart';
 import '../../domain/entities/trip_entity.dart';
@@ -22,7 +22,7 @@ class TripRepositoryImpl implements TripRepository {
     required double price,
   }) async {
     try {
-      // FIX P1-06: Check for existing active trip before creating new one
+      
       final existingTrip = await SupabaseService.client
           .from('trips')
           .select('id')
@@ -113,12 +113,16 @@ class TripRepositoryImpl implements TripRepository {
     String? cancelReason,
   }) async {
     try {
-      await SupabaseService.client.rpc('cancel_trip', params: {
-        'p_trip_id': tripId,
-        'p_user_id': SupabaseService.currentUser!.id,
-        'p_cancelled_by': cancelledBy,
-        if (cancelReason != null) 'p_cancel_reason': cancelReason,
-      });
+      await SupabaseService.client
+          .from('trips')
+          .update({
+            'status': 'cancelled',
+            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancelled_by': cancelledBy,
+            if (cancelReason != null) 'cancel_reason': cancelReason,
+          })
+          .eq('id', tripId)
+          .eq('user_id', SupabaseService.currentUser!.id);
       return const Right(null);
     } catch (e) {
       return Left('failedCancelTrip');
@@ -131,7 +135,7 @@ class TripRepositoryImpl implements TripRepository {
     required TripStatus newStatus,
   }) async {
     try {
-      // Fetch current status
+      
       final tripData = await SupabaseService.client
           .from('trips')
           .select('status')
@@ -143,7 +147,7 @@ class TripRepositoryImpl implements TripRepository {
         return const Left('errorInvalidCurrentStatus');
       }
 
-      // Validate transition
+      
       if (!currentStatus.canTransitionTo(newStatus)) {
         return const Left('errorInvalidStatusTransition');
       }

@@ -1,4 +1,4 @@
-// lib/features/user/presentation/meeting_point/meeting_point_args.dart
+
 class MeetingPointArgs {
   final double? originLat;
   final double? originLng;

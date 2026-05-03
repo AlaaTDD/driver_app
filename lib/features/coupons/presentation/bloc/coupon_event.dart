@@ -1,4 +1,4 @@
-// lib/features/coupons/presentation/bloc/coupon_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class CouponEvent extends Equatable {
@@ -26,7 +26,7 @@ class ValidateCoupon extends CouponEvent {
   List<Object?> get props => [code];
 }
 
-// FIX H14: Renamed from couponId to couponCode — validateCoupon expects a code, not UUID
+
 class ApplyCoupon extends CouponEvent {
   final String couponCode;
   final double originalPrice;

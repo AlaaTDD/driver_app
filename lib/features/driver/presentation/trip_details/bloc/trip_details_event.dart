@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/trip_details/bloc/trip_details_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class TripDetailsEvent extends Equatable {

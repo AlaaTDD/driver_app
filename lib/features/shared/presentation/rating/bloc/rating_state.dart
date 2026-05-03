@@ -1,4 +1,4 @@
-// lib/features/shared/presentation/rating/bloc/rating_state.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class RatingState extends Equatable {

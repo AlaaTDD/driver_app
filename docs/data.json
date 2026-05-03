@@ -57,7 +57,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"gen_random_uuid()\", \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"gen_random_uuid()\", \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -177,7 +177,7 @@
     "section": "02_TABLE_META",
     "table_name": "driver_locations",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 0, \"live\": 0, \"estimated\": -1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"32 kB\", \"table_size\": \"0 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"32 kB\", \"total_bytes\": 32768}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 2, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": null}"
+    "details": "{\"rows\": {\"dead\": 5, \"live\": 2, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"64 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"104 kB\", \"total_bytes\": 106496}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 4, \"updates\": 162, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": \"2026-05-02T17:45:49.992065+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 71.43}"
   },
   {
     "section": "02_TABLE_META",
@@ -189,7 +189,7 @@
     "section": "02_TABLE_META",
     "table_name": "drivers_profile",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 19, \"live\": 3, \"estimated\": 3}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"80 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 10, \"updates\": 181, \"hot_updates\": 123}, \"rls_forced\": false, \"description\": \"Extended driver profile linked 1-to-1 with users table via id FK.\\n   WARNING: 66.67% of drivers have NULL geohash and geohash5.\\n   get_nearby_drivers() searches by geohash prefix — only 1 in 3\\n   drivers will be found. Ensure geohash is populated on driver\\n   location updates (check user_presence_service.dart).\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.004261+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-04-26T15:48:09.599056+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 86.36}"
+    "details": "{\"rows\": {\"dead\": 30, \"live\": 3, \"estimated\": 3}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"80 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"128 kB\", \"total_bytes\": 131072}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 10, \"updates\": 380, \"hot_updates\": 275}, \"rls_forced\": false, \"description\": \"Extended driver profile linked 1-to-1 with users table via id FK.\\n   WARNING: 66.67% of drivers have NULL geohash and geohash5.\\n   get_nearby_drivers() searches by geohash prefix — only 1 in 3\\n   drivers will be found. Ensure geohash is populated on driver\\n   location updates (check user_presence_service.dart).\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.004261+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-02T17:20:49.455159+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 90.91}"
   },
   {
     "section": "02_TABLE_META",
@@ -231,7 +231,7 @@
     "section": "02_TABLE_META",
     "table_name": "trips",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 21, \"live\": 9, \"estimated\": 8}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"160 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"176 kB\", \"total_bytes\": 180224}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 34, \"updates\": 72, \"hot_updates\": 30}, \"rls_forced\": false, \"description\": \"Core trip lifecycle table.\\n   Status flow: searching → accepted → in_progress → completed|cancelled.\\n   Autovacuum tuned aggressively (scale_factor=0.01).\\n   NOTE: Duplicate address columns exist from legacy design:\\n     - pickup_address (NOT NULL, position 4) = origin_address (nullable, position 24)\\n     - destination_address (NOT NULL, position 7) = dest_address (nullable, position 25)\\n   The NOT NULL columns are the canonical ones used by Flutter.\\n   The nullable legacy columns (origin_address, dest_address) should be\\n   dropped once confirmed unused. idx_trips_origin_address and\\n   idx_trips_dest_address are indexes on legacy columns.\\n   Also has 9 columns at 100% NULL (payment_method, meeting_lat/lng/address,\\n   accepted_at, started_at, user_rating_to_driver, driver_rating_to_user,\\n   cancel_reason) — features designed but not yet implemented in Flutter.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.005583+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 70.00}"
+    "details": "{\"rows\": {\"dead\": 27, \"live\": 14, \"estimated\": 8}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"160 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"176 kB\", \"total_bytes\": 180224}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 39, \"updates\": 79, \"hot_updates\": 30}, \"rls_forced\": false, \"description\": \"Core trip lifecycle table.\\n   Status flow: searching → accepted → in_progress → completed|cancelled.\\n   Autovacuum tuned aggressively (scale_factor=0.01).\\n   NOTE: Duplicate address columns exist from legacy design:\\n     - pickup_address (NOT NULL, position 4) = origin_address (nullable, position 24)\\n     - destination_address (NOT NULL, position 7) = dest_address (nullable, position 25)\\n   The NOT NULL columns are the canonical ones used by Flutter.\\n   The nullable legacy columns (origin_address, dest_address) should be\\n   dropped once confirmed unused. idx_trips_origin_address and\\n   idx_trips_dest_address are indexes on legacy columns.\\n   Also has 9 columns at 100% NULL (payment_method, meeting_lat/lng/address,\\n   accepted_at, started_at, user_rating_to_driver, driver_rating_to_user,\\n   cancel_reason) — features designed but not yet implemented in Flutter.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.005583+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 65.85}"
   },
   {
     "section": "02_TABLE_META",
@@ -243,19 +243,19 @@
     "section": "02_TABLE_META",
     "table_name": "user_presence",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 44, \"live\": 2, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"56 kB\", \"total_bytes\": 57344}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 7, \"inserts\": 15, \"updates\": 7307, \"hot_updates\": 1150}, \"rls_forced\": false, \"description\": \"Ephemeral real-time presence tracking.\\n   PK is user_id by design (intentional 1-to-1 per user).\\n   Updated via upsert in user_presence_service.dart.\\n   idx_user_presence_last_seen removed to enable HOT updates.\\n   Consider UNLOGGED table or Redis at production scale.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.002947+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-04-29T22:39:33.308753+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 95.65}"
+    "details": "{\"rows\": {\"dead\": 21, \"live\": 2, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"56 kB\", \"total_bytes\": 57344}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 13, \"inserts\": 21, \"updates\": 7845, \"hot_updates\": 1688}, \"rls_forced\": false, \"description\": \"Ephemeral real-time presence tracking.\\n   PK is user_id by design (intentional 1-to-1 per user).\\n   Updated via upsert in user_presence_service.dart.\\n   idx_user_presence_last_seen removed to enable HOT updates.\\n   Consider UNLOGGED table or Redis at production scale.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.002947+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-02T18:26:50.717033+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 91.30}"
   },
   {
     "section": "02_TABLE_META",
     "table_name": "users",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 4, \"live\": 7, \"estimated\": 7}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"80 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 32, \"updates\": 5, \"hot_updates\": 5}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:44.894342+00:00\", \"vacuum_count\": 0, \"analyze_count\": 2, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 36.36}"
+    "details": "{\"rows\": {\"dead\": 8, \"live\": 7, \"estimated\": 7}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"80 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 32, \"updates\": 9, \"hot_updates\": 9}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:44.894342+00:00\", \"vacuum_count\": 0, \"analyze_count\": 2, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 53.33}"
   },
   {
     "section": "02_TABLE_META",
     "table_name": "vehicle_types",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 3, \"live\": 3, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"32 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"40 kB\", \"total_bytes\": 40960}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 7, \"updates\": 7, \"hot_updates\": 7}, \"rls_forced\": false, \"description\": \"Vehicle type catalog with soft-delete via is_active column.\\n   Referenced by trips.vehicle_type FK with ON DELETE RESTRICT.\\n   Deactivate types by setting is_active=false instead of deleting.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:44.897148+00:00\", \"vacuum_count\": 0, \"analyze_count\": 2, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 50.00}"
+    "details": "{\"rows\": {\"dead\": 11, \"live\": 4, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"32 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"40 kB\", \"total_bytes\": 40960}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 9, \"updates\": 14, \"hot_updates\": 14}, \"rls_forced\": false, \"description\": \"Vehicle type catalog with soft-delete via is_active column.\\n   Referenced by trips.vehicle_type FK with ON DELETE RESTRICT.\\n   Deactivate types by setting is_active=false instead of deleting.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:44.897148+00:00\", \"vacuum_count\": 0, \"analyze_count\": 2, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 73.33}"
   },
   {
     "section": "05_COLUMN",
@@ -285,7 +285,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "driver_id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -357,7 +357,7 @@
     "section": "05_COLUMN",
     "table_name": "user_presence",
     "name": "lat",
-    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.50, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{30.0444}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -453,7 +453,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "lat",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 10}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 10}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -525,7 +525,7 @@
     "section": "05_COLUMN",
     "table_name": "user_presence",
     "name": "lng",
-    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.50, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{31.2357}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -615,7 +615,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "lng",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 11}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 11}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -735,7 +735,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "heading",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 2, \"char_max_length\": null, \"numeric_precision\": 5}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 5, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 2, \"char_max_length\": null, \"numeric_precision\": 5}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 5, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 3, \"distinct_values\": -0.50, \"null_fraction_pct\": 50.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -843,7 +843,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "geohash",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 6, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 6, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1101,7 +1101,7 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "created_at",
-    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1113,7 +1113,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_type",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 4, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{car}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 4, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{car}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1143,6 +1143,12 @@
     "section": "05_COLUMN",
     "table_name": "ratings",
     "name": "created_at",
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "trip_offers",
+    "name": "updated_at",
     "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
@@ -1293,13 +1299,13 @@
     "section": "05_COLUMN",
     "table_name": "driver_locations",
     "name": "updated_at",
-    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_brand",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 7, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1347,7 +1353,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "complaints",
     "name": "complaints_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"complaints\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 9}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"complaints\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 14}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1359,7 +1365,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "coupon_usages",
     "name": "coupon_usages_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"coupon_usages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 9}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"coupon_usages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 14}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1371,7 +1377,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "driver_locations",
     "name": "driver_locations_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"driver_locations\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"drivers_profile\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 3}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"driver_locations\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"drivers_profile\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 2, \"target_rows\": 3}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1401,7 +1407,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "messages",
     "name": "messages_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 9}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 14}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1419,7 +1425,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "ratings",
     "name": "ratings_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 1, \"target_rows\": 9}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 1, \"target_rows\": 14}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1443,25 +1449,25 @@
     "section": "08_FK_OUTGOING",
     "table_name": "trip_offers",
     "name": "trip_offers_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trip_offers\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 6, \"target_rows\": 9}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trip_offers\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 6, \"target_rows\": 14}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trips",
     "name": "trips_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 9, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 14, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trips",
     "name": "trips_user_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"user_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 9, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"user_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 14, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trips",
     "name": "trips_vehicle_type_fk",
-    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"]}, \"target\": {\"table\": \"vehicle_types\", \"columns\": [\"name\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 9, \"target_rows\": 3}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"]}, \"target\": {\"table\": \"vehicle_types\", \"columns\": [\"name\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 14, \"target_rows\": 4}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1539,7 +1545,7 @@
     "section": "09_FK_INCOMING",
     "table_name": "drivers_profile",
     "name": "driver_locations_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"driver_locations\", \"columns\": [\"driver_id\"], \"row_count\": 0}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to driver_locations\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"driver_locations\", \"columns\": [\"driver_id\"], \"row_count\": 2}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to driver_locations\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -1653,13 +1659,13 @@
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "trips_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"driver_id\"], \"row_count\": 9}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"driver_id\"], \"row_count\": 14}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "trips_user_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"user_id\"], \"row_count\": 9}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trips\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"user_id\"], \"row_count\": 14}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trips\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -1671,7 +1677,7 @@
     "section": "09_FK_INCOMING",
     "table_name": "vehicle_types",
     "name": "trips_vehicle_type_fk",
-    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"name\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"], \"row_count\": 9}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"PROTECTED\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"name\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"], \"row_count\": 14}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"PROTECTED\"}}"
   },
   {
     "section": "05_COLUMN",
@@ -1695,7 +1701,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_year",
-    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 4, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 4, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1839,7 +1845,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_color",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 11, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 9, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 11, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 9, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1875,7 +1881,7 @@
     "section": "11_INDEX",
     "table_name": "admin_logs",
     "name": "idx_admin_logs_created_at",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_admin_logs_created_at ON public.admin_logs USING btree (created_at DESC)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_admin_logs_created_at ON public.admin_logs USING btree (created_at DESC)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 3, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -1905,13 +1911,13 @@
     "section": "11_INDEX",
     "table_name": "complaints",
     "name": "idx_complaints_priority",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_complaints_priority ON public.complaints USING btree (priority)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_complaints_priority ON public.complaints USING btree (priority)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "coupon_usages",
     "name": "coupon_usages_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX coupon_usages_pkey ON public.coupon_usages USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 5, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX coupon_usages_pkey ON public.coupon_usages USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 6, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -1941,7 +1947,7 @@
     "section": "11_INDEX",
     "table_name": "coupons",
     "name": "coupons_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX coupons_pkey ON public.coupons USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX coupons_pkey ON public.coupons USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 3, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -1953,31 +1959,31 @@
     "section": "11_INDEX",
     "table_name": "driver_locations",
     "name": "driver_locations_driver_id_unique",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_locations_driver_id_unique ON public.driver_locations USING btree (driver_id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 4, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_locations_driver_id_unique ON public.driver_locations USING btree (driver_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 168, \"is_unused\": false, \"tuples_read\": 315, \"tuples_fetched\": 162}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "driver_locations",
     "name": "driver_locations_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_locations_pkey ON public.driver_locations USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 5, \"is_unused\": false, \"tuples_read\": 2, \"tuples_fetched\": 2}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_locations_pkey ON public.driver_locations USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 6, \"is_unused\": false, \"tuples_read\": 4, \"tuples_fetched\": 3}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "driver_locations",
     "name": "idx_driver_locations_geohash",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_driver_locations_geohash ON public.driver_locations USING btree (geohash)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 152, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_driver_locations_geohash ON public.driver_locations USING btree (geohash)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 152, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "driver_locations",
     "name": "idx_driver_locations_updated_at",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_driver_locations_updated_at ON public.driver_locations USING btree (updated_at DESC)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_driver_locations_updated_at ON public.driver_locations USING btree (updated_at DESC)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 8, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "driver_revision_requests",
     "name": "driver_revision_requests_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_revision_requests_pkey ON public.driver_revision_requests USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_revision_requests_pkey ON public.driver_revision_requests USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -1989,13 +1995,13 @@
     "section": "11_INDEX",
     "table_name": "driver_revision_requests",
     "name": "idx_driver_revision_requests_status",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_driver_revision_requests_status ON public.driver_revision_requests USING btree (status)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_driver_revision_requests_status ON public.driver_revision_requests USING btree (status)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 24, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "drivers_profile",
     "name": "drivers_profile_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX drivers_profile_pkey ON public.drivers_profile USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 163, \"is_unused\": false, \"tuples_read\": 205, \"tuples_fetched\": 167}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX drivers_profile_pkey ON public.drivers_profile USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 191, \"is_unused\": false, \"tuples_read\": 233, \"tuples_fetched\": 195}}"
   },
   {
     "section": "11_INDEX",
@@ -2091,7 +2097,7 @@
     "section": "11_INDEX",
     "table_name": "pricing_config",
     "name": "pricing_config_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX pricing_config_pkey ON public.pricing_config USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX pricing_config_pkey ON public.pricing_config USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 1, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2145,7 +2151,7 @@
     "section": "11_INDEX",
     "table_name": "trip_offers",
     "name": "idx_trip_offers_driver_id",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_driver_id ON public.trip_offers USING btree (driver_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 61, \"is_unused\": false, \"tuples_read\": 148, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_driver_id ON public.trip_offers USING btree (driver_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 90, \"is_unused\": false, \"tuples_read\": 148, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2163,7 +2169,7 @@
     "section": "11_INDEX",
     "table_name": "trip_offers",
     "name": "idx_trip_offers_trip_status",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"status\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_trip_status ON public.trip_offers USING btree (trip_id, status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"status\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_trip_status ON public.trip_offers USING btree (trip_id, status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 5, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2181,7 +2187,7 @@
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_created_at",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_created_at ON public.trips USING btree (created_at DESC)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 7, \"is_unused\": false, \"tuples_read\": 3, \"tuples_fetched\": 2}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_created_at ON public.trips USING btree (created_at DESC)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 421, \"is_unused\": false, \"tuples_read\": 420, \"tuples_fetched\": 416}}"
   },
   {
     "section": "11_INDEX",
@@ -2193,7 +2199,7 @@
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_driver_status",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_driver_status ON public.trips USING btree (driver_id, status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 6, \"tuples_fetched\": 6}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_driver_status ON public.trips USING btree (driver_id, status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 3, \"is_unused\": false, \"tuples_read\": 9, \"tuples_fetched\": 9}}"
   },
   {
     "section": "11_INDEX",
@@ -2217,7 +2223,7 @@
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_status_vehicle",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_status_vehicle ON public.trips USING btree (status, vehicle_type)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 65, \"is_unused\": false, \"tuples_read\": 139, \"tuples_fetched\": 44}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_status_vehicle ON public.trips USING btree (status, vehicle_type)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 487, \"is_unused\": false, \"tuples_read\": 561, \"tuples_fetched\": 461}}"
   },
   {
     "section": "11_INDEX",
@@ -2229,13 +2235,13 @@
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_user_id",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_user_id ON public.trips USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 78, \"is_unused\": false, \"tuples_read\": 295, \"tuples_fetched\": 270}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_user_id ON public.trips USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 79, \"is_unused\": false, \"tuples_read\": 295, \"tuples_fetched\": 270}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "trips_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX trips_pkey ON public.trips USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 342, \"is_unused\": false, \"tuples_read\": 371, \"tuples_fetched\": 342}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX trips_pkey ON public.trips USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 372, \"is_unused\": false, \"tuples_read\": 405, \"tuples_fetched\": 372}}"
   },
   {
     "section": "11_INDEX",
@@ -2253,7 +2259,7 @@
     "section": "11_INDEX",
     "table_name": "user_coupons",
     "name": "uq_user_coupons_user_coupon",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"coupon_id\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX uq_user_coupons_user_coupon ON public.user_coupons USING btree (user_id, coupon_id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 4, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"coupon_id\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX uq_user_coupons_user_coupon ON public.user_coupons USING btree (user_id, coupon_id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 25, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2265,7 +2271,7 @@
     "section": "11_INDEX",
     "table_name": "user_presence",
     "name": "user_presence_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"user_id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX user_presence_pkey ON public.user_presence USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 7419, \"is_unused\": false, \"tuples_read\": 13332, \"tuples_fetched\": 7396}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"user_id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX user_presence_pkey ON public.user_presence USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 7963, \"is_unused\": false, \"tuples_read\": 13875, \"tuples_fetched\": 7934}}"
   },
   {
     "section": "11_INDEX",
@@ -2295,13 +2301,13 @@
     "section": "11_INDEX",
     "table_name": "users",
     "name": "users_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 1921, \"is_unused\": false, \"tuples_read\": 1903, \"tuples_fetched\": 1882}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 1939, \"is_unused\": false, \"tuples_read\": 1921, \"tuples_fetched\": 1900}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "vehicle_types",
     "name": "vehicle_types_name_key",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX vehicle_types_name_key ON public.vehicle_types USING btree (name)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 20, \"is_unused\": false, \"tuples_read\": 12, \"tuples_fetched\": 12}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX vehicle_types_name_key ON public.vehicle_types USING btree (name)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 29, \"is_unused\": false, \"tuples_read\": 20, \"tuples_fetched\": 19}}"
   },
   {
     "section": "11_INDEX",
@@ -2935,6 +2941,12 @@
   },
   {
     "section": "13_TRIGGER",
+    "table_name": "trip_offers",
+    "name": "trg_trip_offers_updated_at",
+    "details": "{\"level\": \"ROW\", \"events\": [\"UPDATE\"], \"timing\": \"BEFORE\", \"enabled\": true, \"function\": \"update_updated_at_column()\", \"condition\": null, \"trigger_type\": \"BEFORE\"}"
+  },
+  {
+    "section": "13_TRIGGER",
     "table_name": "trips",
     "name": "trg_cleanup_orphan_offers",
     "details": "{\"level\": \"ROW\", \"events\": [\"UPDATE\"], \"timing\": \"AFTER\", \"enabled\": true, \"function\": \"cleanup_orphan_trip_offers()\", \"condition\": null, \"trigger_type\": \"AFTER\"}"
@@ -2944,6 +2956,12 @@
     "table_name": "trips",
     "name": "trg_expire_trip_offers",
     "details": "{\"level\": \"ROW\", \"events\": [\"UPDATE\"], \"timing\": \"AFTER\", \"enabled\": true, \"function\": \"expire_trip_offers()\", \"condition\": null, \"trigger_type\": \"AFTER\"}"
+  },
+  {
+    "section": "13_TRIGGER",
+    "table_name": "trips",
+    "name": "trg_trips_updated_at",
+    "details": "{\"level\": \"ROW\", \"events\": [\"UPDATE\"], \"timing\": \"BEFORE\", \"enabled\": true, \"function\": \"update_updated_at_column()\", \"condition\": null, \"trigger_type\": \"BEFORE\"}"
   },
   {
     "section": "13_TRIGGER",
@@ -3057,7 +3075,7 @@
     "section": "14_FUNCTION",
     "table_name": "calculate_trip_price",
     "name": "signature",
-    "details": "{\"oid\": \"20894\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_vehicle_type character varying, p_distance_km numeric\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"numeric\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+    "details": "{\"oid\": \"21061\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_vehicle_type character varying, p_distance_km numeric\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": \"Calculates trip price based on vehicle type and distance.\\n Looks up pricing from vehicle_types first, falls back to pricing_config, then defaults.\", \"return_type\": \"numeric\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
   },
   {
     "section": "14_FUNCTION",
@@ -3243,13 +3261,13 @@
     "section": "14_FUNCTION",
     "table_name": "update_updated_at_column",
     "name": "signature",
-    "details": "{\"oid\": \"19577\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"trigger\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+    "details": "{\"oid\": \"19577\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"INVOKER\", \"arguments\": \"\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"trigger\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
   },
   {
     "section": "14_FUNCTION",
     "table_name": "upsert_driver_location",
     "name": "signature",
-    "details": "{\"oid\": \"20226\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_driver_id uuid, p_lat numeric, p_lng numeric, p_heading numeric, p_geohash character varying\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"void\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+    "details": "{\"oid\": \"20226\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_driver_id uuid, p_lat numeric, p_lng numeric, p_heading numeric, p_geohash character varying\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": \"Updates both driver_locations (legacy) and drivers_profile (canonical) with exact geohashes.\", \"return_type\": \"void\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
   },
   {
     "section": "14_FUNCTION",
@@ -3291,7 +3309,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "is_available",
-    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": false, \"position\": 15, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 1, \"distinct_values\": -0.33, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{f}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": false, \"position\": 15, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 1, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{f}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -3315,7 +3333,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "geohash",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 16, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 100.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 16, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -0.67, \"null_fraction_pct\": 33.33, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -3771,7 +3789,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "current_lat",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 10}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 17, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -0.67, \"null_fraction_pct\": 33.33, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 10}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 17, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{30.04440000}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -4665,7 +4683,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "current_lng",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 11}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 18, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -0.67, \"null_fraction_pct\": 33.33, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 11}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 18, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{31.23570000}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -4689,115 +4707,115 @@
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "admin_logs",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 103, \"read\": 8}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 112, \"read\": 8}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "complaints",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 0, \"read\": 0}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 412, \"read\": 4}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "coupon_usages",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 14, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 23, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "coupons",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 214, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 563, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "driver_locations",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 6, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 1281, \"read\": 8}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 1349, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 2358, \"read\": 8}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "driver_revision_requests",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 0, \"read\": 0}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 125, \"read\": 3}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "drivers_profile",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 2854, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 5945, \"read\": 15}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 4929, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 9458, \"read\": 15}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "messages",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 18, \"read\": 12}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 24, \"read\": 12}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "notifications",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 1401, \"read\": 10}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 1786, \"read\": 10}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "pricing_config",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 43, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 63, \"read\": 4}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 43, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 66, \"read\": 4}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "ratings",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 14, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 35, \"read\": 9}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 69, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 280, \"read\": 9}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "support_messages",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 9, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 46, \"read\": 4}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 12, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 50, \"read\": 4}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "trip_offers",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 100, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 573, \"read\": 10}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 118, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 792, \"read\": 11}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "trips",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 1496, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 4046, \"read\": 20}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 2994, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 10096, \"read\": 20}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "user_coupons",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 296, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 430, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "user_presence",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 45105, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 26629, \"read\": 3}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 47714, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 27625, \"read\": 3}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "users",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 3989, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 5856, \"read\": 15}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 7928, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 9229, \"read\": 15}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "vehicle_types",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 97, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 126, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 179, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 192, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "geohash5",
-    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 20, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 100.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 20, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 6, \"distinct_values\": -0.67, \"null_fraction_pct\": 33.33, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -4966,5 +4984,11 @@
     "table_name": "trips",
     "name": "cancelled_by",
     "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 31, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 100.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "trips",
+    "name": "updated_at",
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": true, \"position\": 32, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   }
 ]

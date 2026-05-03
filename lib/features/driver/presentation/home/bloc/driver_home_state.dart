@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/home/bloc/driver_home_state.dart
+
 import 'package:equatable/equatable.dart';
 import '../../../../../services/heatmap_service.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
@@ -13,10 +13,10 @@ class DriverHomeState extends Equatable {
   final double rating;
   final TripModel? pendingTripOffer;
 
-  /// FIX P1-03: Accepted trip ID for post-accept navigation
+  
   final String? acceptedTripId;
 
-  /// Heatmap cells — user density visualization layer
+  
   final List<HeatmapCell> heatmapCells;
 
   const DriverHomeState({

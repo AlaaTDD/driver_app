@@ -1,4 +1,4 @@
-// lib/features/coupons/domain/entities/coupon_entity.dart
+
 import 'package:equatable/equatable.dart';
 
 class CouponEntity extends Equatable {

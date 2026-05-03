@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/screens/register_driver_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -369,7 +369,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                           return const Center(child: CircularProgressIndicator());
                         }
 
-                        // Fallback if empty or error
+                        
                         final types = state.vehicleTypes.isNotEmpty
                             ? state.vehicleTypes
                             : [

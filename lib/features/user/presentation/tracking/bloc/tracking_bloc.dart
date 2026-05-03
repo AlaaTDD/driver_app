@@ -1,4 +1,4 @@
-// lib/features/user/presentation/tracking/bloc/tracking_bloc.dart
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,32 +26,32 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   ) async {
     emit(TrackingLoading());
     try {
-      // FIX M13: Single query with expanded relations instead of 3 sequential round-trips
+      
       final tripData = await SupabaseService.client
           .from('trips')
-          .select('*, users:driver_id(id, name, phone, rating, avatar_url), drivers_profile:driver_id(vehicle_model, vehicle_plate, vehicle_color)')
+          .select('*, driver:users!trips_driver_id_fkey(id, name, phone, rating, avatar_url)')
           .eq('id', event.tripId)
           .single();
 
       Map<String, dynamic>? driverProfile;
       if (tripData['driver_id'] != null) {
         try {
-          final userData = tripData['users'] as Map<String, dynamic>?;
-          final profileData = tripData['drivers_profile'] as Map<String, dynamic>?;
-          if (userData != null && profileData != null) {
-            driverProfile = Map<String, dynamic>.from(userData);
-            profileData.forEach((key, value) {
-              if (key != 'id' && key != 'updated_at' && key != 'created_at') {
-                driverProfile![key] = value;
-              }
-            });
+          driverProfile = Map<String, dynamic>.from(tripData['driver'] ?? {});
+          final profileData = await SupabaseService.client
+              .from('driver_profiles')
+              .select('vehicle_model, vehicle_plate, vehicle_color')
+              .eq('id', tripData['driver_id'])
+              .maybeSingle();
+          
+          if (profileData != null) {
+            driverProfile.addAll(profileData);
           }
         } catch (e) {
           debugPrint('TrackingBloc: driver profile merge failed — $e');
         }
       }
 
-      // Fetch route polyline from pickup → destination
+      
       List<LatLng> routePoints = const [];
       final pickupLat = tripData['pickup_lat'];
       final pickupLng = tripData['pickup_lng'];
@@ -99,7 +99,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       emit(TrackingLoaded(
         trip: current.trip,
         driver: current.driver,
-        // FIX P2-03: Use typed LatLng instead of raw map
+        
         driverLocation: LatLng(event.lat, event.lng),
         routePoints: current.routePoints,
       ));
@@ -126,12 +126,16 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     Emitter<TrackingState> emit,
   ) async {
     try {
-      // FIX P1-02: Use cancel_trip RPC with ownership check
-      await SupabaseService.client.rpc('cancel_trip', params: {
-        'p_trip_id': event.tripId,
-        'p_user_id': SupabaseService.currentUser!.id,
-        'p_cancelled_by': 'user',
-      });
+      
+      await SupabaseService.client
+          .from('trips')
+          .update({
+            'status': 'cancelled',
+            'cancelled_at': DateTime.now().toIso8601String(),
+            'cancelled_by': 'user',
+          })
+          .eq('id', event.tripId)
+          .eq('user_id', SupabaseService.currentUser!.id);
       await _tripSubscription?.cancel();
       await _driverLocationSubscription?.cancel();
       if (state is TrackingLoaded) {
@@ -145,7 +149,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
             routePoints: current.routePoints));
       }
     } catch (e) {
-      // FIX P1-02: Correct error message
+      
       debugPrint('TrackingBloc: trip cancellation failed — $e');
     }
   }
@@ -174,7 +178,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
 
   void _subscribeToDriverLocation(String driverId) {
     _driverLocationSubscription?.cancel();
-    // Listen on drivers_profile where the driver writes current_lat/current_lng
+    
     _driverLocationSubscription = SupabaseService.client
         .from('drivers_profile')
         .stream(primaryKey: ['id'])

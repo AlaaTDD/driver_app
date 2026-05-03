@@ -1,4 +1,4 @@
-// lib/features/user/presentation/searching/bloc/searching_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class SearchingEvent extends Equatable {
@@ -44,7 +44,7 @@ class CancelSearch extends SearchingEvent {
   List<Object?> get props => [tripId];
 }
 
-/// Periodic re-broadcast to newly-online drivers while timer is running.
+
 class RebroadcastTripOffers extends SearchingEvent {
   final String tripId;
 

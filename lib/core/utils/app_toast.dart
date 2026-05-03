@@ -1,4 +1,4 @@
-// lib/core/utils/app_toast.dart
+
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';

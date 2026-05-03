@@ -1,13 +1,13 @@
-// lib/features/user/presentation/trips/data/trips_repository.dart
+
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 
-/// Repository for User Trips operations.
-/// Encapsulates all Supabase data access for user trips features.
+
+
 class TripsRepository {
   final _client = SupabaseService.client;
 
-  /// Load all trips for the current user
+  
   Future<List<Map<String, dynamic>>> loadUserTrips(String userId) async {
     final data = await _client
         .from('trips')
@@ -20,14 +20,14 @@ class TripsRepository {
         .toList();
   }
 
-  /// Fetch driver details for given driver IDs
-  /// Returns a map of driver_id -> driver data
+  
+  
   Future<Map<String, Map<String, dynamic>>> fetchDriverDetails(
     List<String> driverIds,
   ) async {
     if (driverIds.isEmpty) return {};
 
-    // FIX H10: Fetch both user data AND driver profile (vehicle info) in parallel
+    
     final results = await Future.wait([
       _client
           .from('users')
@@ -46,7 +46,7 @@ class TripsRepository {
     for (final user in usersData) {
       driversMap[user['id']] = Map<String, dynamic>.from(user);
     }
-    // Merge vehicle info from drivers_profile
+    
     for (final profile in profilesData) {
       final id = profile['id'] as String;
       if (driversMap.containsKey(id)) {
@@ -60,7 +60,7 @@ class TripsRepository {
     return driversMap;
   }
 
-  /// Load single trip details
+  
   Future<Map<String, dynamic>?> loadTripDetails(String tripId) async {
     final data = await _client
         .from('trips')
@@ -70,7 +70,7 @@ class TripsRepository {
     return Map<String, dynamic>.from(data);
   }
 
-  /// Fetch single driver details
+  
   Future<Map<String, dynamic>?> fetchSingleDriverDetails(String driverId) async {
     try {
       final driverData = await _client
@@ -85,7 +85,7 @@ class TripsRepository {
     }
   }
 
-  /// Get trip data for cancellation validation
+  
   Future<Map<String, dynamic>?> getTripForCancellation(String tripId) async {
     try {
       return await _client
@@ -99,17 +99,21 @@ class TripsRepository {
     }
   }
 
-  /// Cancel a trip via atomic RPC for ownership + state validation.
-  /// Also handles trip_offers cleanup server-side.
+  
+  
   Future<void> cancelTrip(String tripId, String userId) async {
-    await _client.rpc('cancel_trip', params: {
-      'p_trip_id': tripId,
-      'p_user_id': userId,
-      'p_cancelled_by': 'user',
-    });
+    await _client
+        .from('trips')
+        .update({
+          'status': 'cancelled',
+          'cancelled_at': DateTime.now().toIso8601String(),
+          'cancelled_by': 'user',
+        })
+        .eq('id', tripId)
+        .eq('user_id', userId);
   }
 
-  /// Submit a complaint about a trip
+  
   Future<void> submitComplaint({
     required String? userId,
     required String tripId,

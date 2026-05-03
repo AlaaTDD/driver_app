@@ -21,9 +21,9 @@ class DirectionsResult {
 class DirectionsService {
   static const _baseUrl = 'https://maps.googleapis.com/maps/api/directions/json';
 
-  // FIX H06: In-memory cache to avoid duplicate Google API calls for same route.
-  // Key: "originLat,originLng→destLat,destLng" (rounded to 4 decimal places)
-  // TTL: 5 minutes
+  
+  
+  
   static final Map<String, _CachedResult> _cache = {};
   static const _cacheTtl = Duration(minutes: 5);
   static const int _maxCacheSize = 50;
@@ -40,7 +40,7 @@ class DirectionsService {
     required double destLng,
     required String apiKey,
   }) async {
-    // FIX H06: Check cache first
+    
     final key = _cacheKey(originLat, originLng, destLat, destLng);
     final cached = _cache[key];
     if (cached != null && DateTime.now().difference(cached.timestamp) < _cacheTtl) {
@@ -71,7 +71,7 @@ class DirectionsService {
         durationSeconds: durationSeconds,
       );
 
-      // FIX H06: Store in cache (evict oldest if full)
+      
       if (_cache.length >= _maxCacheSize) {
         _cache.remove(_cache.keys.first);
       }
@@ -85,7 +85,7 @@ class DirectionsService {
     }
   }
 
-  /// Clear the route cache (call on logout or memory pressure)
+  
   static void clearCache() => _cache.clear();
 
   static List<LatLng> _decodePolyline(String encoded) {
@@ -115,7 +115,7 @@ class DirectionsService {
   }
 }
 
-/// Internal cache entry
+
 class _CachedResult {
   final DirectionsResult result;
   final DateTime timestamp;

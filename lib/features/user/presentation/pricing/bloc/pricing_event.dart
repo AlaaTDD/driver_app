@@ -1,4 +1,4 @@
-// lib/features/user/presentation/pricing/bloc/pricing_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class PricingEvent extends Equatable {
@@ -8,7 +8,7 @@ abstract class PricingEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Fired once on screen init to load vehicle types from DB
+
 class LoadVehicleTypes extends PricingEvent {
   const LoadVehicleTypes();
 }

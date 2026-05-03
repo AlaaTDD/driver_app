@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/widgets/trips_header.dart
+
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
@@ -28,7 +28,7 @@ class TripsHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
+          
           Row(
             children: [
               GestureDetector(
@@ -69,7 +69,7 @@ class TripsHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              // New Trip Button
+              
               GestureDetector(
                 onTap: onNewTrip,
                 child: Container(
@@ -110,7 +110,7 @@ class TripsHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          // Stats Cards
+          
           Row(
             children: [
               _StatCard(

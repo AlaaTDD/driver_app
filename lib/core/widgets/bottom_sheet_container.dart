@@ -1,9 +1,9 @@
-// lib/core/widgets/bottom_sheet_container.dart
+
 import 'package:flutter/material.dart';
 import '../theme/theme_extensions.dart';
 
-/// Unified bottom sheet container used across map screens.
-/// Ensures consistent look between user and driver home pages.
+
+
 class BottomSheetContainer extends StatelessWidget {
   final Widget child;
   final double topRadius;

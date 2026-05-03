@@ -1,4 +1,4 @@
-// lib/features/trips/domain/entities/trip_entity.dart
+
 import 'package:equatable/equatable.dart';
 import '../../../../core/utils/trip_status.dart';
 

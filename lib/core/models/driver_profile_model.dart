@@ -1,8 +1,8 @@
-// lib/core/models/driver_profile_model.dart
+
 import 'package:equatable/equatable.dart';
 
-/// Type-safe model for the `drivers_profile` table.
-/// Maps exactly to the PostgreSQL schema columns.
+
+
 class DriverProfileModel extends Equatable {
   final String id;
   final String nationalId;
@@ -100,7 +100,7 @@ class DriverProfileModel extends Equatable {
     };
   }
 
-  /// Returns only the vehicle-related fields for profile updates.
+  
   Map<String, dynamic> toVehicleUpdateJson() {
     return {
       'vehicle_type': vehicleType,

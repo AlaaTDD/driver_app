@@ -1,4 +1,4 @@
-// lib/features/user/presentation/home/bloc/user_home_state.dart
+
 import 'package:equatable/equatable.dart';
 import '../../../../../services/cell_subscription_service.dart';
 
@@ -17,13 +17,13 @@ class UserHomeLoaded extends UserHomeState {
   final double userLat;
   final double userLng;
 
-  /// Current geohash cell the user is in (precision 6)
+  
   final String currentCellId;
 
-  /// Nearby drivers from the cell subscription service
+  
   final Map<String, DriverLocation> nearbyDrivers;
 
-  /// User's available coupons
+  
   final List<Map<String, dynamic>> coupons;
 
   const UserHomeLoaded({

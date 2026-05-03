@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/screens/splash_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -125,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             children: [
               const Spacer(flex: 3),
-              // Animated logo
+              
               AnimatedBuilder(
                 animation: Listenable.merge([_logoCtrl, _glowCtrl]),
                 builder: (context, _) => Opacity(
@@ -160,7 +160,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const SizedBox(height: 34),
-              // Animated text
+              
               FadeTransition(
                 opacity: _textOpacity,
                 child: SlideTransition(
@@ -190,7 +190,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const Spacer(flex: 3),
-              // Loading dots
+              
               FadeTransition(
                 opacity: _textOpacity,
                 child: const _LoadingDots(),

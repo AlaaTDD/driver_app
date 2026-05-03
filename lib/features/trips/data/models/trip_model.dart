@@ -1,12 +1,12 @@
-// lib/features/trips/data/models/trip_model.dart
+
 import '../../../../core/utils/trip_status.dart';
 import '../../domain/entities/trip_entity.dart';
 
-/// FIX P2-01: TripModel extends TripEntity — eliminates 28 duplicate field
-/// declarations while preserving Clean Architecture layering.
-/// Only data-layer concerns (userData, JSON serialization) are added here.
+
+
+
 class TripModel extends TripEntity {
-  /// Raw nested relation data (e.g. `user` from Supabase JOIN) — not part of the entity.
+  
   final Map<String, dynamic>? userData;
 
   const TripModel({
@@ -112,8 +112,8 @@ class TripModel extends TripEntity {
     };
   }
 
-  /// Returns the entity representation. Since TripModel extends TripEntity,
-  /// this is a no-op cast — it simply returns itself.
+  
+  
   TripEntity toEntity() => this;
 
   @override

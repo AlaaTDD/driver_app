@@ -1,4 +1,4 @@
-// lib/features/user/presentation/pricing/pricing_args.dart
+
 class PricingArgs {
   final double? originLat;
   final double? originLng;

@@ -1,4 +1,4 @@
-// lib/features/user/presentation/searching/searching_screen.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -70,7 +70,7 @@ class _SearchingScreenState extends State<SearchingScreen>
     super.dispose();
   }
 
-  // ─── Build ─────────────────────────────────────────────────────────────────
+  
 
   @override
   Widget build(BuildContext context) {
@@ -84,10 +84,10 @@ class _SearchingScreenState extends State<SearchingScreen>
       child: Scaffold(
         body: Stack(
           children: [
-            // ── Full-screen map ─────────────────────────────────────────────
+            
             Positioned.fill(child: _buildMap(isDark)),
 
-            // ── Bottom sheet ────────────────────────────────────────────────
+            
             Positioned(
               bottom: 0, left: 0, right: 0,
               child: BlocBuilder<SearchingBloc, SearchingState>(
@@ -171,7 +171,7 @@ class _SearchingScreenState extends State<SearchingScreen>
             margin: const EdgeInsets.only(top: 12, bottom: 4),
             decoration: BoxDecoration(color: context.divColor, borderRadius: BorderRadius.circular(100)),
           ),
-          // Route info strip (always visible)
+          
           if (widget.originLat != null && widget.destLat != null)
             _buildRouteStrip(context, isDark),
           Padding(
@@ -237,13 +237,13 @@ class _SearchingScreenState extends State<SearchingScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Pulsing radar animation + timer
+        
         SizedBox(
           height: 130,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Outer pulse ring
+              
               AnimatedBuilder(
                 animation: _pulseAnim,
                 builder: (_, __) => Transform.scale(
@@ -257,7 +257,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                   ),
                 ),
               ),
-              // Middle ring
+              
               AnimatedBuilder(
                 animation: _pulseAnim,
                 builder: (_, __) => Transform.scale(
@@ -271,7 +271,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                   ),
                 ),
               ),
-              // Center circle with timer
+              
               Container(
                 width: 68, height: 68,
                 decoration: BoxDecoration(
@@ -299,7 +299,7 @@ class _SearchingScreenState extends State<SearchingScreen>
         const SizedBox(height: 4),
         Text(AppLocalizations.of(context)!.willContactOnFind, style: TextStyle(color: context.textSecondary, fontSize: 12.5)),
         const SizedBox(height: 14),
-        // Progress bar
+        
         ClipRRect(
           borderRadius: BorderRadius.circular(100),
           child: LinearProgressIndicator(

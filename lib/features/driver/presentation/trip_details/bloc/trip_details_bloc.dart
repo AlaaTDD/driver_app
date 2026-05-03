@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/trip_details/bloc/trip_details_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -68,7 +68,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
         driverId: userId,
       );
 
-      // Reload trip details to reflect any other changes
+      
       final updated = await _repository.loadTripDetails(event.tripId);
       emit(TripDetailsLoaded(updated));
     } catch (e) {

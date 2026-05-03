@@ -1,4 +1,4 @@
-// lib/features/user/presentation/home/bloc/user_home_bloc.dart
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,18 +10,18 @@ import '../../../../../services/user_presence_service.dart';
 import 'user_home_event.dart';
 import 'user_home_state.dart';
 
-/// User Home BLoC — manages the cell-based nearby driver system.
-///
-/// Flow:
-/// 1. InitUserHome → get user location
-/// 2. Subscribe to cells around user via CellSubscriptionService
-/// 3. Start location stream → if user moves to new cell, re-subscribe
-/// 4. Receive realtime driver updates → update markers on map
-///
-/// Navigation safety:
-/// - InitUserHome is idempotent: re-entry skips re-init if already loaded
-/// - Location stream is guarded — only started once
-/// - UserLocationObtained only triggers re-subscription on cell change
+
+
+
+
+
+
+
+
+
+
+
+
 class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
   final LocationService _locationService = LocationService();
   final CellSubscriptionService _cellService = CellSubscriptionService.instance;
@@ -29,7 +29,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
   StreamSubscription? _driverUpdatesSubscription;
   StreamSubscription? _locationStreamSubscription;
 
-  // Guard: true once we've successfully initialized
+  
   bool _initDone = false;
 
   UserHomeBloc() : super(UserHomeInitial()) {
@@ -43,9 +43,9 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     InitUserHome event,
     Emitter<UserHomeState> emit,
   ) async {
-    // ── Idempotency guard ─────────────────────────────────────────────
-    // User navigated away and came back — bloc is still alive.
-    // Don't re-init; the existing state and streams are still valid.
+    
+    
+    
     if (_initDone && state is UserHomeLoaded) {
       debugPrint('📍 UserHome: Already initialized — skipping re-init');
       return;
@@ -66,21 +66,21 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
 
       debugPrint('📍 UserHome: User at ($lat, $lng) cell=$cellId');
 
-      // Subscribe to cell system for nearby drivers
+      
       await _cellService.subscribeToCells(lat, lng);
 
-      // Broadcast user presence so drivers see us on the heatmap
+      
       await _presenceService.startBroadcasting(lat, lng);
 
-      // Listen to realtime driver updates — cancel any previous sub first
+      
       _driverUpdatesSubscription?.cancel();
       _driverUpdatesSubscription =
           _cellService.driverUpdates.listen((drivers) {
         add(DriversRealtimeUpdate(drivers));
       });
 
-      // Start tracking user's location to detect cell changes
-      // Guard: cancel existing stream before starting new one
+      
+      
       _locationStreamSubscription?.cancel();
       _locationStreamSubscription =
           _locationService.getLocationStream().listen((pos) {
@@ -97,7 +97,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
 
       add(LoadUserCoupons(event.userId));
 
-      // Mark initialized
+      
       _initDone = true;
     } catch (e) {
       debugPrint('❌ UserHome: Failed to init: $e');
@@ -114,7 +114,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     final newCellId =
         GeohashHelper.encode(event.lat, event.lng, precision: 6);
 
-    // Only re-subscribe to cells when user moves to a DIFFERENT cell
+    
     if (newCellId != currentState.currentCellId) {
       debugPrint(
           '📍 UserHome: Cell changed ${currentState.currentCellId} → $newCellId');
@@ -127,7 +127,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
       currentCellId: newCellId,
     ));
 
-    // Update presence so driver's heatmap moves with us
+    
     _presenceService.updateLocation(event.lat, event.lng);
   }
 
@@ -169,10 +169,10 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
   Future<void> close() async {
     _driverUpdatesSubscription?.cancel();
     _locationStreamSubscription?.cancel();
-    // FIX C04: NEVER dispose global singletons from a BLoC lifecycle.
-    // Only stop this instance's specific broadcasts.
+    
+    
     await _presenceService.stopBroadcasting();
-    // _cellService.dispose() REMOVED — singleton must outlive BLoC
+    
     return super.close();
   }
 }

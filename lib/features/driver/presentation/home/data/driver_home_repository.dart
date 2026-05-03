@@ -1,15 +1,15 @@
-// lib/features/driver/presentation/home/data/driver_home_repository.dart
+
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../core/utils/geohash_helper.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
 
-/// Repository for Driver Home operations.
-/// Encapsulates all Supabase data access for driver home features.
+
+
 class DriverHomeRepository {
   final _client = SupabaseService.client;
 
-  /// Load driver status and profile data
+  
   Future<Map<String, dynamic>> loadDriverStatus(String userId) async {
     final results = await Future.wait([
       _client
@@ -30,7 +30,7 @@ class DriverHomeRepository {
     };
   }
 
-  /// Get total earnings for driver using DB view
+  
   Future<double> getTotalEarnings(String userId) async {
     try {
       final earningsData = await _client
@@ -43,8 +43,8 @@ class DriverHomeRepository {
       }
     } catch (e) {
       debugPrint('⚠️ DriverHomeRepository: earnings view failed, using fallback: $e');
-      // FIX P2-09: Fallback limited to last 90 days to prevent timeout
-      // with drivers who have 500+ completed trips.
+      
+      
       final cutoff = DateTime.now().subtract(const Duration(days: 90));
       final tripsData = await _client
           .from('trips')
@@ -63,7 +63,7 @@ class DriverHomeRepository {
     return 0;
   }
 
-  /// Update driver availability and location via RPC (FIX P1-09)
+  
   Future<void> setDriverOnline(
     String userId,
     double lat,
@@ -81,14 +81,14 @@ class DriverHomeRepository {
     });
   }
 
-  /// Set driver offline and clear location via RPC (FIX P1-09)
+  
   Future<void> setDriverOffline(String userId) async {
     await _client.rpc('set_driver_offline', params: {
       'p_driver_id': userId,
     });
   }
 
-  /// Push location update to database
+  
   Future<void> pushLocation(
     String userId,
     double lat,
@@ -106,7 +106,7 @@ class DriverHomeRepository {
     });
   }
 
-  /// Accept trip offer via RPC
+  
   Future<Map<String, dynamic>?> acceptTrip(String tripId) async {
     return await _client.rpc(
       'driver_accept_trip',
@@ -114,7 +114,7 @@ class DriverHomeRepository {
     );
   }
 
-  /// Reject trip offer via RPC
+  
   Future<Map<String, dynamic>?> rejectTrip(String tripId) async {
     return await _client.rpc(
       'driver_reject_trip',
@@ -122,7 +122,7 @@ class DriverHomeRepository {
     );
   }
 
-  /// Check if driver has active trip
+  
   Future<bool> hasActiveTrip(String userId) async {
     final activeTrips = await _client
         .from('trips')
@@ -133,7 +133,7 @@ class DriverHomeRepository {
     return activeTrips != null;
   }
 
-  /// Fetch trips by IDs — returns typed models to eliminate raw-map usage (P2-04).
+  
   Future<List<TripModel>> fetchTripsByIds(List<String> tripIds) async {
     if (tripIds.isEmpty) return [];
     final tripList = await _client
@@ -146,7 +146,7 @@ class DriverHomeRepository {
         .toList();
   }
 
-  /// Get stream of trip offers for driver
+  
   Stream<List<Map<String, dynamic>>> getTripOffersStream(String userId) {
     return _client
         .from('trip_offers')

@@ -1,4 +1,4 @@
-// lib/features/user/presentation/searching/bloc/searching_state.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class SearchingState extends Equatable {

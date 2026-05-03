@@ -1,4 +1,4 @@
-// lib/features/auth/data/models/driver_profile_model.dart
+
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/driver_entity.dart';
 

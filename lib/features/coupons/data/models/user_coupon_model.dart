@@ -1,4 +1,4 @@
-// lib/features/coupons/data/models/user_coupon_model.dart
+
 import 'package:equatable/equatable.dart';
 import 'coupon_model.dart';
 

@@ -1,4 +1,4 @@
-// lib/features/auth/domain/entities/driver_entity.dart
+
 import 'package:equatable/equatable.dart';
 
 class DriverEntity extends Equatable {

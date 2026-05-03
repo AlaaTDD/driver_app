@@ -1,19 +1,19 @@
-// lib/features/driver/presentation/trip_details/data/trip_details_repository.dart
+
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 
-/// Repository for Driver Trip Details operations.
-/// Encapsulates all Supabase data access, extracted from TripDetailsBloc
-/// to enforce Single Responsibility Principle.
+
+
+
 class TripDetailsRepository {
   final _client = SupabaseService.client;
 
-  /// The canonical SELECT query for trip details with user join.
-  /// Used consistently across all trip-related operations.
+  
+  
   static const _tripSelectQuery =
       '*, user:users!trips_user_id_fkey(id, name, phone, rating, avatar_url)';
 
-  /// Load full trip details with user info.
+  
   Future<Map<String, dynamic>> loadTripDetails(String tripId) async {
     final data = await _client
         .from('trips')
@@ -23,8 +23,8 @@ class TripDetailsRepository {
     return Map<String, dynamic>.from(data);
   }
 
-  /// Accept a trip via the atomic RPC function.
-  /// Returns `{success: true}` or `{success: false, error: '...'}`.
+  
+  
   Future<Map<String, dynamic>?> acceptTrip(String tripId) async {
     return await _client.rpc(
       'driver_accept_trip',
@@ -32,7 +32,7 @@ class TripDetailsRepository {
     );
   }
 
-  /// Reject a trip offer (updates trip_offers only, NOT trips table).
+  
   Future<void> rejectTripOffer({
     required String tripId,
     required String driverId,
@@ -47,7 +47,7 @@ class TripDetailsRepository {
         .eq('driver_id', driverId);
   }
 
-  /// Start a trip via the atomic RPC function.
+  
   Future<Map<String, dynamic>?> startTrip({
     required String tripId,
     required String driverId,
@@ -58,7 +58,7 @@ class TripDetailsRepository {
     );
   }
 
-  /// Complete a trip via the atomic RPC function.
+  
   Future<Map<String, dynamic>?> completeTrip({
     required String tripId,
     required String driverId,

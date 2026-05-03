@@ -115,6 +115,35 @@ serve(async (req) => {
     );
   }
 
+  const messagePayload: any = {
+    token: user.fcm_token,
+    data: Object.fromEntries(
+      Object.entries(data || {}).map(([k, v]) => [k, String(v)]),
+    ),
+    android: {
+      priority: "high",
+    },
+    apns: {
+      payload: {
+        aps: {
+          "content-available": 1,
+        },
+      },
+    },
+  };
+
+  // ⚠️ CRITICAL FIX: If it's a ride offer, DO NOT include the notification block.
+  // Including 'notification' causes FCM to handle it via the system tray when in background,
+  // preventing the Flutter background handler (and our custom Overlay/Alarm) from executing!
+  // By sending it as a Data-Only message, Android wakes up the app in the background.
+  if (data?.type !== "ride_offer" && data?.notification_type !== "ride_offer") {
+    messagePayload.notification = { title, body };
+  } else {
+    // Pass title and body inside data just in case the app needs them
+    messagePayload.data.title = title || "";
+    messagePayload.data.body = body || "";
+  }
+
   const fcmResponse = await fetch(
     `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
     {
@@ -123,15 +152,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        message: {
-          token: user.fcm_token,
-          notification: { title, body },
-          data: Object.fromEntries(
-            Object.entries(data || {}).map(([k, v]) => [k, String(v)]),
-          ),
-        },
-      }),
+      body: JSON.stringify({ message: messagePayload }),
     },
   );
 

@@ -1,4 +1,4 @@
-// lib/features/user/presentation/meeting_point/bloc/meeting_state.dart
+
 import 'package:equatable/equatable.dart';
 
 class MeetingState extends Equatable {

@@ -1,13 +1,13 @@
-// lib/features/user/presentation/meeting_point/data/meeting_point_repository.dart
+
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../core/utils/retry_helper.dart';
 
-/// Repository for Meeting Point operations.
+
 class MeetingPointRepository {
   final _client = SupabaseService.client;
 
-  /// Check if user has an active trip
+  
   Future<bool> hasActiveTrip(String userId) async {
     final activeTrip = await _client
         .from('trips')
@@ -18,7 +18,7 @@ class MeetingPointRepository {
     return activeTrip != null;
   }
 
-  /// Create a new trip
+  
   Future<Map<String, dynamic>> createTrip({
     required String userId,
     required double pickupLat,
@@ -60,7 +60,7 @@ class MeetingPointRepository {
       onRetry: (e, attempt) => debugPrint('Trip insert attempt $attempt failed: $e'),
     );
 
-    // Apply coupon if provided
+    
     if (couponCode != null && couponCode.isNotEmpty) {
       try {
         await _client.rpc('use_coupon_atomic', params: {

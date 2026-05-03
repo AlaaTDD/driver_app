@@ -1,4 +1,4 @@
-// lib/features/shared/presentation/notifications/notifications_screen.dart
+
 import 'package:flutter/material.dart';
 import '../../../../core/models/notification_model.dart';
 import '../../../../core/theme/app_colors.dart';

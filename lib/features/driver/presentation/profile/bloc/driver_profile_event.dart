@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/profile/bloc/driver_profile_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class DriverProfileEvent extends Equatable {

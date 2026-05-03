@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/trips/driver_trips_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -79,7 +79,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  // Modern Header with Stats
+                  
                   SliverToBoxAdapter(
                     child: _TripsHeader(
                       total: allTrips.length,
@@ -89,7 +89,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
                       onNewTrip: () => context.push(AppRoutes.driverHome),
                     ),
                   ),
-                  // Custom Segmented Control
+                  
                   SliverToBoxAdapter(
                     child: _SegmentedControl(
                       selectedIndex: _selectedIndex,
@@ -101,7 +101,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
                       cancelledCount: cancelled.length,
                     ),
                   ),
-                  // Tab Content
+                  
                   SliverFillRemaining(
                     hasScrollBody: true,
                     child: TabBarView(
@@ -204,7 +204,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
     );
   }
 }
-// ========== Modern UI Components ==========
+
 
 class _ToastWidget extends StatelessWidget {
   final String message;
@@ -363,7 +363,7 @@ class _TripsHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Back + Title + New Trip (all in one row)
+          
           Row(
             children: [
               _HeaderActionButton(
@@ -428,7 +428,7 @@ class _TripsHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Compact Stats Row
+          
           Row(
             children: [
               Expanded(
@@ -701,7 +701,7 @@ class _TripListView extends StatelessWidget {
       return _EmptyState(isActive: isActive);
     }
 
-    // Group trips by date
+    
     final grouped = _groupTripsByDate(context, trips);
 
     return RefreshIndicator(
@@ -831,7 +831,7 @@ class _TripDateSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Date Header
+        
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Row(
@@ -872,7 +872,7 @@ class _TripDateSection extends StatelessWidget {
             ],
           ),
         ),
-        // Trip Cards with staggered animation
+        
         ...trips.asMap().entries.map((entry) {
           return _AnimatedTripCard(
             trip: entry.value,
@@ -993,10 +993,10 @@ class _TripCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Row: Status, Time, Price
+                  
                   Row(
                     children: [
-                      // Status Badge
+                      
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -1020,7 +1020,7 @@ class _TripCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      // Time
+                      
                       Row(
                         children: [
                           Icon(
@@ -1041,16 +1041,16 @@ class _TripCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Route Visualization
+                  
                   _RouteVisualizer(
                     pickup: trip.pickupAddress,
                     destination: trip.destinationAddress,
                   ),
                   const SizedBox(height: 16),
-                  // Bottom Row: User Info + Actions + Price
+                  
                   Row(
                     children: [
-                      // User Avatar & Name
+                      
                       if (userName.isNotEmpty) ...[
                         Hero(
                           tag: 'user_${trip.id}',
@@ -1152,7 +1152,7 @@ class _TripCard extends StatelessWidget {
                         ),
                         const Spacer(),
                       ],
-                      // Quick Actions
+                      
                       if (canNavigate)
                         _ActionButton(
                           icon: Icons.navigation,
@@ -1160,7 +1160,7 @@ class _TripCard extends StatelessWidget {
                           onTap: () => context.push('${AppRoutes.driverTripDetails}?tripId=${trip.id}'),
                         ),
                       const SizedBox(width: 12),
-                      // Price Badge
+                      
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
@@ -1245,7 +1245,7 @@ class _RouteVisualizer extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Timeline Column
+        
         Column(
           children: [
             Container(
@@ -1297,7 +1297,7 @@ class _RouteVisualizer extends StatelessWidget {
           ],
         ),
         const SizedBox(width: 12),
-        // Addresses Column
+        
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

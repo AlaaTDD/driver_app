@@ -1,4 +1,4 @@
-// lib/features/user/presentation/profile/bloc/profile_state.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class ProfileState extends Equatable {

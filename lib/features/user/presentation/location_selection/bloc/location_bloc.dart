@@ -1,4 +1,4 @@
-// lib/features/user/presentation/location_selection/bloc/location_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
@@ -7,7 +7,7 @@ import 'location_event.dart';
 import 'location_state.dart';
 
 class LocationBloc extends Bloc<LocationEvent, LocationState> {
-  // FIX L05: Use shared singleton instead of creating a new instance per bloc
+  
   final LocationService _locationService = LocationService.instance;
 
   LocationBloc() : super(LocationInitial()) {

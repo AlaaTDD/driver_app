@@ -1,5 +1,5 @@
-// lib/core/constants/map_styles.dart
-// Centralized map styles — used by both user and driver screens
+
+
 
 const String kLightMapStyle = '''
 [

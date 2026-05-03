@@ -1,4 +1,4 @@
-// lib/core/router/app_router.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -33,7 +33,7 @@ import '../../features/shared/presentation/chatbot/chatbot_screen.dart';
 import '../../features/shared/presentation/rating/rating_screen.dart';
 import '../../features/shared/presentation/screens/complaints_screen.dart';
 import '../constants/app_routes.dart';
-// FIX L01: BLoC imports for per-route lazy creation
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/user/presentation/home/bloc/user_home_bloc.dart';
 import '../../features/user/presentation/pricing/bloc/pricing_bloc.dart';
@@ -46,9 +46,10 @@ import '../../features/user/presentation/location_selection/bloc/location_bloc.d
 import '../../features/driver/presentation/trip_details/bloc/trip_details_bloc.dart';
 import '../../features/driver/presentation/trips/bloc/driver_trips_bloc.dart';
 import '../../features/driver/presentation/profile/bloc/driver_profile_bloc.dart';
+import '../../features/driver/presentation/home/bloc/driver_home_bloc.dart';
 import '../../features/shared/presentation/rating/bloc/rating_bloc.dart';
 
-/// FIX L10: Custom slide/fade transition builder for GoRouter routes
+
 Page<dynamic> _buildSlideTransition({required Widget child}) {
   return CustomTransitionPage(
     child: child,
@@ -83,7 +84,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
 class AppRouter {
   static late GoRouter routerInstance;
 
-  // FIX H12: Validate UUID format for route parameters
+  
   static final _uuidRegex = RegExp(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
     caseSensitive: false,
@@ -113,12 +114,12 @@ class AppRouter {
         final authState = authBloc.state;
         final loc = state.matchedLocation;
 
-        // Error or Loading: stay on current screen — let the screen handle it
+        
         if (authState is AuthError || authState is AuthLoading) {
           return null;
         }
 
-        // First launch only: show splash
+        
         if (authState is AuthInitial) {
           return loc == AppRoutes.splash ? null : AppRoutes.splash;
         }
@@ -301,7 +302,9 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.driverHome,
           name: AppRoutes.driverHome,
-          pageBuilder: (context, state) => _buildSlideTransition(child: const DriverHomeScreen()),
+          pageBuilder: (context, state) => _buildSlideTransition(
+            child: BlocProvider(create: (_) => DriverHomeBloc(), child: const DriverHomeScreen()),
+          ),
         ),
         GoRoute(
           path: AppRoutes.driverProfile,
@@ -340,7 +343,7 @@ class AppRouter {
           name: AppRoutes.driverTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            // FIX L01: TripDetailsBloc created per-route
+            
             return MaterialPage(child: BlocProvider(create: (_) => TripDetailsBloc(), child: DriverTripDetailsScreen(tripId: tripId)));
           },
         ),
@@ -349,7 +352,7 @@ class AppRouter {
           name: AppRoutes.driverRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            // FIX L01: RatingBloc created per-route
+            
             return MaterialPage(child: BlocProvider(create: (_) => RatingBloc(), child: RatingScreen(tripId: tripId)));
           },
         ),

@@ -1,4 +1,4 @@
-// lib/core/widgets/shimmer_widgets.dart
+
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../theme/theme_extensions.dart';

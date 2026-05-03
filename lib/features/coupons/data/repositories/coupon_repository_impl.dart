@@ -1,4 +1,4 @@
-// lib/features/coupons/data/repositories/coupon_repository_impl.dart
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/coupon_entity.dart';
 import '../../domain/repositories/coupon_repository.dart';
@@ -18,7 +18,7 @@ class CouponRepositoryImpl implements CouponRepository {
 
       final response = await _client.rpc('validate_coupon', params: {
         'p_code': code,
-        'p_trip_price': 0, // dummy price for validation
+        'p_trip_price': 0, 
         'p_user_id': userId,
       });
 

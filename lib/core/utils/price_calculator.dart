@@ -1,4 +1,4 @@
-// lib/core/utils/price_calculator.dart
+
 
 class PriceCalculator {
   static double calculatePrice({
@@ -7,7 +7,7 @@ class PriceCalculator {
     required double basePrice,
     required double pricePerKm,
   }) {
-    // FIX M15: Vehicle type multipliers — motorcycle was missing (defaulted to 1.0 = same as sedan)
+    
     double multiplier = 1.0;
     switch (vehicleType.toLowerCase()) {
       case 'sedan':

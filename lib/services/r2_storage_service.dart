@@ -1,19 +1,19 @@
-// lib/services/r2_storage_service.dart
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:minio/minio.dart';
 import '../core/constants/env_constants.dart';
 
-/// FIX H03: Added file size validation to prevent uploading excessively large files.
-/// FIX: Added content-type header correctly via Minio metadata.
+
+
 class R2StorageService {
   Minio? _minio;
 
-  /// Maximum allowed file size: 10 MB
+  
   static const int _maxFileSizeBytes = 10 * 1024 * 1024;
 
-  /// Allowed image extensions
+  
   static const Set<String> _allowedExtensions = {
     'jpg', 'jpeg', 'png', 'webp', 'pdf',
   };
@@ -38,7 +38,7 @@ class R2StorageService {
     required String path,
   }) async {
     try {
-      // FIX H03: Validate file size
+      
       final fileLength = await file.length();
       if (fileLength > _maxFileSizeBytes) {
         throw Exception(
@@ -48,7 +48,7 @@ class R2StorageService {
         throw Exception('errorFileEmpty');
       }
 
-      // Validate extension
+      
       final fileExtension = file.path.split('.').last.toLowerCase();
       if (!_allowedExtensions.contains(fileExtension)) {
         throw Exception('errorFileUnsupported');

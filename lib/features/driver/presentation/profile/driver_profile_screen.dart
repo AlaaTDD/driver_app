@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/profile/driver_profile_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'bloc/driver_profile_bloc.dart';
@@ -11,8 +11,8 @@ import '../../../../core/error/error_mapper.dart';
 import '../../../../core/widgets/stat_card.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 
-/// Driver Profile Screen — significantly richer than user profile.
-/// Includes: personal info, vehicle details, documents status, and stats.
+
+
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
 
@@ -117,7 +117,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
     return CustomScrollView(
       slivers: [
-        // ─── Custom App Bar ─────────────────────────────────────────────────
+        
         SliverAppBar(
           backgroundColor: context.bgColor,
           expandedHeight: 0,
@@ -125,7 +125,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           pinned: true,
           title: Text(l.editProfile),
           actions: [
-            // Verification badge
+            
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Container(
@@ -173,11 +173,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               children: [
                 const SizedBox(height: 8),
 
-                // ─── Profile Header ───────────────────────────────────────────
+                
                 Center(
                   child: Column(
                     children: [
-                      // Avatar with edit button
+                      
                       Stack(
                         alignment: Alignment.bottomRight,
                         children: [
@@ -216,7 +216,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Vehicle type badge
+                      
                       if (vehicleType != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -255,7 +255,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // ─── Stats Row ────────────────────────────────────────────────
+                
                 Row(
                   children: [
                     Expanded(
@@ -285,14 +285,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // ─── Vehicle Section ──────────────────────────────────────────
+                
                 _SectionHeader(
                   title: l.vehicleInfo,
                   icon: Icons.directions_car_filled_rounded,
                 ),
                 const SizedBox(height: 12),
 
-                // Vehicle image card
+                
                 if (vehicleImageUrl != null)
                   Container(
                     width: double.infinity,
@@ -309,7 +309,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     ),
                   ),
 
-                // Vehicle details grid
+                
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -354,7 +354,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // ─── Documents Section ────────────────────────────────────────
+                
                 _SectionHeader(
                   title: l.documents,
                   icon: Icons.folder_copy_rounded,
@@ -392,7 +392,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // ─── Editable Fields Section ──────────────────────────────────
+                
                 _SectionHeader(
                   title: l.personalInfo,
                   icon: Icons.person_outline_rounded,
@@ -429,7 +429,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // ─── Save Button ──────────────────────────────────────────────
+                
                 ElevatedButton(
                   onPressed: state is DriverProfileLoading
                       ? null
@@ -475,7 +475,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   }
 }
 
-// ─── Section Header ──────────────────────────────────────────────────────────
+
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -510,7 +510,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ─── Detail Row ──────────────────────────────────────────────────────────────
+
 
 class _DetailRow extends StatelessWidget {
   final IconData icon;
@@ -551,7 +551,7 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-// ─── Document Row ────────────────────────────────────────────────────────────
+
 
 class _DocumentRow extends StatelessWidget {
   final IconData icon;

@@ -1,8 +1,8 @@
-// lib/core/models/rating_model.dart
+
 import 'package:equatable/equatable.dart';
 
-/// Type-safe model for the `ratings` table.
-/// Maps exactly to the PostgreSQL schema columns.
+
+
 class RatingModel extends Equatable {
   final String id;
   final String tripId;
@@ -36,7 +36,7 @@ class RatingModel extends Equatable {
     );
   }
 
-  /// Convert to JSON for database INSERT (without id and created_at).
+  
   Map<String, dynamic> toInsertJson() {
     return {
       'trip_id': tripId,

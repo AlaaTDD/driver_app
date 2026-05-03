@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/screens/register_user_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -83,7 +83,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  
                   Center(
                     child: Column(
                       children: [
@@ -155,7 +155,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                     ),
                     validator: (v) {
                       if (v == null || v.isEmpty) return AppLocalizations.of(context)!.enterPhone;
-                      // FIX M19: Accept all Saudi phone formats: 5xx, 05xx, +9665xx, 009665xx
+                      
                       final cleaned = v.replaceAll(RegExp(r'\D'), '');
                       String normalized = cleaned;
                       if (normalized.startsWith('00966')) normalized = normalized.substring(5);

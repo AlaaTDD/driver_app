@@ -1,4 +1,4 @@
-// lib/features/user/presentation/location_selection/location_selection_screen.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
@@ -21,7 +21,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 
-// ─── Models ───────────────────────────────────────────────────────────────────
+
 
 enum _ActiveField { none, origin, destination }
 enum _PickMode { none, origin, destination }
@@ -33,7 +33,7 @@ class _Suggestion {
   const _Suggestion({required this.label, required this.detail, required this.lat, required this.lng});
 }
 
-// ─── Shared map styles used across all map screens ───────────────────────────
+
 
 const String kDarkMapStyle = '''
 [
@@ -116,7 +116,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   List<LatLng> _visiblePoints = [];
   AnimationController? _drawCtrl;
 
-  // Animation controllers for premium feel
+  
   AnimationController? _cardPulseCtrl;
   Animation<double>? _cardPulseAnim;
 
@@ -250,11 +250,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       final minLng = math.min(_originLng!, _destLng!);
       final maxLng = math.max(_originLng!, _destLng!);
       
-      // Calculate delta between points
+      
       final latDelta = maxLat - minLat;
       final lngDelta = maxLng - minLng;
       
-      // Add 30% padding around the bounds, minimum 0.005 degrees
+      
       final latPadding = math.max(latDelta * 0.3, 0.005);
       final lngPadding = math.max(lngDelta * 0.3, 0.005);
       
@@ -388,7 +388,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   bool get _showSuggestions =>
       (_isSearching || _suggestions.isNotEmpty) && _pickMode == _PickMode.none;
 
-  // ─── Build ─────────────────────────────────────────────────────────────────
+  
 
   @override
   Widget build(BuildContext context) {
@@ -409,10 +409,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            // ── Full-screen map
+            
             Positioned.fill(child: _buildMap(isDark)),
 
-            // ── Top gradient overlay for readability
+            
             Positioned(
               top: 0, left: 0, right: 0,
               height: 200,
@@ -431,7 +431,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               ),
             ),
 
-            // ── Top floating UI
+            
             Positioned(
               top: 0, left: 0, right: 0,
               child: Column(
@@ -446,11 +446,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               ),
             ),
 
-            // ── Center pin for pick mode
+            
             if (_pickMode != _PickMode.none)
               Positioned.fill(child: _buildCenterPin()),
 
-            // ── Bottom actions
+            
             Positioned(
               bottom: 24, left: 16, right: 16,
               child: SafeArea(top: false, child: _buildBottomActions()),
@@ -461,29 +461,29 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  // ─── Premium top card — compact & refined ──────────────────────────────────
+  
 
   Widget _buildTopCard(bool isDark) {
     return SafeArea(
       bottom: false,
       child: Padding(
-        // ← Reduced outer padding: was fromLTRB(12,10,12,10)
+        
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Back button — premium pill style
+            
             _PremiumBackButton(isDark: isDark, onTap: () => context.pop()),
             const SizedBox(width: 10),
 
-            // ── Fields card
+            
             Expanded(
               child: _PremiumCard(
                 isDark: isDark,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Origin field
+                    
                     _LocationField(
                       controller: _originCtrl,
                       focusNode: _originFocus,
@@ -496,10 +496,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       isDark: isDark,
                     ),
 
-                    // Slim divider with centered swap
+                    
                     _SwapDivider(isDark: isDark, onSwap: _swapLocations),
 
-                    // Destination field
+                    
                     _LocationField(
                       controller: _destCtrl,
                       focusNode: _destFocus,
@@ -521,7 +521,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  // ─── Pick mode instruction banner ──────────────────────────────────────────
+  
 
   Widget _buildPickModeBanner(bool isDark) {
     final isOrigin = _pickMode == _PickMode.origin;
@@ -553,7 +553,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                     child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: context.textPrimary),
                   ),
                   const SizedBox(width: 12),
-                  // Animated dot
+                  
                   AnimatedBuilder(
                     animation: _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
                     builder: (_, __) {
@@ -594,7 +594,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  // ─── Suggestions dropdown ──────────────────────────────────────────────────
+  
 
   Widget _buildSuggestions(bool isDark) {
     return Container(
@@ -686,7 +686,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  // ─── Map ───────────────────────────────────────────────────────────────────
+  
 
   Widget _buildMap(bool isDark) {
     final markers = <Marker>{};
@@ -765,7 +765,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  // ─── Center pin for pick mode ──────────────────────────────────────────────
+  
 
   Widget _buildCenterPin() {
     final isOrigin = _pickMode == _PickMode.origin;
@@ -776,7 +776,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Animated outer ring
+            
             AnimatedBuilder(
               animation: _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
               builder: (_, child) {
@@ -796,7 +796,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               },
             ),
             const SizedBox(height: 0),
-            // Inner pin
+            
             Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
@@ -808,7 +808,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               ),
               child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 22),
             ),
-            // Pin stem
+            
             Container(
               width: 2.5, height: 18,
               decoration: BoxDecoration(
@@ -816,7 +816,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Shadow ellipse
+            
             Container(
               width: 12, height: 5,
               decoration: BoxDecoration(
@@ -830,7 +830,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  // ─── Bottom action buttons ─────────────────────────────────────────────────
+  
 
   Widget _buildBottomActions() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1020,7 +1020,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   }
 }
 
-// ─── Premium Back Button ──────────────────────────────────────────────────────
+
 
 class _PremiumBackButton extends StatelessWidget {
   final bool isDark;
@@ -1065,7 +1065,7 @@ class _PremiumBackButton extends StatelessWidget {
   }
 }
 
-// ─── Premium Card Container ───────────────────────────────────────────────────
+
 
 class _PremiumCard extends StatelessWidget {
   final bool isDark;
@@ -1077,7 +1077,7 @@ class _PremiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        // Subtle gradient background instead of flat color
+        
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1102,7 +1102,7 @@ class _PremiumCard extends StatelessWidget {
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
-          // Subtle brand glow at the top edge
+          
           BoxShadow(
             color: AppColors.primary.withValues(alpha: isDark ? 0.07 : 0.04),
             blurRadius: 16,
@@ -1115,7 +1115,7 @@ class _PremiumCard extends StatelessWidget {
   }
 }
 
-// ─── Swap Divider ─────────────────────────────────────────────────────────────
+
 
 class _SwapDivider extends StatelessWidget {
   final bool isDark;
@@ -1157,7 +1157,7 @@ class _SwapDivider extends StatelessWidget {
   }
 }
 
-// ─── Location Field — compact & premium ──────────────────────────────────────
+
 
 class _LocationField extends StatelessWidget {
   final TextEditingController controller;
@@ -1187,7 +1187,7 @@ class _LocationField extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      // ← Reduced vertical padding: was symmetric(horizontal:14, vertical:8)
+      
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: isActive
@@ -1200,7 +1200,7 @@ class _LocationField extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Animated dot indicator
+          
           AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             width: isActive ? 10 : 8,
@@ -1215,18 +1215,18 @@ class _LocationField extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // ── Label + TextField stacked tightly
+          
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Tiny floating label
+                
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: TextStyle(
                     color: isActive ? dotColor : context.textSecondary,
-                    // ← Was 10px
+                    
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -1234,7 +1234,7 @@ class _LocationField extends StatelessWidget {
                   ),
                   child: Text(label),
                 ),
-                // ← Was SizedBox(height:3)
+                
                 const SizedBox(height: 2),
                 TextField(
                   controller: controller,
@@ -1242,7 +1242,7 @@ class _LocationField extends StatelessWidget {
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
                     color: context.textPrimary,
-                    // ← Was 14.5px
+                    
                     fontSize: 14,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     height: 1.2,
@@ -1256,7 +1256,7 @@ class _LocationField extends StatelessWidget {
                     ),
                     border: InputBorder.none,
                     isDense: true,
-                    // ← Tighter content padding
+                    
                     contentPadding: const EdgeInsets.symmetric(vertical: 3),
                   ),
                 ),
@@ -1265,12 +1265,12 @@ class _LocationField extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // ── Map pin button — slightly smaller
+          
           GestureDetector(
             onTap: onMapTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              // ← Was 34x34
+              
               width: 32, height: 32,
               decoration: BoxDecoration(
                 color: isActive
@@ -1289,7 +1289,7 @@ class _LocationField extends StatelessWidget {
               ),
               child: Icon(
                 Icons.location_searching_rounded,
-                // ← Was 16
+                
                 size: 15,
                 color: isActive ? AppColors.primary : context.textSecondary,
               ),

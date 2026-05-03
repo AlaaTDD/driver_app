@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/widgets/trip_list_view.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'animated_trip_card.dart';
@@ -19,7 +19,7 @@ class TripListView extends StatelessWidget {
       return EmptyState(isActive: isActive);
     }
 
-    // Group trips by date
+    
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final trip in trips) {
       final date = _formatDate(trip['created_at']);

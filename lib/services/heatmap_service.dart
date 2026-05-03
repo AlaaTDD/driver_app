@@ -1,37 +1,37 @@
-// lib/services/heatmap_service.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 
-/// Realtime heatmap service for the driver's map.
-///
-/// Shows **where active users are RIGHT NOW** — not historical trip data.
-///
-/// Data source: `user_presence` table
-///   - Users upsert their (lat, lng, last_seen) every 30 seconds
-///   - When a user closes the app, their row is deleted
-///   - Stale rows (> 2 minutes without heartbeat) are ignored
-///
-/// Updates via:
-///   1. Initial fetch of all fresh user_presence rows
-///   2. Supabase Realtime subscription for INSERT/UPDATE/DELETE
-///   3. Periodic stale-entry cleanup every 60 seconds
-///
-/// Hex grid: All users are snapped to a hex grid so the driver sees
-/// tessellating hexagons on the map, not random dots.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class HeatmapService with WidgetsBindingObserver {
   HeatmapService._() {
     WidgetsBinding.instance.addObserver(this);
   }
   static final HeatmapService instance = HeatmapService._();
 
-  /// Hex cell radius in meters — controls hexagon size on the map.
-  static const double hexRadiusMeters = 500.0;
+  
+  static const double hexRadiusMeters = 300.0;
 
-  /// Users are considered stale after this duration without a heartbeat.
-  /// Heartbeat is every 30s, so 45s means if they miss one, they are removed.
+  
+  
   static const Duration _staleDuration = Duration(seconds: 45);
 
   Timer? _staleCleanupTimer;
@@ -41,30 +41,30 @@ class HeatmapService with WidgetsBindingObserver {
   final _heatmapController =
       StreamController<List<HeatmapCell>>.broadcast();
 
-  /// Stream of heatmap cells for the UI
+  
   Stream<List<HeatmapCell>> get heatmapUpdates => _heatmapController.stream;
 
-  /// Raw user presence data: userId → {lat, lng, lastSeen}
+  
   final Map<String, _UserPresenceEntry> _presenceMap = {};
 
   List<HeatmapCell> _currentCells = [];
 
-  /// Returns current cached heatmap data
+  
   List<HeatmapCell> get currentCells => List.unmodifiable(_currentCells);
 
-  // ─── Lifecycle ──────────────────────────────────────────────────────────
+  
 
-  /// Start the realtime heatmap.
-  /// 1. Fetch all currently online users
-  /// 2. Subscribe to realtime changes
-  /// 3. Start stale-entry cleanup timer
+  
+  
+  
+  
   Future<void> startRealtimeUpdates() async {
     await _fetchAllPresence();
     _subscribeToRealtime();
     _startStaleCleanup();
   }
 
-  /// Stop everything and clear data.
+  
   void stopRealtimeUpdates() {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = null;
@@ -76,7 +76,7 @@ class HeatmapService with WidgetsBindingObserver {
     }
   }
 
-  /// Dispose resources (on logout / app close)
+  
   void dispose() {
     _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
@@ -90,7 +90,7 @@ class HeatmapService with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      // FIX H02: Pause realtime subscription when app is in background
+      
       stopRealtimeUpdates();
     } else if (state == AppLifecycleState.resumed) {
       if (!_isDisposed) {
@@ -99,9 +99,9 @@ class HeatmapService with WidgetsBindingObserver {
     }
   }
 
-  // ─── Data Fetching ──────────────────────────────────────────────────────
+  
 
-  /// Fetch all user_presence rows that are still fresh (last_seen > cutoff).
+  
   Future<void> _fetchAllPresence() async {
     try {
       final cutoff = DateTime.now()
@@ -116,7 +116,7 @@ class HeatmapService with WidgetsBindingObserver {
 
       _presenceMap.clear();
 
-      // Exclude ourselves (driver shouldn't see their own presence)
+      
       final myId = SupabaseService.currentUser?.id;
 
       for (final row in data) {
@@ -144,7 +144,7 @@ class HeatmapService with WidgetsBindingObserver {
     }
   }
 
-  // ─── Realtime Subscription ─────────────────────────────────────────────
+  
 
   void _subscribeToRealtime() {
     _unsubscribeRealtime();
@@ -177,7 +177,7 @@ class HeatmapService with WidgetsBindingObserver {
   void _handlePresenceChange(PostgresChangePayload payload) {
     final myId = SupabaseService.currentUser?.id;
 
-    // ── DELETE: user went offline ──
+    
     if (payload.eventType == PostgresChangeEvent.delete) {
       final oldRecord = payload.oldRecord;
       final userId = oldRecord['user_id'] as String?;
@@ -191,7 +191,7 @@ class HeatmapService with WidgetsBindingObserver {
       return;
     }
 
-    // ── INSERT or UPDATE: user came online or moved ──
+    
     final newRecord = payload.newRecord;
     if (newRecord.isEmpty) return;
 
@@ -219,9 +219,9 @@ class HeatmapService with WidgetsBindingObserver {
     debugPrint('🔥 Heatmap: User $userId $eventName at ($lat, $lng)');
   }
 
-  // ─── Stale Cleanup ────────────────────────────────────────────────────
+  
 
-  /// Periodically remove users who haven't sent a heartbeat.
+  
   void _startStaleCleanup() {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = Timer.periodic(
@@ -252,11 +252,11 @@ class HeatmapService with WidgetsBindingObserver {
         '${_presenceMap.length} remaining');
   }
 
-  // ─── Hex Grid Aggregation ──────────────────────────────────────────────
+  
 
-  /// Rebuild the hex cell list from current presence data.
-  /// Called whenever presence data changes.
-  /// FIX M07: Offloaded to next microtask to avoid janking the UI thread.
+  
+  
+  
   void _rebuildHexCells() {
     if (_presenceMap.isEmpty) {
       _currentCells = [];
@@ -288,7 +288,7 @@ class HeatmapService with WidgetsBindingObserver {
       }
     }
 
-    // Find max for normalization
+    
     int maxCount = 1;
     for (final acc in cellCounts.values) {
       if (acc.count > maxCount) maxCount = acc.count;
@@ -311,16 +311,16 @@ class HeatmapService with WidgetsBindingObserver {
     _heatmapController.add(_currentCells);
   }
 
-  // ─── Hex Grid Math ─────────────────────────────────────────────────────
+  
 
-  /// Snap a lat/lng coordinate to the nearest hex grid cell center.
-  ///
-  /// Uses flat-top hexagon axial coordinate system:
-  ///  - Column width  = radius × √3 (horizontal spacing)
-  ///  - Row height    = radius × 1.5 (vertical spacing)
-  ///  - Odd rows are offset by half a column width
-  ///
-  /// This ensures every hexagon center sits on a valid tessellation point.
+  
+  
+  
+  
+  
+  
+  
+  
   static ({double lat, double lng}) snapToHexGrid(
       double lat, double lng, double radiusMeters) {
     const metersPerDegreeLat = 111320.0;
@@ -330,24 +330,24 @@ class HeatmapService with WidgetsBindingObserver {
     final radiusLat = radiusMeters / metersPerDegreeLat;
     final radiusLng = radiusMeters / metersPerDegreeLng;
 
-    // Flat-top hex grid spacing
+    
     final colWidth = radiusLng * math.sqrt(3);
     final rowHeight = radiusLat * 1.5;
 
-    // Find approximate row
+    
     final row = (lat / rowHeight).round();
-    // Odd rows are offset by half a column
+    
     final lngOffset = (row % 2 == 0) ? 0.0 : colWidth / 2.0;
     final col = ((lng - lngOffset) / colWidth).round();
 
-    // Snap to hex center
+    
     final snappedLng = col * colWidth + lngOffset;
     final snappedLat = row * rowHeight;
 
     return (lat: snappedLat, lng: snappedLng);
   }
 
-  /// Determine heatmap level based on user count in a cell
+  
   static HeatmapLevel _intensityLevel(int count) {
     if (count >= 10) return HeatmapLevel.high;
     if (count >= 5) return HeatmapLevel.medium;
@@ -355,7 +355,7 @@ class HeatmapService with WidgetsBindingObserver {
   }
 }
 
-// ─── Internal Models ────────────────────────────────────────────────────────
+
 
 class _UserPresenceEntry {
   final double lat;
@@ -381,15 +381,15 @@ class _HexCellAccumulator {
   });
 }
 
-// ─── Public Models ──────────────────────────────────────────────────────────
 
-/// Represents a single heatmap hex cell with its density info
+
+
 class HeatmapCell {
   final String cellId;
   final double centerLat;
   final double centerLng;
   final int userCount;
-  final double intensity; // 0.0 - 1.0 normalized
+  final double intensity; 
   final HeatmapLevel level;
 
   const HeatmapCell({
@@ -412,14 +412,14 @@ class HeatmapCell {
   int get hashCode => Object.hash(cellId, userCount);
 }
 
-/// Heatmap density levels
+
 enum HeatmapLevel {
-  /// >= 10 users — red (hot zone)
+  
   high,
 
-  /// 5-9 users — orange (warm zone)
+  
   medium,
 
-  /// 1-4 users — yellow (some activity)
+  
   low,
 }

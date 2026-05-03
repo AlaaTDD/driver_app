@@ -1,21 +1,21 @@
-// lib/services/trip_broadcast_service.dart
+
 import 'package:flutter/foundation.dart';
 import '../core/utils/geohash_helper.dart';
 import 'supabase_service.dart';
 
-/// Handles cell-based trip broadcasting when a user requests a ride.
-/// Uses geohash5 (wider ~5km cells) to find nearby available drivers.
+
+
 class TripBroadcastService {
   TripBroadcastService._();
   static final TripBroadcastService instance = TripBroadcastService._();
 
-  // FIX P3-03: Helper to avoid unconditional debugPrint in production
+  
   static void _log(String message) {
     if (kDebugMode) debugPrint(message);
   }
 
-  /// Find available drivers within the cell system around the origin point.
-  /// Returns list of driver IDs that match the criteria.
+  
+  
   Future<List<String>> findNearbyDrivers({
     required double originLat,
     required double originLng,
@@ -24,7 +24,7 @@ class TripBroadcastService {
     _log('🔍 TripBroadcast: ========== START findNearbyDrivers ==========');
     _log('🔍 TripBroadcast: originLat=$originLat, originLng=$originLng, vehicleType=$vehicleType');
     
-    // Use precision 5 for wider search radius (~5km cells)
+    
     final originCell = GeohashHelper.encode(originLat, originLng, precision: 5);
     final neighbors = GeohashHelper.getNeighborCells(originCell);
     final searchCells = [originCell, ...neighbors];
@@ -35,7 +35,7 @@ class TripBroadcastService {
 
     try {
       _log('🔍 TripBroadcast: Querying Supabase for available drivers...');
-      // Ensure vehicleType is clean for comparison
+      
       final cleanVehicleType = vehicleType.trim().toLowerCase();
       
       final results = await SupabaseService.client
@@ -48,7 +48,7 @@ class TripBroadcastService {
       _log('🔍 TripBroadcast: Supabase returned ${results.length} available "$cleanVehicleType" drivers total.');
 
       
-      // Print all drivers found for debugging
+      
       if (results.isNotEmpty) {
         _log('🔍 TripBroadcast: All available drivers:');
         for (final row in results) {
@@ -56,10 +56,10 @@ class TripBroadcastService {
         }
       }
 
-      // Filter by cell membership
+      
       final matchingDriverIds = <String>[];
       for (final row in results) {
-        // Use geohash5 directly if available, fallback to geohash substring
+        
         final driverGeohash5 = row['geohash5'] as String?;
         final driverGeohash = row['geohash'] as String?;
         final driverId = row['id'] as String;
@@ -93,8 +93,8 @@ class TripBroadcastService {
     }
   }
 
-  /// Create trip offers for all nearby drivers (bulk insert)
-  /// Checks for existing offers to avoid duplicates
+  
+  
   Future<void> broadcastTripOffers({
     required String tripId,
     required List<String> driverIds,
@@ -107,7 +107,7 @@ class TripBroadcastService {
     }
 
     try {
-      // Check for existing offers for this trip
+      
       _log('📤 TripBroadcast: Checking for existing offers...');
       final existing = await SupabaseService.client
           .from('trip_offers')
@@ -121,7 +121,7 @@ class TripBroadcastService {
       
       _log('📤 TripBroadcast: Found ${existingDriverIds.length} existing offers');
       
-      // Filter out drivers who already have an offer
+      
       final newDriverIds = driverIds
           .where((id) => !existingDriverIds.contains(id))
           .toList();
@@ -147,7 +147,7 @@ class TripBroadcastService {
           '📤 TripBroadcast: ✅ Successfully sent ${offers.length} offers for trip $tripId to drivers: $newDriverIds');
     } catch (e) {
       _log('❌ TripBroadcast: Error broadcasting offers: $e');
-      // If it's an RLS error, log it specifically
+      
       if (e.toString().contains('42501') || e.toString().contains('violates row-level')) {
         _log('🚨 TripBroadcast: RLS policy error! Check trip_offers table policies.');
       }

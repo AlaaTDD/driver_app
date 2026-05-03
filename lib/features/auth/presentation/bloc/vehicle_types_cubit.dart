@@ -26,8 +26,8 @@ class VehicleTypesState {
 }
 
 class VehicleTypesCubit extends Cubit<VehicleTypesState> {
-  // FIX P2-05: Removed auto-fetch from constructor. Callers must explicitly
-  // call fetchVehicleTypes() when the cubit is first needed (e.g., in initState).
+  
+  
   VehicleTypesCubit() : super(const VehicleTypesState());
 
   Future<void> fetchVehicleTypes() async {

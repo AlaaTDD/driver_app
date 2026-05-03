@@ -1,4 +1,4 @@
-// lib/core/models/user_presence_model.dart
+
 import 'package:equatable/equatable.dart';
 
 class UserPresenceModel extends Equatable {

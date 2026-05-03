@@ -1,11 +1,11 @@
-// lib/features/shared/presentation/notifications/data/notifications_repository.dart
+
 import '../../../../../core/models/notification_model.dart';
 import '../../../../../services/supabase_service.dart';
 
-/// Repository that encapsulates all Supabase calls for notifications.
-/// This separates UI from data sources (Clean Architecture).
+
+
 class NotificationsRepository {
-  /// Load all notifications for the current user, returns type-safe models.
+  
   Future<List<NotificationModel>> loadNotifications() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
@@ -21,7 +21,7 @@ class NotificationsRepository {
         .toList();
   }
 
-  /// Mark a notification as read.
+  
   Future<void> markAsRead(String notificationId) async {
     await SupabaseService.client
         .from('notifications')
@@ -29,7 +29,7 @@ class NotificationsRepository {
         .eq('id', notificationId);
   }
 
-  /// Mark all notifications as read for the current user.
+  
   Future<void> markAllAsRead() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
@@ -41,7 +41,7 @@ class NotificationsRepository {
         .eq('is_read', false);
   }
 
-  /// Delete a notification.
+  
   Future<void> deleteNotification(String notificationId) async {
     await SupabaseService.client
         .from('notifications')
@@ -49,8 +49,8 @@ class NotificationsRepository {
         .eq('id', notificationId);
   }
 
-  /// Real-time stream for unread notifications count.
-  /// Requires `notifications` table to be in the supabase_realtime publication.
+  
+  
   Stream<int> getUnreadCountStream(String userId) {
     return SupabaseService.client
         .from('notifications')

@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/home/driver_home_screen.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -22,6 +22,9 @@ import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../services/heatmap_service.dart';
+import 'package:system_alert_window/system_alert_window.dart';
+
+import '../widgets/driver_offer_overlay.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -32,9 +35,9 @@ class DriverHomeScreen extends StatefulWidget {
 
 class _DriverHomeScreenState extends State<DriverHomeScreen>
     with WidgetsBindingObserver {
-  // ─── Map Controller ────────────────────────────────────────────────────────
-  // Use a nullable controller instead of Completer to safely handle
-  // re-creation when the user navigates away and back.
+  
+  
+  
   GoogleMapController? _mapController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -43,14 +46,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     zoom: 15,
   );
 
-  // Track last animated position to avoid redundant camera moves
+  
   double? _lastAnimatedLat;
   double? _lastAnimatedLng;
 
-  // Track if we already initialized to avoid re-init on re-entry
+  
   bool _initialized = false;
 
-  // ─── Layout Constants ────────────────────────────────────────────────────
+  
   static const double _bottomSheetHeight = 236.0;
   static const double _mapButtonSize = 48.0;
   static const double _mapButtonRadius = 14.0;
@@ -66,7 +69,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Only load once — not on every hot-reload or navigation back
+    
     if (!_initialized) {
       _initialized = true;
       context.read<DriverHomeBloc>().add(LoadDriverStatus());
@@ -76,7 +79,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Dispose the controller safely to prevent memory leaks
+    
     _mapController?.dispose();
     _mapController = null;
     super.dispose();
@@ -84,7 +87,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // When app comes back to foreground, refresh location once
+    
     if (state == AppLifecycleState.resumed) {
       final bloc = context.read<DriverHomeBloc>();
       if (bloc.state.isAvailable) {
@@ -93,12 +96,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     }
   }
 
-  // ─── Camera Control ───────────────────────────────────────────────────────
+  
 
-  /// Move camera to position — only if position actually changed
+  
   Future<void> _animateTo(double lat, double lng) async {
     if (_mapController == null) return;
-    // Skip if already at this position (prevents jump on re-entry)
+    
     if (_lastAnimatedLat == lat && _lastAnimatedLng == lng) return;
     _lastAnimatedLat = lat;
     _lastAnimatedLng = lng;
@@ -127,7 +130,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         }
       },
       child: BlocListener<DriverHomeBloc, DriverHomeState>(
-        // FIX P1-03: Navigate to trip details when a trip is accepted
+        
         listenWhen: (prev, curr) =>
             prev.acceptedTripId != curr.acceptedTripId &&
             curr.acceptedTripId != null,
@@ -138,24 +141,26 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
             );
           }
         },
-        child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: context.bgColor,
-        drawer: _buildDrawer(context),
-        body: Stack(
-          children: [
-            _buildMap(),
-            _buildTopBar(),
-            _buildLocationButton(),
-            _buildBottomPanel(),
-          ],
+        child: DriverOfferOverlay(
+          child: Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: context.bgColor,
+            drawer: _buildDrawer(context),
+            body: Stack(
+              children: [
+                _buildMap(),
+                _buildTopBar(),
+                _buildLocationButton(),
+                _buildGoButton(),
+              ],
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
-  // ─── Map with Heatmap overlay ─────────────────────────────────────────────
+  
 
   Widget _buildMap() {
     return BlocBuilder<DriverHomeBloc, DriverHomeState>(
@@ -165,22 +170,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           prev.heatmapCells != curr.heatmapCells,
       builder: (context, state) {
         final markers = <Marker>{};
-        if (state.driverLat != null && state.driverLng != null) {
-          markers.add(Marker(
-            markerId: const MarkerId('driver'),
-            position: LatLng(state.driverLat!, state.driverLng!),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRed),
-            infoWindow: InfoWindow(
-                title: AppLocalizations.of(context)!.yourLocation),
-          ));
-        }
+        
+        // Removed the red marker pin as requested
+        
 
-        // Build heatmap hexagons from HeatmapService data
+        
         final hexagons = _buildHeatmapHexagons(state.heatmapCells);
 
-        // Use the current driver position as initial camera if available,
-        // otherwise fall back to Riyadh center.
+        
+        
         final initialCamera = (state.driverLat != null &&
                 state.driverLng != null)
             ? CameraPosition(
@@ -192,16 +190,16 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         return GoogleMap(
           initialCameraPosition: initialCamera,
           onMapCreated: (ctrl) {
-            // Always update the controller reference — it gets recreated
-            // when the widget rebuilds after navigation back.
+            
+            
             _mapController?.dispose();
             _mapController = ctrl;
 
-            // Reset last animated position so next location update moves camera
+            
             _lastAnimatedLat = null;
             _lastAnimatedLng = null;
 
-            // Immediately move to driver's actual position if we have it
+            
             final s = context.read<DriverHomeBloc>().state;
             if (s.driverLat != null && s.driverLng != null) {
               Future.microtask(
@@ -213,7 +211,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           zoomControlsEnabled: false,
           markers: markers,
           polygons: hexagons,
-          padding: const EdgeInsets.only(bottom: _bottomSheetHeight + 8),
+          padding: const EdgeInsets.only(bottom: 24, top: 100),
           style: Theme.of(context).brightness == Brightness.dark
               ? kDarkMapStyle
               : kLightMapStyle,
@@ -222,8 +220,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  /// Build heatmap visualization as tessellating hexagons.
-  static const double _hexRadiusMeters = HeatmapService.hexRadiusMeters;
+  static const double _hexRadiusMeters = 300.0;
 
   Set<Polygon> _buildHeatmapHexagons(List<HeatmapCell> cells) {
     return cells.map((cell) {
@@ -261,8 +258,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     }).toSet();
   }
 
-  // FIX P3-06: Pre-computed sin/cos for hexagon vertices (60° increments).
-  // Avoids redundant trig calculations on every frame rebuild.
+  
+  
   static final List<double> _hexSin = [
     math.sin(0 * math.pi / 180.0),
     math.sin(60 * math.pi / 180.0),
@@ -295,7 +292,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     return vertices;
   }
 
-  // ─── Top Bar ──────────────────────────────────────────────────────────────
+  
 
   Widget _buildTopBar() {
     return SafeArea(
@@ -313,6 +310,39 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
               onTap: () => _scaffoldKey.currentState?.openDrawer(),
             ),
             const Spacer(),
+            BlocBuilder<DriverHomeBloc, DriverHomeState>(
+              builder: (context, state) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: context.elevatedColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${state.totalEarnings.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Spacer(),
             MapButton(
               icon: Icons.notifications_outlined,
               size: _mapButtonSize,
@@ -325,12 +355,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  // ─── Location Button ──────────────────────────────────────────────────────
+  
 
   Widget _buildLocationButton() {
     return Positioned(
-      bottom: _bottomSheetHeight + 16,
-      right: 18,
+      bottom: 40,
+      right: 16,
       child: MapButton(
         icon: Icons.my_location_rounded,
         size: _mapButtonSize,
@@ -338,7 +368,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         onTap: () {
           final s = context.read<DriverHomeBloc>().state;
           if (s.driverLat != null && s.driverLng != null) {
-            // Force re-animate even if same position
+            
             _lastAnimatedLat = null;
             _lastAnimatedLng = null;
             _animateTo(s.driverLat!, s.driverLng!);
@@ -348,24 +378,87 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  // ─── Bottom Panel ─────────────────────────────────────────────────────────
+  
 
-  Widget _buildBottomPanel() {
+  Widget _buildGoButton() {
     return Positioned(
+      bottom: 40,
       left: 0,
       right: 0,
-      bottom: 0,
-      child: BottomSheetContainer(
+      child: Center(
         child: BlocBuilder<DriverHomeBloc, DriverHomeState>(
           builder: (context, state) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAvailabilityToggle(context, state),
-                const SizedBox(height: 16),
-                _buildStatsRow(state),
-              ],
+            final isOnline = state.isAvailable;
+            final isLoading = state.isLoading;
+            
+            return GestureDetector(
+              onTap: isLoading
+                  ? null
+                  : () {
+                      context
+                          .read<DriverHomeBloc>()
+                          .add(ToggleAvailability(!isOnline));
+                    },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.fastOutSlowIn,
+                width: 75,
+                height: 75,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: isOnline
+                        ? [
+                            const Color(0xFF10B981), 
+                            const Color(0xFF047857), 
+                          ]
+                        : [
+                            const Color(0xFFEF4444), 
+                            const Color(0xFFB91C1C), 
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isOnline ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                          .withValues(alpha: 0.5),
+                      blurRadius: isOnline ? 25 : 15,
+                      spreadRadius: isOnline ? 8 : 2,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isOnline ? Icons.sensors_rounded : Icons.power_settings_new_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isOnline ? "متاح" : "غير متاح",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12.5,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
             );
           },
         ),
@@ -373,110 +466,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  Widget _buildAvailabilityToggle(
-      BuildContext context, DriverHomeState state) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: context.elevatedColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: state.isAvailable ? AppColors.success : context.divColor,
-          width: state.isAvailable ? 1.5 : 1.0,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: state.isAvailable
-                      ? AppColors.success
-                      : context.textDisabled,
-                  shape: BoxShape.circle,
-                  boxShadow: state.isAvailable
-                      ? [
-                          BoxShadow(
-                            color: AppColors.success.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          )
-                        ]
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                state.isAvailable
-                    ? AppLocalizations.of(context)!.availableForTrips
-                    : AppLocalizations.of(context)!.unavailable,
-                style: TextStyle(
-                  color: state.isAvailable
-                      ? AppColors.success
-                      : context.textSecondary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
-          ),
-          state.isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: AppColors.primary),
-                )
-              : Switch(
-                  value: state.isAvailable,
-                  onChanged: (v) => context
-                      .read<DriverHomeBloc>()
-                      .add(ToggleAvailability(v)),
-                  activeThumbColor: AppColors.success,
-                  inactiveThumbColor: context.textDisabled,
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsRow(DriverHomeState state) {
-    return Row(
-      children: [
-        Expanded(
-          child: StatCard(
-            label: AppLocalizations.of(context)!.trips,
-            value: '${state.totalTrips}',
-            icon: Icons.directions_car_rounded,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: AppLocalizations.of(context)!.earnings,
-            value:
-                '${state.totalEarnings.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
-            icon: Icons.payments_rounded,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: AppLocalizations.of(context)!.rating,
-            value: state.rating.toStringAsFixed(1),
-            icon: Icons.star_rounded,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── Drawer ───────────────────────────────────────────────────────────────
+  
 
   Widget _buildDrawer(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -510,4 +500,5 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 }
+
 

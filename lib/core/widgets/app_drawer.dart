@@ -11,9 +11,9 @@ import '../theme/bloc/theme_event.dart';
 import '../theme/bloc/theme_state.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  AppDrawer
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 class AppDrawer extends StatelessWidget {
   final UserEntity? user;
@@ -76,7 +76,7 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+
 
 class _Header extends StatelessWidget {
   final UserEntity? user;
@@ -109,7 +109,7 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
+          
           Container(
             width: 60, height: 60,
             decoration: BoxDecoration(
@@ -125,13 +125,13 @@ class _Header extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          // Name
+          
           Text(name,
             style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.3),
             maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 6),
-          // Rating
-          // FIX M13: Support half-stars — 4.7 shows 4 full + 1 half instead of just 4
+          
+          
           Row(children: [
             ...List.generate(5, (i) {
               final IconData icon;
@@ -170,7 +170,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ─── Nav Item ─────────────────────────────────────────────────────────────────
+
 
 class _NavItem extends StatelessWidget {
   final IconData icon;
@@ -212,7 +212,7 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-// ─── Divider ──────────────────────────────────────────────────────────────────
+
 
 class _Divider extends StatelessWidget {
   @override
@@ -220,7 +220,7 @@ class _Divider extends StatelessWidget {
       Divider(color: context.divColor, height: 1, thickness: 0.8);
 }
 
-// ─── Language Row ─────────────────────────────────────────────────────────────
+
 
 class _LanguageRow extends StatelessWidget {
   const _LanguageRow();
@@ -240,7 +240,7 @@ class _LanguageRow extends StatelessWidget {
   }
 }
 
-// ─── Theme Row ────────────────────────────────────────────────────────────────
+
 
 class _ThemeRow extends StatelessWidget {
   const _ThemeRow();
@@ -260,7 +260,7 @@ class _ThemeRow extends StatelessWidget {
   }
 }
 
-// ─── Toggle Row ───────────────────────────────────────────────────────────────
+
 
 class _ToggleRow extends StatelessWidget {
   final IconData icon;
@@ -332,7 +332,7 @@ class _Pill extends StatelessWidget {
   }
 }
 
-// ─── Logout Button ────────────────────────────────────────────────────────────
+
 
 class _LogoutBtn extends StatelessWidget {
   final VoidCallback? onLogout;

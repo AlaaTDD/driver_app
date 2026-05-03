@@ -1,4 +1,4 @@
-// lib/features/user/presentation/pricing/bloc/pricing_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -9,7 +9,7 @@ import 'pricing_state.dart';
 class PricingBloc extends Bloc<PricingEvent, PricingState> {
   final CouponRepository _couponRepository;
 
-  // FIX S03: In-memory rate limiter for coupon attempts (brute-force protection)
+  
   DateTime? _lastCouponAttempt;
   static const _minCouponInterval = Duration(seconds: 2);
 
@@ -21,7 +21,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     on<ApplyCoupon>(_onApplyCoupon);
   }
 
-  // ── Helper: extract current vehicle list from state ───────────────────────
+  
   List<VehicleTypeModel> _currentTypes() {
     final s = state;
     if (s is VehicleTypesLoaded) return s.vehicleTypes;
@@ -31,7 +31,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     return [];
   }
 
-  // ── Load vehicle types from Supabase ─────────────────────────────────────
+  
   Future<void> _onLoadVehicleTypes(
     LoadVehicleTypes event,
     Emitter<PricingState> emit,
@@ -52,18 +52,25 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
       emit(VehicleTypesLoaded(vehicleTypes: types));
     } catch (e) {
       debugPrint('❌ PricingBloc: Failed to load vehicle types: $e');
-      // Fallback to 2 hardcoded types so the UI never breaks
+      
       final fallback = [
         const VehicleTypeModel(
-          name: 'sedan',
-          displayName: 'Sedan',
+          name: 'car',
+          displayName: 'سيارة',
           icon: 'directions_car',
-          baseFare: 8,
+          baseFare: 10,
           pricePerKm: 7,
         ),
         const VehicleTypeModel(
+          name: 'truck',
+          displayName: 'شاحنة',
+          icon: 'airport_shuttle',
+          baseFare: 20,
+          pricePerKm: 12,
+        ),
+        const VehicleTypeModel(
           name: 'motorcycle',
-          displayName: 'Motorcycle',
+          displayName: 'موتوسيكل',
           icon: 'two_wheeler',
           baseFare: 5,
           pricePerKm: 4,
@@ -73,16 +80,16 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     }
   }
 
-  // ── Calculate price for selected vehicle ─────────────────────────────────
-  // FIX C11: Use server-side RPC instead of client-side calculation
-  // This prevents malicious clients from manipulating the price
+  
+  
+  
   Future<void> _onCalculatePrice(
     CalculatePrice event,
     Emitter<PricingState> emit,
   ) async {
     final types = _currentTypes();
     try {
-      // Find matching vehicle type for UI display purposes
+      
       final vehicle = types.firstWhere(
         (v) => v.name == event.vehicleType,
         orElse: () => types.isNotEmpty
@@ -96,7 +103,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
               ),
       );
 
-      // FIX C11: Call server-side RPC to calculate price securely
+      
       final result = await SupabaseService.client.rpc(
         'calculate_trip_price',
         params: {
@@ -120,14 +127,14 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     }
   }
 
-  // ── Apply coupon — delegated to CouponRepository ─────────────────────────
+  
   Future<void> _onApplyCoupon(
     ApplyCoupon event,
     Emitter<PricingState> emit,
   ) async {
     final types = _currentTypes();
 
-    // FIX S03: Rate limit coupon attempts
+    
     if (_lastCouponAttempt != null &&
         DateTime.now().difference(_lastCouponAttempt!) < _minCouponInterval) {
       emit(PricingError('errorWaitBeforeRetry', vehicleTypes: types));

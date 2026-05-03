@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/trip_details/trip_details_screen.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -140,8 +140,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
       ));
     }
 
-    // FIX M12: Never call async network functions inside build.
-    // Defer route fetch to after frame with a guard flag.
+    
+    
     final pickupLat = trip['pickup_lat'] as num?;
     final pickupLng = trip['pickup_lng'] as num?;
     final destLat = trip['destination_lat'] as num?;
@@ -264,11 +264,15 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _InfoRow(icon: Icons.payments_rounded, iconColor: AppColors.warning,
-                label: AppLocalizations.of(context)!.price, value: '${trip['price'] ?? 0} ${AppLocalizations.of(context)!.currencySar}'),
-            _InfoRow(icon: Icons.route_rounded, iconColor: context.textSecondary,
-                label: AppLocalizations.of(context)!.distance,
-                value: '${(trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0'} ${AppLocalizations.of(context)!.km}'),
+            Expanded(
+              child: _InfoRow(icon: Icons.payments_rounded, iconColor: AppColors.warning,
+                  label: AppLocalizations.of(context)!.price, value: '${trip['price'] ?? 0} ${AppLocalizations.of(context)!.currencySar}'),
+            ),
+            Expanded(
+              child: _InfoRow(icon: Icons.route_rounded, iconColor: context.textSecondary,
+                  label: AppLocalizations.of(context)!.distance,
+                  value: '${(trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0'} ${AppLocalizations.of(context)!.km}'),
+            ),
           ],
         ),
       ],
@@ -371,11 +375,15 @@ class _InfoRow extends StatelessWidget {
         Text('$label: ',
             style: TextStyle(
                 color: context.textSecondary, fontSize: 13)),
-        Text(value,
-            style: TextStyle(
-                color: context.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w500)),
+        Expanded(
+          child: Text(value,
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2),
+        ),
       ],
     );
   }

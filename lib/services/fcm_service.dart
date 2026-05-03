@@ -1,16 +1,60 @@
-// lib/services/fcm_service.dart
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/widgets.dart';
 
 import 'dart:developer' as developer;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'supabase_service.dart';
+import '../core/constants/env_constants.dart';
+import '../core/overlay/isolate_manager.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Handles background messages
   developer.log('Handling a background message: ${message.messageId}');
+
+  // 1. Ensure Flutter bindings are initialized in this background isolate
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+  } catch (e) {
+    developer.log('WidgetsFlutterBinding init error: $e');
+  }
+
+  // 2. Ensure Firebase is initialized
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp();
+    }
+  } catch (e) {
+    developer.log('Firebase init error: $e');
+  }
+
+  // 3. Initialize Local Notifications for this isolate so fallback works
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const initSettings = InitializationSettings(android: androidInit);
+  await flutterLocalNotificationsPlugin.initialize(initSettings);
+
+  // 4. Load Supabase env
+  try {
+    Supabase.instance.client.auth.currentSession;
+  } catch (_) {
+    try {
+      await dotenv.load(fileName: '.env');
+      await Supabase.initialize(
+        url: EnvConstants.supabaseUrl,
+        anonKey: EnvConstants.supabaseAnonKey,
+      );
+    } catch (e) {
+      developer.log('Background Supabase init error: $e');
+    }
+  }
+
+  await handleRideOfferNotification(message.data);
 }
 
 class FCMService {
@@ -46,11 +90,11 @@ class FCMService {
     );
     const initSettings = InitializationSettings(android: androidInit, iOS: darwinInit);
 
-    // FIX H17: Create Android Notification Channel
+    
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel', // id
-      'High Importance Notifications', // name
-      description: 'This channel is used for important notifications.', // description
+      'high_importance_channel', 
+      'High Importance Notifications', 
+      description: 'This channel is used for important notifications.', 
       importance: Importance.high,
     );
 
@@ -66,16 +110,16 @@ class FCMService {
     await _localNotifications.initialize(initSettings);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _showLocalNotification(message);
+      _handleForegroundMessage(message);
     });
 
-    // FIX C10: Listen for token refresh and update DB
+    
     _messaging.onTokenRefresh.listen((newToken) {
       _onTokenRefresh(newToken);
     });
   }
 
-  /// Called when FCM token is refreshed — updates DB automatically
+  
   Future<void> _onTokenRefresh(String newToken) async {
     try {
       final userId = SupabaseService.currentUser?.id;
@@ -89,6 +133,19 @@ class FCMService {
     } catch (e) {
       developer.log('FCMService: Failed to store refreshed token: $e');
     }
+  }
+
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    final type = message.data['type'] ?? message.data['notification_type'];
+
+    if (type == 'ride_offer') {
+      
+      await handleRideOfferNotification(message.data);
+      return;
+    }
+
+    
+    await _showLocalNotification(message);
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {

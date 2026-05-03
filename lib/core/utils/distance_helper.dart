@@ -1,10 +1,10 @@
-// lib/core/utils/distance_helper.dart
+
 import 'dart:math';
 
 class DistanceHelper {
   static double calculateDistance(
       double lat1, double lng1, double lat2, double lng2) {
-    const double earthRadius = 6371; // km
+    const double earthRadius = 6371; 
 
     final double dLat = _toRadians(lat2 - lat1);
     final double dLng = _toRadians(lng2 - lng1);

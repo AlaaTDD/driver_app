@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/screens/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_routes.dart';
@@ -40,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       backgroundColor: context.bgColor,
       body: Stack(
         children: [
-          // ── Atmospheric blue glow (static) ─────────────────────────
+          
           Positioned(
             top: 0,
             left: 0,
@@ -59,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
           ),
-          // ── Content ─────────────────────────────────────────────────
+          
           SafeArea(
             child: FadeTransition(
               opacity: _fadeAnim,
@@ -69,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    // ── Back button ────────────────────────────────────────
+                    
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(
@@ -96,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                     ),
                     const SizedBox(height: 40),
-                    // ── User card ─────────────────────────────────────────
+                    
                     _AccountTypeCard(
                       icon: Icons.person_rounded,
                       title: AppLocalizations.of(context)!.user,
@@ -105,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       onTap: () => context.push(AppRoutes.registerUser),
                     ),
                     const SizedBox(height: 16),
-                    // ── Driver card ────────────────────────────────────────
+                    
                     _AccountTypeCard(
                       icon: Icons.drive_eta_rounded,
                       title: AppLocalizations.of(context)!.driver,
@@ -114,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       onTap: () => context.push(AppRoutes.registerDriver),
                     ),
                     const SizedBox(height: 36),
-                    // ── Login link ────────────────────────────────────────
+                    
                     Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -231,7 +231,7 @@ class _AccountTypeCardState extends State<_AccountTypeCard>
           ),
           child: Row(
             children: [
-              // ── Icon container ───────────────────────────────────────
+              
               Container(
                 width: 56,
                 height: 56,
@@ -253,7 +253,7 @@ class _AccountTypeCardState extends State<_AccountTypeCard>
                 child: Icon(widget.icon, size: 28, color: Colors.white),
               ),
               const SizedBox(width: 16),
-              // ── Text content ─────────────────────────────────────────
+              
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,7 +279,7 @@ class _AccountTypeCardState extends State<_AccountTypeCard>
                 ),
               ),
               const SizedBox(width: 10),
-              // ── Arrow icon ───────────────────────────────────────────
+              
               Container(
                 width: 30,
                 height: 30,

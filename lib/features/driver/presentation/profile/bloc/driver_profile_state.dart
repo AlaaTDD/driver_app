@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/profile/bloc/driver_profile_state.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class DriverProfileState extends Equatable {

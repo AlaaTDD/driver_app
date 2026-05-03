@@ -1,9 +1,9 @@
-// lib/core/widgets/map_button.dart
+
 import 'package:flutter/material.dart';
 import '../theme/theme_extensions.dart';
 
-/// Shared floating button for map overlays.
-/// Used identically on both user and driver home screens.
+
+
 class MapButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;

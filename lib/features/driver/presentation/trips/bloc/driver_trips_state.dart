@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/trips/bloc/driver_trips_state.dart
+
 import 'package:equatable/equatable.dart';
 import '../../../../trips/data/models/trip_model.dart';
 
@@ -13,7 +13,7 @@ class DriverTripsInitial extends DriverTripsState {}
 
 class DriverTripsLoading extends DriverTripsState {}
 
-// FIX P2-02: Use typed TripModel instead of raw maps
+
 class DriverTripsLoaded extends DriverTripsState {
   final List<TripModel> trips;
 

@@ -1,4 +1,4 @@
-// lib/features/auth/data/repositories/auth_repository_impl.dart
+
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
@@ -9,7 +9,7 @@ import '../models/user_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 
-/// Converts Supabase/network exceptions to readable Arabic messages.
+
 String _mapError(dynamic e) {
   debugPrint('🔴 AUTH ERROR [${e.runtimeType}]: $e');
   final msg = e.toString().toLowerCase();
@@ -94,8 +94,8 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left('errorCreateAccountFailed');
       }
 
-      // FIX P2-06: Use insert instead of upsert to avoid overwriting existing data
-      // on re-registration. If user already exists, catch the conflict and fetch existing.
+      
+      
       Map<String, dynamic> userData;
       try {
         userData = await SupabaseService.client.from('users').insert({
@@ -112,7 +112,7 @@ class AuthRepositoryImpl implements AuthRepository {
           'updated_at': DateTime.now().toIso8601String(),
         }).select().single();
       } catch (e) {
-        // User already exists in DB — fetch existing record without overwriting
+        
         userData = await SupabaseService.client
             .from('users')
             .select()
@@ -221,14 +221,14 @@ class AuthRepositoryImpl implements AuthRepository {
       final userModel = UserModel.fromJson(userData);
       return Right(userModel.toEntity());
     } on PostgrestException catch (e) {
-      // FIX P2-07: Distinguish network errors from "no user" case.
-      // Don't silently log out users on weak network.
+      
+      
       final msg = e.message.toLowerCase();
       if (msg.contains('network') || msg.contains('timeout') || msg.contains('socket')) {
         return const Left('errorNoInternet');
       }
       if (e.code == 'PGRST116') {
-        // Row not found — user deleted from DB but still in auth
+        
         return const Right(null);
       }
       return Left(_mapError(e));

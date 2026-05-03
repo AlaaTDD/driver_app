@@ -1,4 +1,4 @@
-// lib/features/user/presentation/meeting_point/bloc/meeting_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class MeetingEvent extends Equatable {

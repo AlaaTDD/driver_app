@@ -1,4 +1,4 @@
-// lib/features/auth/presentation/screens/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen>
         backgroundColor: context.bgColor,
         body: Stack(
           children: [
-            // ── Atmospheric blue glow (static) ─────────────────────────
+            
             Positioned(
               top: 0,
               left: 0,
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-            // ── Content ─────────────────────────────────────────────────
+            
             SafeArea(
               child: FadeTransition(
                 opacity: _fadeAnim,
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 60),
-                          // ── App logo ────────────────────────────────────────
+                          
                           Container(
                             width: 80,
                             height: 80,
@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 48),
-                          // ── Email input ─────────────────────────────────────
+                          
                           _FloatingInput(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 (v == null || v.isEmpty) ? AppLocalizations.of(context)!.enterEmail : null,
                           ),
                           const SizedBox(height: 20),
-                          // ── Password input ───────────────────────────────────
+                          
                           _FloatingInput(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
@@ -193,7 +193,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 (v == null || v.isEmpty) ? AppLocalizations.of(context)!.enterPassword : null,
                           ),
                           const SizedBox(height: 36),
-                          // ── Login button ─────────────────────────────────────
+                          
                           BlocBuilder<AuthBloc, AuthState>(
                             builder: (context, state) => _GradientButton(
                               text: AppLocalizations.of(context)!.login,
@@ -202,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 28),
-                          // ── Register link ────────────────────────────────────
+                          
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -241,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-// ── Floating input field with glass effect ───────────────────────────────────────
+
 class _FloatingInput extends StatelessWidget {
   final TextEditingController controller;
   final bool obscureText;
@@ -317,7 +317,7 @@ class _FloatingInput extends StatelessWidget {
   }
 }
 
-// ── Gradient pill button ────────────────────────────────────────────────────────
+
 class _GradientButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;

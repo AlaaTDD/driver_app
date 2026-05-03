@@ -1,8 +1,8 @@
-// lib/core/models/notification_model.dart
+
 import 'package:equatable/equatable.dart';
 
-/// Type-safe model for the `notifications` table.
-/// Maps exactly to the PostgreSQL schema columns.
+
+
 class NotificationModel extends Equatable {
   final String id;
   final String userId;
@@ -45,7 +45,7 @@ class NotificationModel extends Equatable {
     );
   }
 
-  /// Returns the localized title based on language preference.
+  
   String localizedTitle(String language) {
     if (language == 'ar' && titleAr != null && titleAr!.isNotEmpty) {
       return titleAr!;
@@ -53,7 +53,7 @@ class NotificationModel extends Equatable {
     return title;
   }
 
-  /// Returns the localized body/message based on language preference.
+  
   String localizedBody(String language) {
     if (language == 'ar' && bodyAr != null && bodyAr!.isNotEmpty) {
       return bodyAr!;

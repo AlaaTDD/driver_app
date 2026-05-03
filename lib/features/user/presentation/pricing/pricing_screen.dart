@@ -1,4 +1,4 @@
-// lib/features/user/presentation/pricing/pricing_screen.dart
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -21,7 +21,7 @@ import '../../../../core/localization/generated/app_localizations.dart';
 
 enum _PaymentMethod { cash, card }
 
-/// Map icon name strings (from DB) to Flutter IconData
+
 IconData _iconFromName(String name) {
   const map = <String, IconData>{
     'directions_car':       Icons.directions_car_rounded,
@@ -46,7 +46,7 @@ class PricingScreen extends StatefulWidget {
 }
 
 class _PricingScreenState extends State<PricingScreen> with TickerProviderStateMixin {
-  String _selectedVehicle = ''; // will be set to first type from DB
+  String _selectedVehicle = ''; 
   _PaymentMethod _paymentMethod = _PaymentMethod.cash;
   final _couponCtrl = TextEditingController();
   bool _showCoupon = false;
@@ -64,7 +64,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     super.initState();
     _drawCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
       ..addListener(_onDrawFrame);
-    // Load vehicle types from DB first, then fetch route
+    
     context.read<PricingBloc>().add(const LoadVehicleTypes());
     _fetchRouteAndDistance();
   }
@@ -95,7 +95,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     if (_routePoints.isEmpty || _drawCtrl == null) return;
     final count = (_drawCtrl!.value * _routePoints.length).ceil().clamp(2, _routePoints.length);
     _visiblePoints = _routePoints.sublist(0, count);
-    // FIX M04: Throttle setState to avoid 60 rebuilds of GoogleMap in 1.2s
+    
     _drawThrottle?.cancel();
     _drawThrottle = Timer(const Duration(milliseconds: 50), () {
       if (mounted) setState(() {});
@@ -147,10 +147,10 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // ── Full-screen map ───────────────────────────────────────────────
+          
           Positioned.fill(child: _buildMap(isDark, args)),
 
-          // ── Top bar: back + trip card ─────────────────────────────────────
+          
           Positioned(
             top: 0, left: 0, right: 0,
             child: SafeArea(
@@ -186,7 +186,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
             ),
           ),
 
-          // ── Bottom sheet ──────────────────────────────────────────────────
+          
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: BlocBuilder<PricingBloc, PricingState>(
@@ -265,7 +265,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     );
   }
 
-  /// Auto-select first vehicle from loaded types if none selected yet
+  
   void _onVehicleTypesLoaded(List<VehicleTypeModel> types) {
     if (types.isNotEmpty && _selectedVehicle.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -278,7 +278,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     }
   }
 
-  /// Build dynamic vehicle chip row from DB data
+  
   Widget _buildVehicleList(PricingState state) {
     List<VehicleTypeModel> types = [];
     if (state is VehicleTypesLoaded) {
@@ -346,7 +346,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Vehicle selection (dynamic from DB) ──────────────────
+                  
                   Row(children: [
                     Container(
                       width: 4, height: 16,
@@ -359,7 +359,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                   _buildVehicleList(state),
                   const SizedBox(height: 14),
 
-                  // ── Payment method ───────────────────────────────────────
+                  
                   Row(children: [
                     Container(
                       width: 4, height: 16,
@@ -376,7 +376,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                   ]),
                   const SizedBox(height: 12),
 
-                  // ── Coupon ───────────────────────────────────────────────
+                  
                   GestureDetector(
                     onTap: () => setState(() => _showCoupon = !_showCoupon),
                     child: Container(
@@ -427,7 +427,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                     ]),
                   ],
 
-                  // ── Price summary + confirm ───────────────────────────────
+                  
                   if (state is PricingCalculated || state is CouponApplied) ...[
                     const SizedBox(height: 14),
                     Container(
@@ -483,7 +483,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
   }
 }
 
-// ─── Trip Route Card ──────────────────────────────────────────────────────────
+
 
 class _TripRouteCard extends StatelessWidget {
   final String origin, destination;
@@ -505,7 +505,7 @@ class _TripRouteCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Route indicator
+          
           Column(mainAxisSize: MainAxisSize.min, children: [
             Container(
               width: 10, height: 10,
@@ -564,7 +564,7 @@ class _TripRouteCard extends StatelessWidget {
   }
 }
 
-// ─── Vehicle Chip ─────────────────────────────────────────────────────────────
+
 
 class _VehicleChip extends StatelessWidget {
   final String type, label, basePrice;
@@ -598,7 +598,7 @@ class _VehicleChip extends StatelessWidget {
   }
 }
 
-// ─── Payment Chip ─────────────────────────────────────────────────────────────
+
 
 class _PaymentChip extends StatelessWidget {
   final String label;
@@ -631,7 +631,7 @@ class _PaymentChip extends StatelessWidget {
   }
 }
 
-// ─── Price Row ────────────────────────────────────────────────────────────────
+
 
 class _PriceRow extends StatelessWidget {
   final String label;

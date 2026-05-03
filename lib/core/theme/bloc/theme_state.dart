@@ -1,4 +1,4 @@
-// lib/core/theme/bloc/theme_state.dart
+
 import 'package:flutter/material.dart';
 
 abstract class ThemeState {

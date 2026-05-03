@@ -1,4 +1,4 @@
-// lib/features/user/presentation/tracking/bloc/tracking_state.dart
+
 import 'package:equatable/equatable.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -16,7 +16,7 @@ class TrackingLoading extends TrackingState {}
 class TrackingLoaded extends TrackingState {
   final Map<String, dynamic> trip;
   final Map<String, dynamic>? driver;
-  /// FIX P2-03: Changed from Map<String, dynamic> to typed LatLng
+  
   final LatLng? driverLocation;
   final List<LatLng> routePoints;
 

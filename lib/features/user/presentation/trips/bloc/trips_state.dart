@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/bloc/trips_state.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class TripsState extends Equatable {

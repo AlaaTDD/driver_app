@@ -1,20 +1,20 @@
-// lib/core/models/support_message_model.dart
+
 import 'package:equatable/equatable.dart';
 
-/// Type-safe model for the `support_messages` table.
-///
-/// Schema columns: id, user_id, message, created_at, sender_role.
-/// sender_role distinguishes user messages from support/AI replies.
+
+
+
+
 class SupportMessageModel extends Equatable {
   final String id;
   final String userId;
   final String message;
   final DateTime createdAt;
 
-  /// DB column `sender_role` — 'user' or 'support'.
+  
   final String senderRole;
 
-  /// Convenience getter derived from sender_role.
+  
   bool get isFromUser => senderRole == 'user';
 
   const SupportMessageModel({

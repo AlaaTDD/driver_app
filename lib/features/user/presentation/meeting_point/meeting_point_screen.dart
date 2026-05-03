@@ -1,4 +1,4 @@
-// lib/features/user/presentation/meeting_point/meeting_point_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,7 +43,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     super.initState();
     final args = widget.extra;
     if (args?.originLat != null) {
-      // Initialize meeting point to origin so map shows a marker immediately
+      
       context.read<MeetingBloc>().add(SelectMeetingPoint(
         args!.originLat!, args.originLng!,
         args.originAddress?.isNotEmpty == true ? args.originAddress! : AppLocalizations.of(context)!.startingPoint,
@@ -59,7 +59,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
   }
 
   Future<void> _onMapTap(LatLng pos) async {
-    // FIX M08: Cancel pending geocode and debounce rapid taps
+    
     _geocodeDebounce?.cancel();
     _geocodeDebounce = Timer(const Duration(milliseconds: 300), () async {
       try {
@@ -84,13 +84,13 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     final args = widget.extra;
     if (args == null) return;
 
-    // Get the dynamically selected meeting point from the bloc
+    
     final meetingState = context.read<MeetingBloc>().state;
     final finalLat = meetingState.meetingLat ?? args.originLat;
     final finalLng = meetingState.meetingLng ?? args.originLng;
     final finalAddress = meetingState.meetingAddress ?? args.originAddress;
 
-    // Validate required coordinates before hitting the DB
+    
     if (finalLat == null || finalLng == null || args.destLat == null) {
       AppToast.error(AppLocalizations.of(context)!.tripDataIncomplete);
       return;
@@ -102,7 +102,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       return;
     }
 
-    // Cache localizations before async gaps to avoid use_build_context_synchronously
+    
     final l10n = AppLocalizations.of(context)!;
 
     setState(() => _isCreatingTrip = true);
@@ -110,7 +110,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       final vehicleType = (args.vehicleType?.isNotEmpty ?? false) ? args.vehicleType! : 'sedan';
       debugPrint('🚗 MeetingPoint: inserting trip with vehicle_type=$vehicleType');
 
-      // 1. Check if user already has an active trip
+      
       final hasActive = await _repository.hasActiveTrip(authState.user.id);
 
       if (hasActive) {
@@ -121,7 +121,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         return;
       }
 
-      // 2. Build the trip data using the final meeting point
+      
       final tripData = <String, dynamic>{
         'user_id': authState.user.id,
         'pickup_lat': finalLat,
@@ -141,7 +141,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         'status': 'searching',
       };
 
-      // 3. Add geohash for spatial indexing (column must exist in schema)
+      
       try {
         final geohash = GeohashHelper.encode(finalLat, finalLng);
         tripData['geohash'] = geohash;
@@ -149,7 +149,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         debugPrint('⚠️ Failed to encode geohash: $e');
       }
 
-      // 4. Insert the trip with retry via repository
+      
       final result = await _repository.createTrip(
         userId: authState.user.id,
         pickupLat: finalLat,
@@ -190,7 +190,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // ── Full-screen map ────────────────────────────────────────────────
+          
           Positioned.fill(
             child: BlocBuilder<MeetingBloc, MeetingState>(
               builder: (context, state) => _buildMap(
@@ -199,7 +199,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             ),
           ),
 
-          // ── Floating back button ───────────────────────────────────────────
+          
           Positioned(
             top: 0, left: 0,
             child: SafeArea(
@@ -224,7 +224,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             ),
           ),
 
-          // ── Floating title badge ───────────────────────────────────────────
+          
           Positioned(
             top: 0, left: 0, right: 0,
             child: SafeArea(
@@ -249,7 +249,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             ),
           ),
 
-          // ── Tap hint badge ─────────────────────────────────────────────────
+          
           Positioned(
             bottom: _sheetHeight + 16, left: 0, right: 0,
             child: Center(
@@ -268,7 +268,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             ),
           ),
 
-          // ── Bottom sheet ───────────────────────────────────────────────────
+          
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: BlocBuilder<MeetingBloc, MeetingState>(
@@ -281,7 +281,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
   }
 
   Widget _buildMap(bool isDark, LatLng origin, MeetingPointArgs? args, MeetingState state) {
-    // Only show the meeting point marker — no origin/destination clutter
+    
     final markers = <Marker>{};
     if (state.meetingLat != null) {
       markers.add(Marker(
@@ -329,7 +329,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Meeting point badge ────────────────────────────────────
+                
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -351,7 +351,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   ]),
                 ),
                 const SizedBox(height: 6),
-                // ── Reset to origin link ────────────────────────────────────
+                
                 GestureDetector(
                   onTap: () {
                     final a = widget.extra;
@@ -375,7 +375,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // ── Price row + search button ───────────────────────────────
+                
                 Row(
                   children: [
                     Expanded(

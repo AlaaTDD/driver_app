@@ -1,4 +1,4 @@
-// lib/features/shared/presentation/messages/messages_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/models/message_model.dart';
@@ -18,8 +18,8 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  /// Trip chat uses MessageModel, support chat uses raw maps.
-  /// We store a unified list of _ChatDisplayItem for rendering.
+  
+  
   List<_ChatDisplayItem> _displayMessages = [];
   bool _isLoading = true;
   String? _error;
@@ -79,7 +79,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         setState(() {
           _displayMessages = data.map((m) => _ChatDisplayItem(
             text: m['message'] as String? ?? '',
-            // FIX: Use DB sender_role to distinguish user vs support messages
+            
             isMe: (m['sender_role'] as String? ?? 'user') == 'user',
             createdAt: m['created_at'] != null
                 ? DateTime.parse(m['created_at'] as String)
@@ -313,8 +313,8 @@ class _ChatBubble extends StatelessWidget {
   }
 }
 
-/// Lightweight display item unifying trip messages (MessageModel)
-/// and support messages (raw maps) into a single renderable type.
+
+
 class _ChatDisplayItem {
   final String text;
   final bool isMe;

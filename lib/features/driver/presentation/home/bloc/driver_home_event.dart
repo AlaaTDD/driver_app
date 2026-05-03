@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/home/bloc/driver_home_event.dart
+
 import 'package:equatable/equatable.dart';
 import '../../../../../services/heatmap_service.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
@@ -55,10 +55,10 @@ class DriverLocationChanged extends DriverHomeEvent {
   List<Object?> get props => [lat, lng, heading];
 }
 
-/// Load heatmap data (user density per cell)
+
 class LoadHeatmapData extends DriverHomeEvent {}
 
-/// Heatmap data has been updated from the service
+
 class HeatmapDataUpdated extends DriverHomeEvent {
   final List<HeatmapCell> cells;
   const HeatmapDataUpdated(this.cells);
@@ -67,6 +67,6 @@ class HeatmapDataUpdated extends DriverHomeEvent {
   List<Object?> get props => [cells];
 }
 
-/// Re-fetch the current device location and push to DB.
-/// Called when the app resumes from background.
+
+
 class RefreshDriverLocation extends DriverHomeEvent {}

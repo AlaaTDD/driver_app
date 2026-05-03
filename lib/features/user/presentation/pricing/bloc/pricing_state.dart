@@ -1,11 +1,11 @@
-// lib/features/user/presentation/pricing/bloc/pricing_state.dart
+
 import 'package:equatable/equatable.dart';
 
-// Model for a single vehicle type fetched from DB
+
 class VehicleTypeModel extends Equatable {
-  final String name;         // e.g. 'sedan'
-  final String displayName;  // e.g. 'سيارة'
-  final String icon;         // e.g. 'directions_car'
+  final String name;         
+  final String displayName;  
+  final String icon;         
   final double baseFare;
   final double pricePerKm;
   final bool isActive;
@@ -37,7 +37,7 @@ class VehicleTypeModel extends Equatable {
   List<Object?> get props => [name, displayName, icon, baseFare, pricePerKm, isActive, sortOrder];
 }
 
-// ─── States ──────────────────────────────────────────────────────────────────
+
 
 abstract class PricingState extends Equatable {
   const PricingState();
@@ -50,7 +50,7 @@ class PricingInitial extends PricingState {}
 
 class PricingLoading extends PricingState {}
 
-/// Vehicle types loaded successfully from DB
+
 class VehicleTypesLoaded extends PricingState {
   final List<VehicleTypeModel> vehicleTypes;
 
@@ -61,7 +61,7 @@ class VehicleTypesLoaded extends PricingState {
 }
 
 class PricingCalculated extends PricingState {
-  final List<VehicleTypeModel> vehicleTypes; // keep the list alive
+  final List<VehicleTypeModel> vehicleTypes; 
   final double basePrice;
   final double finalPrice;
   final String vehicleType;

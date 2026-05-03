@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trip_details/trip_details_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -25,8 +25,8 @@ class UserTripDetailsScreen extends StatefulWidget {
 class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
   GoogleMapController? _mapController;
   Map<String, dynamic>? _tripData;
-  // FIX C05: Use the TripsBloc from the parent BlocProvider (from router)
-  // instead of creating an orphan instance that has no shared state
+  
+  
   late final TripsBloc _tripsBloc;
 
   @override
@@ -44,7 +44,7 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
 
   @override
   void dispose() {
-    // FIX C05: Don't close the shared BLoC — it's owned by the router
+    
     _mapController?.dispose();
     super.dispose();
   }
@@ -148,7 +148,7 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Map Section
+          
           if (pickupLat != null && pickupLng != null)
             _buildMapSection(pickupLat, pickupLng, destLat, destLng),
 
@@ -157,29 +157,29 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                // Trip Status Header
+                
                 _buildStatusHeader(context, trip, status),
                 const SizedBox(height: 16),
 
-                // Driver Information
+                
                 if (driverData != null) ...[
                   _buildDriverCard(context, driverData, canTrack),
                   const SizedBox(height: 16),
                 ],
 
-                // Trip Details
+                
                 _buildTripInfoCard(context, trip),
                 const SizedBox(height: 16),
 
-                // Price Details
+                
                 _buildPriceCard(context, trip),
                 const SizedBox(height: 16),
 
-                // Timeline
+                
                 _buildTimelineCard(context, trip),
                 const SizedBox(height: 24),
 
-                // Action Buttons
+                
                 _buildActionButtons(context, trip, canCancel, canComplain, canRate),
                 const SizedBox(height: 40),
               ],
@@ -415,7 +415,7 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
                       icon: Icons.phone,
                       label: AppLocalizations.of(context)!.call,
                       color: AppColors.success,
-                      onTap: () {/* Implement phone call */},
+                      onTap: () {},
                     ),
                   ),
                 ],

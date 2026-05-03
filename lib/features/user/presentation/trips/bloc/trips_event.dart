@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/bloc/trips_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class TripsEvent extends Equatable {

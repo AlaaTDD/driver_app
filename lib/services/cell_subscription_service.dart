@@ -1,20 +1,20 @@
-// lib/services/cell_subscription_service.dart
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/utils/geohash_helper.dart';
 import 'supabase_service.dart';
 
-/// Manages realtime subscriptions to geohash cells for nearby driver tracking.
-///
-/// HOW IT WORKS:
-/// 1. User opens home screen → subscribeToCells(userLat, userLng)
-/// 2. This fetches all available drivers whose geohash is in the user's
-///    current cell + 8 neighbors (9 cells total, ~1.2km each)
-/// 3. It then subscribes to Supabase Realtime on the `drivers_profile` table
-/// 4. When a driver updates their row (goes online, moves, goes offline),
-///    we process the change and update our map
-/// 5. The stream emits the full driver map to the UI
+
+
+
+
+
+
+
+
+
+
 class CellSubscriptionService {
   CellSubscriptionService._();
   static final CellSubscriptionService instance = CellSubscriptionService._();
@@ -26,26 +26,26 @@ class CellSubscriptionService {
   final _driverUpdatesController =
       StreamController<Map<String, DriverLocation>>.broadcast();
 
-  /// Map of active drivers keyed by driver_id
+  
   final Map<String, DriverLocation> _driversMap = {};
 
-  /// Stream of all currently visible drivers in the subscribed cells
+  
   Stream<Map<String, DriverLocation>> get driverUpdates =>
       _driverUpdatesController.stream;
 
-  /// Returns the current set of drivers (snapshot)
+  
   Map<String, DriverLocation> get currentDrivers =>
       Map.unmodifiable(_driversMap);
 
-  /// Subscribe to cells around the given position.
-  /// If the center cell hasn't changed, this is a no-op.
+  
+  
   Future<void> subscribeToCells(double lat, double lng) async {
     final centerCell = GeohashHelper.encode(lat, lng, precision: 6);
 
-    // Don't re-subscribe if still in the same center cell
+    
     if (centerCell == _currentCenterCell) return;
 
-    // FIX H13: Debounce rapid boundary crossing to prevent Supabase connection exhaustion
+    
     _boundaryDebounceTimer?.cancel();
     _boundaryDebounceTimer = Timer(const Duration(seconds: 2), () async {
       await _performSubscription(lat, lng, centerCell);
@@ -53,7 +53,7 @@ class CellSubscriptionService {
   }
 
   Future<void> _performSubscription(double lat, double lng, String centerCell) async {
-    // Clean up old subscriptions
+    
     await _unsubscribeAll();
 
     _currentCenterCell = centerCell;
@@ -61,20 +61,20 @@ class CellSubscriptionService {
 
     debugPrint('📍 CellSystem: Subscribing to ${_subscribedCells.length} cells around $centerCell');
 
-    // ─── Step 1: Fetch all available drivers in these cells ──────────
+    
     await _fetchInitialDrivers();
 
-    // ─── Step 2: Subscribe to realtime changes on drivers_profile ────
+    
     _subscribeToRealtimeChanges();
 
-    // FIX C07: Start periodic refresh to prune stale ghost drivers
+    
     _startPeriodicRefresh();
   }
 
-  /// Fetch current online drivers from the database
+  
   Future<void> _fetchInitialDrivers() async {
     try {
-      // FIX PB02: Filter by geohash at DB level — not full table scan
+      
       final data = await SupabaseService.client
           .from('drivers_profile')
           .select('id, current_lat, current_lng, is_available, vehicle_type, geohash')
@@ -90,7 +90,7 @@ class CellSubscriptionService {
         final driverLng = (row['current_lng'] as num).toDouble();
         final driverId = row['id'] as String;
 
-        // Skip our own user if they happen to be a driver too
+        
         final currentUserId = SupabaseService.currentUser?.id;
         if (driverId == currentUserId) continue;
 
@@ -110,7 +110,7 @@ class CellSubscriptionService {
     }
   }
 
-  /// Subscribe to Supabase Realtime for driver location changes
+  
   void _subscribeToRealtimeChanges() {
     final channel = SupabaseService.client.channel('nearby-drivers-rt');
 
@@ -133,7 +133,7 @@ class CellSubscriptionService {
   void _handleDriverChange(PostgresChangePayload payload) {
     final newRecord = payload.newRecord;
 
-    // DELETE event
+    
     if (newRecord.isEmpty) {
       final oldRecord = payload.oldRecord;
       if (oldRecord.isNotEmpty) {
@@ -154,11 +154,11 @@ class CellSubscriptionService {
 
     if (driverId == null) return;
 
-    // Skip our own user if they happen to be a driver too
+    
     final currentUserId = SupabaseService.currentUser?.id;
     if (driverId == currentUserId) return;
 
-    // If driver went offline or has no location → remove
+    
     if (!isAvailable || lat == null || lng == null) {
       if (_driversMap.containsKey(driverId)) {
         _driversMap.remove(driverId);
@@ -174,7 +174,7 @@ class CellSubscriptionService {
         GeohashHelper.encode(driverLat, driverLng, precision: 6);
 
     if (_subscribedCells.contains(driverCell)) {
-      // Driver is in our range — add/update
+      
       final vehicleType =
           newRecord['vehicle_type'] as String? ?? 'car';
       _driversMap[driverId] = DriverLocation(
@@ -186,7 +186,7 @@ class CellSubscriptionService {
       debugPrint(
           '📍 CellSystem: Driver $driverId at ($driverLat, $driverLng) cell=$driverCell');
     } else {
-      // Driver moved out of our range — remove
+      
       if (_driversMap.containsKey(driverId)) {
         _driversMap.remove(driverId);
         debugPrint(
@@ -197,7 +197,7 @@ class CellSubscriptionService {
     _driverUpdatesController.add(Map.from(_driversMap));
   }
 
-  /// Clean up all subscriptions
+  
   Future<void> _unsubscribeAll() async {
     _refreshTimer?.cancel();
     _refreshTimer = null;
@@ -211,7 +211,7 @@ class CellSubscriptionService {
     _activeChannels.clear();
   }
 
-  // FIX C07: Periodic refresh to prune stale drivers
+  
   Timer? _refreshTimer;
 
   void _startPeriodicRefresh() {
@@ -224,7 +224,7 @@ class CellSubscriptionService {
     });
   }
 
-  /// Dispose completely (e.g., on logout)
+  
   Future<void> dispose() async {
     _refreshTimer?.cancel();
     _refreshTimer = null;
@@ -239,7 +239,7 @@ class CellSubscriptionService {
   }
 }
 
-/// Lightweight model for a driver's live location
+
 class DriverLocation {
   final String driverId;
   final double lat;

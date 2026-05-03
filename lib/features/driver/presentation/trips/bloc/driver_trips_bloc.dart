@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/trips/bloc/driver_trips_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -27,7 +27,7 @@ class DriverTripsBloc extends Bloc<DriverTripsEvent, DriverTripsState> {
           .select('*, user:users!trips_user_id_fkey(id, name, avatar_url, phone)')
           .eq('driver_id', driverId)
           .order('created_at', ascending: false);
-      // FIX P2-02: Use typed TripModel instead of raw maps
+      
       final trips = (data as List)
           .map((e) => TripModel.fromJson(e as Map<String, dynamic>))
           .toList();

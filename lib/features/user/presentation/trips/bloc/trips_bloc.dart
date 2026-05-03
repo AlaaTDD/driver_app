@@ -1,4 +1,4 @@
-// lib/features/user/presentation/trips/bloc/trips_bloc.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -28,10 +28,10 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         return;
       }
 
-      // Load trips via repository
+      
       final trips = await _repository.loadUserTrips(userId);
 
-      // Fetch driver details for trips that have a driver
+      
       final driverIds = trips
           .where((t) => t['driver_id'] != null)
           .map((t) => t['driver_id'] as String)
@@ -40,7 +40,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
 
       if (driverIds.isNotEmpty) {
         try {
-          // FIX H10: Fetch driver details via repository
+          
           final driversMap = await _repository.fetchDriverDetails(driverIds);
 
           for (final trip in trips) {
@@ -50,7 +50,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
             }
           }
         } catch (e) {
-          // Driver fetch failed but trips are still loaded
+          
           debugPrint('⚠️ TripsBloc: Could not fetch driver details: $e');
         }
       }
@@ -70,7 +70,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
   ) async {
     emit(TripDetailsLoading());
     try {
-      // Load trip details via repository
+      
       final trip = await _repository.loadTripDetails(event.tripId);
 
       if (trip == null) {
@@ -78,7 +78,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         return;
       }
 
-      // Fetch driver details if available
+      
       final driverId = trip['driver_id'];
       if (driverId != null) {
         final driverData = await _repository.fetchSingleDriverDetails(driverId);
@@ -108,27 +108,27 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         return;
       }
 
-      // FIX C04: Validate trip state before cancelling
+      
       final trip = await _repository.getTripForCancellation(event.tripId);
       if (trip == null) {
         emit(const TripsError('errorCancelTrip'));
         return;
       }
 
-      // Only the trip owner can cancel
+      
       if (trip['user_id'] != userId) {
         emit(const TripsError('errorNotYourTrip'));
         return;
       }
 
-      // Only cancellable states
+      
       final status = trip['status'] as String?;
       if (status != 'searching' && status != 'accepted') {
         emit(const TripsError('errorCancelStatus'));
         return;
       }
 
-      // Cancel trip via repository
+      
       await _repository.cancelTrip(event.tripId, userId);
 
       emit(const TripActionSuccess('successTripCancelled'));

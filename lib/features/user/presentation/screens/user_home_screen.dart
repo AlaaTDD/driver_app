@@ -1,4 +1,4 @@
-// lib/features/user/presentation/screens/user_home_screen.dart
+
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -34,27 +34,27 @@ class UserHomeScreen extends StatefulWidget {
 
 class _UserHomeScreenState extends State<UserHomeScreen>
     with WidgetsBindingObserver {
-  // ─── Map Controller ──────────────────────────────────────────────────────
-  // Use nullable controller — safely handles re-creation on nav back.
+  
+  
   GoogleMapController? _mapController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Cached position for the GoogleMap's initialCameraPosition.
-  // Once set it never changes — camera moves are done via animateCamera.
+  
+  
   LatLng? _initialPosition;
   bool _isLocating = true;
 
-  // Track last animated position to avoid redundant camera jumps
+  
   double? _lastAnimatedLat;
   double? _lastAnimatedLng;
 
-  // Guard: bloc is initialized only once per widget lifecycle
+  
   bool _initialized = false;
 
-  /// Custom car icon loaded from assets/images/carr.png
+  
   BitmapDescriptor? _carIcon;
 
-  // ─── Layout Constants ────────────────────────────────────────────────────
+  
   static const double _bottomSheetHeight = 236;
   static const double _mapButtonSize = 48.0;
   static const double _mapButtonRadius = 14.0;
@@ -71,7 +71,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Load location + init bloc only once — not on every navigation back
+    
     if (!_initialized) {
       _initialized = true;
       _loadLocationThenInit();
@@ -81,7 +81,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // FIX P1-07: Removed dead _initSubscription field
+    
     _mapController?.dispose();
     _mapController = null;
     super.dispose();
@@ -89,12 +89,12 @@ class _UserHomeScreenState extends State<UserHomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // When app resumes, re-center map on the user's actual position
+    
     if (state == AppLifecycleState.resumed) {
       final bloc = context.read<UserHomeBloc>();
       if (bloc.state is UserHomeLoaded) {
         final loaded = bloc.state as UserHomeLoaded;
-        // Force re-animate to actual position
+        
         _lastAnimatedLat = null;
         _lastAnimatedLng = null;
         _animateTo(loaded.userLat, loaded.userLng);
@@ -102,7 +102,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     }
   }
 
-  // ─── Car Icon ─────────────────────────────────────────────────────────────
+  
 
   Future<void> _loadCarIcon() async {
     try {
@@ -128,14 +128,14 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     }
   }
 
-  // ─── Location Init ────────────────────────────────────────────────────────
+  
 
   Future<void> _loadLocationThenInit() async {
     try {
       final bloc = context.read<UserHomeBloc>();
 
-      // If bloc already has a loaded state (navigation back scenario),
-      // just sync the camera to the existing position — don't re-init.
+      
+      
       if (bloc.state is UserHomeLoaded) {
         final loaded = bloc.state as UserHomeLoaded;
         if (mounted) {
@@ -148,14 +148,14 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         return;
       }
 
-      // First time: get GPS, then fire InitUserHome
+      
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) return;
 
-      // Kick off the bloc init first (it handles permission + location)
+      
       bloc.add(InitUserHome(authState.user.id));
 
-      // FIX H07: Wait for actual loaded state instead of fragile 300ms delay
+      
       try {
         final loadedState = await bloc.stream
             .firstWhere((s) => s is UserHomeLoaded || s is UserHomeError)
@@ -174,7 +174,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         }
       } catch (e) {
         debugPrint('⚠️ UserHomeScreen: Location timeout: $e');
-        // Timeout — use default
+        
         if (mounted) {
           setState(() {
             _initialPosition = AppConstants.defaultMapCenter;
@@ -183,7 +183,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         }
       }
     } catch (e) {
-      // FIX P3-01: Descriptive error message for location loading failure
+      
       debugPrint('❌ UserHomeScreen: Failed to load initial location — $e');
       if (mounted) {
         setState(() {
@@ -194,7 +194,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     }
   }
 
-  // ─── Camera Control ───────────────────────────────────────────────────────
+  
 
   Future<void> _animateTo(double lat, double lng) async {
     if (_mapController == null) return;
@@ -239,14 +239,14 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     }
 
     return BlocListener<UserHomeBloc, UserHomeState>(
-      // Only animate when userLat/userLng ACTUALLY change
+      
       listenWhen: (prev, curr) {
         if (curr is UserHomeLoaded) {
           if (prev is UserHomeLoaded) {
             return prev.userLat != curr.userLat ||
                 prev.userLng != curr.userLng;
           }
-          return true; // first loaded state
+          return true; 
         }
         return curr is UserHomeError;
       },
@@ -273,7 +273,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     );
   }
 
-  // ─── Locating Screen ──────────────────────────────────────────────────────
+  
 
   Widget _buildLocatingScreen() {
     return Scaffold(
@@ -306,7 +306,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     );
   }
 
-  // ─── Map ──────────────────────────────────────────────────────────────────
+  
 
   Widget _buildMap() {
     return BlocBuilder<UserHomeBloc, UserHomeState>(
@@ -327,15 +327,15 @@ class _UserHomeScreenState extends State<UserHomeScreen>
             zoom: 15,
           ),
           onMapCreated: (ctrl) {
-            // Always replace controller — handles widget re-creation on nav back
+            
             _mapController?.dispose();
             _mapController = ctrl;
 
-            // Reset position tracking so next update moves camera
+            
             _lastAnimatedLat = null;
             _lastAnimatedLng = null;
 
-            // Immediately center on actual user position if available
+            
             final s = context.read<UserHomeBloc>().state;
             if (s is UserHomeLoaded) {
               Future.microtask(() => _animateTo(s.userLat, s.userLng));
@@ -355,7 +355,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     );
   }
 
-  // ─── Top Bar ──────────────────────────────────────────────────────────────
+  
 
   Widget _buildTopBar() {
     return SafeArea(
@@ -385,7 +385,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     );
   }
 
-  // ─── Location Button ──────────────────────────────────────────────────────
+  
 
   Widget _buildLocationButton() {
     return Positioned(
@@ -398,7 +398,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         onTap: () {
           final state = context.read<UserHomeBloc>().state;
           if (state is UserHomeLoaded) {
-            // Force re-center even if same position
+            
             _lastAnimatedLat = null;
             _lastAnimatedLng = null;
             _animateTo(state.userLat, state.userLng);
@@ -408,7 +408,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     );
   }
 
-  // ─── Bottom Sheet ─────────────────────────────────────────────────────────
+  
 
   Widget _buildBottomSheet() {
     return Positioned(
@@ -432,7 +432,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
             ),
             const SizedBox(height: 14),
 
-            // Search bar
+            
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => context.push(AppRoutes.userLocationSelect),
@@ -467,7 +467,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
             ),
             const SizedBox(height: 12),
 
-            // Coupon / promo banner
+            
             BlocBuilder<UserHomeBloc, UserHomeState>(
               builder: (context, state) {
                 if (state is UserHomeLoaded && state.coupons.isNotEmpty) {
@@ -490,7 +490,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     );
   }
 
-  // ─── Drawer ───────────────────────────────────────────────────────────────
+  
 
   Widget _buildDrawer(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -525,7 +525,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   }
 }
 
-// ─── Coupon Banner ────────────────────────────────────────────────────────────
+
 
 class _CouponBanner extends StatelessWidget {
   final String code;
@@ -593,7 +593,7 @@ class _CouponBanner extends StatelessWidget {
   }
 }
 
-// ─── Promo Banner ─────────────────────────────────────────────────────────────
+
 
 class _PromoBanner extends StatelessWidget {
   const _PromoBanner();

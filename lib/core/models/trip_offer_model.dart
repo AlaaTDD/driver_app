@@ -1,7 +1,7 @@
-// lib/core/models/trip_offer_model.dart
+
 import 'package:equatable/equatable.dart';
 
-/// Status values allowed by the `chk_trip_offers_status` constraint.
+
 enum TripOfferStatus {
   pending,
   accepted,
@@ -37,8 +37,8 @@ enum TripOfferStatus {
   }
 }
 
-/// Type-safe model for the `trip_offers` table.
-/// Maps exactly to the PostgreSQL schema columns.
+
+
 class TripOfferModel extends Equatable {
   final String id;
   final String tripId;

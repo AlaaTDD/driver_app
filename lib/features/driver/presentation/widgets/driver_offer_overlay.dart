@@ -1,4 +1,4 @@
-// lib/features/driver/presentation/widgets/driver_offer_overlay.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
@@ -9,9 +9,9 @@ import '../home/bloc/driver_home_bloc.dart';
 import '../home/bloc/driver_home_event.dart';
 import '../home/bloc/driver_home_state.dart';
 
-/// App-wide overlay that shows a centered floating card whenever a new
-/// trip offer arrives. Works on ANY driver screen because it lives above
-/// the navigator in the widget tree.
+
+
+
 class DriverOfferOverlay extends StatelessWidget {
   final Widget child;
 
@@ -36,10 +36,10 @@ class DriverOfferOverlay extends StatelessWidget {
     );
   }
 
-  /// FIX P1-04: Removed fragile _l10n wrapper — use AppLocalizations directly
+  
 
   Widget _buildOverlay(BuildContext context, TripModel trip) {
-    // Extract nested user data from Supabase relation query
+    
     final user = trip.userData;
     final userName = user?['name'] as String? ?? AppLocalizations.of(context)!.user;
     final avatarUrl = user?['avatar_url'] as String?;
@@ -84,7 +84,7 @@ class DriverOfferOverlay extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── Header badge ──────────────────────────────────
+                    
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                       decoration: BoxDecoration(
@@ -153,7 +153,7 @@ class DriverOfferOverlay extends StatelessWidget {
                       ),
                     ),
 
-                    // ── User info ─────────────────────────────────────
+                    
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                       child: Row(
@@ -226,7 +226,7 @@ class DriverOfferOverlay extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // ── Addresses ─────────────────────────────────────
+                    
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: _AddressRow(
@@ -249,7 +249,7 @@ class DriverOfferOverlay extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // ── Buttons ───────────────────────────────────────
+                    
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                       child: Row(
@@ -289,10 +289,10 @@ class DriverOfferOverlay extends StatelessWidget {
                                   debugPrint('❌ DriverOfferOverlay: tripId is empty, cannot accept');
                                   return;
                                 }
-                                // FIX H14: Do NOT navigate before RPC completes.
-                                // The DriverHomeBloc handles the accept RPC atomically.
-                                // Navigation to trip details happens via home screen
-                                // after the trip status is confirmed as 'accepted'.
+                                
+                                
+                                
+                                
                                 context.read<DriverHomeBloc>().add(
                                   AcceptTripOffer(tripId),
                                 );
@@ -329,7 +329,7 @@ class DriverOfferOverlay extends StatelessWidget {
   }
 }
 
-// ── Address Row Widget ──────────────────────────────────────────────────────
+
 
 class _AddressRow extends StatelessWidget {
   final IconData icon;

@@ -1,4 +1,4 @@
-// lib/features/shared/presentation/rating/bloc/rating_event.dart
+
 import 'package:equatable/equatable.dart';
 
 abstract class RatingEvent extends Equatable {

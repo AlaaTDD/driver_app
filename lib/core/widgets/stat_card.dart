@@ -1,9 +1,9 @@
-// lib/core/widgets/stat_card.dart
+
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_extensions.dart';
 
-/// Shared stat card used in driver home bottom panel and profile screens.
+
 class StatCard extends StatelessWidget {
   final String label;
   final String value;

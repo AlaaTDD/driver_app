@@ -1,4 +1,4 @@
-// lib/features/trips/presentation/bloc/trip_bloc.dart
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../services/supabase_service.dart';
 import '../../domain/repositories/trip_repository.dart';
