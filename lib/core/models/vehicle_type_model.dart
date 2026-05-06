@@ -1,15 +1,11 @@
 
 import 'package:equatable/equatable.dart';
-import 'package:snapix/core/localization/generated/app_localizations.dart';
 
-/// Maps exactly to DB table: vehicle_types
-/// Columns: id, name, display_name, icon, base_fare, price_per_km,
-///          is_active, sort_order, created_at
 class VehicleTypeModel extends Equatable {
   final String id;
-  final String name;           // internal key e.g. 'economy'
-  final String displayName;    // shown to user e.g. 'اقتصادية'
-  final String icon;           // material icon name e.g. 'directions_car'
+  final String name;
+  final String displayName;
+  final String icon;
   final double baseFare;
   final double pricePerKm;
   final bool isActive;

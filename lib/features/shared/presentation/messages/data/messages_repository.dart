@@ -426,4 +426,77 @@ class MessagesRepository {
       debugPrint('⚠️ MessagesRepository: send-fcm failed: $e');
     }
   }
+
+  // ─── Presence heartbeat (chat context) ──────────────────────────────────
+
+  /// Updates last_seen for current user without lat/lng.
+  /// Call every 10s while user is in a chat screen.
+  Future<void> ensureMyPresence() async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return;
+    try {
+      await SupabaseService.client.from('user_presence').upsert({
+        'user_id': userId,
+        'last_seen': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'user_id');
+    } catch (e) {
+      debugPrint('⚠️ MessagesRepository: ensureMyPresence failed: $e');
+    }
+  }
+
+  // ─── Active trip guard ────────────────────────────────────────────────────
+
+  /// Checks whether there is an active trip between current user and [otherUserId].
+  /// Active statuses: accepted, in_progress, arrived, picked_up.
+  Future<bool> hasActiveTripWith(String otherUserId) async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return false;
+    try {
+      final result = await SupabaseService.client
+          .from('trips')
+          .select('id')
+          .inFilter('status', ['accepted', 'in_progress', 'arrived', 'picked_up'])
+          .or('and(user_id.eq.$userId,driver_id.eq.$otherUserId),and(user_id.eq.$otherUserId,driver_id.eq.$userId)')
+          .limit(1);
+      return (result as List).isNotEmpty;
+    } catch (e) {
+      debugPrint('⚠️ MessagesRepository: hasActiveTripWith failed: $e');
+      return false;
+    }
+  }
+
+  // ─── Conversations realtime ───────────────────────────────────────────────
+
+  /// Stream that fires whenever a new message arrives for the current user,
+  /// so the conversations list can auto-refresh.
+  Stream<void> watchConversations() {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return const Stream.empty();
+
+    final controller = StreamController<void>.broadcast();
+
+    final channel = SupabaseService.client
+        .channel('conversations-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'messages',
+          callback: (payload) {
+            final newRow = payload.newRecord;
+            final oldRow = payload.oldRecord;
+            final s = newRow['sender_id'] as String? ?? oldRow['sender_id'] as String?;
+            final r = newRow['receiver_id'] as String? ?? oldRow['receiver_id'] as String?;
+            if (s == userId || r == userId) {
+              if (!controller.isClosed) controller.add(null);
+            }
+          },
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
+  }
 }
