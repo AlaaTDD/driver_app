@@ -1,5 +1,6 @@
 
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/utils/trip_status.dart';
 import '../../domain/entities/trip_entity.dart';
 import '../../domain/repositories/trip_repository.dart';
@@ -58,7 +59,8 @@ class TripRepositoryImpl implements TripRepository {
 
       final tripModel = TripModel.fromJson(tripData);
       return Right(tripModel.toEntity());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('TripRepositoryImpl.createTrip error: $e\n$stackTrace');
       return Left('failedCreateTrip');
     }
   }
@@ -76,7 +78,8 @@ class TripRepositoryImpl implements TripRepository {
           .map((data) => TripModel.fromJson(data).toEntity())
           .toList();
       return Right(trips);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('TripRepositoryImpl.getUserTrips error: $e\n$stackTrace');
       return Left('failedFetchTrips');
     }
   }
@@ -101,7 +104,8 @@ class TripRepositoryImpl implements TripRepository {
 
       final tripModel = TripModel.fromJson(tripData);
       return Right(tripModel.toEntity());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('TripRepositoryImpl.getActiveTrip error: $e\n$stackTrace');
       return const Right(null);
     }
   }
@@ -113,18 +117,21 @@ class TripRepositoryImpl implements TripRepository {
     String? cancelReason,
   }) async {
     try {
-      await SupabaseService.client
-          .from('trips')
-          .update({
-            'status': 'cancelled',
-            'cancelled_at': DateTime.now().toIso8601String(),
-            'cancelled_by': cancelledBy,
-            if (cancelReason != null) 'cancel_reason': cancelReason,
-          })
-          .eq('id', tripId)
-          .eq('user_id', SupabaseService.currentUser!.id);
+      final response = await SupabaseService.client.rpc(
+        'cancel_trip',
+        params: {
+          'p_trip_id': tripId,
+          'p_user_id': SupabaseService.currentUser!.id,
+          'p_cancelled_by': cancelledBy,
+          if (cancelReason != null) 'p_cancel_reason': cancelReason,
+        },
+      );
+      if (response != true) {
+        return const Left('failedCancelTrip');
+      }
       return const Right(null);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('TripRepositoryImpl.cancelTrip error: $e\n$stackTrace');
       return Left('failedCancelTrip');
     }
   }
@@ -152,12 +159,26 @@ class TripRepositoryImpl implements TripRepository {
         return const Left('errorInvalidStatusTransition');
       }
 
+      final updateData = <String, dynamic>{
+        'status': newStatus.toDbString(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      };
+
+      if (newStatus == TripStatus.inProgress) {
+        updateData['started_at'] = DateTime.now().toUtc().toIso8601String();
+      } else if (newStatus == TripStatus.accepted) {
+        updateData['accepted_at'] = DateTime.now().toUtc().toIso8601String();
+      } else if (newStatus == TripStatus.completed) {
+        updateData['completed_at'] = DateTime.now().toUtc().toIso8601String();
+      }
+
       await SupabaseService.client
           .from('trips')
-          .update({'status': newStatus.toDbString()})
+          .update(updateData)
           .eq('id', tripId);
       return const Right(null);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('TripRepositoryImpl.updateTripStatus error: $e\n$stackTrace');
       return const Left('failedUpdateTrip');
     }
   }
@@ -185,7 +206,8 @@ class TripRepositoryImpl implements TripRepository {
           .map((data) => TripModel.fromJson(data).toEntity())
           .toList();
       return Right(trips);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('TripRepositoryImpl.getAvailableTrips error: $e\n$stackTrace');
       return Left('failedFetchAvailableTrips');
     }
   }

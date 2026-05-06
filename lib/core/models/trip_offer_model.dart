@@ -46,6 +46,7 @@ class TripOfferModel extends Equatable {
   final TripOfferStatus status;
   final DateTime? createdAt;
   final DateTime? respondedAt;
+  final DateTime? updatedAt;
 
   const TripOfferModel({
     required this.id,
@@ -54,6 +55,7 @@ class TripOfferModel extends Equatable {
     this.status = TripOfferStatus.pending,
     this.createdAt,
     this.respondedAt,
+    this.updatedAt,
   });
 
   factory TripOfferModel.fromJson(Map<String, dynamic> json) {
@@ -69,6 +71,9 @@ class TripOfferModel extends Equatable {
       respondedAt: json['responded_at'] != null
           ? DateTime.parse(json['responded_at'] as String)
           : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
     );
   }
 
@@ -77,6 +82,6 @@ class TripOfferModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, tripId, driverId, status, createdAt, respondedAt,
+        id, tripId, driverId, status, createdAt, respondedAt, updatedAt,
       ];
 }

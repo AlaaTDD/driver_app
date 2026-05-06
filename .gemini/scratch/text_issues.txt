@@ -1,0 +1,7 @@
+lib/features/driver/presentation/trip_details/trip_details_screen.dart:470:        Text('$label: ',
+lib/features/user/presentation/meeting_point/meeting_point_screen.dart:432:                        Text('${args?.price?.toStringAsFixed(2) ?? '0'} ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 17)),
+lib/features/user/presentation/tracking/tracking_screen.dart:483:        Text('$label: ', style: TextStyle(color: context.textSecondary, fontSize: 13)),
+lib/features/user/presentation/trips/widgets/trip_card.dart:79:                      Text('$distance km', style: TextStyle(color: context.textSecondary, fontSize: 12)),
+lib/features/user/presentation/trips/widgets/trip_card.dart:81:                      Text('$price SAR', style: const TextStyle(color: AppColors.success, fontSize: 13, fontWeight: FontWeight.w600)),
+lib/features/user/presentation/pricing/pricing_screen.dart:556:                Text('${distanceKm.toStringAsFixed(1)}', style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w800)),
+lib/features/user/presentation/pricing/pricing_screen.dart:650:        Text('${isDiscount && value < 0 ? "-" : ""}${value.abs().toStringAsFixed(2)} ${AppLocalizations.of(context)!.currencySar}',

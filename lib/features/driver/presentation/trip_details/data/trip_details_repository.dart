@@ -37,14 +37,10 @@ class TripDetailsRepository {
     required String tripId,
     required String driverId,
   }) async {
-    await _client
-        .from('trip_offers')
-        .update({
-          'status': 'rejected',
-          'responded_at': DateTime.now().toIso8601String(),
-        })
-        .eq('trip_id', tripId)
-        .eq('driver_id', driverId);
+    await _client.rpc(
+      'driver_reject_trip',
+      params: {'p_trip_id': tripId},
+    );
   }
 
   

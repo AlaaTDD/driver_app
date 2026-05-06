@@ -405,7 +405,14 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
                     icon: Icons.message,
                     label: AppLocalizations.of(context)!.messages,
                     color: AppColors.primary,
-                    onTap: () => context.push(AppRoutes.userMessages),
+                    onTap: () {
+                      final tid = _tripData?['id'] as String?;
+                      if (tid != null && tid.isNotEmpty) {
+                        context.push('${AppRoutes.userMessages}?tripId=$tid');
+                      } else {
+                        context.push(AppRoutes.userMessages);
+                      }
+                    },
                   ),
                 ),
                 if (phone != null) ...[

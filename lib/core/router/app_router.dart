@@ -32,6 +32,9 @@ import '../../features/shared/presentation/notifications/notifications_screen.da
 import '../../features/shared/presentation/chatbot/chatbot_screen.dart';
 import '../../features/shared/presentation/rating/rating_screen.dart';
 import '../../features/shared/presentation/screens/complaints_screen.dart';
+import '../../features/wallet/presentation/cubit/wallet_cubit.dart';
+import '../../features/wallet/presentation/screens/driver_wallet_screen.dart';
+import '../../features/wallet/presentation/screens/user_wallet_screen.dart';
 import '../constants/app_routes.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -209,7 +212,11 @@ class AppRouter {
           name: AppRoutes.userMessages,
           pageBuilder: (context, state) {
             final tripId = state.uri.queryParameters['tripId'];
-            return MaterialPage(child: MessagesScreen(tripId: tripId));
+            final otherUserId = state.uri.queryParameters['otherUserId'];
+            return MaterialPage(child: ConversationsScreen(
+              tripId: tripId,
+              otherUserId: otherUserId,
+            ));
           },
         ),
         GoRoute(
@@ -300,6 +307,11 @@ class AppRouter {
           pageBuilder: (context, state) => const MaterialPage(child: ComplaintsScreen()),
         ),
         GoRoute(
+          path: AppRoutes.userWallet,
+          name: AppRoutes.userWallet,
+          pageBuilder: (context, state) => const MaterialPage(child: UserWalletScreen()),
+        ),
+        GoRoute(
           path: AppRoutes.driverHome,
           name: AppRoutes.driverHome,
           pageBuilder: (context, state) => _buildSlideTransition(
@@ -325,7 +337,11 @@ class AppRouter {
           name: AppRoutes.driverMessages,
           pageBuilder: (context, state) {
             final tripId = state.uri.queryParameters['tripId'];
-            return MaterialPage(child: MessagesScreen(tripId: tripId));
+            final otherUserId = state.uri.queryParameters['otherUserId'];
+            return MaterialPage(child: ConversationsScreen(
+              tripId: tripId,
+              otherUserId: otherUserId,
+            ));
           },
         ),
         GoRoute(
@@ -360,6 +376,16 @@ class AppRouter {
           path: AppRoutes.driverComplaints,
           name: AppRoutes.driverComplaints,
           pageBuilder: (context, state) => const MaterialPage(child: ComplaintsScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.driverWallet,
+          name: AppRoutes.driverWallet,
+          pageBuilder: (context, state) => MaterialPage(
+            child: BlocProvider(
+              create: (_) => WalletCubit(),
+              child: const DriverWalletScreen(),
+            ),
+          ),
         ),
       ],
     );

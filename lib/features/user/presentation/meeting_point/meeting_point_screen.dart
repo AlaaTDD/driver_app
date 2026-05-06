@@ -111,12 +111,12 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       debugPrint('🚗 MeetingPoint: inserting trip with vehicle_type=$vehicleType');
 
       
-      final hasActive = await _repository.hasActiveTrip(authState.user.id);
+      final activeTripId = await _repository.getActiveTripId(authState.user.id);
 
-      if (hasActive) {
+      if (activeTripId != null) {
         if (mounted) {
-          AppToast.error(AppLocalizations.of(context)!.errorActiveTripExists);
           setState(() => _isCreatingTrip = false);
+          _showCancelActiveTripDialog(activeTripId);
         }
         return;
       }
@@ -178,6 +178,54 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     }
   }
 
+  void _showCancelActiveTripDialog(String tripId) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            AppLocalizations.of(context)!.errorActiveTripExists,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: Text(
+            'لديك رحلة نشطة بالفعل. هل ترغب في إلغائها وبدء رحلة جديدة؟',
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(AppLocalizations.of(context)!.goBack, style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                setState(() => _isCreatingTrip = true);
+                try {
+                  await _repository.cancelTrip(tripId);
+                  if (mounted) {
+                    _startSearch();
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    AppToast.error('فشل إلغاء الرحلة: $e');
+                    setState(() => _isCreatingTrip = false);
+                  }
+                }
+              },
+              child: Text(AppLocalizations.of(context)!.cancelTripAndSearch),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -210,11 +258,11 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   child: Container(
                     width: 44, height: 44,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0D1526) : Colors.white,
+                      color: isDark ? const Color(0xFF0D1526) : context.cardColor,
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 4)),
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 3, offset: const Offset(0, 1)),
+                        BoxShadow(color: context.textPrimary.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 4)),
+                        BoxShadow(color: context.textPrimary.withValues(alpha: 0.06), blurRadius: 3, offset: const Offset(0, 1)),
                       ],
                     ),
                     child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.textPrimary),
@@ -234,9 +282,9 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0D1526) : Colors.white,
+                      color: isDark ? const Color(0xFF0D1526) : context.cardColor,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.16), blurRadius: 10, offset: const Offset(0, 3))],
+                      boxShadow: [BoxShadow(color: context.textPrimary.withValues(alpha: 0.16), blurRadius: 10, offset: const Offset(0, 3))],
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.place_rounded, color: AppColors.primary, size: 14),
@@ -256,7 +304,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.5),
+                  color: isDark ? Colors.black.withValues(alpha: 0.55) : context.textPrimary.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -309,11 +357,11 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     return Container(
       constraints: const BoxConstraints(maxHeight: _sheetHeight),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1526) : Colors.white,
+        color: isDark ? const Color(0xFF0D1526) : context.cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
+          BoxShadow(color: context.textPrimary.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
+          BoxShadow(color: context.textPrimary.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
         ],
       ),
       child: Column(

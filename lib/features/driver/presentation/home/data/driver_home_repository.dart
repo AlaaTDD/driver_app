@@ -31,36 +31,30 @@ class DriverHomeRepository {
   }
 
   
-  Future<double> getTotalEarnings(String userId) async {
+  Future<Map<String, dynamic>> getEarningsSummary(String userId) async {
     try {
-      final earningsData = await _client
+      final data = await _client
           .from('driver_earnings_summary')
-          .select('total_earnings')
+          .select()
           .eq('driver_id', userId)
-          .maybeSingle();
-      if (earningsData != null) {
-        return (earningsData['total_earnings'] as num?)?.toDouble() ?? 0;
-      }
+          .single();
+      return {
+        'totalEarnings': (data['total_earnings'] as num?)?.toDouble() ?? 0,
+        'availableBalance': (data['available_balance'] as num?)?.toDouble() ?? 0,
+        'earningsThisWeek': (data['earnings_this_week'] as num?)?.toDouble() ?? 0,
+        'earningsLast30Days': (data['earnings_last_30_days'] as num?)?.toDouble() ?? 0,
+        'completedTrips': (data['completed_trips'] as int?) ?? 0,
+      };
     } catch (e) {
-      debugPrint('⚠️ DriverHomeRepository: earnings view failed, using fallback: $e');
-      
-      
-      final cutoff = DateTime.now().subtract(const Duration(days: 90));
-      final tripsData = await _client
-          .from('trips')
-          .select('price')
-          .eq('driver_id', userId)
-          .eq('status', 'completed')
-          .gte('completed_at', cutoff.toIso8601String())
-          .order('completed_at', ascending: false)
-          .limit(500);
-      double totalEarnings = 0;
-      for (final trip in (tripsData as List)) {
-        totalEarnings += (trip['price'] as num?)?.toDouble() ?? 0;
-      }
-      return totalEarnings;
+      debugPrint('⚠️ getEarningsSummary failed: $e');
+      return {
+        'totalEarnings': 0.0,
+        'availableBalance': 0.0,
+        'earningsThisWeek': 0.0,
+        'earningsLast30Days': 0.0,
+        'completedTrips': 0,
+      };
     }
-    return 0;
   }
 
   
@@ -96,6 +90,7 @@ class DriverHomeRepository {
     double? heading,
   }) async {
     final geohash = GeohashHelper.encode(lat, lng);
+    final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
 
     await _client.rpc('upsert_driver_location', params: {
       'p_driver_id': userId,
@@ -103,6 +98,7 @@ class DriverHomeRepository {
       'p_lng': lng,
       'p_heading': heading ?? 0.0,
       'p_geohash': geohash,
+      'p_geohash5': geohash5,
     });
   }
 

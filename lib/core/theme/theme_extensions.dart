@@ -33,4 +33,8 @@ extension AppThemeX on BuildContext {
   Color get hTextPrimary    => textPrimary;
   Color get hTextSecondary  => textSecondary;
   Color get hPrimaryBg   => primaryTint;
+
+  // alias — same as bgColor; used by wallet screen
+  Color get surfaceColor  => bgColor;
 }
+

@@ -765,6 +765,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startChat => 'Start chat';
 
   @override
+  String get noMessages => 'No messages yet';
+
+  @override
+  String get online => 'Online';
+
+  @override
   String get areYouSureCancelTrip =>
       'Are you sure you want to cancel this trip?';
 
@@ -999,4 +1005,280 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editProfileComingSoon => 'Edit Profile coming soon';
+
+  @override
+  String get myWallet => 'My Wallet';
+
+  @override
+  String get driverWallet => 'Driver Wallet';
+
+  @override
+  String get availableBalanceLabel => 'Available Balance';
+
+  @override
+  String get availableToWithdraw => 'Available to Withdraw';
+
+  @override
+  String get transactionHistory => 'Transaction History';
+
+  @override
+  String get noTransactionsYet => 'No transactions yet';
+
+  @override
+  String get transactionsWillAppearHere =>
+      'All your transaction details will appear here.';
+
+  @override
+  String get earningsWillAppearHere =>
+      'All your earning details will appear here.';
+
+  @override
+  String get egp => 'EGP';
+
+  @override
+  String get totalTopUp => 'Total Top-Up';
+
+  @override
+  String get totalSpent => 'Total Spent';
+
+  @override
+  String get tripEarning => 'Trip Earning';
+
+  @override
+  String get withdrawal => 'Withdrawal';
+
+  @override
+  String get withdrawalRefund => 'Withdrawal Refund';
+
+  @override
+  String get bonus => 'Bonus';
+
+  @override
+  String get penalty => 'Penalty';
+
+  @override
+  String get topUp => 'Top-Up';
+
+  @override
+  String get refund => 'Refund';
+
+  @override
+  String get tripPayment => 'Trip Payment';
+
+  @override
+  String get adjustment => 'Adjustment';
+
+  @override
+  String get balancePrefix => 'Balance: ';
+
+  @override
+  String get anErrorOccurred => 'An error occurred';
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get pendingPrefix => 'Pending: ';
+
+  @override
+  String get last30Days => 'Last 30 Days';
+
+  @override
+  String get requestWithdrawal => 'Request Withdrawal';
+
+  @override
+  String get minWithdrawal50 => 'Minimum withdrawal 50 EGP';
+
+  @override
+  String get transactions => 'Transactions';
+
+  @override
+  String get withdrawalRequests => 'Withdrawal Requests';
+
+  @override
+  String get noWithdrawalRequests => 'No withdrawal requests';
+
+  @override
+  String get canRequestWithdrawalWhenReachedMin =>
+      'You can request to withdraw your earnings when you reach the minimum.';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get statusProcessing => 'Processing';
+
+  @override
+  String get statusApproved => 'Approved';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get vodafoneCash => 'Vodafone Cash';
+
+  @override
+  String get instapay => 'InstaPay';
+
+  @override
+  String get orangeMoney => 'Orange Money';
+
+  @override
+  String get bankTransfer => 'Bank Transfer';
+
+  @override
+  String get amountToWithdraw => 'Amount to withdraw';
+
+  @override
+  String get enterAmount => 'Enter amount';
+
+  @override
+  String get minAmount50 => 'Minimum amount 50 EGP';
+
+  @override
+  String get amountGreaterThanBalance =>
+      'Amount is greater than available balance';
+
+  @override
+  String get withdrawalMethod => 'Withdrawal Method';
+
+  @override
+  String get transferDetails => 'Transfer Details';
+
+  @override
+  String get mobileNumber => 'Mobile Number';
+
+  @override
+  String get invalidMobileNumber => 'Invalid mobile number';
+
+  @override
+  String get bankName => 'Bank Name';
+
+  @override
+  String get enterBankName => 'Enter bank name';
+
+  @override
+  String get accountNumberOrIban => 'Account Number or IBAN';
+
+  @override
+  String get enterAccountNumberOrIban => 'Enter Account Number or IBAN';
+
+  @override
+  String get confirmWithdrawalRequest => 'Confirm Withdrawal Request';
+
+  @override
+  String get todayAtPrefix => 'Today, ';
+
+  @override
+  String get onlineStatus => 'Online';
+
+  @override
+  String get offlineStatus => 'Offline';
+
+  @override
+  String get activeTripWarning =>
+      'You already have an active trip. Would you like to cancel it and start a new one?';
+
+  @override
+  String get goBack => 'Go Back';
+
+  @override
+  String get cancelTripAndSearch => 'Cancel Trip and Search';
+
+  @override
+  String get carType => 'Car';
+
+  @override
+  String get truckType => 'Truck';
+
+  @override
+  String get motorcycleType => 'Motorcycle';
+
+  @override
+  String get rideRequests => 'Ride Requests';
+
+  @override
+  String get newRideRequestNotifications => 'New ride request notifications';
+
+  @override
+  String get newRideAvailableAlert => '🚖 New ride available!';
+
+  @override
+  String get newRideRequest => 'New Ride Request';
+
+  @override
+  String get fromLabel => 'From';
+
+  @override
+  String get toLabel => 'To';
+
+  @override
+  String get rejectBtn => 'Reject';
+
+  @override
+  String get acceptBtn => 'Accept';
+
+  @override
+  String get defaultUser => 'User';
+
+  @override
+  String get defaultDriver => 'Driver';
+
+  @override
+  String get newTripTitle => 'New Trip';
+
+  @override
+  String get newTripBody => 'You have a new trip request near you';
+
+  @override
+  String totalTransactionsLabel(int count) {
+    return '$count transactions';
+  }
+
+  @override
+  String balanceAfterLabel(String amount) {
+    return 'Balance: $amount';
+  }
+
+  @override
+  String failedLoadWallet(String error) {
+    return 'Failed to load wallet: $error';
+  }
+
+  @override
+  String todayAtTime(String time) {
+    return 'Today, $time';
+  }
+
+  @override
+  String withdrawalSuccessMsg(String amount) {
+    return 'Withdrawal request sent successfully (Amount: $amount EGP)';
+  }
+
+  @override
+  String withdrawalViaMethod(String method) {
+    return 'Withdrawal via $method';
+  }
+
+  @override
+  String newRideDetails(String pickup, String dest, String price,
+      String currency, String distance) {
+    return '$pickup → $dest\n💰 $price $currency  ·  📍 $distance km';
+  }
+
+  @override
+  String priceWithCurrency(String price, String currency) {
+    return '$price $currency';
+  }
+
+  @override
+  String distanceWithKm(String distance) {
+    return '$distance km';
+  }
 }

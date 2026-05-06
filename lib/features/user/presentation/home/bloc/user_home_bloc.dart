@@ -136,7 +136,10 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     Emitter<UserHomeState> emit,
   ) {
     if (state is UserHomeLoaded) {
-      emit((state as UserHomeLoaded).copyWith(nearbyDrivers: event.drivers));
+      emit((state as UserHomeLoaded).copyWith(
+        nearbyDrivers: event.drivers,
+        bumpDrivers: true, // force Equatable to see a new state every time
+      ));
     }
   }
 

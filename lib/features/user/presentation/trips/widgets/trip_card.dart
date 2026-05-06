@@ -37,7 +37,7 @@ class TripCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: context.textPrimary.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -68,7 +68,7 @@ class TripCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${trip['origin_address'] ?? 'Unknown'} → ${trip['destination_address'] ?? 'Unknown'}',
+                    '${trip['pickup_address'] ?? 'Unknown'} → ${trip['destination_address'] ?? 'Unknown'}',
                     style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -76,9 +76,9 @@ class TripCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Text('$distance km', style: TextStyle(color: context.textSecondary, fontSize: 12)),
+                      Text('$distance ${AppLocalizations.of(context)!.km}', style: TextStyle(color: context.textSecondary, fontSize: 12)),
                       const SizedBox(width: 12),
-                      Text('$price SAR', style: const TextStyle(color: AppColors.success, fontSize: 13, fontWeight: FontWeight.w600)),
+                      Text('$price ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(color: AppColors.success, fontSize: 13, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ],
@@ -101,10 +101,10 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, text) = switch (status) {
       'completed' => (AppColors.success, l.completed),
-      'cancelled' => (Colors.red, l.cancelled),
-      'in_progress' => (Colors.orange, l.inProgress),
+      'cancelled' => (AppColors.error, l.cancelled),
+      'in_progress' => (AppColors.warning, l.inProgress),
       'accepted' => (AppColors.primary, 'Accepted'),
-      _ => (Colors.grey, l.pending),
+      _ => (context.textSecondary, l.pending),
     };
 
     return Container(

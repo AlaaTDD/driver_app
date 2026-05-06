@@ -7,15 +7,25 @@ import '../../../../../core/utils/retry_helper.dart';
 class MeetingPointRepository {
   final _client = SupabaseService.client;
 
-  
-  Future<bool> hasActiveTrip(String userId) async {
+  Future<String?> getActiveTripId(String userId) async {
     final activeTrip = await _client
         .from('trips')
         .select('id')
         .eq('user_id', userId)
         .inFilter('status', ['searching', 'accepted', 'in_progress'])
         .maybeSingle();
-    return activeTrip != null;
+    return activeTrip?['id'] as String?;
+  }
+
+  Future<void> cancelTrip(String tripId) async {
+    await _client.rpc(
+      'cancel_trip',
+      params: {
+        'p_trip_id': tripId,
+        'p_user_id': SupabaseService.currentUser!.id,
+        'p_cancelled_by': 'user',
+      },
+    );
   }
 
   

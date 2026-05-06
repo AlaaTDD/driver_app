@@ -19,4 +19,16 @@ class ComplaintsRepository {
       'created_at': DateTime.now().toIso8601String(),
     });
   }
+
+  Stream<List<Map<String, dynamic>>> myComplaintsStream() {
+    final user = SupabaseService.currentUser;
+    if (user == null) return Stream.value([]);
+    
+    return SupabaseService.client
+        .from('complaints')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', user.id)
+        .order('created_at', ascending: false)
+        .map((data) => data.cast<Map<String, dynamic>>());
+  }
 }

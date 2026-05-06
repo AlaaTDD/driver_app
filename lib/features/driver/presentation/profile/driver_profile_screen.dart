@@ -261,7 +261,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     Expanded(
                       child: StatCard(
                         label: l.trips,
-                        value: '${totalTrips ?? 0}',
+                        value: '${totalTrips ?? driver['completed_trips_wallet'] ?? 0}',
                         icon: Icons.directions_car_rounded,
                       ),
                     ),
@@ -277,7 +277,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     Expanded(
                       child: StatCard(
                         label: l.earnings,
-                        value: '${driver['total_earnings'] ?? 0}',
+                        value: '${(driver['total_earnings'] as num?)?.toStringAsFixed(0) ?? 0}',
                         icon: Icons.payments_rounded,
                       ),
                     ),

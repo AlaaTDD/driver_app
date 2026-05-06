@@ -145,6 +145,24 @@ class TripBroadcastService {
 
       _log(
           '📤 TripBroadcast: ✅ Successfully sent ${offers.length} offers for trip $tripId to drivers: $newDriverIds');
+
+      // 🔥 CRITICAL FIX: Explicitly send FCM notification to wake up the driver's background isolate
+      for (final driverId in newDriverIds) {
+        try {
+          _log('📤 TripBroadcast: Invoking send-fcm for driver $driverId');
+          await SupabaseService.client.functions.invoke('send-fcm', body: {
+            'user_id': driverId,
+            'title': 'رحلة جديدة',
+            'body': 'لديك طلب رحلة جديد بالقرب منك',
+            'data': {
+              'type': 'ride_offer',
+              'trip_id': tripId,
+            },
+          });
+        } catch (e) {
+          _log('❌ TripBroadcast: Failed to send FCM to $driverId: $e');
+        }
+      }
     } catch (e) {
       _log('❌ TripBroadcast: Error broadcasting offers: $e');
       

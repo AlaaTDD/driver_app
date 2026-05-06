@@ -43,7 +43,7 @@ class UserPresenceService with WidgetsBindingObserver {
     
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(seconds: 5),
       (_) {
         
         if (_lastLat == null || _lastLng == null || !_isBroadcasting) return;
@@ -130,6 +130,9 @@ class UserPresenceService with WidgetsBindingObserver {
         maxAttempts: 3,
         onRetry: (e, attempt) => debugPrint('📡 UserPresence: Upsert failed, retrying ($attempt/3)...'),
       );
+      // NOTE: drivers_profile location is updated ONLY via DriverHomeRepository.pushLocation()
+      // which is called only when is_available = true. Do NOT update it here to avoid
+      // triggering realtime events on an offline driver's record.
     } catch (e) {
       debugPrint('❌ UserPresence: Failed to upsert presence after retries: $e');
     }

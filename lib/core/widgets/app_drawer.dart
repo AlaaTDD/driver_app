@@ -18,6 +18,7 @@ import '../../features/auth/domain/entities/user_entity.dart';
 class AppDrawer extends StatelessWidget {
   final UserEntity? user;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onWalletTap;
   final VoidCallback? onTripsTap;
   final VoidCallback? onMessagesTap;
   final VoidCallback? onChatbotTap;
@@ -28,6 +29,7 @@ class AppDrawer extends StatelessWidget {
     super.key,
     this.user,
     this.onProfileTap,
+    this.onWalletTap,
     this.onTripsTap,
     this.onMessagesTap,
     this.onChatbotTap,
@@ -50,6 +52,8 @@ class AppDrawer extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               children: [
                 _NavItem(icon: Icons.person_rounded,      tint: const Color(0xFF6366F1), label: AppLocalizations.of(context)!.profile,   onTap: onProfileTap),
+                if (onWalletTap != null)
+                  _NavItem(icon: Icons.account_balance_wallet_rounded, tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myWallet, onTap: onWalletTap),
                 _NavItem(icon: Icons.route_rounded,       tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myTrips,         onTap: onTripsTap),
                 _NavItem(icon: Icons.chat_bubble_rounded, tint: const Color(0xFF3B82F6), label: AppLocalizations.of(context)!.messages,        onTap: onMessagesTap),
                 _NavItem(icon: Icons.auto_awesome_rounded,tint: const Color(0xFFF59E0B), label: AppLocalizations.of(context)!.aiAssistant,  onTap: onChatbotTap),
@@ -90,10 +94,11 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name    = user?.name ?? AppLocalizations.of(context)!.userDefault;
-    final phone   = user?.phone ?? '';
-    final rating  = user?.rating ?? 5.0;
-    final top     = MediaQuery.paddingOf(context).top;
+    final name     = user?.name ?? AppLocalizations.of(context)!.userDefault;
+    final phone    = user?.phone ?? '';
+    final isDriver = user?.role == 'driver';
+    final rating   = user?.rating ?? 0.0;
+    final top      = MediaQuery.paddingOf(context).top;
 
     return Container(
       width: double.infinity,

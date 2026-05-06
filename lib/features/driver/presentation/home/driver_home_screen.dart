@@ -1,5 +1,7 @@
 
 import 'dart:async';
+import 'package:snapix/core/localization/generated/app_localizations.dart';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +24,6 @@ import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../services/heatmap_service.dart';
-import 'package:system_alert_window/system_alert_window.dart';
 
 import '../widgets/driver_offer_overlay.dart';
 
@@ -129,18 +130,34 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           _animateTo(state.driverLat!, state.driverLng!);
         }
       },
-      child: BlocListener<DriverHomeBloc, DriverHomeState>(
-        
-        listenWhen: (prev, curr) =>
-            prev.acceptedTripId != curr.acceptedTripId &&
-            curr.acceptedTripId != null,
-        listener: (context, state) {
-          if (state.acceptedTripId != null) {
-            context.push(
-              '${AppRoutes.driverTripDetails}?tripId=${state.acceptedTripId}',
-            );
-          }
-        },
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (prev, curr) =>
+                prev.acceptedTripId != curr.acceptedTripId && curr.acceptedTripId != null,
+            listener: (context, state) {
+              if (state.acceptedTripId != null) {
+                context.push(
+                  '${AppRoutes.driverTripDetails}?tripId=${state.acceptedTripId}',
+                );
+              }
+            },
+          ),
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (prev, curr) =>
+                prev.errorMessage != curr.errorMessage && curr.errorMessage != null,
+            listener: (context, state) {
+              if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.errorMessage!),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         child: DriverOfferOverlay(
           child: Scaffold(
             key: _scaffoldKey,
@@ -312,32 +329,37 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
             const Spacer(),
             BlocBuilder<DriverHomeBloc, DriverHomeState>(
               builder: (context, state) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: context.elevatedColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${state.totalEarnings.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                return GestureDetector(
+                  onTap: () => context.push(AppRoutes.driverWallet),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: context.elevatedColor,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${state.availableBalance.toStringAsFixed(0)} جنيه',
+                          style: TextStyle(
+                            color: context.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.chevron_right_rounded, color: context.textSecondary, size: 16),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -446,7 +468,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              isOnline ? "متاح" : "غير متاح",
+                              isOnline ? AppLocalizations.of(context)!.onlineStatus : AppLocalizations.of(context)!.offlineStatus,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.white,
@@ -473,6 +495,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     final user = authState is AuthAuthenticated ? authState.user : null;
     return AppDrawer(
       user: user,
+      onProfileTap: () {
+        Navigator.pop(context);
+        context.push(AppRoutes.driverProfile);
+      },
+      onWalletTap: () {
+        Navigator.pop(context);
+        context.push(AppRoutes.driverWallet);
+      },
       onTripsTap: () {
         Navigator.pop(context);
         context.push(AppRoutes.driverTrips);
@@ -489,12 +519,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         Navigator.pop(context);
         context.push(AppRoutes.driverComplaints);
       },
-      onProfileTap: () {
-        Navigator.pop(context);
-        context.push(AppRoutes.driverProfile);
-      },
       onLogout: () {
         Navigator.pop(context);
+        context.read<DriverHomeBloc>().add(ResetDriverStatus());
         context.read<AuthBloc>().add(SignOutRequested());
       },
     );

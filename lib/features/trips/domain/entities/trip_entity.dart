@@ -32,6 +32,11 @@ class TripEntity extends Equatable {
   final DateTime? cancelledAt;
   final String? cancelReason;
   final String? cancelledBy;
+  final DateTime? updatedAt;
+  final double? driverEarnings;
+  final double? platformCommission;
+  final double? couponDiscount;
+  final String? paymentSource;
 
   const TripEntity({
     required this.id,
@@ -63,6 +68,11 @@ class TripEntity extends Equatable {
     this.cancelledAt,
     this.cancelReason,
     this.cancelledBy,
+    this.updatedAt,
+    this.driverEarnings,
+    this.platformCommission,
+    this.couponDiscount,
+    this.paymentSource,
   });
 
   @override
@@ -96,5 +106,10 @@ class TripEntity extends Equatable {
         cancelledAt,
         cancelReason,
         cancelledBy,
+        updatedAt,
+        driverEarnings,
+        platformCommission,
+        couponDiscount,
+        paymentSource,
       ];
 }

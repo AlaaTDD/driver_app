@@ -49,7 +49,7 @@ class UserModel extends Equatable {
       email: json['email'] as String? ?? '',
       avatarUrl: json['avatar_url'] as String?,
       role: json['role'] as String? ?? 'user',
-      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       totalTrips: json['total_trips'] as int? ?? 0,
       language: json['language'] as String? ?? 'ar',
       fcmToken: json['fcm_token'] as String?,

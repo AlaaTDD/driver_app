@@ -23,8 +23,6 @@ import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 
 import 'features/driver/presentation/home/bloc/driver_home_bloc.dart';
-import 'features/ride_offer/bloc/ride_offer_bloc.dart';
-import 'features/ride_offer/overlay/ride_offer_overlay.dart';
 import 'services/fcm_service.dart';
 import 'services/r2_storage_service.dart';
 import 'core/services/connectivity_service.dart';
@@ -35,10 +33,7 @@ import 'firebase_options.dart';
 
 
 
-@pragma('vm:entry-point')
-void overlayMain() {
-  rideOfferOverlayMain();
-}
+
 
 
 
@@ -60,12 +55,16 @@ void main() async {
 
   await dotenv.load(fileName: '.env');
 
+  await Supabase.initialize(
+    url: EnvConstants.supabaseUrl,
+    anonKey: EnvConstants.supabaseAnonKey,
+  );
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     await FCMService().initialize();
-    registerMainAppPort();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -73,11 +72,6 @@ void main() async {
   } catch (e) {
     debugPrint('⚠️ Firebase not configured — run: flutterfire configure');
   }
-
-  await Supabase.initialize(
-    url: EnvConstants.supabaseUrl,
-    anonKey: EnvConstants.supabaseAnonKey,
-  );
 
   
   ConnectivityService().init();
@@ -172,23 +166,7 @@ class _MyAppState extends State<MyApp> {
                   localizationsDelegates: AppLocalizations.localizationsDelegates,
                   routerConfig: _router,
                   builder: (context, child) {
-                    return BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, authState) {
-                        if (authState is AuthAuthenticated && authState.user.role == 'driver') {
-                          return MultiBlocProvider(
-                            providers: [
-                              BlocProvider(
-                                create: (_) => RideOfferBloc(),
-                              ),
-                            ],
-                            child: RideOfferInAppOverlay(
-                              child: child!,
-                            ),
-                          );
-                        }
-                        return child!;
-                      },
-                    );
+                    return child!;
                   },
                 );
               },

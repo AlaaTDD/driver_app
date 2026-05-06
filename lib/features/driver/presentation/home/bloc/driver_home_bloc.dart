@@ -57,6 +57,23 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     on<LoadHeatmapData>(_onLoadHeatmapData);
     on<HeatmapDataUpdated>(_onHeatmapDataUpdated);
     on<RefreshDriverLocation>(_onRefreshDriverLocation);
+    on<ResetDriverStatus>(_onReset);
+  }
+
+  Future<void> _onReset(
+    ResetDriverStatus event,
+    Emitter<DriverHomeState> emit,
+  ) async {
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+    _tripsSubscription?.cancel();
+    _tripsSubscription = null;
+    _pendingPushTimer?.cancel();
+    _shownOfferTripIds.clear();
+    _rejectedOfferTripIds.clear();
+    _statusLoaded = false;
+    emit(const DriverHomeState());
+    debugPrint('🔄 DriverHomeBloc: Reset complete');
   }
 
   Future<void> _onLoadDriverStatus(
@@ -87,13 +104,15 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       final userData = statusData['userData'];
 
       
-      final totalEarnings = await _repository.getTotalEarnings(userId);
+      final earnings = await _repository.getEarningsSummary(userId);
 
       emit(state.copyWith(
         isAvailable: driverData['is_available'] as bool? ?? false,
         rating: (userData['rating'] as num?)?.toDouble() ?? 0,
         totalTrips: (userData['total_trips'] as int?) ?? 0,
-        totalEarnings: totalEarnings,
+        totalEarnings: earnings['totalEarnings'] as double? ?? 0,
+        availableBalance: earnings['availableBalance'] as double? ?? 0,
+        earningsThisWeek: earnings['earningsThisWeek'] as double? ?? 0,
         isLoading: false,
       ));
 
@@ -108,23 +127,31 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
           driverLng: position.longitude,
         ));
 
+        bool shouldBeAvailable = driverData['is_available'] == true;
+        if (shouldBeAvailable) {
+          final hasActive = await _repository.hasActiveTrip(userId);
+          if (hasActive) {
+            debugPrint('⚠️ DriverHomeBloc: Driver has active trip, forcing offline status');
+            await _repository.setDriverOffline(userId);
+            shouldBeAvailable = false;
+          } else {
+            await _pushLocationToDb(
+                userId, position.latitude, position.longitude, heading: position.heading);
+          }
+        }
         
-        if (driverData['is_available'] == true) {
-          await _pushLocationToDb(
-              userId, position.latitude, position.longitude, heading: position.heading);
+        emit(state.copyWith(isAvailable: shouldBeAvailable));
+
+        if (shouldBeAvailable) {
+          await _startLocationTracking(userId);
+          _subscribeToTripOffers(userId);
         }
       } catch (e) {
         debugPrint('⚠️ DriverHomeBloc: Could not get initial location: $e');
       }
 
-      if (driverData['is_available'] == true) {
-        await _startLocationTracking(userId);
-        _subscribeToTripOffers(userId);
-      }
-
       add(LoadHeatmapData());
 
-      
       _statusLoaded = true;
     } catch (e) {
       debugPrint('❌ DriverHomeBloc: LoadDriverStatus failed: $e');
@@ -150,6 +177,16 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       }
 
       if (event.isAvailable) {
+        final hasActive = await _repository.hasActiveTrip(userId);
+        if (hasActive) {
+          debugPrint('⚠️ DriverHomeBloc: Cannot go online while on an active trip');
+          emit(state.copyWith(isLoading: false, clearError: true));
+          await Future.delayed(const Duration(milliseconds: 50));
+          emit(state.copyWith(
+            errorMessage: 'لا يمكنك أن تصبح متاحاً أثناء قيامك برحلة نشطة',
+          ));
+          return;
+        }
         
         final hasPermission = await _locationService.hasPermission();
         if (!hasPermission) {
@@ -186,11 +223,13 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         _locationSubscription = null;
         _tripsSubscription = null;
 
-        emit(state.copyWith(isAvailable: false, isLoading: false));
+        emit(state.copyWith(isAvailable: false, isLoading: false, clearError: true));
       }
     } catch (e) {
       debugPrint('❌ DriverHomeBloc: ToggleAvailability failed: $e');
-      emit(state.copyWith(isLoading: false));
+      emit(state.copyWith(isLoading: false, clearError: true));
+      await Future.delayed(const Duration(milliseconds: 50));
+      emit(state.copyWith(errorMessage: 'حدث خطأ غير متوقع'));
     }
   }
 
@@ -239,7 +278,15 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         _isAccepting = false;
         
         final acceptedTripId = result['trip_id'] as String? ?? event.tripId;
+        
+        // Disable Home tracking and set offline since they are now on a trip
+        await _locationSubscription?.cancel();
+        await _tripsSubscription?.cancel();
+        _locationSubscription = null;
+        _tripsSubscription = null;
+        
         emit(state.copyWith(
+          isAvailable: false,
           clearOffer: true,
           acceptedTripId: acceptedTripId,
         ));
@@ -320,17 +367,55 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   }
 
   DateTime? _lastLocationPushTime;
+  Timer? _pendingPushTimer;
+  double? _pendingLat;
+  double? _pendingLng;
+  double? _pendingHeading;
 
-  
+  /// Push location to DB with smart throttle.
+  /// Instead of dropping throttled updates, stores the latest and schedules
+  /// a delayed push so the user always sees the most recent position.
   Future<void> _pushLocationToDb(
       String userId, double lat, double lng, {double? heading}) async {
     final now = DateTime.now();
-    
-    if (_lastLocationPushTime != null && now.difference(_lastLocationPushTime!).inSeconds < 5) {
-      return; 
-    }
-    _lastLocationPushTime = now;
+    final elapsed = _lastLocationPushTime != null
+        ? now.difference(_lastLocationPushTime!).inSeconds
+        : 999;
 
+    if (elapsed < 5) {
+      // Store the latest position and schedule a push when throttle expires
+      _pendingLat = lat;
+      _pendingLng = lng;
+      _pendingHeading = heading;
+      _pendingPushTimer ??= Timer(
+        Duration(seconds: 5 - elapsed + 1),
+        () {
+          _pendingPushTimer = null;
+          if (_pendingLat != null && _pendingLng != null && state.isAvailable) {
+            final uid = SupabaseService.currentUser?.id;
+            if (uid != null) {
+              _doPushLocation(uid, _pendingLat!, _pendingLng!, heading: _pendingHeading);
+            }
+          }
+          _pendingLat = null;
+          _pendingLng = null;
+          _pendingHeading = null;
+        },
+      );
+      return;
+    }
+
+    _pendingPushTimer?.cancel();
+    _pendingPushTimer = null;
+    _pendingLat = null;
+    _pendingLng = null;
+    _pendingHeading = null;
+    await _doPushLocation(userId, lat, lng, heading: heading);
+  }
+
+  Future<void> _doPushLocation(
+      String userId, double lat, double lng, {double? heading}) async {
+    _lastLocationPushTime = DateTime.now();
     try {
       await _repository.pushLocation(userId, lat, lng, heading: heading);
     } catch (e) {
@@ -422,6 +507,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     _locationSubscription?.cancel();
     _tripsSubscription?.cancel();
     _heatmapSubscription?.cancel();
+    _pendingPushTimer?.cancel();
     _heatmapService.stopRealtimeUpdates();
     return super.close();
   }

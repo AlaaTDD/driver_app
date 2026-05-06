@@ -758,6 +758,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get startChat => 'ابدأ المحادثة';
 
   @override
+  String get noMessages => 'لا توجد رسائل بعد';
+
+  @override
+  String get online => 'متصل';
+
+  @override
   String get areYouSureCancelTrip => 'هل أنت متأكد من إلغاء هذه الرحلة؟';
 
   @override
@@ -990,4 +996,277 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get editProfileComingSoon => 'تعديل الملف الشخصي قريباً';
+
+  @override
+  String get myWallet => 'محفظتي';
+
+  @override
+  String get driverWallet => 'محفظة السائق';
+
+  @override
+  String get availableBalanceLabel => 'الرصيد المتاح';
+
+  @override
+  String get availableToWithdraw => 'الرصيد المتاح للسحب';
+
+  @override
+  String get transactionHistory => 'سجل المعاملات';
+
+  @override
+  String get noTransactionsYet => 'لا توجد معاملات بعد';
+
+  @override
+  String get transactionsWillAppearHere => 'ستظهر جميع تفاصيل معاملاتك هنا.';
+
+  @override
+  String get earningsWillAppearHere => 'ستظهر جميع تفاصيل أرباحك هنا.';
+
+  @override
+  String get egp => 'جنيه';
+
+  @override
+  String get totalTopUp => 'إجمالي الشحن';
+
+  @override
+  String get totalSpent => 'إجمالي الإنفاق';
+
+  @override
+  String get tripEarning => 'ربح رحلة';
+
+  @override
+  String get withdrawal => 'سحب';
+
+  @override
+  String get withdrawalRefund => 'إعادة سحب';
+
+  @override
+  String get bonus => 'مكافأة';
+
+  @override
+  String get penalty => 'خصم';
+
+  @override
+  String get topUp => 'شحن رصيد';
+
+  @override
+  String get refund => 'استرداد';
+
+  @override
+  String get tripPayment => 'دفع رحلة';
+
+  @override
+  String get adjustment => 'تعديل';
+
+  @override
+  String get balancePrefix => 'الرصيد: ';
+
+  @override
+  String get anErrorOccurred => 'حدث خطأ';
+
+  @override
+  String get retryButton => 'إعادة المحاولة';
+
+  @override
+  String get pendingPrefix => 'في الانتظار: ';
+
+  @override
+  String get last30Days => 'آخر 30 يوم';
+
+  @override
+  String get requestWithdrawal => 'طلب سحب الأرباح';
+
+  @override
+  String get minWithdrawal50 => 'الحد الأدنى للسحب 50 ج';
+
+  @override
+  String get transactions => 'المعاملات';
+
+  @override
+  String get withdrawalRequests => 'طلبات السحب';
+
+  @override
+  String get noWithdrawalRequests => 'لا توجد طلبات سحب';
+
+  @override
+  String get canRequestWithdrawalWhenReachedMin =>
+      'يمكنك طلب سحب أرباحك عند الوصول للحد الأدنى.';
+
+  @override
+  String get statusCompleted => 'مكتمل';
+
+  @override
+  String get statusRejected => 'مرفوض';
+
+  @override
+  String get statusCancelled => 'ملغي';
+
+  @override
+  String get statusProcessing => 'جاري المعالجة';
+
+  @override
+  String get statusApproved => 'موافق عليه';
+
+  @override
+  String get statusPending => 'قيد الانتظار';
+
+  @override
+  String get vodafoneCash => 'فودافون كاش';
+
+  @override
+  String get instapay => 'إنستاباي';
+
+  @override
+  String get orangeMoney => 'أورانج موني';
+
+  @override
+  String get bankTransfer => 'تحويل بنكي';
+
+  @override
+  String get amountToWithdraw => 'المبلغ المراد سحبه';
+
+  @override
+  String get enterAmount => 'أدخل المبلغ';
+
+  @override
+  String get minAmount50 => 'الحد الأدنى 50 جنيه';
+
+  @override
+  String get amountGreaterThanBalance => 'المبلغ أكبر من الرصيد المتاح';
+
+  @override
+  String get withdrawalMethod => 'طريقة السحب';
+
+  @override
+  String get transferDetails => 'بيانات التحويل';
+
+  @override
+  String get mobileNumber => 'رقم الهاتف المحمول';
+
+  @override
+  String get invalidMobileNumber => 'رقم هاتف غير صحيح';
+
+  @override
+  String get bankName => 'اسم البنك';
+
+  @override
+  String get enterBankName => 'أدخل اسم البنك';
+
+  @override
+  String get accountNumberOrIban => 'رقم الحساب أو الـ IBAN';
+
+  @override
+  String get enterAccountNumberOrIban => 'أدخل رقم الحساب أو الـ IBAN';
+
+  @override
+  String get confirmWithdrawalRequest => 'تأكيد طلب السحب';
+
+  @override
+  String get todayAtPrefix => 'اليوم، ';
+
+  @override
+  String get onlineStatus => 'متاح';
+
+  @override
+  String get offlineStatus => 'غير متاح';
+
+  @override
+  String get activeTripWarning =>
+      'لديك رحلة نشطة بالفعل. هل ترغب في إلغائها وبدء رحلة جديدة؟';
+
+  @override
+  String get goBack => 'رجوع';
+
+  @override
+  String get cancelTripAndSearch => 'إلغاء الرحلة وبدء بحث';
+
+  @override
+  String get carType => 'سيارة';
+
+  @override
+  String get truckType => 'شاحنة';
+
+  @override
+  String get motorcycleType => 'موتوسيكل';
+
+  @override
+  String get rideRequests => 'طلبات الرحلات';
+
+  @override
+  String get newRideRequestNotifications => 'إشعارات طلبات الرحلات الجديدة';
+
+  @override
+  String get newRideAvailableAlert => '🚖 رحلة جديدة متاحة!';
+
+  @override
+  String get newRideRequest => 'طلب رحلة جديد';
+
+  @override
+  String get fromLabel => 'من';
+
+  @override
+  String get toLabel => 'إلى';
+
+  @override
+  String get rejectBtn => 'رفض';
+
+  @override
+  String get acceptBtn => 'قبول';
+
+  @override
+  String get defaultUser => 'مستخدم';
+
+  @override
+  String get defaultDriver => 'السائق';
+
+  @override
+  String get newTripTitle => 'رحلة جديدة';
+
+  @override
+  String get newTripBody => 'لديك طلب رحلة جديد بالقرب منك';
+
+  @override
+  String totalTransactionsLabel(int count) {
+    return '$count معاملة';
+  }
+
+  @override
+  String balanceAfterLabel(String amount) {
+    return 'الرصيد: $amount';
+  }
+
+  @override
+  String failedLoadWallet(String error) {
+    return 'فشل تحميل المحفظة: $error';
+  }
+
+  @override
+  String todayAtTime(String time) {
+    return 'اليوم، $time';
+  }
+
+  @override
+  String withdrawalSuccessMsg(String amount) {
+    return 'تم إرسال طلب السحب بنجاح (المبلغ: $amount ج)';
+  }
+
+  @override
+  String withdrawalViaMethod(String method) {
+    return 'سحب عبر $method';
+  }
+
+  @override
+  String newRideDetails(String pickup, String dest, String price,
+      String currency, String distance) {
+    return '$pickup → $dest\n💰 $price $currency  ·  📍 $distance كم';
+  }
+
+  @override
+  String priceWithCurrency(String price, String currency) {
+    return '$price $currency';
+  }
+
+  @override
+  String distanceWithKm(String distance) {
+    return '$distance كم';
+  }
 }

@@ -58,11 +58,38 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left('errorLoginFailed');
       }
 
-      final userData = await SupabaseService.client
-          .from('users')
-          .select()
-          .eq('id', user.id)
-          .single();
+      Map<String, dynamic>? userData;
+      try {
+        userData = await SupabaseService.client
+            .from('users')
+            .select()
+            .eq('id', user.id)
+            .single();
+      } on PostgrestException catch (pe) {
+        if (pe.code == 'PGRST116') {
+          // Auto-recovery: Create missing profile using auth metadata
+          final meta = user.userMetadata ?? {};
+          if (meta['role'] == 'driver') {
+            await SupabaseService.client.auth.signOut();
+            return const Left('errorDriverProfileIncomplete');
+          }
+          userData = await SupabaseService.client.from('users').upsert({
+            'id': user.id,
+            'name': meta['name'] ?? 'User',
+            'phone': meta['phone'] ?? '',
+            'email': user.email ?? email,
+            'role': 'user',
+            'rating': 0.00,
+            'total_trips': 0,
+            'language': 'ar',
+            'is_active': true,
+            'is_admin': false,
+            'updated_at': DateTime.now().toIso8601String(),
+          }).select().single();
+        } else {
+          rethrow;
+        }
+      }
 
       if (userData['is_blocked'] == true) {
         await SupabaseService.client.auth.signOut();
@@ -87,6 +114,11 @@ class AuthRepositoryImpl implements AuthRepository {
       final response = await SupabaseService.client.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'name': name,
+          'phone': phone,
+          'role': 'user',
+        },
       );
 
       final user = response.user;
@@ -98,13 +130,13 @@ class AuthRepositoryImpl implements AuthRepository {
       
       Map<String, dynamic> userData;
       try {
-        userData = await SupabaseService.client.from('users').insert({
+        userData = await SupabaseService.client.from('users').upsert({
           'id': user.id,
           'name': name,
           'phone': phone,
           'email': email,
           'role': 'user',
-          'rating': 5.00,
+          'rating': 0.00,
           'total_trips': 0,
           'language': 'ar',
           'is_active': true,
@@ -112,7 +144,7 @@ class AuthRepositoryImpl implements AuthRepository {
           'updated_at': DateTime.now().toIso8601String(),
         }).select().single();
       } catch (e) {
-        
+        // Fallback if upsert still fails
         userData = await SupabaseService.client
             .from('users')
             .select()
@@ -151,6 +183,11 @@ class AuthRepositoryImpl implements AuthRepository {
       final response = await SupabaseService.client.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'name': name,
+          'phone': phone,
+          'role': 'driver',
+        },
       );
 
       final user = response.user;
@@ -221,14 +258,32 @@ class AuthRepositoryImpl implements AuthRepository {
       final userModel = UserModel.fromJson(userData);
       return Right(userModel.toEntity());
     } on PostgrestException catch (e) {
-      
-      
       final msg = e.message.toLowerCase();
       if (msg.contains('network') || msg.contains('timeout') || msg.contains('socket')) {
         return const Left('errorNoInternet');
       }
       if (e.code == 'PGRST116') {
-        
+        final user = SupabaseService.currentUser;
+        if (user != null) {
+           final meta = user.userMetadata ?? {};
+           if (meta['role'] == 'user') {
+              final userData = await SupabaseService.client.from('users').upsert({
+                'id': user.id,
+                'name': meta['name'] ?? 'User',
+                'phone': meta['phone'] ?? '',
+                'email': user.email ?? '',
+                'role': 'user',
+                'rating': 0.00,
+                'total_trips': 0,
+                'language': 'ar',
+                'is_active': true,
+                'is_admin': false,
+                'updated_at': DateTime.now().toIso8601String(),
+              }).select().single();
+              return Right(UserModel.fromJson(userData).toEntity());
+           }
+        }
+        await SupabaseService.client.auth.signOut();
         return const Right(null);
       }
       return Left(_mapError(e));

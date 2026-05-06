@@ -19,8 +19,10 @@ class DriverProfileModel extends Equatable {
   final bool isVerified;
   final bool isAvailable;
   final String? geohash;
+  final String? geohash5;
   final double? currentLat;
   final double? currentLng;
+  final double? heading;
   final DateTime updatedAt;
 
   const DriverProfileModel({
@@ -40,8 +42,10 @@ class DriverProfileModel extends Equatable {
     required this.isVerified,
     required this.isAvailable,
     this.geohash,
+    this.geohash5,
     this.currentLat,
     this.currentLng,
+    this.heading,
     required this.updatedAt,
   });
 
@@ -63,8 +67,10 @@ class DriverProfileModel extends Equatable {
       isVerified: json['is_verified'] as bool? ?? false,
       isAvailable: json['is_available'] as bool? ?? false,
       geohash: json['geohash'] as String?,
+      geohash5: json['geohash5'] as String?,
       currentLat: (json['current_lat'] as num?)?.toDouble(),
       currentLng: (json['current_lng'] as num?)?.toDouble(),
+      heading: (json['heading'] as num?)?.toDouble(),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
@@ -87,8 +93,10 @@ class DriverProfileModel extends Equatable {
       'is_verified': isVerified,
       'is_available': isAvailable,
       'geohash': geohash,
+      'geohash5': geohash5,
       'current_lat': currentLat,
       'current_lng': currentLng,
+      'heading': heading,
       'updated_at': updatedAt.toIso8601String(),
     };
   }
@@ -111,8 +119,10 @@ class DriverProfileModel extends Equatable {
       isVerified: isVerified,
       isAvailable: isAvailable,
       geohash: geohash,
+      geohash5: geohash5,
       currentLat: currentLat,
       currentLng: currentLng,
+      heading: heading,
       updatedAt: updatedAt,
     );
   }
@@ -135,8 +145,10 @@ class DriverProfileModel extends Equatable {
         isVerified,
         isAvailable,
         geohash,
+        geohash5,
         currentLat,
         currentLng,
+        heading,
         updatedAt,
       ];
 }

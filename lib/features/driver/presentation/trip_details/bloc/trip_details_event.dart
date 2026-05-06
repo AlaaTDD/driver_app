@@ -52,3 +52,18 @@ class CompleteTrip extends TripDetailsEvent {
   @override
   List<Object?> get props => [tripId];
 }
+
+class UpdateDriverLocation extends TripDetailsEvent {
+  final double lat;
+  final double lng;
+  final double? heading;
+
+  const UpdateDriverLocation({
+    required this.lat,
+    required this.lng,
+    this.heading,
+  });
+
+  @override
+  List<Object?> get props => [lat, lng, heading];
+}

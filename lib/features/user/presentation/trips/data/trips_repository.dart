@@ -102,15 +102,19 @@ class TripsRepository {
   
   
   Future<void> cancelTrip(String tripId, String userId) async {
-    await _client
-        .from('trips')
-        .update({
-          'status': 'cancelled',
-          'cancelled_at': DateTime.now().toIso8601String(),
-          'cancelled_by': 'user',
-        })
-        .eq('id', tripId)
-        .eq('user_id', userId);
+    try {
+      await _client.rpc(
+        'cancel_trip',
+        params: {
+          'p_trip_id': tripId,
+          'p_user_id': SupabaseService.currentUser!.id,
+          'p_cancelled_by': 'user',
+        },
+      );
+    } catch (e) {
+      debugPrint('❌ TripsRepository: Failed to cancel trip: $e');
+      rethrow;
+    }
   }
 
   

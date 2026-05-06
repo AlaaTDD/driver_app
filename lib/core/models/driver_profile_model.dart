@@ -16,7 +16,7 @@ class DriverProfileModel extends Equatable {
   final int vehicleYear;
   final String vehicleColor;
   final String vehiclePlate;
-  final String? vehicleImageUrl;
+  final String vehicleImageUrl;
   final bool isVerified;
   final bool isAvailable;
   final double? currentLat;
@@ -38,7 +38,7 @@ class DriverProfileModel extends Equatable {
     required this.vehicleYear,
     required this.vehicleColor,
     required this.vehiclePlate,
-    this.vehicleImageUrl,
+    required this.vehicleImageUrl,
     this.isVerified = false,
     this.isAvailable = false,
     this.currentLat,
@@ -62,7 +62,7 @@ class DriverProfileModel extends Equatable {
       vehicleYear: json['vehicle_year'] as int? ?? 2020,
       vehicleColor: json['vehicle_color'] as String? ?? '',
       vehiclePlate: json['vehicle_plate'] as String? ?? '',
-      vehicleImageUrl: json['vehicle_image_url'] as String?,
+      vehicleImageUrl: json['vehicle_image_url'] as String? ?? '',
       isVerified: json['is_verified'] as bool? ?? false,
       isAvailable: json['is_available'] as bool? ?? false,
       currentLat: (json['current_lat'] as num?)?.toDouble(),

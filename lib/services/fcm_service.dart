@@ -11,11 +11,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
 import '../core/constants/env_constants.dart';
-import '../core/overlay/isolate_manager.dart';
+import '../../firebase_options.dart';
+import '../features/ride_offer/overlay/ride_offer_overlay.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  developer.log('Handling a background message: ${message.messageId}');
+  developer.log('🔥 FCM BACKGROUND: Message received! ID: ${message.messageId}');
+  developer.log('🔥 FCM BACKGROUND: Data payload: ${message.data}');
+  developer.log('🔥 FCM BACKGROUND: Notification payload: ${message.notification?.title}');
 
   // 1. Ensure Flutter bindings are initialized in this background isolate
   try {
@@ -27,7 +30,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // 2. Ensure Firebase is initialized
   try {
     if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
     }
   } catch (e) {
     developer.log('Firebase init error: $e');
@@ -110,13 +115,30 @@ class FCMService {
     await _localNotifications.initialize(initSettings);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      developer.log('🔥 FCM FOREGROUND: Message received! ID: ${message.messageId}');
+      developer.log('🔥 FCM FOREGROUND: Data payload: ${message.data}');
       _handleForegroundMessage(message);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      developer.log('🔥 FCM OPENED APP: Message clicked! ID: ${message.messageId}');
+      _handleMessageOpen(message);
     });
 
     
     _messaging.onTokenRefresh.listen((newToken) {
       _onTokenRefresh(newToken);
     });
+
+    try {
+      final token = await _messaging.getToken();
+      developer.log('🔥 FCM INITIAL TOKEN: $token');
+      if (token != null) {
+        await _onTokenRefresh(token);
+      }
+    } catch (e) {
+      developer.log('🔥 FCM INITIAL TOKEN ERROR: $e');
+    }
   }
 
   
@@ -144,8 +166,16 @@ class FCMService {
       return;
     }
 
-    
+    // Fallback to local notification for other types
     await _showLocalNotification(message);
+  }
+
+  Future<void> _handleMessageOpen(RemoteMessage message) async {
+    final type = message.data['type'] ?? message.data['notification_type'];
+    if (type == 'ride_offer') {
+      developer.log('🔥 FCM OPENED APP: User tapped ride_offer notification!');
+      // Typically you'd navigate to the trip details page here.
+    }
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {

@@ -23,6 +23,7 @@ class AppRoutes {
   static const String userRating = '/user/rating';
   static const String userTripDetails = '/user/trip-details';
   static const String userComplaints = '/user/complaints';
+  static const String userWallet = '/user/wallet';
 
   
   static const String driverHome = '/driver/home';
@@ -34,4 +35,5 @@ class AppRoutes {
   static const String driverTripDetails = '/driver/trip-details';
   static const String driverRating = '/driver/rating';
   static const String driverComplaints = '/driver/complaints';
+  static const String driverWallet = '/driver/wallet';
 }

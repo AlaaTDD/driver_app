@@ -1,6 +1,5 @@
 {
   "@@locale": "ar",
-
   "appName": "تاكسي",
   "home": "الرئيسية",
   "profile": "الملف الشخصي",
@@ -11,17 +10,14 @@
   "notifications": "الإشعارات",
   "messages": "الرسائل",
   "help": "المساعدة",
-
   "smartTransportService": "خدمة نقل ذكية وسريعة",
   "skip": "تخطي",
-
   "smartRideService": "خدمة نقل ذكية",
   "smartRideDesc": "احجز رحلتك بنقرة واحدة وانتظر السائق يصل إليك في دقائق معدودة",
   "realTimeTracking": "تتبع في الوقت الفعلي",
   "realTimeTrackingDesc": "تابع موقع سائقك لحظة بلحظة على الخريطة حتى وصوله إليك بدقة",
   "safeAndReliable": "آمن وموثوق",
   "safeAndReliableDesc": "جميع السائقين محققون ومعتمدون لضمان سلامتك وراحتك في كل رحلة",
-
   "loginTitle": "سجّل دخولك للمتابعة",
   "email": "البريد الإلكتروني",
   "enterEmail": "الرجاء إدخال البريد الإلكتروني",
@@ -29,7 +25,6 @@
   "enterPassword": "الرجاء إدخال كلمة المرور",
   "noAccount": "ليس لديك حساب؟ ",
   "registerNow": "سجّل الآن",
-
   "chooseAccountType": "اختر نوع حسابك",
   "chooseRoleDesc": "حدّد الدور الذي يناسبك للبدء",
   "user": "مستخدم",
@@ -37,7 +32,6 @@
   "driver": "سائق",
   "driverDesc": "انضم إلى فريق سائقي Snapix واكسب أكثر",
   "alreadyHaveAccount": "لديك حساب بالفعل؟ ",
-
   "createUserAccount": "إنشاء حساب مستخدم",
   "personalInfo": "معلوماتك الشخصية",
   "enterDataToCreateAccount": "أدخل بياناتك لإنشاء حسابك",
@@ -51,7 +45,6 @@
   "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
   "createAccount": "إنشاء الحساب",
   "passwordsNotMatch": "كلمات المرور غير متطابقة",
-
   "createDriverAccount": "إنشاء حساب سائق",
   "personalInformation": "المعلومات الشخصية",
   "nationalId": "رقم الهوية الوطنية",
@@ -80,19 +73,15 @@
   "enterPlateNumber": "الرجاء إدخال رقم اللوحة",
   "vehiclePhoto": "صورة المركبة",
   "uploadAllDocuments": "الرجاء رفع جميع المستندات والصور المطلوبة",
-
   "accountUnderReview": "حسابك قيد المراجعة",
   "reviewDesc": "نقوم بمراجعة بياناتك وسيتم إشعارك بمجرد الانتهاء",
-
   "rateTrip": "قيّم الرحلة",
   "howWasTrip": "كيف كانت رحلتك؟",
   "addComment": "أضف تعليقك (اختياري)",
   "writeExperience": "اكتب تجربتك مع السائق...",
   "submitRating": "إرسال التقييم",
-
   "chatbotWelcome": "شكراً لتواصلك معنا. سنساعدك في أقرب وقت.",
   "typeMessage": "اكتب رسالتك...",
-
   "myTrips": "رحلاتي",
   "aiAssistant": "المساعد الذكي",
   "privacyPolicy": "سياسة الخصوصية",
@@ -105,7 +94,6 @@
   "dark": "داكن",
   "light": "فاتح",
   "userDefault": "مستخدم",
-
   "locating": "جارٍ تحديد موقعك...",
   "availableDriver": "سائق متاح",
   "whereToGo": "إلى أين تريد الذهاب؟",
@@ -116,18 +104,23 @@
   "discountWithCode": "{discount}% خصم — كود: {code}",
   "@discountWithCode": {
     "placeholders": {
-      "discount": { "type": "String" },
-      "code": { "type": "String" }
+      "discount": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
     }
   },
-
   "car": "سيارة",
   "price": "السعر",
   "discount": "الخصم",
   "fromPrice": "من {price} ر.س",
   "@fromPrice": {
     "placeholders": {
-      "price": { "type": "String" }
+      "price": {
+        "type": "String"
+      }
     }
   },
   "paymentMethod": "طريقة الدفع",
@@ -137,13 +130,12 @@
   "enterDiscountCode": "أدخل كود الخصم",
   "apply": "تطبيق",
   "basePrice": "السعر الأساسي",
-    "total": "الإجمالي",
+  "total": "الإجمالي",
   "selectMeetingPoint": "اختر نقطة التقابل",
   "startingPoint": "نقطة البداية",
   "destination": "الوجهة",
   "km": "كم",
   "currencySar": "ر.س",
-
   "origin": "البداية",
   "searchOrPick": "ابحث أو حدد على الخريطة",
   "whereToGoQ": "أين تريد الذهاب؟",
@@ -157,16 +149,14 @@
   "confirmDest": "تأكيد الوجهة",
   "locatingPosition": "جاري تحديد الموقع...",
   "moveMapToSelect": "حرّك الخريطة للتحديد",
-
   "meetingPoint": "نقطة التقابل",
   "tapMapToSelect": "اضغط على الخريطة لتحديد نقطة التقابل",
   "resetToOrigin": "إعادة إلى نقطة البداية",
-    "searchForDriver": "ابحث عن سائق",
+  "searchForDriver": "ابحث عن سائق",
   "tripDataIncomplete": "بيانات الرحلة غير مكتملة",
   "pleaseLogin": "يرجى تسجيل الدخول أولاً",
   "unspecified": "غير محدد",
   "failedCreateTrip": "تعذّر إنشاء الرحلة، تحقق من اتصالك وحاول مجدداً",
-
   "yourTrip": "رحلتك",
   "minute": "دقيقة",
   "searchingForDriver": "جاري البحث عن سائق قريب...",
@@ -182,12 +172,10 @@
   "noDriverAvailable": "لا يوجد سائق متاح الآن",
   "tryAgainLater": "جرّب مرة أخرى أو عد لاحقاً",
   "backToHome": "العودة للرئيسية",
-
   "trackTrip": "تتبع الرحلة",
   "theDriver": "السائق",
   "meetingPointLabel": "نقطة الالتقاء",
   "cancelTrip": "إلغاء الرحلة",
-
   "noTrips": "لا توجد رحلات",
   "rate": "قيّم",
   "completed": "مكتملة",
@@ -195,66 +183,61 @@
   "inProgress": "جارية",
   "pending": "معلقة",
   "details": "التفاصيل",
-
   "editProfile": "تعديل الملف الشخصي",
   "saveChanges": "حفظ التغييرات",
   "changesSaved": "تم حفظ التغييرات بنجاح",
-
   "yourLocation": "موقعك الحالي",
   "availableForTrips": "متاح للرحلات",
   "unavailable": "غير متاح",
   "trips": "الرحلات",
   "earnings": "الإيرادات",
   "rating": "التقييم",
-
   "newTripRequest": "طلب رحلة جديد",
   "reject": "رفض",
   "acceptTrip": "قبول الرحلة",
-
   "yourRating": "تقييمك: {value}",
   "@yourRating": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
-
   "tripDetails": "تفاصيل الرحلة",
   "startTrip": "بدء الرحلة",
   "completeTrip": "إكمال الرحلة",
   "tripCompleted": "تم إكمال الرحلة بنجاح",
   "distance": "المسافة",
-
   "failedLoadCoupons": "فشل في تحميل الكوبونات",
   "invalidCouponCode": "كود الكوبون غير صالح",
   "failedValidateCoupon": "فشل في التحقق من الكوبون",
   "failedApplyCoupon": "فشل في تطبيق الكوبون",
-
   "errorCreateTrip": "حدث خطأ أثناء إنشاء الرحلة",
   "errorFetchTrips": "حدث خطأ أثناء جلب الرحلات",
   "errorCancelTrip": "حدث خطأ أثناء إلغاء الرحلة",
   "errorUpdateTripStatus": "حدث خطأ أثناء تحديث حالة الرحلة",
   "errorFetchAvailable": "حدث خطأ أثناء جلب الرحلات المتاحة",
-
   "editProfileLabel": "تعديل الملف",
-
   "totalTrips": "عدد الرحلات",
-
   "driverHomeDesc": "شاشة السائق الرئيسية",
   "startWorking": "بدء العمل",
   "tripLog": "سجل الرحلات",
-
   "sampleNotification": "إشعار تجريبي",
   "sampleNotificationMsg": "هذا إشعار تجريبي للتطبيق",
   "minutesAgo": "منذ {count} دقيقة",
   "@minutesAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "driverLabel": "سائق {index}",
   "@driverLabel": {
     "placeholders": {
-      "index": { "type": "int" }
+      "index": {
+        "type": "int"
+      }
     }
   },
   "sampleMessage": "هذه رسالة تجريبية",
@@ -267,12 +250,10 @@
   "addCommentOptional": "أضف تعليقاً (اختياري)",
   "shareExperience": "شارك تجربتك معنا",
   "unknownInitial": "؟",
-
   "availableCoupons": "الكوبونات المتاحة",
   "pickupLocation": "موقع الاستلام",
   "tripRequest": "طلب رحلة",
   "searchForDriverBtn": "بحث عن سائق",
-
   "verified": "موثّق",
   "documents": "الوثائق",
   "vehicleInfo": "معلومات المركبة",
@@ -280,29 +261,32 @@
   "criminalRecord": "الفيش والتشبيه",
   "uploaded": "مرفوع",
   "notUploaded": "غير مرفوع",
-  
   "invalidPhoneFormat": "صيغة رقم الهاتف غير صحيحة",
   "invalidEmailFormat": "صيغة البريد الإلكتروني غير صحيحة",
-  
   "justNow": "الآن",
   "hoursAgo": "منذ {count} ساعة",
   "@hoursAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "daysAgo": "منذ {count} يوم",
   "@daysAgo": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "failedLoadNotifications": "فشل في تحميل الإشعارات",
-
   "totalTripsLabel": "{total} رحلة",
   "@totalTripsLabel": {
     "placeholders": {
-      "total": { "type": "int" }
+      "total": {
+        "type": "int"
+      }
     }
   },
   "today": "اليوم",
@@ -311,25 +295,26 @@
   "noActiveTrips": "لا توجد رحلات نشطة حالياً",
   "tripsWillAppearHere": "ستظهر رحلاتك هنا",
   "newCustomer": "عميل جديد",
-
   "failedLoadMessages": "فشل في تحميل الرسائل",
   "newMessage": "رسالة جديدة",
   "newMessageFrom": "رسالة جديدة من {name}",
   "@newMessageFrom": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "failedSendMessage": "فشل في إرسال الرسالة",
   "theChat": "المحادثة",
   "startChat": "ابدأ المحادثة",
-
+  "noMessages": "لا توجد رسائل بعد",
+  "online": "متصل",
   "areYouSureCancelTrip": "هل أنت متأكد من إلغاء هذه الرحلة؟",
   "noLabel": "لا",
   "yesCancel": "نعم، إلغاء",
   "submitComplaint": "تقديم شكوى",
   "send": "إرسال",
-
   "errorInvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
   "errorEmailRegistered": "هذا البريد الإلكتروني مسجّل بالفعل",
   "errorConfirmEmail": "يرجى تأكيد بريدك الإلكتروني أولاً",
@@ -340,20 +325,17 @@
   "errorUnexpected": "حدث خطأ غير متوقع، حاول مجدداً",
   "errorLoginFailed": "فشل تسجيل الدخول",
   "errorCreateAccountFailed": "فشل إنشاء الحساب",
-
-    "failedFetchTrips": "حدث خطأ أثناء جلب الرحلات",
+  "failedFetchTrips": "حدث خطأ أثناء جلب الرحلات",
   "failedCancelTrip": "حدث خطأ أثناء إلغاء الرحلة",
   "failedUpdateTrip": "حدث خطأ أثناء تحديث حالة الرحلة",
   "failedFetchAvailableTrips": "حدث خطأ أثناء جلب الرحلات المتاحة",
   "errorActiveTripExists": "لديك رحلة جارية بالفعل. يرجى إنهاؤها أو إلغاؤها أولاً.",
-
   "errorLoadTripDetails": "فشل في تحميل تفاصيل الرحلة",
   "errorAcceptTrip": "فشل في قبول الرحلة",
   "errorRejectTrip": "فشل في رفض الرحلة",
   "errorStartTrip": "فشل في بدء الرحلة",
   "errorCompleteTrip": "فشل في إكمال الرحلة",
   "errorNotLoggedIn": "لم يتم تسجيل الدخول",
-
   "call": "اتصال",
   "track": "تتبع",
   "fareDetails": "تفاصيل السعر",
@@ -365,21 +347,18 @@
   "complaintSubjectHint": "مثال: تأخر السائق",
   "complaintDetails": "تفاصيل الشكوى",
   "complaintDetailsHint": "اشرح المشكلة بالتفصيل...",
-
   "bookNewTrip": "حجز رحلة جديدة",
-    "yourTripsWillAppearHere": "ستظهر رحلاتك هنا",
+  "yourTripsWillAppearHere": "ستظهر رحلاتك هنا",
   "newTripLabel": "رحلة جديدة",
   "trip": "رحلة",
   "statusAccepted": "تم القبول",
   "statusSearching": "جاري البحث",
-
   "errorLoadTrips": "فشل في تحميل الرحلات",
   "errorNotYourTrip": "لا يمكنك إلغاء رحلة ليست لك",
   "errorCancelStatus": "لا يمكن إلغاء رحلة في هذه الحالة",
   "successTripCancelled": "تم إلغاء الرحلة بنجاح",
-    "successComplaintSent": "تم إرسال الشكوى بنجاح",
+  "successComplaintSent": "تم إرسال الشكوى بنجاح",
   "errorSendComplaint": "فشل في إرسال الشكوى",
-
   "errorCalculatePrice": "فشل في حساب السعر",
   "errorWaitBeforeRetry": "يرجى الانتظار قبل المحاولة مرة أخرى",
   "errorInvalidCoupon": "كود الكوبون غير صالح",
@@ -388,7 +367,6 @@
   "errorApplyCoupon": "فشل في تطبيق الكوبون",
   "errorLoadCoupons": "فشل في تحميل الكوبونات",
   "errorVerifyCoupon": "فشل في التحقق من الكوبون",
-
   "errorNoDriverForTrip": "لا يوجد سائق لهذه الرحلة",
   "errorTripAlreadyRated": "تم تقييم هذه الرحلة مسبقاً",
   "errorAlreadyRated": "تم التقييم مسبقاً",
@@ -401,15 +379,174 @@
   "errorNoValidDataToUpdate": "لا توجد بيانات صالحة للتحديث",
   "errorUpdateProfile": "فشل في تحديث الملف الشخصي",
   "errorDetermineLocation": "تعذّر تحديد موقعك. تأكد من تفعيل خدمات الموقع.",
-
   "errorFileTooLarge": "حجم الملف كبير جداً",
   "errorFileEmpty": "الملف فارغ",
   "errorFileUnsupported": "نوع الملف غير مدعوم",
-
   "pleaseFillAllFields": "يرجى ملء جميع الحقول",
   "describeIssueDetail": "يرجى وصف مشكلتك بالتفصيل.",
   "titleLabel": "العنوان",
   "descriptionLabel": "الوصف",
-  "editProfileComingSoon": "تعديل الملف الشخصي قريباً"
+  "editProfileComingSoon": "تعديل الملف الشخصي قريباً",
+  "myWallet": "محفظتي",
+  "driverWallet": "محفظة السائق",
+  "availableBalanceLabel": "الرصيد المتاح",
+  "availableToWithdraw": "الرصيد المتاح للسحب",
+  "transactionHistory": "سجل المعاملات",
+  "noTransactionsYet": "لا توجد معاملات بعد",
+  "transactionsWillAppearHere": "ستظهر جميع تفاصيل معاملاتك هنا.",
+  "earningsWillAppearHere": "ستظهر جميع تفاصيل أرباحك هنا.",
+  "egp": "جنيه",
+  "totalTopUp": "إجمالي الشحن",
+  "totalSpent": "إجمالي الإنفاق",
+  "tripEarning": "ربح رحلة",
+  "withdrawal": "سحب",
+  "withdrawalRefund": "إعادة سحب",
+  "bonus": "مكافأة",
+  "penalty": "خصم",
+  "topUp": "شحن رصيد",
+  "refund": "استرداد",
+  "tripPayment": "دفع رحلة",
+  "adjustment": "تعديل",
+  "balancePrefix": "الرصيد: ",
+  "anErrorOccurred": "حدث خطأ",
+  "retryButton": "إعادة المحاولة",
+  "pendingPrefix": "في الانتظار: ",
+  "last30Days": "آخر 30 يوم",
+  "requestWithdrawal": "طلب سحب الأرباح",
+  "minWithdrawal50": "الحد الأدنى للسحب 50 ج",
+  "transactions": "المعاملات",
+  "withdrawalRequests": "طلبات السحب",
+  "noWithdrawalRequests": "لا توجد طلبات سحب",
+  "canRequestWithdrawalWhenReachedMin": "يمكنك طلب سحب أرباحك عند الوصول للحد الأدنى.",
+  "statusCompleted": "مكتمل",
+  "statusRejected": "مرفوض",
+  "statusCancelled": "ملغي",
+  "statusProcessing": "جاري المعالجة",
+  "statusApproved": "موافق عليه",
+  "statusPending": "قيد الانتظار",
+  "vodafoneCash": "فودافون كاش",
+  "instapay": "إنستاباي",
+  "orangeMoney": "أورانج موني",
+  "bankTransfer": "تحويل بنكي",
+  "amountToWithdraw": "المبلغ المراد سحبه",
+  "enterAmount": "أدخل المبلغ",
+  "minAmount50": "الحد الأدنى 50 جنيه",
+  "amountGreaterThanBalance": "المبلغ أكبر من الرصيد المتاح",
+  "withdrawalMethod": "طريقة السحب",
+  "transferDetails": "بيانات التحويل",
+  "mobileNumber": "رقم الهاتف المحمول",
+  "invalidMobileNumber": "رقم هاتف غير صحيح",
+  "bankName": "اسم البنك",
+  "enterBankName": "أدخل اسم البنك",
+  "accountNumberOrIban": "رقم الحساب أو الـ IBAN",
+  "enterAccountNumberOrIban": "أدخل رقم الحساب أو الـ IBAN",
+  "confirmWithdrawalRequest": "تأكيد طلب السحب",
+  "todayAtPrefix": "اليوم، ",
+  "onlineStatus": "متاح",
+  "offlineStatus": "غير متاح",
+  "activeTripWarning": "لديك رحلة نشطة بالفعل. هل ترغب في إلغائها وبدء رحلة جديدة؟",
+  "goBack": "رجوع",
+  "cancelTripAndSearch": "إلغاء الرحلة وبدء بحث",
+  "carType": "سيارة",
+  "truckType": "شاحنة",
+  "motorcycleType": "موتوسيكل",
+  "rideRequests": "طلبات الرحلات",
+  "newRideRequestNotifications": "إشعارات طلبات الرحلات الجديدة",
+  "newRideAvailableAlert": "🚖 رحلة جديدة متاحة!",
+  "newRideRequest": "طلب رحلة جديد",
+  "fromLabel": "من",
+  "toLabel": "إلى",
+  "rejectBtn": "رفض",
+  "acceptBtn": "قبول",
+  "defaultUser": "مستخدم",
+  "defaultDriver": "السائق",
+  "newTripTitle": "رحلة جديدة",
+  "newTripBody": "لديك طلب رحلة جديد بالقرب منك",
+  "totalTransactionsLabel": "{count} معاملة",
+  "@totalTransactionsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "balanceAfterLabel": "الرصيد: {amount}",
+  "@balanceAfterLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "failedLoadWallet": "فشل تحميل المحفظة: {error}",
+  "@failedLoadWallet": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "todayAtTime": "اليوم، {time}",
+  "@todayAtTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawalSuccessMsg": "تم إرسال طلب السحب بنجاح (المبلغ: {amount} ج)",
+  "@withdrawalSuccessMsg": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawalViaMethod": "سحب عبر {method}",
+  "@withdrawalViaMethod": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "newRideDetails": "{pickup} → {dest}\n💰 {price} {currency}  ·  📍 {distance} كم",
+  "@newRideDetails": {
+    "placeholders": {
+      "pickup": {
+        "type": "String"
+      },
+      "dest": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "priceWithCurrency": "{price} {currency}",
+  "@priceWithCurrency": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceWithKm": "{distance} كم",
+  "@distanceWithKm": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  }
 }
-

@@ -1,7 +1,11 @@
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../../services/supabase_service.dart';
+import '../../../../../services/location_service.dart';
+import '../../../../../core/utils/geohash_helper.dart';
 import '../data/trip_details_repository.dart';
 import 'trip_details_event.dart';
 import 'trip_details_state.dart';
@@ -19,6 +23,19 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
     on<CompleteTrip>(_onCompleteTrip);
   }
 
+  void _manageLocationTracking(String? status) {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return;
+    
+    if (status == 'accepted' || status == 'in_progress') {
+      LocationService.instance.startTripTracking(userId);
+    } else if (status == 'completed' || status == 'cancelled' || status == 'rejected') {
+      LocationService.instance.stopTripTracking();
+    }
+  }
+
+  // We no longer need _onUpdateDriverLocation since it's handled globally by LocationService
+
   Future<void> _onLoadTripDetails(
     LoadTripDetails event,
     Emitter<TripDetailsState> emit,
@@ -26,6 +43,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
     emit(TripDetailsLoading());
     try {
       final data = await _repository.loadTripDetails(event.tripId);
+      _manageLocationTracking(data['status'] as String?);
       emit(TripDetailsLoaded(data));
     } catch (e, stackTrace) {
       debugPrint('❌ TripDetailsBloc: Load failed: $e');
@@ -43,6 +61,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       if (result != null && result['success'] == true) {
         final updated = await _repository.loadTripDetails(event.tripId);
+        _manageLocationTracking(updated['status'] as String?);
         emit(TripDetailsLoaded(updated));
       } else {
         emit(TripDetailsError(result?['error']?.toString() ?? 'errorAcceptTrip'));
@@ -70,6 +89,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       
       final updated = await _repository.loadTripDetails(event.tripId);
+      _manageLocationTracking(updated['status'] as String?);
       emit(TripDetailsLoaded(updated));
     } catch (e) {
       emit(TripDetailsError('errorRejectTrip'));
@@ -94,6 +114,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       if (result != null && result['success'] == true) {
         final updated = await _repository.loadTripDetails(event.tripId);
+        _manageLocationTracking(updated['status'] as String?);
         emit(TripDetailsLoaded(updated));
       } else {
         emit(TripDetailsError(result?['error']?.toString() ?? 'errorStartTrip'));
@@ -121,6 +142,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       if (result != null && result['success'] == true) {
         final updated = await _repository.loadTripDetails(event.tripId);
+        _manageLocationTracking(updated['status'] as String?);
         emit(TripDetailsLoaded(updated));
       } else {
         emit(TripDetailsError(result?['error']?.toString() ?? 'errorCompleteTrip'));
@@ -128,5 +150,11 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
     } catch (e) {
       emit(TripDetailsError('errorCompleteTrip'));
     }
+  }
+
+  @override
+  Future<void> close() {
+    // We do NOT stop global tracking here, as it should continue even if user navigates away from the screen
+    return super.close();
   }
 }

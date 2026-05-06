@@ -3,22 +3,22 @@ import 'package:equatable/equatable.dart';
 
 class UserPresenceModel extends Equatable {
   final String userId;
-  final double? lat;
-  final double? lng;
+  final double lat;
+  final double lng;
   final DateTime lastSeen;
 
   const UserPresenceModel({
     required this.userId,
-    this.lat,
-    this.lng,
+    required this.lat,
+    required this.lng,
     required this.lastSeen,
   });
 
   factory UserPresenceModel.fromJson(Map<String, dynamic> json) {
     return UserPresenceModel(
       userId: json['user_id'] as String,
-      lat: (json['lat'] as num?)?.toDouble(),
-      lng: (json['lng'] as num?)?.toDouble(),
+      lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
+      lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
       lastSeen: DateTime.parse(json['last_seen'] as String),
     );
   }

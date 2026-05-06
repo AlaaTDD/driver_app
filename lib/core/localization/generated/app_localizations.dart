@@ -1550,6 +1550,18 @@ abstract class AppLocalizations {
   /// **'ابدأ المحادثة'**
   String get startChat;
 
+  /// No description provided for @noMessages.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد رسائل بعد'**
+  String get noMessages;
+
+  /// No description provided for @online.
+  ///
+  /// In ar, this message translates to:
+  /// **'متصل'**
+  String get online;
+
   /// No description provided for @areYouSureCancelTrip.
   ///
   /// In ar, this message translates to:
@@ -2011,6 +2023,511 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تعديل الملف الشخصي قريباً'**
   String get editProfileComingSoon;
+
+  /// No description provided for @myWallet.
+  ///
+  /// In ar, this message translates to:
+  /// **'محفظتي'**
+  String get myWallet;
+
+  /// No description provided for @driverWallet.
+  ///
+  /// In ar, this message translates to:
+  /// **'محفظة السائق'**
+  String get driverWallet;
+
+  /// No description provided for @availableBalanceLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد المتاح'**
+  String get availableBalanceLabel;
+
+  /// No description provided for @availableToWithdraw.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد المتاح للسحب'**
+  String get availableToWithdraw;
+
+  /// No description provided for @transactionHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'سجل المعاملات'**
+  String get transactionHistory;
+
+  /// No description provided for @noTransactionsYet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد معاملات بعد'**
+  String get noTransactionsYet;
+
+  /// No description provided for @transactionsWillAppearHere.
+  ///
+  /// In ar, this message translates to:
+  /// **'ستظهر جميع تفاصيل معاملاتك هنا.'**
+  String get transactionsWillAppearHere;
+
+  /// No description provided for @earningsWillAppearHere.
+  ///
+  /// In ar, this message translates to:
+  /// **'ستظهر جميع تفاصيل أرباحك هنا.'**
+  String get earningsWillAppearHere;
+
+  /// No description provided for @egp.
+  ///
+  /// In ar, this message translates to:
+  /// **'جنيه'**
+  String get egp;
+
+  /// No description provided for @totalTopUp.
+  ///
+  /// In ar, this message translates to:
+  /// **'إجمالي الشحن'**
+  String get totalTopUp;
+
+  /// No description provided for @totalSpent.
+  ///
+  /// In ar, this message translates to:
+  /// **'إجمالي الإنفاق'**
+  String get totalSpent;
+
+  /// No description provided for @tripEarning.
+  ///
+  /// In ar, this message translates to:
+  /// **'ربح رحلة'**
+  String get tripEarning;
+
+  /// No description provided for @withdrawal.
+  ///
+  /// In ar, this message translates to:
+  /// **'سحب'**
+  String get withdrawal;
+
+  /// No description provided for @withdrawalRefund.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة سحب'**
+  String get withdrawalRefund;
+
+  /// No description provided for @bonus.
+  ///
+  /// In ar, this message translates to:
+  /// **'مكافأة'**
+  String get bonus;
+
+  /// No description provided for @penalty.
+  ///
+  /// In ar, this message translates to:
+  /// **'خصم'**
+  String get penalty;
+
+  /// No description provided for @topUp.
+  ///
+  /// In ar, this message translates to:
+  /// **'شحن رصيد'**
+  String get topUp;
+
+  /// No description provided for @refund.
+  ///
+  /// In ar, this message translates to:
+  /// **'استرداد'**
+  String get refund;
+
+  /// No description provided for @tripPayment.
+  ///
+  /// In ar, this message translates to:
+  /// **'دفع رحلة'**
+  String get tripPayment;
+
+  /// No description provided for @adjustment.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل'**
+  String get adjustment;
+
+  /// No description provided for @balancePrefix.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد: '**
+  String get balancePrefix;
+
+  /// No description provided for @anErrorOccurred.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ'**
+  String get anErrorOccurred;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة المحاولة'**
+  String get retryButton;
+
+  /// No description provided for @pendingPrefix.
+  ///
+  /// In ar, this message translates to:
+  /// **'في الانتظار: '**
+  String get pendingPrefix;
+
+  /// No description provided for @last30Days.
+  ///
+  /// In ar, this message translates to:
+  /// **'آخر 30 يوم'**
+  String get last30Days;
+
+  /// No description provided for @requestWithdrawal.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلب سحب الأرباح'**
+  String get requestWithdrawal;
+
+  /// No description provided for @minWithdrawal50.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحد الأدنى للسحب 50 ج'**
+  String get minWithdrawal50;
+
+  /// No description provided for @transactions.
+  ///
+  /// In ar, this message translates to:
+  /// **'المعاملات'**
+  String get transactions;
+
+  /// No description provided for @withdrawalRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلبات السحب'**
+  String get withdrawalRequests;
+
+  /// No description provided for @noWithdrawalRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد طلبات سحب'**
+  String get noWithdrawalRequests;
+
+  /// No description provided for @canRequestWithdrawalWhenReachedMin.
+  ///
+  /// In ar, this message translates to:
+  /// **'يمكنك طلب سحب أرباحك عند الوصول للحد الأدنى.'**
+  String get canRequestWithdrawalWhenReachedMin;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'مكتمل'**
+  String get statusCompleted;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In ar, this message translates to:
+  /// **'مرفوض'**
+  String get statusRejected;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملغي'**
+  String get statusCancelled;
+
+  /// No description provided for @statusProcessing.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري المعالجة'**
+  String get statusProcessing;
+
+  /// No description provided for @statusApproved.
+  ///
+  /// In ar, this message translates to:
+  /// **'موافق عليه'**
+  String get statusApproved;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In ar, this message translates to:
+  /// **'قيد الانتظار'**
+  String get statusPending;
+
+  /// No description provided for @vodafoneCash.
+  ///
+  /// In ar, this message translates to:
+  /// **'فودافون كاش'**
+  String get vodafoneCash;
+
+  /// No description provided for @instapay.
+  ///
+  /// In ar, this message translates to:
+  /// **'إنستاباي'**
+  String get instapay;
+
+  /// No description provided for @orangeMoney.
+  ///
+  /// In ar, this message translates to:
+  /// **'أورانج موني'**
+  String get orangeMoney;
+
+  /// No description provided for @bankTransfer.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحويل بنكي'**
+  String get bankTransfer;
+
+  /// No description provided for @amountToWithdraw.
+  ///
+  /// In ar, this message translates to:
+  /// **'المبلغ المراد سحبه'**
+  String get amountToWithdraw;
+
+  /// No description provided for @enterAmount.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل المبلغ'**
+  String get enterAmount;
+
+  /// No description provided for @minAmount50.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحد الأدنى 50 جنيه'**
+  String get minAmount50;
+
+  /// No description provided for @amountGreaterThanBalance.
+  ///
+  /// In ar, this message translates to:
+  /// **'المبلغ أكبر من الرصيد المتاح'**
+  String get amountGreaterThanBalance;
+
+  /// No description provided for @withdrawalMethod.
+  ///
+  /// In ar, this message translates to:
+  /// **'طريقة السحب'**
+  String get withdrawalMethod;
+
+  /// No description provided for @transferDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'بيانات التحويل'**
+  String get transferDetails;
+
+  /// No description provided for @mobileNumber.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف المحمول'**
+  String get mobileNumber;
+
+  /// No description provided for @invalidMobileNumber.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم هاتف غير صحيح'**
+  String get invalidMobileNumber;
+
+  /// No description provided for @bankName.
+  ///
+  /// In ar, this message translates to:
+  /// **'اسم البنك'**
+  String get bankName;
+
+  /// No description provided for @enterBankName.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل اسم البنك'**
+  String get enterBankName;
+
+  /// No description provided for @accountNumberOrIban.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الحساب أو الـ IBAN'**
+  String get accountNumberOrIban;
+
+  /// No description provided for @enterAccountNumberOrIban.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل رقم الحساب أو الـ IBAN'**
+  String get enterAccountNumberOrIban;
+
+  /// No description provided for @confirmWithdrawalRequest.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد طلب السحب'**
+  String get confirmWithdrawalRequest;
+
+  /// No description provided for @todayAtPrefix.
+  ///
+  /// In ar, this message translates to:
+  /// **'اليوم، '**
+  String get todayAtPrefix;
+
+  /// No description provided for @onlineStatus.
+  ///
+  /// In ar, this message translates to:
+  /// **'متاح'**
+  String get onlineStatus;
+
+  /// No description provided for @offlineStatus.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متاح'**
+  String get offlineStatus;
+
+  /// No description provided for @activeTripWarning.
+  ///
+  /// In ar, this message translates to:
+  /// **'لديك رحلة نشطة بالفعل. هل ترغب في إلغائها وبدء رحلة جديدة؟'**
+  String get activeTripWarning;
+
+  /// No description provided for @goBack.
+  ///
+  /// In ar, this message translates to:
+  /// **'رجوع'**
+  String get goBack;
+
+  /// No description provided for @cancelTripAndSearch.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلغاء الرحلة وبدء بحث'**
+  String get cancelTripAndSearch;
+
+  /// No description provided for @carType.
+  ///
+  /// In ar, this message translates to:
+  /// **'سيارة'**
+  String get carType;
+
+  /// No description provided for @truckType.
+  ///
+  /// In ar, this message translates to:
+  /// **'شاحنة'**
+  String get truckType;
+
+  /// No description provided for @motorcycleType.
+  ///
+  /// In ar, this message translates to:
+  /// **'موتوسيكل'**
+  String get motorcycleType;
+
+  /// No description provided for @rideRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلبات الرحلات'**
+  String get rideRequests;
+
+  /// No description provided for @newRideRequestNotifications.
+  ///
+  /// In ar, this message translates to:
+  /// **'إشعارات طلبات الرحلات الجديدة'**
+  String get newRideRequestNotifications;
+
+  /// No description provided for @newRideAvailableAlert.
+  ///
+  /// In ar, this message translates to:
+  /// **'🚖 رحلة جديدة متاحة!'**
+  String get newRideAvailableAlert;
+
+  /// No description provided for @newRideRequest.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلب رحلة جديد'**
+  String get newRideRequest;
+
+  /// No description provided for @fromLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'من'**
+  String get fromLabel;
+
+  /// No description provided for @toLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'إلى'**
+  String get toLabel;
+
+  /// No description provided for @rejectBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'رفض'**
+  String get rejectBtn;
+
+  /// No description provided for @acceptBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'قبول'**
+  String get acceptBtn;
+
+  /// No description provided for @defaultUser.
+  ///
+  /// In ar, this message translates to:
+  /// **'مستخدم'**
+  String get defaultUser;
+
+  /// No description provided for @defaultDriver.
+  ///
+  /// In ar, this message translates to:
+  /// **'السائق'**
+  String get defaultDriver;
+
+  /// No description provided for @newTripTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'رحلة جديدة'**
+  String get newTripTitle;
+
+  /// No description provided for @newTripBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'لديك طلب رحلة جديد بالقرب منك'**
+  String get newTripBody;
+
+  /// No description provided for @totalTransactionsLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} معاملة'**
+  String totalTransactionsLabel(int count);
+
+  /// No description provided for @balanceAfterLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد: {amount}'**
+  String balanceAfterLabel(String amount);
+
+  /// No description provided for @failedLoadWallet.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل تحميل المحفظة: {error}'**
+  String failedLoadWallet(String error);
+
+  /// No description provided for @todayAtTime.
+  ///
+  /// In ar, this message translates to:
+  /// **'اليوم، {time}'**
+  String todayAtTime(String time);
+
+  /// No description provided for @withdrawalSuccessMsg.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرسال طلب السحب بنجاح (المبلغ: {amount} ج)'**
+  String withdrawalSuccessMsg(String amount);
+
+  /// No description provided for @withdrawalViaMethod.
+  ///
+  /// In ar, this message translates to:
+  /// **'سحب عبر {method}'**
+  String withdrawalViaMethod(String method);
+
+  /// No description provided for @newRideDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'{pickup} → {dest}\n💰 {price} {currency}  ·  📍 {distance} كم'**
+  String newRideDetails(String pickup, String dest, String price,
+      String currency, String distance);
+
+  /// No description provided for @priceWithCurrency.
+  ///
+  /// In ar, this message translates to:
+  /// **'{price} {currency}'**
+  String priceWithCurrency(String price, String currency);
+
+  /// No description provided for @distanceWithKm.
+  ///
+  /// In ar, this message translates to:
+  /// **'{distance} كم'**
+  String distanceWithKm(String distance);
 }
 
 class _AppLocalizationsDelegate

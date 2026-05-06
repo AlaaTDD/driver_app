@@ -1,6 +1,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../../core/localization/generated/app_localizations.dart';
+import '../../../../../core/theme/theme_extensions.dart';
+import '../../../../../core/theme/app_colors.dart';
 import 'animated_trip_card.dart';
 
 class TripListView extends StatelessWidget {
@@ -99,51 +102,109 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Need to import localizations at top, but we can do it via AppLocalizations
+    final l = AppLocalizations.of(context)!;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isActive ? Icons.local_taxi_outlined : Icons.route_outlined,
               size: 64,
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+              color: AppColors.primary.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            isActive ? 'No Active Trips' : 'Your Trips Will Appear Here',
+            l.noTrips,
             style: TextStyle(
+              color: context.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).textTheme.titleLarge?.color,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            isActive
-                ? 'Book a new trip to get started'
-                : 'Once you complete a trip, it will show up here',
+            isActive ? l.noActiveTrips : l.tripsWillAppearHere,
             style: TextStyle(
-              color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+              color: context.textSecondary,
               fontSize: 14,
             ),
           ),
           if (isActive) ...[
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            _GradientButton(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Go Back'),
+              icon: Icons.local_taxi,
+              label: l.backToHome,
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _GradientButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+  final String label;
+
+  const _GradientButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

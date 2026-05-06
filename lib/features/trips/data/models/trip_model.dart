@@ -39,6 +39,11 @@ class TripModel extends TripEntity {
     super.cancelledAt,
     super.cancelReason,
     super.cancelledBy,
+    super.updatedAt,
+    super.driverEarnings,
+    super.platformCommission,
+    super.couponDiscount,
+    super.paymentSource,
     this.userData,
   });
 
@@ -73,6 +78,11 @@ class TripModel extends TripEntity {
       cancelledAt: json['cancelled_at'] != null ? DateTime.parse(json['cancelled_at'] as String) : null,
       cancelReason: json['cancel_reason'] as String?,
       cancelledBy: json['cancelled_by'] as String?,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      driverEarnings: json['driver_earnings'] != null ? (json['driver_earnings'] as num).toDouble() : null,
+      platformCommission: json['platform_commission'] != null ? (json['platform_commission'] as num).toDouble() : null,
+      couponDiscount: json['coupon_discount'] != null ? (json['coupon_discount'] as num).toDouble() : null,
+      paymentSource: json['payment_source'] as String?,
       userData: json['user'] as Map<String, dynamic>?,
     );
   }
@@ -108,6 +118,11 @@ class TripModel extends TripEntity {
       'cancelled_at': cancelledAt?.toIso8601String(),
       'cancel_reason': cancelReason,
       'cancelled_by': cancelledBy,
+      'updated_at': updatedAt?.toIso8601String(),
+      'driver_earnings': driverEarnings,
+      'platform_commission': platformCommission,
+      'coupon_discount': couponDiscount,
+      'payment_source': paymentSource,
       if (userData != null) 'user': userData,
     };
   }

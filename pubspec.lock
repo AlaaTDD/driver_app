@@ -1330,14 +1330,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.0+1"
-  system_alert_window:
-    dependency: "direct main"
-    description:
-      name: system_alert_window
-      sha256: "361fc81832c470f2518a9d0f3c585859183a1b0cdb9506a78b2b30bf16c2d96f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.8"
   term_glyph:
     dependency: transitive
     description:

@@ -148,16 +148,15 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         final tripId = (state as SearchingInProgress).tripId;
         
         await withRetry(
-          () => SupabaseService.client
-              .from('trips')
-              .update({
-                'status': 'cancelled',
-                'cancelled_at': DateTime.now().toIso8601String(),
-                'cancelled_by': 'system',
-                'cancel_reason': 'timeout',
-              })
-              .eq('id', tripId)
-              .eq('user_id', SupabaseService.currentUser!.id),
+          () => SupabaseService.client.rpc(
+            'cancel_trip',
+            params: {
+              'p_trip_id': tripId,
+              'p_user_id': SupabaseService.currentUser!.id,
+              'p_cancelled_by': 'system',
+              'p_cancel_reason': 'timeout',
+            },
+          ),
           maxAttempts: 2,
           onRetry: (e, attempt) => debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
         );
@@ -210,15 +209,14 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     try {
       
       await withRetry(
-        () => SupabaseService.client
-            .from('trips')
-            .update({
-              'status': 'cancelled',
-              'cancelled_at': DateTime.now().toIso8601String(),
-              'cancelled_by': 'user',
-            })
-            .eq('id', event.tripId)
-            .eq('user_id', SupabaseService.currentUser!.id),
+        () => SupabaseService.client.rpc(
+          'cancel_trip',
+          params: {
+            'p_trip_id': event.tripId,
+            'p_user_id': SupabaseService.currentUser!.id,
+            'p_cancelled_by': 'user',
+          },
+        ),
         maxAttempts: 2,
         onRetry: (e, attempt) => debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
       );

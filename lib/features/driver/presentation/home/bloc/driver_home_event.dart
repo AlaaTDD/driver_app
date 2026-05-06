@@ -70,3 +70,5 @@ class HeatmapDataUpdated extends DriverHomeEvent {
 
 
 class RefreshDriverLocation extends DriverHomeEvent {}
+
+class ResetDriverStatus extends DriverHomeEvent {}

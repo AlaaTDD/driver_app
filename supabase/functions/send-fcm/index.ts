@@ -115,10 +115,44 @@ serve(async (req) => {
     );
   }
 
+  // For ride_offer: enrich the data payload with full trip details
+  // so the background isolate doesn't need to query Supabase (no auth session there)
+  let enrichedData = { ...(data || {}) };
+
+  if (data?.type === "ride_offer" && data?.trip_id) {
+    try {
+      const { data: trip } = await supabase
+        .from("trips")
+        .select("*, user:users!trips_user_id_fkey(name)")
+        .eq("id", data.trip_id)
+        .single();
+
+      if (trip) {
+        enrichedData = {
+          ...enrichedData,
+          pickup_address: trip.pickup_address || "",
+          destination_address: trip.destination_address || "",
+          distance_km: String(trip.distance_km || 0),
+          price: String(trip.price || 0),
+          vehicle_type: trip.vehicle_type || "car",
+          pickup_lat: String(trip.pickup_lat || 0),
+          pickup_lng: String(trip.pickup_lng || 0),
+          destination_lat: String(trip.destination_lat || 0),
+          destination_lng: String(trip.destination_lng || 0),
+          passenger_name: trip.user?.name || "",
+          created_at: trip.created_at || "",
+        };
+        console.log("Enriched ride_offer payload with trip details for", data.trip_id);
+      }
+    } catch (e) {
+      console.error("Failed to enrich ride_offer payload:", e);
+    }
+  }
+
   const messagePayload: any = {
     token: user.fcm_token,
     data: Object.fromEntries(
-      Object.entries(data || {}).map(([k, v]) => [k, String(v)]),
+      Object.entries(enrichedData).map(([k, v]) => [k, String(v)]),
     ),
     android: {
       priority: "high",

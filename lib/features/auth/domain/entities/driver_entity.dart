@@ -18,8 +18,10 @@ class DriverEntity extends Equatable {
   final bool isVerified;
   final bool isAvailable;
   final String? geohash;
+  final String? geohash5;
   final double? currentLat;
   final double? currentLng;
+  final double? heading;
   final DateTime updatedAt;
 
   const DriverEntity({
@@ -39,8 +41,10 @@ class DriverEntity extends Equatable {
     required this.isVerified,
     required this.isAvailable,
     this.geohash,
+    this.geohash5,
     this.currentLat,
     this.currentLng,
+    this.heading,
     required this.updatedAt,
   });
 
@@ -62,8 +66,10 @@ class DriverEntity extends Equatable {
         isVerified,
         isAvailable,
         geohash,
+        geohash5,
         currentLat,
         currentLng,
+        heading,
         updatedAt,
       ];
 }

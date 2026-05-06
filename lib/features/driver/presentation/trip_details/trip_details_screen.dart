@@ -17,7 +17,11 @@ import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/map_styles.dart';
 import '../../../../services/directions_service.dart';
+import '../../../../services/location_service.dart';
 import '../../../../core/constants/env_constants.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
 
 class DriverTripDetailsScreen extends StatefulWidget {
   final String tripId;
@@ -32,11 +36,58 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
   final Completer<GoogleMapController> _mapController = Completer();
   List<LatLng> _routePoints = [];
   bool _routeFetchRequested = false;
+  
+  StreamSubscription<Position>? _locationSub;
+  LatLng? _driverLocation;
+  BitmapDescriptor? _carIcon;
+  double _driverHeading = 0.0;
+  bool _cameraFollowing = true;
 
   @override
   void initState() {
     super.initState();
+    _loadCarIcon();
     context.read<TripDetailsBloc>().add(LoadTripDetails(widget.tripId));
+    _startLocationTracking();
+  }
+
+  Future<void> _loadCarIcon() async {
+    try {
+      final data = await rootBundle.load('assets/images/carr.png');
+      final bytes = data.buffer.asUint8List();
+      final codec = await ui.instantiateImageCodec(bytes, targetWidth: 40);
+      final frame = await codec.getNextFrame();
+      final resizedBytes = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+      if (resizedBytes != null && mounted) {
+        setState(() {
+          _carIcon = BitmapDescriptor.bytes(resizedBytes.buffer.asUint8List());
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to load car icon: $e');
+    }
+  }
+
+  void _startLocationTracking() {
+    _locationSub = LocationService.instance.getLocationStream().listen((pos) async {
+      if (!mounted) return;
+      setState(() {
+        _driverLocation = LatLng(pos.latitude, pos.longitude);
+        _driverHeading = pos.heading;
+      });
+      if (_cameraFollowing && _mapController.isCompleted) {
+        final ctrl = await _mapController.future;
+        ctrl.animateCamera(CameraUpdate.newCameraPosition(
+          CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
+        ));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _locationSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchRoute(double originLat, double originLng, double destLat, double destLng) async {
@@ -140,6 +191,18 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
       ));
     }
 
+    if (_driverLocation != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('driver'),
+        position: _driverLocation!,
+        rotation: _driverHeading,
+        icon: _carIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        anchor: const Offset(0.5, 0.5),
+        flat: true,
+        zIndex: 2,
+      ));
+    }
+
     
     
     final pickupLat = trip['pickup_lat'] as num?;
@@ -170,20 +233,52 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen> {
     return Column(
       children: [
         Expanded(
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: initTarget, zoom: 14),
-            onMapCreated: (ctrl) {
-              if (!_mapController.isCompleted) {
-                _mapController.complete(ctrl);
-              }
-              _fitMapBounds(ctrl, markers);
-            },
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            markers: markers,
-            polylines: polylines,
-            style: context.isDark ? kDarkMapStyle : kLightMapStyle,
+          child: Stack(
+            children: [
+              GoogleMap(
+                initialCameraPosition: CameraPosition(target: initTarget, zoom: 14),
+                onMapCreated: (ctrl) {
+                  if (!_mapController.isCompleted) {
+                    _mapController.complete(ctrl);
+                  }
+                  if (_driverLocation != null && _cameraFollowing) {
+                    ctrl.animateCamera(CameraUpdate.newCameraPosition(
+                      CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
+                    ));
+                  } else {
+                    _fitMapBounds(ctrl, markers);
+                  }
+                },
+                onCameraMoveStarted: () {
+                  setState(() => _cameraFollowing = false);
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                markers: markers,
+                polylines: polylines,
+                style: context.isDark ? kDarkMapStyle : kLightMapStyle,
+              ),
+              if (!_cameraFollowing)
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: context.cardColor,
+                    child: Icon(Icons.my_location, color: AppColors.primary),
+                    onPressed: () async {
+                      setState(() => _cameraFollowing = true);
+                      if (_driverLocation != null && _mapController.isCompleted) {
+                        final ctrl = await _mapController.future;
+                        ctrl.animateCamera(CameraUpdate.newCameraPosition(
+                          CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
+                        ));
+                      }
+                    },
+                  ),
+                ),
+            ],
           ),
         ),
         Container(

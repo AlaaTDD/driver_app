@@ -16,14 +16,18 @@ class UserHomeLocating extends UserHomeState {}
 class UserHomeLoaded extends UserHomeState {
   final double userLat;
   final double userLng;
-
-  
   final String currentCellId;
 
-  
+  /// Nearby drivers map — intentionally NOT in props.
+  /// We use [driversVersion] (epoch ms) as the equality signal instead.
+  /// This ensures BlocListener fires on every driver update, even if
+  /// the map content appears identical (e.g., driver removed then re-added).
   final Map<String, DriverLocation> nearbyDrivers;
 
-  
+  /// Monotonically increasing version stamp — incremented on every
+  /// driver update so Equatable sees a state change.
+  final int driversVersion;
+
   final List<Map<String, dynamic>> coupons;
 
   const UserHomeLoaded({
@@ -32,6 +36,7 @@ class UserHomeLoaded extends UserHomeState {
     required this.currentCellId,
     required this.nearbyDrivers,
     required this.coupons,
+    this.driversVersion = 0,
   });
 
   UserHomeLoaded copyWith({
@@ -39,6 +44,7 @@ class UserHomeLoaded extends UserHomeState {
     double? userLng,
     String? currentCellId,
     Map<String, DriverLocation>? nearbyDrivers,
+    bool bumpDrivers = false,   // set true when nearbyDrivers changes
     List<Map<String, dynamic>>? coupons,
   }) {
     return UserHomeLoaded(
@@ -46,13 +52,16 @@ class UserHomeLoaded extends UserHomeState {
       userLng: userLng ?? this.userLng,
       currentCellId: currentCellId ?? this.currentCellId,
       nearbyDrivers: nearbyDrivers ?? this.nearbyDrivers,
+      driversVersion: bumpDrivers
+          ? DateTime.now().millisecondsSinceEpoch
+          : driversVersion,
       coupons: coupons ?? this.coupons,
     );
   }
 
   @override
   List<Object?> get props =>
-      [userLat, userLng, currentCellId, nearbyDrivers, coupons];
+      [userLat, userLng, currentCellId, driversVersion, coupons];
 }
 
 class UserHomeError extends UserHomeState {

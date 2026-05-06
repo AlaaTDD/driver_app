@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "appName": "Taxi",
   "home": "Home",
   "profile": "Profile",
@@ -11,17 +10,14 @@
   "notifications": "Notifications",
   "messages": "Messages",
   "help": "Help",
-
   "smartTransportService": "Smart & Fast Transport Service",
   "skip": "Skip",
-
   "smartRideService": "Smart Ride Service",
   "smartRideDesc": "Book your ride with one tap and wait for the driver to arrive in minutes",
   "realTimeTracking": "Real-Time Tracking",
   "realTimeTrackingDesc": "Track your driver's location moment by moment on the map until they reach you precisely",
   "safeAndReliable": "Safe & Reliable",
   "safeAndReliableDesc": "All drivers are verified and certified to ensure your safety and comfort on every ride",
-
   "loginTitle": "Sign in to continue",
   "email": "Email",
   "enterEmail": "Please enter your email",
@@ -29,7 +25,6 @@
   "enterPassword": "Please enter your password",
   "noAccount": "Don't have an account? ",
   "registerNow": "Register now",
-
   "chooseAccountType": "Choose your account type",
   "chooseRoleDesc": "Select the role that suits you to get started",
   "user": "User",
@@ -37,7 +32,6 @@
   "driver": "Driver",
   "driverDesc": "Join the Snapix driver team and earn more",
   "alreadyHaveAccount": "Already have an account? ",
-
   "createUserAccount": "Create User Account",
   "personalInfo": "Your Personal Information",
   "enterDataToCreateAccount": "Enter your data to create your account",
@@ -51,7 +45,6 @@
   "passwordMinLength": "Password must be at least 6 characters",
   "createAccount": "Create Account",
   "passwordsNotMatch": "Passwords don't match",
-
   "createDriverAccount": "Create Driver Account",
   "personalInformation": "Personal Information",
   "nationalId": "National ID Number",
@@ -80,19 +73,15 @@
   "enterPlateNumber": "Please enter plate number",
   "vehiclePhoto": "Vehicle Photo",
   "uploadAllDocuments": "Please upload all required documents and photos",
-
   "accountUnderReview": "Your account is under review",
   "reviewDesc": "We are reviewing your data and will notify you once done",
-
   "rateTrip": "Rate Trip",
   "howWasTrip": "How was your trip?",
   "addComment": "Add your comment (optional)",
   "writeExperience": "Write your experience with the driver...",
   "submitRating": "Submit Rating",
-
   "chatbotWelcome": "Thank you for contacting us. We'll help you soon.",
   "typeMessage": "Type your message...",
-
   "myTrips": "My Trips",
   "aiAssistant": "AI Assistant",
   "privacyPolicy": "Privacy Policy",
@@ -105,7 +94,6 @@
   "dark": "Dark",
   "light": "Light",
   "userDefault": "User",
-
   "locating": "Locating your position...",
   "availableDriver": "Available Driver",
   "whereToGo": "Where do you want to go?",
@@ -114,9 +102,25 @@
   "bookNowEnjoy": "Book your ride now and enjoy the best service",
   "haveCoupon": "You have a discount coupon!",
   "discountWithCode": "{discount}% off — Code: {code}",
-
+  "@discountWithCode": {
+    "placeholders": {
+      "discount": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "car": "Car",
   "fromPrice": "From {price} SAR",
+  "@fromPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "paymentMethod": "Payment Method",
   "cash": "Cash",
   "bankCard": "Bank Card",
@@ -131,7 +135,6 @@
   "destination": "Destination",
   "km": "km",
   "currencySar": "SAR",
-
   "origin": "Origin",
   "searchOrPick": "Search or pick on map",
   "whereToGoQ": "Where do you want to go?",
@@ -145,7 +148,6 @@
   "confirmDest": "Confirm Destination",
   "locatingPosition": "Locating position...",
   "moveMapToSelect": "Move the map to select",
-
   "meetingPoint": "Meeting Point",
   "tapMapToSelect": "Tap the map to set the meeting point",
   "resetToOrigin": "Reset to origin",
@@ -155,7 +157,6 @@
   "pleaseLogin": "Please login first",
   "unspecified": "Unspecified",
   "failedCreateTrip": "Failed to create trip, check your connection and try again",
-
   "yourTrip": "Your Trip",
   "minute": "min",
   "searchingForDriver": "Searching for a nearby driver...",
@@ -171,12 +172,10 @@
   "noDriverAvailable": "No driver available right now",
   "tryAgainLater": "Try again or come back later",
   "backToHome": "Back to Home",
-
   "trackTrip": "Track Trip",
   "theDriver": "Driver",
   "meetingPointLabel": "Meeting Point",
   "cancelTrip": "Cancel Trip",
-
   "noTrips": "No trips",
   "rate": "Rate",
   "completed": "Completed",
@@ -184,53 +183,63 @@
   "inProgress": "In Progress",
   "pending": "Pending",
   "details": "Details",
-
   "editProfile": "Edit Profile",
   "saveChanges": "Save Changes",
   "changesSaved": "Changes saved successfully",
-
   "yourLocation": "Your current location",
   "availableForTrips": "Available for trips",
   "unavailable": "Unavailable",
   "trips": "Trips",
   "earnings": "Earnings",
   "rating": "Rating",
-
   "newTripRequest": "New Trip Request",
   "reject": "Reject",
   "acceptTrip": "Accept Trip",
-
   "yourRating": "Your Rating: {value}",
-
+  "@yourRating": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "tripDetails": "Trip Details",
   "startTrip": "Start Trip",
   "completeTrip": "Complete Trip",
   "tripCompleted": "Trip completed successfully",
   "distance": "Distance",
-
   "failedLoadCoupons": "Failed to load coupons",
   "invalidCouponCode": "Invalid coupon code",
   "failedValidateCoupon": "Failed to validate coupon",
   "failedApplyCoupon": "Failed to apply coupon",
-
   "errorCreateTrip": "Error creating trip",
   "errorFetchTrips": "Error fetching trips",
   "errorCancelTrip": "Error cancelling trip",
   "errorUpdateTripStatus": "Error updating trip status",
   "errorFetchAvailable": "Error fetching available trips",
-
   "editProfileLabel": "Edit Profile",
-
   "totalTrips": "Total Trips",
-
   "driverHomeDesc": "Driver Home Screen",
   "startWorking": "Start Working",
   "tripLog": "Trip Log",
-
   "sampleNotification": "Sample Notification",
   "sampleNotificationMsg": "This is a sample notification for the app",
   "minutesAgo": "{count} min ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "driverLabel": "Driver {index}",
+  "@driverLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
   "sampleMessage": "This is a sample message",
   "supportReply": "Thank you for your message. Our support team will reply to you soon.",
   "supportAssistant": "Support Assistant",
@@ -241,12 +250,10 @@
   "addCommentOptional": "Add a comment (optional)",
   "shareExperience": "Share your experience with us",
   "unknownInitial": "?",
-
   "availableCoupons": "Available Coupons",
   "pickupLocation": "Pickup Location",
   "tripRequest": "Trip Request",
   "searchForDriverBtn": "Search for Driver",
-
   "verified": "Verified",
   "documents": "Documents",
   "vehicleInfo": "Vehicle Information",
@@ -254,36 +261,60 @@
   "criminalRecord": "Criminal Record",
   "uploaded": "Uploaded",
   "notUploaded": "Not Uploaded",
-  
   "invalidPhoneFormat": "Invalid phone format",
   "invalidEmailFormat": "Invalid email format",
-
   "justNow": "Just now",
   "hoursAgo": "{count} hours ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "daysAgo": "{count} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "failedLoadNotifications": "Failed to load notifications",
-
   "totalTripsLabel": "{total} trips",
+  "@totalTripsLabel": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "today": "Today",
   "yesterday": "Yesterday",
   "thisWeek": "This Week",
   "noActiveTrips": "No active trips currently",
   "tripsWillAppearHere": "Your trips will appear here",
   "newCustomer": "New Customer",
-
   "failedLoadMessages": "Failed to load messages",
   "newMessage": "New message",
   "newMessageFrom": "New message from {name}",
+  "@newMessageFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "failedSendMessage": "Failed to send message",
   "theChat": "Chat",
   "startChat": "Start chat",
-
+  "noMessages": "No messages yet",
+  "online": "Online",
   "areYouSureCancelTrip": "Are you sure you want to cancel this trip?",
   "noLabel": "No",
   "yesCancel": "Yes, Cancel",
   "submitComplaint": "Submit Complaint",
   "send": "Send",
-
   "errorInvalidCredentials": "Invalid email or password",
   "errorEmailRegistered": "This email is already registered",
   "errorConfirmEmail": "Please confirm your email first",
@@ -294,20 +325,17 @@
   "errorUnexpected": "An unexpected error occurred, please try again",
   "errorLoginFailed": "Login failed",
   "errorCreateAccountFailed": "Failed to create account",
-
-    "failedFetchTrips": "Failed to fetch trips",
+  "failedFetchTrips": "Failed to fetch trips",
   "failedCancelTrip": "Failed to cancel trip",
   "failedUpdateTrip": "Failed to update trip status",
   "failedFetchAvailableTrips": "Failed to fetch available trips",
   "errorActiveTripExists": "You already have an active trip. Please finish or cancel it first.",
-
   "errorLoadTripDetails": "Failed to load trip details",
   "errorAcceptTrip": "Failed to accept trip",
   "errorRejectTrip": "Failed to reject trip",
   "errorStartTrip": "Failed to start trip",
   "errorCompleteTrip": "Failed to complete trip",
   "errorNotLoggedIn": "Not logged in",
-
   "call": "Call",
   "track": "Track",
   "fareDetails": "Fare Details",
@@ -319,21 +347,18 @@
   "complaintSubjectHint": "e.g., Driver was late",
   "complaintDetails": "Complaint Details",
   "complaintDetailsHint": "Explain the issue in detail...",
-
   "bookNewTrip": "Book a new trip",
-    "yourTripsWillAppearHere": "Your trips will appear here",
+  "yourTripsWillAppearHere": "Your trips will appear here",
   "newTripLabel": "New Trip",
   "trip": "Trip",
   "statusAccepted": "Accepted",
   "statusSearching": "Searching",
-
   "errorLoadTrips": "Failed to load trips",
   "errorNotYourTrip": "You cannot cancel a trip that is not yours",
   "errorCancelStatus": "Trip cannot be cancelled in this status",
   "successTripCancelled": "Trip cancelled successfully",
-    "successComplaintSent": "Complaint sent successfully",
+  "successComplaintSent": "Complaint sent successfully",
   "errorSendComplaint": "Failed to send complaint",
-
   "errorCalculatePrice": "Failed to calculate price",
   "errorWaitBeforeRetry": "Please wait before trying again",
   "errorInvalidCoupon": "Invalid coupon code",
@@ -342,7 +367,6 @@
   "errorApplyCoupon": "Failed to apply coupon",
   "errorLoadCoupons": "Failed to load coupons",
   "errorVerifyCoupon": "Failed to verify coupon",
-
   "errorNoDriverForTrip": "No driver for this trip",
   "errorTripAlreadyRated": "This trip has already been rated",
   "errorAlreadyRated": "Already rated",
@@ -355,15 +379,174 @@
   "errorNoValidDataToUpdate": "No valid data to update",
   "errorUpdateProfile": "Failed to update profile",
   "errorDetermineLocation": "Could not determine location. Ensure location services are enabled.",
-
   "errorFileTooLarge": "File is too large",
   "errorFileEmpty": "File is empty",
   "errorFileUnsupported": "Unsupported file type",
-
   "pleaseFillAllFields": "Please fill all fields",
   "describeIssueDetail": "Please describe your issue in detail.",
   "titleLabel": "Title",
   "descriptionLabel": "Description",
-  "editProfileComingSoon": "Edit Profile coming soon"
+  "editProfileComingSoon": "Edit Profile coming soon",
+  "myWallet": "My Wallet",
+  "driverWallet": "Driver Wallet",
+  "availableBalanceLabel": "Available Balance",
+  "availableToWithdraw": "Available to Withdraw",
+  "transactionHistory": "Transaction History",
+  "noTransactionsYet": "No transactions yet",
+  "transactionsWillAppearHere": "All your transaction details will appear here.",
+  "earningsWillAppearHere": "All your earning details will appear here.",
+  "egp": "EGP",
+  "totalTopUp": "Total Top-Up",
+  "totalSpent": "Total Spent",
+  "tripEarning": "Trip Earning",
+  "withdrawal": "Withdrawal",
+  "withdrawalRefund": "Withdrawal Refund",
+  "bonus": "Bonus",
+  "penalty": "Penalty",
+  "topUp": "Top-Up",
+  "refund": "Refund",
+  "tripPayment": "Trip Payment",
+  "adjustment": "Adjustment",
+  "balancePrefix": "Balance: ",
+  "anErrorOccurred": "An error occurred",
+  "retryButton": "Retry",
+  "pendingPrefix": "Pending: ",
+  "last30Days": "Last 30 Days",
+  "requestWithdrawal": "Request Withdrawal",
+  "minWithdrawal50": "Minimum withdrawal 50 EGP",
+  "transactions": "Transactions",
+  "withdrawalRequests": "Withdrawal Requests",
+  "noWithdrawalRequests": "No withdrawal requests",
+  "canRequestWithdrawalWhenReachedMin": "You can request to withdraw your earnings when you reach the minimum.",
+  "statusCompleted": "Completed",
+  "statusRejected": "Rejected",
+  "statusCancelled": "Cancelled",
+  "statusProcessing": "Processing",
+  "statusApproved": "Approved",
+  "statusPending": "Pending",
+  "vodafoneCash": "Vodafone Cash",
+  "instapay": "InstaPay",
+  "orangeMoney": "Orange Money",
+  "bankTransfer": "Bank Transfer",
+  "amountToWithdraw": "Amount to withdraw",
+  "enterAmount": "Enter amount",
+  "minAmount50": "Minimum amount 50 EGP",
+  "amountGreaterThanBalance": "Amount is greater than available balance",
+  "withdrawalMethod": "Withdrawal Method",
+  "transferDetails": "Transfer Details",
+  "mobileNumber": "Mobile Number",
+  "invalidMobileNumber": "Invalid mobile number",
+  "bankName": "Bank Name",
+  "enterBankName": "Enter bank name",
+  "accountNumberOrIban": "Account Number or IBAN",
+  "enterAccountNumberOrIban": "Enter Account Number or IBAN",
+  "confirmWithdrawalRequest": "Confirm Withdrawal Request",
+  "todayAtPrefix": "Today, ",
+  "onlineStatus": "Online",
+  "offlineStatus": "Offline",
+  "activeTripWarning": "You already have an active trip. Would you like to cancel it and start a new one?",
+  "goBack": "Go Back",
+  "cancelTripAndSearch": "Cancel Trip and Search",
+  "carType": "Car",
+  "truckType": "Truck",
+  "motorcycleType": "Motorcycle",
+  "rideRequests": "Ride Requests",
+  "newRideRequestNotifications": "New ride request notifications",
+  "newRideAvailableAlert": "🚖 New ride available!",
+  "newRideRequest": "New Ride Request",
+  "fromLabel": "From",
+  "toLabel": "To",
+  "rejectBtn": "Reject",
+  "acceptBtn": "Accept",
+  "defaultUser": "User",
+  "defaultDriver": "Driver",
+  "newTripTitle": "New Trip",
+  "newTripBody": "You have a new trip request near you",
+  "totalTransactionsLabel": "{count} transactions",
+  "@totalTransactionsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "balanceAfterLabel": "Balance: {amount}",
+  "@balanceAfterLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "failedLoadWallet": "Failed to load wallet: {error}",
+  "@failedLoadWallet": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "todayAtTime": "Today, {time}",
+  "@todayAtTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawalSuccessMsg": "Withdrawal request sent successfully (Amount: {amount} EGP)",
+  "@withdrawalSuccessMsg": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "withdrawalViaMethod": "Withdrawal via {method}",
+  "@withdrawalViaMethod": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "newRideDetails": "{pickup} → {dest}\n💰 {price} {currency}  ·  📍 {distance} km",
+  "@newRideDetails": {
+    "placeholders": {
+      "pickup": {
+        "type": "String"
+      },
+      "dest": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      },
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "priceWithCurrency": "{price} {currency}",
+  "@priceWithCurrency": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "distanceWithKm": "{distance} km",
+  "@distanceWithKm": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  }
 }
-

@@ -3,15 +3,19 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../services/directions_service.dart';
 import '../../../../../core/constants/env_constants.dart';
+import '../../../../../services/user_presence_service.dart';
+import '../../../../../services/location_service.dart';
 import 'tracking_event.dart';
 import 'tracking_state.dart';
 
 class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   StreamSubscription? _tripSubscription;
   StreamSubscription? _driverLocationSubscription;
+  RealtimeChannel? _driverLocationChannel;
 
   TrackingBloc() : super(TrackingInitial()) {
     on<LoadTripTracking>(_onLoadTripTracking);
@@ -38,7 +42,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         try {
           driverProfile = Map<String, dynamic>.from(tripData['driver'] ?? {});
           final profileData = await SupabaseService.client
-              .from('driver_profiles')
+              .from('drivers_profile')
               .select('vehicle_model, vehicle_plate, vehicle_color')
               .eq('id', tripData['driver_id'])
               .maybeSingle();
@@ -72,14 +76,42 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         }
       }
 
+      // ─── Fetch driver's current position immediately ───────────────────────
+      LatLng? initialDriverLocation;
+      if (tripData['driver_id'] != null) {
+        try {
+          final driverPos = await SupabaseService.client
+              .from('drivers_profile')
+              .select('current_lat, current_lng')
+              .eq('id', tripData['driver_id'])
+              .maybeSingle();
+          if (driverPos != null &&
+              driverPos['current_lat'] != null &&
+              driverPos['current_lng'] != null) {
+            initialDriverLocation = LatLng(
+              (driverPos['current_lat'] as num).toDouble(),
+              (driverPos['current_lng'] as num).toDouble(),
+            );
+            debugPrint('📡 TrackingBloc: Got initial driver position $initialDriverLocation');
+          }
+        } catch (e) {
+          debugPrint('⚠️ TrackingBloc: Failed to get initial driver position: $e');
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
       emit(TrackingLoaded(
         trip: Map<String, dynamic>.from(tripData),
         driver: driverProfile,
-        driverLocation: null,
+        driverLocation: initialDriverLocation,
         routePoints: routePoints,
       ));
 
+      // Stop broadcasting presence so the user doesn't appear on the driver's heatmap
+      await UserPresenceService.instance.stopBroadcasting();
+
       _subscribeToTripUpdates(event.tripId);
+
       if (tripData['driver_id'] != null) {
         _subscribeToDriverLocation(tripData['driver_id'] as String);
       }
@@ -118,6 +150,11 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           trip: updatedTrip,
           driver: current.driver,
           driverLocation: current.driverLocation));
+          
+      // Start broadcasting again once trip is over
+      LocationService.instance.getCurrentLocation().then((loc) {
+        UserPresenceService.instance.startBroadcasting(loc.latitude, loc.longitude);
+      });
     }
   }
 
@@ -126,16 +163,14 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     Emitter<TrackingState> emit,
   ) async {
     try {
-      
-      await SupabaseService.client
-          .from('trips')
-          .update({
-            'status': 'cancelled',
-            'cancelled_at': DateTime.now().toIso8601String(),
-            'cancelled_by': 'user',
-          })
-          .eq('id', event.tripId)
-          .eq('user_id', SupabaseService.currentUser!.id);
+      await SupabaseService.client.rpc(
+        'cancel_trip',
+        params: {
+          'p_trip_id': event.tripId,
+          'p_user_id': SupabaseService.currentUser!.id,
+          'p_cancelled_by': 'user',
+        },
+      );
       await _tripSubscription?.cancel();
       await _driverLocationSubscription?.cancel();
       if (state is TrackingLoaded) {
@@ -148,6 +183,10 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
             driverLocation: current.driverLocation,
             routePoints: current.routePoints));
       }
+      
+      // Resume broadcasting if they cancel
+      final loc = await LocationService.instance.getCurrentLocation();
+      await UserPresenceService.instance.startBroadcasting(loc.latitude, loc.longitude);
     } catch (e) {
       
       debugPrint('TrackingBloc: trip cancellation failed — $e');
@@ -177,8 +216,34 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   }
 
   void _subscribeToDriverLocation(String driverId) {
+    // Cancel existing subscriptions
     _driverLocationSubscription?.cancel();
-    
+    _driverLocationChannel?.unsubscribe();
+
+    debugPrint('📡 TrackingBloc: Subscribing to driver $driverId location (broadcast + DB)');
+
+    // ── PRIMARY: Broadcast channel (instant, works even when driver is offline in DB) ──
+    _driverLocationChannel = SupabaseService.client.channel('trip-tracking-$driverId');
+    _driverLocationChannel!
+        .onBroadcast(
+          event: 'location_update',
+          callback: (payload) {
+            final lat = payload['lat'];
+            final lng = payload['lng'];
+            debugPrint('📡 TrackingBloc: Broadcast received lat=$lat lng=$lng');
+            if (lat != null && lng != null) {
+              add(DriverLocationUpdated(
+                lat: (lat as num).toDouble(),
+                lng: (lng as num).toDouble(),
+              ));
+            }
+          },
+        )
+        .subscribe((status, [error]) {
+          debugPrint('📡 TrackingBloc: Channel status=$status error=$error');
+        });
+
+    // ── FALLBACK: DB stream (covers the case where driver already has a position stored) ──
     _driverLocationSubscription = SupabaseService.client
         .from('drivers_profile')
         .stream(primaryKey: ['id'])
@@ -189,6 +254,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         final lat = row['current_lat'];
         final lng = row['current_lng'];
         if (lat != null && lng != null) {
+          debugPrint('📡 TrackingBloc: DB update received lat=$lat lng=$lng');
           add(DriverLocationUpdated(
             lat: (lat as num).toDouble(),
             lng: (lng as num).toDouble(),
@@ -202,6 +268,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   Future<void> close() {
     _tripSubscription?.cancel();
     _driverLocationSubscription?.cancel();
+    _driverLocationChannel?.unsubscribe();
     return super.close();
   }
 }
