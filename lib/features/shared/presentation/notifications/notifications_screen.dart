@@ -1,9 +1,11 @@
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/models/notification_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/constants/app_routes.dart';
 import 'data/notifications_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -47,7 +49,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _markAsRead(String notificationId) async {
     try {
       await _repository.markAsRead(notificationId);
-      _loadNotifications();
+      // Local state update without full reload from server
+      setState(() {
+        _notifications = _notifications.map((n) {
+          if (n.id == notificationId) {
+            return n.copyWith(isRead: true);
+          }
+          return n;
+        }).toList();
+      });
     } catch (e) {
       debugPrint('NotificationsScreen: markAsRead error — $e');
     }
@@ -71,8 +81,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.local_offer;
       case 'system':
         return Icons.info;
+      case 'new_message':
+        return Icons.chat_bubble_rounded;
       default:
         return Icons.notifications;
+    }
+  }
+
+  void _onNotificationTap(NotificationModel notif) {
+    if (!notif.isRead) {
+      _markAsRead(notif.id);
+    }
+    if (notif.type == 'new_message' && notif.referenceId != null && notif.referenceId!.isNotEmpty) {
+      context.go('${AppRoutes.userMessages}?otherUserId=${notif.referenceId}');
+    } else if (notif.type == 'trip' && notif.referenceId != null && notif.referenceId!.isNotEmpty) {
+      context.go('${AppRoutes.userTripDetails}?tripId=${notif.referenceId}');
     }
   }
 
@@ -132,9 +155,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           message: notif.message,
                           time: _formatTime(notif.createdAt),
                           isRead: notif.isRead,
-                          onTap: notif.isRead
-                              ? null
-                              : () => _markAsRead(notif.id),
+                          onTap: () => _onNotificationTap(notif),
                         );
                       },
                     ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/models/message_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
@@ -42,8 +43,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         if (!mounted) return;
         _openChat(otherUserId: widget.otherUserId);
       });
+    } else {
+      _loadConversations();
     }
-    _loadConversations();
   }
 
   Future<void> _loadConversations() async {
@@ -103,14 +105,16 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                     ),
                     itemBuilder: (context, index) {
                       final conv = _conversations[index];
+                      final isMeSender = conv['is_me_sender'] as bool? ?? true;
+                      final convIsRead = isMeSender ? true : (conv['is_read'] as bool? ?? false);
                       return _ConversationTile(
                         name: conv['other_user_name'] as String? ?? '',
                         lastMessage: conv['last_message'] as String? ?? '',
                         lastTime: conv['last_message_at'] as String?,
                         role: conv['other_user_role'] as String? ?? 'user',
-                        isRead: conv['is_me_sender'] as bool? ?? true
-                            ? true
-                            : conv['is_read'] as bool? ?? false,
+                        avatarUrl: conv['other_user_avatar'] as String?,
+                        isRead: convIsRead,
+                        unreadCount: conv['unread_count'] as int? ?? 0,
                         onTap: () => _openChat(
                           otherUserId: conv['other_user_id'] as String,
                           otherName: conv['other_user_name'] as String?,
@@ -164,7 +168,9 @@ class _ConversationTile extends StatelessWidget {
   final String lastMessage;
   final String? lastTime;
   final String role;
+  final String? avatarUrl;
   final bool isRead;
+  final int unreadCount;
   final VoidCallback onTap;
 
   const _ConversationTile({
@@ -172,7 +178,9 @@ class _ConversationTile extends StatelessWidget {
     required this.lastMessage,
     required this.lastTime,
     required this.role,
+    this.avatarUrl,
     required this.isRead,
+    this.unreadCount = 0,
     required this.onTap,
   });
 
@@ -199,31 +207,19 @@ class _ConversationTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  child: Icon(
-                    isDriver ? Icons.drive_eta_rounded : Icons.person_rounded,
-                    color: AppColors.primary,
-                    size: 26,
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: context.bgColor, width: 2),
-                    ),
-                  ),
-                ),
-              ],
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                  ? NetworkImage(avatarUrl!)
+                  : null,
+              child: avatarUrl == null || avatarUrl!.isEmpty
+                  ? Icon(
+                      isDriver ? Icons.drive_eta_rounded : Icons.person_rounded,
+                      color: AppColors.primary,
+                      size: 26,
+                    )
+                  : null,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -270,13 +266,20 @@ class _ConversationTile extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (!isRead)
+                      if (unreadCount > 0)
                         Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
                             color: AppColors.primary,
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                     ],
@@ -317,10 +320,15 @@ class _MessagesScreenState extends State<MessagesScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   StreamSubscription? _realtimeSub;
+  StreamSubscription? _onlineSub;
   final _repo = MessagesRepository();
+  DateTime? _lastSentAt;
 
   String _otherName = '';
   String? _resolvedOtherUserId;
+  String? _otherAvatarUrl;
+  bool _isOtherOnline = false;
+  bool _showScrollToBottom = false;
 
   bool get _isTripChat =>
       widget.tripId != null && widget.tripId!.isNotEmpty;
@@ -329,6 +337,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
   void initState() {
     super.initState();
     _otherName = widget.otherUserName ?? '';
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 200;
+      if (_showScrollToBottom != show) {
+        setState(() => _showScrollToBottom = show);
+      }
+    });
     _init();
   }
 
@@ -382,11 +396,14 @@ class _MessagesScreenState extends State<MessagesScreen> {
     }
 
     try {
-      // Fetch name if not passed
-      if (_otherName.isEmpty) {
+      // Fetch name + avatar if not passed
+      if (_otherName.isEmpty || _otherAvatarUrl == null) {
         final info = await _repo.fetchUserInfo(_resolvedOtherUserId!);
         if (info != null && mounted) {
-          setState(() => _otherName = info['name'] as String? ?? '');
+          setState(() {
+            _otherName = info['name'] as String? ?? '';
+            _otherAvatarUrl = info['avatar_url'] as String?;
+          });
         }
       }
 
@@ -399,22 +416,70 @@ class _MessagesScreenState extends State<MessagesScreen> {
       _realtimeSub = _repo
           .subscribeToDirectMessages(_resolvedOtherUserId!)
           .listen((msgs) => _setMessages(msgs));
+
+      // Subscribe to online status
+      _watchOnlineStatus(_resolvedOtherUserId!);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }
   }
 
+  void _watchOnlineStatus(String userId) {
+    _onlineSub?.cancel();
+    SupabaseService.client
+        .channel('online-status-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'user_presence',
+          callback: (payload) {
+            final newRow = payload.newRecord;
+            if (newRow['user_id'] == userId) {
+              _updateOnlineFromRecord(newRow);
+            }
+          },
+        )
+        .subscribe();
+
+    // Initial check
+    SupabaseService.client
+        .from('user_presence')
+        .select('last_seen')
+        .eq('user_id', userId)
+        .maybeSingle()
+        .then((result) {
+      if (result != null) _updateOnlineFromRecord(result);
+    });
+  }
+
+  void _updateOnlineFromRecord(Map<String, dynamic> record) {
+    final lastSeenStr = record['last_seen'] as String?;
+    if (lastSeenStr == null) return;
+    final lastSeen = DateTime.tryParse(lastSeenStr);
+    if (lastSeen == null) return;
+    final isOnline = DateTime.now().difference(lastSeen).inSeconds < 30;
+    if (mounted) setState(() => _isOtherOnline = isOnline);
+  }
+
   void _setMessages(List<MessageModel> messages) {
     if (!mounted) return;
     final myId = SupabaseService.currentUser?.id;
+    final hasNewIncoming = messages.any((m) => m.senderId != myId && !m.isRead);
+
     setState(() {
       _isLoading = false;
       _displayMessages = messages.reversed.map((m) => _ChatDisplayItem(
         text: m.content,
         isMe: m.senderId == myId,
         createdAt: m.createdAt,
+        isRead: m.isRead,
       )).toList();
     });
+
+    // Mark incoming realtime messages as read when chat is open
+    if (hasNewIncoming && _resolvedOtherUserId != null) {
+      _repo.loadDirectMessages(_resolvedOtherUserId!);
+    }
   }
 
   @override
@@ -422,12 +487,20 @@ class _MessagesScreenState extends State<MessagesScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _realtimeSub?.cancel();
+    _onlineSub?.cancel();
     super.dispose();
   }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+    if (_lastSentAt != null && DateTime.now().difference(_lastSentAt!) < const Duration(seconds: 1)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.errorRateLimit)),
+      );
+      return;
+    }
+    _lastSentAt = DateTime.now();
     _messageController.clear();
     HapticFeedback.lightImpact();
 
@@ -477,6 +550,37 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
+  String _formatDateHeader(DateTime dt, AppLocalizations l) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDate = DateTime(dt.year, dt.month, dt.day);
+    if (msgDate == today) return l.today;
+    if (msgDate == yesterday) return l.yesterday;
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  List<_ChatDisplayItem> _buildItemsWithDateSeparators(AppLocalizations l) {
+    final items = <_ChatDisplayItem>[];
+    DateTime? lastDate;
+    for (final msg in _displayMessages) {
+      final dt = msg.createdAt;
+      if (dt != null) {
+        final date = DateTime(dt.year, dt.month, dt.day);
+        if (lastDate == null || date != lastDate) {
+          items.add(_ChatDisplayItem(
+            text: _formatDateHeader(dt, l),
+            isMe: false,
+            isDateHeader: true,
+          ));
+          lastDate = date;
+        }
+      }
+      items.add(msg);
+    }
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -503,16 +607,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 Container(
                   width: 7,
                   height: 7,
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
+                  decoration: BoxDecoration(
+                    color: _isOtherOnline ? AppColors.success : Colors.grey,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  l.online,
-                  style: const TextStyle(
-                    color: AppColors.success,
+                  _isOtherOnline ? l.online : '',
+                  style: TextStyle(
+                    color: _isOtherOnline ? AppColors.success : Colors.grey,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -586,7 +690,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _otherName.isNotEmpty ? 'Say hi to $_otherName! 👋' : '',
+              _otherName.isNotEmpty ? '${l.startChat} $_otherName!' : '',
               style: TextStyle(
                   color: context.textSecondary.withValues(alpha: 0.5),
                   fontSize: 14),
@@ -595,21 +699,47 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ),
       );
     }
-    return ListView.builder(
-      controller: _scrollController,
-      reverse: true,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      itemCount: _displayMessages.length,
-      itemBuilder: (context, index) {
-        final msg = _displayMessages[index];
-        return _ChatBubble(
-          message: msg.text,
-          time: _formatTime(msg.createdAt),
-          isMe: msg.isMe,
-          isSending: msg.isSending,
-        );
-      },
+    final items = _buildItemsWithDateSeparators(l);
+    return Stack(
+      children: [
+        ListView.builder(
+          controller: _scrollController,
+          reverse: true,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final item = items[index];
+            if (item.isDateHeader) {
+              return _DateHeader(text: item.text);
+            }
+            return _ChatBubble(
+              message: item.text,
+              time: _formatTime(item.createdAt),
+              isMe: item.isMe,
+              isSending: item.isSending,
+              isRead: item.isRead,
+              avatarUrl: !item.isMe ? _otherAvatarUrl : null,
+            );
+          },
+        ),
+        if (_showScrollToBottom)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.small(
+              onPressed: () {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              },
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+            ),
+          ),
+      ],
     );
   }
 
@@ -712,12 +842,16 @@ class _ChatBubble extends StatelessWidget {
   final String time;
   final bool isMe;
   final bool isSending;
+  final bool isRead;
+  final String? avatarUrl;
 
   const _ChatBubble({
     required this.message,
     required this.time,
     required this.isMe,
     this.isSending = false,
+    this.isRead = false,
+    this.avatarUrl,
   });
 
   @override
@@ -733,7 +867,12 @@ class _ChatBubble extends StatelessWidget {
             CircleAvatar(
               radius: 16,
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: const Icon(Icons.person, size: 18, color: AppColors.primary),
+              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                  ? NetworkImage(avatarUrl!)
+                  : null,
+              child: avatarUrl == null || avatarUrl!.isEmpty
+                  ? const Icon(Icons.person, size: 18, color: AppColors.primary)
+                  : null,
             ),
             const SizedBox(width: 8),
           ],
@@ -799,7 +938,7 @@ class _ChatBubble extends StatelessWidget {
                         Icon(
                           isSending
                               ? Icons.access_time
-                              : Icons.done_all,
+                              : (isRead ? Icons.done_all : Icons.done),
                           size: 14,
                           color: Colors.white.withValues(alpha: 0.8),
                         ),
@@ -822,11 +961,42 @@ class _ChatDisplayItem {
   final bool isMe;
   final DateTime? createdAt;
   final bool isSending;
+  final bool isRead;
+  final bool isDateHeader;
 
   const _ChatDisplayItem({
     required this.text,
     required this.isMe,
     this.createdAt,
     this.isSending = false,
+    this.isRead = false,
+    this.isDateHeader = false,
   });
+}
+
+class _DateHeader extends StatelessWidget {
+  final String text;
+  const _DateHeader({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: context.elevatedColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: context.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
 }

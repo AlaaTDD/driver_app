@@ -1,4 +1,6 @@
 
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../core/models/notification_model.dart';
 import '../../../../../services/supabase_service.dart';
 
@@ -52,10 +54,35 @@ class NotificationsRepository {
   
   
   Stream<int> getUnreadCountStream(String userId) {
-    return SupabaseService.client
-        .from('notifications')
-        .stream(primaryKey: ['id'])
-        .eq('user_id', userId)
-        .map((rows) => rows.where((r) => r['is_read'] == false).length);
+    // Use RPC with realtime trigger for efficiency instead of loading all rows
+    final controller = StreamController<int>.broadcast();
+
+    Future<void> _fetch() async {
+      try {
+        final result = await SupabaseService.client
+            .rpc('get_unread_count', params: {'p_user_id': userId});
+        controller.add((result as int?) ?? 0);
+      } catch (e) {
+        controller.add(0);
+      }
+    }
+
+    _fetch();
+
+    final channel = SupabaseService.client
+        .channel('unread-count-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'notifications',
+          callback: (_) => _fetch(),
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
   }
 }

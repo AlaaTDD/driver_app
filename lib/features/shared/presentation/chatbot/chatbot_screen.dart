@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
@@ -19,6 +20,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   bool _isSending = false;
   bool _isLoading = true;
   final _repository = ChatbotRepository();
+  DateTime? _lastSentAt;
 
   @override
   void initState() {
@@ -66,7 +68,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSending) return;
+    if (_lastSentAt != null && DateTime.now().difference(_lastSentAt!) < const Duration(seconds: 2)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.errorRateLimit)),
+      );
+      return;
+    }
+    _lastSentAt = DateTime.now();
     _controller.clear();
+    HapticFeedback.lightImpact();
     setState(() {
       _messages.add(ChatMessage(text: text, isUser: true));
       _isSending = true;
@@ -108,7 +118,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.support_agent, color: AppColors.primary, size: 64),
+                            const Icon(Icons.support_agent, color: AppColors.primary, size: 64),
                             const SizedBox(height: 16),
                             Text(
                               AppLocalizations.of(context)!.welcomeSupport,
@@ -137,13 +147,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            color: context.cardColor,
+            color: context.elevatedColor,
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     style: TextStyle(color: context.textPrimary),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                     decoration: InputDecoration(
                       hintText: AppLocalizations.of(context)!.typeMessage,
                       hintStyle: TextStyle(color: context.textSecondary),

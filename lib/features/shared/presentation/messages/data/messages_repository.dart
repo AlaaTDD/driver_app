@@ -1,6 +1,7 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../core/models/message_model.dart';
 import '../../../../../services/supabase_service.dart';
 
@@ -23,9 +24,21 @@ class MessagesRepository {
           .from('messages')
           .select('id, sender_id, receiver_id, content, created_at, is_read')
           .or('sender_id.eq.$userId,receiver_id.eq.$userId')
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(50);
 
       if (data.isEmpty) return [];
+
+      // Build unread counts per other user
+      final Map<String, int> unreadCounts = {};
+      for (final row in data) {
+        final s = row['sender_id'] as String;
+        final r = row['receiver_id'] as String;
+        if (r == userId && !(row['is_read'] as bool? ?? false)) {
+          final sender = s;
+          unreadCounts[sender] = (unreadCounts[sender] ?? 0) + 1;
+        }
+      }
 
       // Build a map of counterpart_id → last message
       final Map<String, Map<String, dynamic>> convMap = {};
@@ -42,6 +55,7 @@ class MessagesRepository {
           'last_message_at': row['created_at'],
           'is_me_sender': senderId == userId,
           'is_read': row['is_read'] as bool? ?? true,
+          'unread_count': unreadCounts[otherId] ?? 0,
         };
       }
 
@@ -95,8 +109,8 @@ class MessagesRepository {
         .isFilter('trip_id', null)
         .order('created_at', ascending: true);
 
-    // Mark received messages as read
-    _markAsRead(otherUserId);
+    // Mark received messages as read (scoped to direct chat only)
+    await _markAsRead(otherUserId, tripId: null);
 
     return (data as List)
         .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
@@ -108,23 +122,42 @@ class MessagesRepository {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return const Stream.empty();
 
-    // Supabase stream doesn't support OR filters, so we listen to ALL new
-    // messages involving either party and filter client-side.
-    return SupabaseService.client
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: true)
-        .map((data) => data
-            .where((row) {
-              final s = row['sender_id'] as String?;
-              final r = row['receiver_id'] as String?;
-              final tid = row['trip_id'];
-              return tid == null &&
-                  ((s == userId && r == otherUserId) ||
-                      (s == otherUserId && r == userId));
-            })
-            .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
-            .toList());
+    final controller = StreamController<List<MessageModel>>.broadcast();
+
+    void handlePayload(PostgresChangePayload payload) {
+      final newRow = payload.newRecord;
+      final s = newRow['sender_id'] as String?;
+      final r = newRow['receiver_id'] as String?;
+      final tid = newRow['trip_id'];
+      if (tid == null &&
+          ((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
+        // Re-fetch scoped messages for simplicity and correctness
+        loadDirectMessages(otherUserId).then((msgs) {
+          if (!controller.isClosed) controller.add(msgs);
+        });
+      }
+    }
+
+    final channel = SupabaseService.client
+        .channel('direct-messages-$userId-$otherUserId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          callback: handlePayload,
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    // Initial load
+    loadDirectMessages(otherUserId).then((msgs) {
+      if (!controller.isClosed) controller.add(msgs);
+    });
+
+    return controller.stream;
   }
 
   /// Send a direct message (no trip) and push notification + FCM.
@@ -247,16 +280,24 @@ class MessagesRepository {
 
   // ─── Mark as read ─────────────────────────────────────────────────────────
 
-  Future<void> _markAsRead(String senderId) async {
+  Future<void> _markAsRead(String senderId, {String? tripId}) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
     try {
-      await SupabaseService.client
+      var query = SupabaseService.client
           .from('messages')
           .update({'is_read': true})
           .eq('sender_id', senderId)
           .eq('receiver_id', userId)
           .eq('is_read', false);
+
+      if (tripId != null) {
+        query = query.eq('trip_id', tripId);
+      } else {
+        query = query.isFilter('trip_id', null);
+      }
+
+      await query;
     } catch (e) {
       debugPrint('⚠️ MessagesRepository: _markAsRead failed: $e');
     }
@@ -303,6 +344,47 @@ class MessagesRepository {
     if (senderId == tripUserId) return tripDriverId;
     if (senderId == tripDriverId) return tripUserId;
     return null;
+  }
+
+  Stream<int> getUnreadMessagesCountStream(String userId) {
+    final controller = StreamController<int>.broadcast();
+
+    Future<void> fetchCount() async {
+      try {
+        final result = await SupabaseService.client
+            .rpc('get_unread_message_count', params: {'p_user_id': userId});
+        // RPC returns a list of rows; sum the counts
+        int total = 0;
+        if (result is List) {
+          for (final row in result) {
+            if (row is Map && row['unread_count'] != null) {
+              total += (row['unread_count'] as num).toInt();
+            }
+          }
+        }
+        controller.add(total);
+      } catch (e) {
+        controller.add(0);
+      }
+    }
+
+    fetchCount();
+
+    final channel = SupabaseService.client
+        .channel('unread-messages-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'messages',
+          callback: (_) => fetchCount(),
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
   }
 
   Future<void> _createNotification({

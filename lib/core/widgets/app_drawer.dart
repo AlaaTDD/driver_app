@@ -10,6 +10,7 @@ import '../theme/bloc/theme_bloc.dart';
 import '../theme/bloc/theme_event.dart';
 import '../theme/bloc/theme_state.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
+import '../../features/shared/presentation/messages/data/messages_repository.dart';
 
 
 
@@ -55,7 +56,18 @@ class AppDrawer extends StatelessWidget {
                 if (onWalletTap != null)
                   _NavItem(icon: Icons.account_balance_wallet_rounded, tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myWallet, onTap: onWalletTap),
                 _NavItem(icon: Icons.route_rounded,       tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myTrips,         onTap: onTripsTap),
-                _NavItem(icon: Icons.chat_bubble_rounded, tint: const Color(0xFF3B82F6), label: AppLocalizations.of(context)!.messages,        onTap: onMessagesTap),
+                if (user != null)
+                  StreamBuilder<int>(
+                    stream: MessagesRepository().getUnreadMessagesCountStream(user!.id),
+                    builder: (context, snapshot) {
+                      return _MessagesNavItemWrapper(
+                        unreadCount: snapshot.data ?? 0,
+                        onMessagesTap: onMessagesTap,
+                      );
+                    },
+                  )
+                else
+                  _NavItem(icon: Icons.chat_bubble_rounded, tint: const Color(0xFF3B82F6), label: AppLocalizations.of(context)!.messages, onTap: onMessagesTap),
                 _NavItem(icon: Icons.auto_awesome_rounded,tint: const Color(0xFFF59E0B), label: AppLocalizations.of(context)!.aiAssistant,  onTap: onChatbotTap),
                 _NavItem(icon: Icons.report_problem_rounded, tint: const Color(0xFFEF4444), label: AppLocalizations.of(context)!.complaints, onTap: onComplaintsTap),
                 const SizedBox(height: 4),
@@ -96,9 +108,9 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final name     = user?.name ?? AppLocalizations.of(context)!.userDefault;
     final phone    = user?.phone ?? '';
-    final isDriver = user?.role == 'driver';
     final rating   = user?.rating ?? 0.0;
     final top      = MediaQuery.paddingOf(context).top;
+    final avatarUrl = user?.avatarUrl;
 
     return Container(
       width: double.infinity,
@@ -114,20 +126,27 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           Container(
             width: 60, height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withValues(alpha: 0.15),
               border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1.8),
+              image: avatarUrl != null && avatarUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(avatarUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Center(
-              child: Text(
-                _initials(name),
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-            ),
+            child: avatarUrl == null || avatarUrl.isEmpty
+                ? Center(
+                    child: Text(
+                      _initials(name),
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(height: 14),
           
@@ -183,8 +202,9 @@ class _NavItem extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final bool small;
+  final int? badge;
 
-  const _NavItem({required this.icon, required this.tint, required this.label, this.onTap, this.small = false});
+  const _NavItem({required this.icon, required this.tint, required this.label, this.onTap, this.small = false, this.badge});
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +222,31 @@ class _NavItem extends StatelessWidget {
             Container(
               width: sz, height: sz,
               decoration: BoxDecoration(color: tint.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, color: tint, size: small ? 15 : 18),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(child: Icon(icon, color: tint, size: small ? 15 : 18)),
+                  if (badge != null && badge! > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Center(
+                          child: Text(
+                            badge! > 99 ? '99+' : badge.toString(),
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -213,6 +257,23 @@ class _NavItem extends StatelessWidget {
           ]),
         ),
       ),
+    );
+  }
+}
+
+class _MessagesNavItemWrapper extends StatelessWidget {
+  final int unreadCount;
+  final VoidCallback? onMessagesTap;
+  const _MessagesNavItemWrapper({required this.unreadCount, this.onMessagesTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return _NavItem(
+      icon: Icons.chat_bubble_rounded,
+      tint: const Color(0xFF3B82F6),
+      label: AppLocalizations.of(context)!.messages,
+      onTap: onMessagesTap,
+      badge: unreadCount,
     );
   }
 }

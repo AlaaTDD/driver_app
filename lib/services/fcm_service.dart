@@ -13,6 +13,8 @@ import 'supabase_service.dart';
 import '../core/constants/env_constants.dart';
 import '../../firebase_options.dart';
 import '../features/ride_offer/overlay/ride_offer_overlay.dart';
+import '../core/router/app_router.dart';
+import '../core/constants/app_routes.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -161,8 +163,14 @@ class FCMService {
     final type = message.data['type'] ?? message.data['notification_type'];
 
     if (type == 'ride_offer') {
-      
       await handleRideOfferNotification(message.data);
+      return;
+    }
+
+    // Don't show local notification for new_message while app is open
+    // to avoid double notification (DB notification + FCM push)
+    if (type == 'new_message') {
+      developer.log('🔥 FCM FOREGROUND: Skipping local notification for new_message');
       return;
     }
 
@@ -172,9 +180,22 @@ class FCMService {
 
   Future<void> _handleMessageOpen(RemoteMessage message) async {
     final type = message.data['type'] ?? message.data['notification_type'];
-    if (type == 'ride_offer') {
-      developer.log('🔥 FCM OPENED APP: User tapped ride_offer notification!');
-      // Typically you'd navigate to the trip details page here.
+    final router = AppRouter.routerInstance;
+
+    switch (type) {
+      case 'new_message':
+        final senderId = message.data['senderId'];
+        final tripId = message.data['tripId'];
+        if (tripId != null && tripId.toString().isNotEmpty) {
+          router.go('${AppRoutes.userMessages}?tripId=$tripId');
+        } else if (senderId != null && senderId.toString().isNotEmpty) {
+          router.go('${AppRoutes.userMessages}?otherUserId=$senderId');
+        }
+        break;
+      case 'ride_offer':
+        developer.log('🔥 FCM OPENED APP: User tapped ride_offer notification!');
+        // Typically you'd navigate to the trip details page here.
+        break;
     }
   }
 
