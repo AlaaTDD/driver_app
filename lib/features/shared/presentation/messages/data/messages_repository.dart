@@ -19,11 +19,12 @@ class MessagesRepository {
     if (userId == null) return [];
 
     try {
-      // Fetch all messages where I am sender OR receiver
+      // Fetch all messages where I am sender OR receiver (excluding soft-deleted for me)
       final data = await SupabaseService.client
           .from('messages')
           .select('id, sender_id, receiver_id, content, created_at, is_read')
           .or('sender_id.eq.$userId,receiver_id.eq.$userId')
+          .or('and(deleted_by_sender.eq.false,deleted_by_receiver.eq.false)')
           .order('created_at', ascending: false)
           .limit(50);
 
@@ -107,10 +108,11 @@ class MessagesRepository {
         .select('*')
         .or('and(sender_id.eq.$userId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$userId)')
         .isFilter('trip_id', null)
+        .or('and(sender_id.eq.$userId,deleted_by_sender.eq.false),and(receiver_id.eq.$userId,deleted_by_receiver.eq.false)')
         .order('created_at', ascending: true);
 
     // Mark received messages as read (scoped to direct chat only)
-    await _markAsRead(otherUserId, tripId: null);
+    await markAsRead(otherUserId, tripId: null);
 
     return (data as List)
         .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
@@ -280,13 +282,13 @@ class MessagesRepository {
 
   // ─── Mark as read ─────────────────────────────────────────────────────────
 
-  Future<void> _markAsRead(String senderId, {String? tripId}) async {
+  Future<void> markAsRead(String senderId, {String? tripId}) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
     try {
       var query = SupabaseService.client
           .from('messages')
-          .update({'is_read': true})
+          .update({'is_read': true, 'read_at': DateTime.now().toUtc().toIso8601String()})
           .eq('sender_id', senderId)
           .eq('receiver_id', userId)
           .eq('is_read', false);
@@ -431,14 +433,20 @@ class MessagesRepository {
 
   /// Updates last_seen for current user without lat/lng.
   /// Call every 10s while user is in a chat screen.
-  Future<void> ensureMyPresence() async {
+  Future<void> ensureMyPresence({double? lat, double? lng}) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
     try {
-      await SupabaseService.client.from('user_presence').upsert({
+      final payload = <String, dynamic>{
         'user_id': userId,
         'last_seen': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'user_id');
+      };
+      if (lat != null) payload['lat'] = lat;
+      if (lng != null) payload['lng'] = lng;
+      await SupabaseService.client.from('user_presence').upsert(
+        payload,
+        onConflict: 'user_id',
+      );
     } catch (e) {
       debugPrint('⚠️ MessagesRepository: ensureMyPresence failed: $e');
     }
@@ -455,7 +463,7 @@ class MessagesRepository {
       final result = await SupabaseService.client
           .from('trips')
           .select('id')
-          .inFilter('status', ['accepted', 'in_progress', 'arrived', 'picked_up'])
+          .inFilter('status', ['pending', 'accepted', 'in_progress', 'arrived', 'picked_up'])
           .or('and(user_id.eq.$userId,driver_id.eq.$otherUserId),and(user_id.eq.$otherUserId,driver_id.eq.$userId)')
           .limit(1);
       return (result as List).isNotEmpty;

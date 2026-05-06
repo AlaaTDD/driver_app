@@ -50,13 +50,36 @@ REVOKE ALL ON public.user_presence FROM anon;
 -- GRANT SELECT, INSERT, UPDATE ON public.support_messages TO authenticated;
 
 -- ============================================
+-- DB-0: Create user_presence table if not exists
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.user_presence (
+  user_id uuid PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  lat double precision,
+  lng double precision,
+  last_seen timestamptz NOT NULL DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.user_presence ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
 -- SEC-3: Fix user_presence — only authenticated can read
 -- ============================================
 DROP POLICY IF EXISTS "Anyone can read presence" ON public.user_presence;
-CREATE POLICY IF NOT EXISTS "Authenticated can read presence"
-  ON public.user_presence FOR SELECT
-  TO authenticated
-  USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'user_presence'
+    AND policyname = 'Authenticated can read presence'
+  ) THEN
+    CREATE POLICY "Authenticated can read presence"
+      ON public.user_presence FOR SELECT
+      TO authenticated
+      USING (true);
+  END IF;
+END
+$$;
 
 -- ============================================
 -- BUG #4 / Schema improvement: support_messages needs sender_id
@@ -85,7 +108,10 @@ CREATE OR REPLACE FUNCTION public.get_unread_message_count(p_user_id uuid)
 RETURNS TABLE(other_user_id uuid, unread_count bigint) AS $$
   SELECT sender_id, COUNT(*)::bigint
   FROM public.messages
-  WHERE receiver_id = p_user_id AND is_read = false AND trip_id IS NULL
+  WHERE receiver_id = p_user_id
+    AND is_read = false
+    AND trip_id IS NULL
+    AND deleted_by_receiver = false
   GROUP BY sender_id;
 $$ LANGUAGE sql SECURITY DEFINER;
 
@@ -105,6 +131,14 @@ ALTER TABLE public.messages ADD CONSTRAINT messages_sender_id_fkey
 ALTER TABLE public.messages DROP CONSTRAINT IF EXISTS messages_receiver_id_fkey;
 ALTER TABLE public.messages ADD CONSTRAINT messages_receiver_id_fkey
   FOREIGN KEY (receiver_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+-- ============================================
+-- CRITICAL 4.8b: Fix messages_trip_id_fkey to SET NULL on trip deletion
+-- (Previously commented but never executed)
+-- ============================================
+ALTER TABLE public.messages DROP CONSTRAINT IF EXISTS messages_trip_id_fkey;
+ALTER TABLE public.messages ADD CONSTRAINT messages_trip_id_fkey
+  FOREIGN KEY (trip_id) REFERENCES public.trips(id) ON DELETE SET NULL;
 
 -- ============================================
 -- 4.9 / Schema: Add read_at for real read receipts and soft-delete flags
@@ -144,8 +178,13 @@ CREATE TRIGGER trigger_soft_delete_orphan_messages
 
 -- ============================================
 -- HIDDEN-6: Scheduled cleanup of stale user_presence
--- Requires pg_cron extension (available on Supabase)
 -- ============================================
--- Note: Run this manually in Supabase SQL Editor or enable pg_cron:
--- SELECT cron.schedule('cleanup-stale-presence', '*/5 * * * *',
---   $$DELETE FROM public.user_presence WHERE last_seen < NOW() - INTERVAL '5 minutes';$$);
+CREATE OR REPLACE FUNCTION public.cleanup_stale_presence()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM public.user_presence WHERE last_seen < NOW() - INTERVAL '5 minutes';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule via pg_cron (run manually in Supabase SQL Editor if pg_cron not active):
+-- SELECT cron.schedule('cleanup-stale-presence', '*/5 * * * *', 'SELECT public.cleanup_stale_presence();');

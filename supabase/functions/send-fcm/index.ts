@@ -87,11 +87,11 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY")!,
   );
 
-  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(
+  const { data: { user: senderUser }, error: authError } = await supabaseAuth.auth.getUser(
     authHeader.replace("Bearer ", ""),
   );
 
-  if (authError || !user) {
+  if (authError || !senderUser) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
@@ -100,11 +100,7 @@ serve(async (req) => {
 
   const { user_id, title, body, data: payloadData } = await req.json();
 
-  // Only allow sending to participants in a shared trip or direct messages
-  // For now: allow sending to any user (FCM is needed for notifications)
-  // But log and rate-limit via a simple in-memory check (Deno is edge-isolated)
-  // Future: verify sender is in a trip with receiver or has direct message relationship
-  console.log(`FCM send attempt: sender=${user.id}, target=${user_id}`);
+  console.log(`FCM send attempt: sender=${senderUser.id}, target=${user_id}`);
   if (!user_id || !title || !body) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), {
       status: 400,
@@ -112,18 +108,44 @@ serve(async (req) => {
     });
   }
 
+  // ─── Security: verify sender has a relationship with receiver ───
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const { data: user } = await supabase
+  // Allow if they share an active trip OR have exchanged direct messages
+  const { data: sharedTrip, error: tripErr } = await supabase
+    .from("trips")
+    .select("id")
+    .in("status", ["accepted", "in_progress", "arrived", "picked_up", "pending"])
+    .or(`and(user_id.eq.${senderUser.id},driver_id.eq.${user_id}),and(user_id.eq.${user_id},driver_id.eq.${senderUser.id})`)
+    .limit(1)
+    .maybeSingle();
+
+  const { data: directMsg, error: msgErr } = await supabase
+    .from("messages")
+    .select("id")
+    .or(`and(sender_id.eq.${senderUser.id},receiver_id.eq.${user_id}),and(sender_id.eq.${user_id},receiver_id.eq.${senderUser.id})`)
+    .is("trip_id", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!sharedTrip && !directMsg) {
+    console.warn(`FCM rejected: sender=${senderUser.id} has no relationship with target=${user_id}`);
+    return new Response(JSON.stringify({ error: "no_relationship" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const { data: recipientUser } = await supabase
     .from("users")
     .select("fcm_token")
     .eq("id", user_id)
     .single();
 
-  if (!user?.fcm_token) {
+  if (!recipientUser?.fcm_token) {
     return new Response(JSON.stringify({ error: "no_fcm_token" }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -181,7 +203,7 @@ serve(async (req) => {
   }
 
   const messagePayload: any = {
-    token: user.fcm_token,
+    token: recipientUser.fcm_token,
     data: Object.fromEntries(
       Object.entries(enrichedData).map(([k, v]) => [k, String(v)]),
     ),

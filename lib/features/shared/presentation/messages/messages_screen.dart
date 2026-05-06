@@ -27,6 +27,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   List<Map<String, dynamic>> _conversations = [];
   bool _isLoading = true;
   StreamSubscription? _convRealtimeSub;
+  final Map<String, bool> _onlineMap = {};
+  Timer? _onlineTimer;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   void dispose() {
     _convRealtimeSub?.cancel();
+    _onlineTimer?.cancel();
     super.dispose();
   }
 
@@ -70,6 +73,38 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       _conversations = data;
       _isLoading = false;
     });
+    _fetchOnlineStatuses();
+  }
+
+  Future<void> _fetchOnlineStatuses() async {
+    if (_conversations.isEmpty) return;
+    final userIds = _conversations
+        .map((c) => c['other_user_id'] as String?)
+        .where((id) => id != null)
+        .toList();
+    if (userIds.isEmpty) return;
+    try {
+      final result = await SupabaseService.client
+          .from('user_presence')
+          .select('user_id, last_seen')
+          .inFilter('user_id', userIds);
+      final now = DateTime.now();
+      final Map<String, bool> updated = {};
+      for (final row in result) {
+        final uid = row['user_id'] as String?;
+        final ls = row['last_seen'] as String?;
+        if (uid == null || ls == null) continue;
+        final lastSeen = DateTime.tryParse(ls);
+        if (lastSeen == null) continue;
+        updated[uid] = now.difference(lastSeen).inSeconds < 30;
+      }
+      if (mounted) setState(() => _onlineMap.addAll(updated));
+    } catch (e) {
+      debugPrint('❌ _fetchOnlineStatuses: $e');
+    }
+    // Refresh every 30s
+    _onlineTimer?.cancel();
+    _onlineTimer = Timer(const Duration(seconds: 30), _fetchOnlineStatuses);
   }
 
   void _openChat({String? tripId, String? otherUserId, String? otherName}) {
@@ -127,6 +162,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                       final convIsRead = isMeSender
                           ? true
                           : (conv['is_read'] as bool? ?? false);
+                      final otherId = conv['other_user_id'] as String;
                       return _ConversationTile(
                         name: conv['other_user_name'] as String? ?? '',
                         lastMessage:
@@ -137,8 +173,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                         isRead: convIsRead,
                         isMeSender: isMeSender,
                         unreadCount: conv['unread_count'] as int? ?? 0,
+                        isOnline: _onlineMap[otherId] ?? false,
                         onTap: () => _openChat(
-                          otherUserId: conv['other_user_id'] as String,
+                          otherUserId: otherId,
                           otherName:
                               conv['other_user_name'] as String?,
                         ),
@@ -293,6 +330,7 @@ class _ConversationTile extends StatelessWidget {
   final bool isRead;
   final bool isMeSender;
   final int unreadCount;
+  final bool isOnline;
   final VoidCallback onTap;
 
   const _ConversationTile({
@@ -304,6 +342,7 @@ class _ConversationTile extends StatelessWidget {
     required this.isRead,
     required this.isMeSender,
     this.unreadCount = 0,
+    this.isOnline = false,
     required this.onTap,
   });
 
@@ -352,21 +391,21 @@ class _ConversationTile extends StatelessWidget {
                         )
                       : null,
                 ),
-                // Online indicator (visual placeholder — can be wired later)
-                /* Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: context.bgColor, width: 2),
+                if (isOnline)
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: AppColors.success,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: context.bgColor, width: 2),
+                      ),
                     ),
                   ),
-                ), */
               ],
             ),
             const SizedBox(width: 14),
@@ -527,21 +566,27 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   Future<void> _initTripChat() async {
     try {
+      // Check if trip is still active
+      final tripData = await _repo.fetchTripParticipants(widget.tripId!);
+      if (tripData != null) {
+        final tripStatus = tripData['status'] as String?;
+        final activeStatuses = ['pending', 'accepted', 'in_progress', 'arrived', 'picked_up'];
+        if (tripStatus == null || !activeStatuses.contains(tripStatus)) {
+          if (mounted) setState(() => _canSend = false);
+        }
+      }
+
       // Resolve participant name if not passed
-      if (_otherName.isEmpty) {
-        final tripData =
-            await _repo.fetchTripParticipants(widget.tripId!);
-        if (tripData != null) {
-          final me = SupabaseService.currentUser?.id;
-          final otherId = (tripData['user_id'] == me)
-              ? tripData['driver_id']
-              : tripData['user_id'];
-          if (otherId != null) {
-            _resolvedOtherUserId = otherId as String;
-            final name = await _repo.fetchUserName(otherId);
-            if (mounted && name != null) {
-              setState(() => _otherName = name);
-            }
+      if (_otherName.isEmpty && tripData != null) {
+        final me = SupabaseService.currentUser?.id;
+        final otherId = (tripData['user_id'] == me)
+            ? tripData['driver_id']
+            : tripData['user_id'];
+        if (otherId != null) {
+          _resolvedOtherUserId = otherId as String;
+          final name = await _repo.fetchUserName(otherId);
+          if (mounted && name != null) {
+            setState(() => _otherName = name);
           }
         }
       }
@@ -615,7 +660,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
           callback: (payload) {
             final eventType = payload.eventType;
             if (eventType == PostgresChangeEvent.delete) {
-              // User went offline (presence deleted, e.g. app killed)
               if (mounted) setState(() => _isOtherOnline = false);
               return;
             }
@@ -627,7 +671,17 @@ class _MessagesScreenState extends State<MessagesScreen> {
         )
         .subscribe();
 
-    // Initial check
+    // Initial check + periodic refresh every 10s (as fallback for missed events)
+    _fetchOnlineStatus(userId);
+    _onlineRefreshTimer?.cancel();
+    _onlineRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _fetchOnlineStatus(userId);
+    });
+  }
+
+  Timer? _onlineRefreshTimer;
+
+  void _fetchOnlineStatus(String userId) {
     SupabaseService.client
         .from('user_presence')
         .select('last_seen')
@@ -637,7 +691,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
       if (result != null) {
         _updateOnlineFromRecord(result);
       } else if (mounted) {
-        // No presence row = offline
         setState(() => _isOtherOnline = false);
       }
     });
@@ -675,7 +728,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
     // Mark incoming realtime messages as read when chat is open
     if (hasNewIncoming && _resolvedOtherUserId != null) {
-      _repo.loadDirectMessages(_resolvedOtherUserId!);
+      _repo.markAsRead(_resolvedOtherUserId!);
     }
   }
 
@@ -686,12 +739,21 @@ class _MessagesScreenState extends State<MessagesScreen> {
     _realtimeSub?.cancel();
     _onlineSub?.cancel();
     _presenceTimer?.cancel();
+    _onlineRefreshTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+    if (_resolvedOtherUserId == null && !_isTripChat) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('لا يمكن إرسال الرسالة: لم يتم تحديد المستقبل'),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     if (!_canSend) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: const Text('لا يمكن إرسال الرسائل إلا أثناء رحلة نشطة'),
@@ -859,9 +921,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     ),
                   ),
                   Text(
-                    _isOtherOnline ? l.online : '',
-                    style: const TextStyle(
-                      color: AppColors.success,
+                    _isOtherOnline ? l.online : 'غير متصل',
+                    style: TextStyle(
+                      color: _isOtherOnline ? AppColors.success : context.textSecondary.withValues(alpha: 0.6),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1012,6 +1074,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
   }
 
   Widget _buildInputBar(BuildContext context, AppLocalizations l) {
+    final isLocked = !_canSend;
     return Container(
       decoration: BoxDecoration(
         color: context.elevatedColor,
@@ -1040,21 +1103,31 @@ class _MessagesScreenState extends State<MessagesScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: context.bgColor,
+                  color: isLocked
+                      ? context.bgColor.withValues(alpha: 0.5)
+                      : context.bgColor,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: context.textSecondary.withValues(alpha: 0.12),
+                    color: isLocked
+                        ? context.textSecondary.withValues(alpha: 0.05)
+                        : context.textSecondary.withValues(alpha: 0.12),
                   ),
                 ),
                 child: TextField(
                   controller: _messageController,
-                  style: TextStyle(color: context.textPrimary, fontSize: 15),
+                  enabled: !isLocked,
+                  style: TextStyle(
+                    color: isLocked
+                        ? context.textSecondary.withValues(alpha: 0.4)
+                        : context.textPrimary,
+                    fontSize: 15,
+                  ),
                   textInputAction: TextInputAction.send,
                   minLines: 1,
                   maxLines: 5,
                   onSubmitted: (_) => _sendMessage(),
                   decoration: InputDecoration(
-                    hintText: l.typeMessage,
+                    hintText: isLocked ? 'الدردشة مغلقة — لا توجد رحلة نشطة' : l.typeMessage,
                     hintStyle: TextStyle(
                         color: context.textSecondary.withValues(alpha: 0.45)),
                     border: InputBorder.none,
@@ -1067,26 +1140,31 @@ class _MessagesScreenState extends State<MessagesScreen> {
             const SizedBox(width: 10),
             Container(
               margin: const EdgeInsets.only(bottom: 2),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              decoration: BoxDecoration(
+                gradient: isLocked
+                    ? null
+                    : const LinearGradient(
+                        colors: [AppColors.primary, AppColors.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                color: isLocked ? Colors.grey.shade400 : null,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color.fromRGBO(37, 99, 235, 0.35),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+                boxShadow: isLocked
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: Color.fromRGBO(37, 99, 235, 0.35),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   customBorder: const CircleBorder(),
-                  onTap: _sendMessage,
+                  onTap: isLocked ? null : _sendMessage,
                   child: const Padding(
                     padding: EdgeInsets.all(12),
                     child:

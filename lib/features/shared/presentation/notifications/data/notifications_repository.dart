@@ -57,7 +57,7 @@ class NotificationsRepository {
     // Use RPC with realtime trigger for efficiency instead of loading all rows
     final controller = StreamController<int>.broadcast();
 
-    Future<void> _fetch() async {
+    Future<void> fetchCount() async {
       try {
         final result = await SupabaseService.client
             .rpc('get_unread_count', params: {'p_user_id': userId});
@@ -67,7 +67,7 @@ class NotificationsRepository {
       }
     }
 
-    _fetch();
+    fetchCount();
 
     final channel = SupabaseService.client
         .channel('unread-count-$userId')
@@ -75,7 +75,7 @@ class NotificationsRepository {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'notifications',
-          callback: (_) => _fetch(),
+          callback: (_) => fetchCount(),
         )
         .subscribe();
 
