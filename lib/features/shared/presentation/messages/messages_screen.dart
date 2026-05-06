@@ -27,14 +27,15 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   List<Map<String, dynamic>> _conversations = [];
   bool _isLoading = true;
   StreamSubscription? _convRealtimeSub;
+  StreamSubscription? _payloadSub;
   final Map<String, bool> _onlineMap = {};
   Timer? _onlineTimer;
+  Timer? _presenceTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // If a direct target is provided, skip the list and open chat immediately
     if (widget.tripId != null && widget.tripId!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -48,20 +49,95 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     } else {
       _loadConversations();
       _subscribeToConversationsRealtime();
+      _subscribeToPayloads();
+      _startPresenceHeartbeat();
     }
   }
 
   @override
   void dispose() {
     _convRealtimeSub?.cancel();
+    _payloadSub?.cancel();
     _onlineTimer?.cancel();
+    _presenceTimer?.cancel();
     super.dispose();
+  }
+
+  // ─── Presence: update last_seen every 10s while in conversation list ───
+  void _startPresenceHeartbeat() {
+    _repo.ensureMyPresence();
+    _presenceTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _repo.ensureMyPresence();
+    });
+  }
+
+  // ─── Realtime: targeted optimistic update (no shimmer reload) ───
+  void _subscribeToPayloads() {
+    _payloadSub = _repo.watchConversationPayloads().listen((msg) {
+      if (!mounted) return;
+      _handleRealtimeMessage(msg);
+    });
+  }
+
+  void _handleRealtimeMessage(Map<String, dynamic> msg) {
+    final myId = SupabaseService.currentUser?.id;
+    if (myId == null) return;
+
+    final senderId = msg['sender_id'] as String?;
+    final receiverId = msg['receiver_id'] as String?;
+    final otherId = (senderId == myId) ? receiverId : senderId;
+    if (otherId == null || senderId == null || receiverId == null) return;
+
+    final content = msg['content'] as String? ?? '';
+    final createdAt = msg['created_at'] as String?;
+    final isRead = msg['is_read'] as bool? ?? false;
+    final deletedByMe = (senderId == myId)
+        ? (msg['deleted_by_sender'] as bool? ?? false)
+        : (msg['deleted_by_receiver'] as bool? ?? false);
+
+    // Soft-delete by me → full reload to get previous message
+    if (deletedByMe) {
+      _loadConversations();
+      return;
+    }
+
+    setState(() {
+      final idx = _conversations.indexWhere(
+        (c) => c['other_user_id'] == otherId,
+      );
+
+      if (idx >= 0) {
+        final conv = _conversations[idx];
+        final wasMeSender = senderId == myId;
+        final unreadIncrement = (!wasMeSender && !isRead) ? 1 : 0;
+
+        _conversations[idx] = {
+          ...conv,
+          'last_message': content,
+          'last_message_at': createdAt ?? conv['last_message_at'],
+          'is_me_sender': wasMeSender,
+          'is_read': wasMeSender ? true : isRead,
+          'unread_count': (conv['unread_count'] as int? ?? 0) + unreadIncrement,
+        };
+
+        // Move updated conversation to top by re-sorting
+        _conversations.sort((a, b) {
+          final aTime = a['last_message_at'] as String? ?? '';
+          final bTime = b['last_message_at'] as String? ?? '';
+          return bTime.compareTo(aTime);
+        });
+      } else {
+        // Brand new conversation — fetch full list once
+        _loadConversations();
+      }
+    });
   }
 
   void _subscribeToConversationsRealtime() {
     _convRealtimeSub = _repo.watchConversations().listen((_) {
       if (!mounted) return;
-      _loadConversations();
+      // Payload stream handles targeted updates; this is a safety fallback
+      // for events that might slip through (e.g., trip messages)
     });
   }
 
@@ -88,13 +164,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
           .from('user_presence')
           .select('user_id, last_seen')
           .inFilter('user_id', userIds);
-      final now = DateTime.now();
+      final now = DateTime.now().toUtc();
       final Map<String, bool> updated = {};
       for (final row in result) {
         final uid = row['user_id'] as String?;
         final ls = row['last_seen'] as String?;
         if (uid == null || ls == null) continue;
-        final lastSeen = DateTime.tryParse(ls);
+        final lastSeen = DateTime.tryParse(ls)?.toUtc();
         if (lastSeen == null) continue;
         updated[uid] = now.difference(lastSeen).inSeconds < 30;
       }
@@ -102,9 +178,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     } catch (e) {
       debugPrint('❌ _fetchOnlineStatuses: $e');
     }
-    // Refresh every 30s
+    // Refresh every 10s (was 30s — too slow for UX)
     _onlineTimer?.cancel();
-    _onlineTimer = Timer(const Duration(seconds: 30), _fetchOnlineStatuses);
+    _onlineTimer = Timer(const Duration(seconds: 10), _fetchOnlineStatuses);
   }
 
   void _openChat({String? tripId, String? otherUserId, String? otherName}) {
@@ -702,12 +778,13 @@ class _MessagesScreenState extends State<MessagesScreen> {
       if (mounted) setState(() => _isOtherOnline = false);
       return;
     }
-    final lastSeen = DateTime.tryParse(lastSeenStr);
+    final lastSeen = DateTime.tryParse(lastSeenStr)?.toUtc();
     if (lastSeen == null) {
       if (mounted) setState(() => _isOtherOnline = false);
       return;
     }
-    final isOnline = DateTime.now().difference(lastSeen).inSeconds < 30;
+    final now = DateTime.now().toUtc();
+    final isOnline = now.difference(lastSeen).inSeconds < 30;
     if (mounted) setState(() => _isOtherOnline = isOnline);
   }
 
@@ -1077,22 +1154,29 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final isLocked = !_canSend;
     return Container(
       decoration: BoxDecoration(
-        color: context.elevatedColor,
+        gradient: LinearGradient(
+          colors: [
+            context.elevatedColor,
+            context.bgColor,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -6),
           ),
         ],
       ),
       padding: EdgeInsets.only(
-        left: 14,
-        right: 14,
-        top: 10,
+        left: 16,
+        right: 16,
+        top: 12,
         bottom: MediaQuery.of(context).padding.bottom > 0
-            ? MediaQuery.of(context).padding.bottom + 4
-            : 16,
+            ? MediaQuery.of(context).padding.bottom + 8
+            : 20,
       ),
       child: SafeArea(
         top: false,
@@ -1104,23 +1188,34 @@ class _MessagesScreenState extends State<MessagesScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: isLocked
-                      ? context.bgColor.withValues(alpha: 0.5)
+                      ? context.bgColor.withValues(alpha: 0.4)
                       : context.bgColor,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
                     color: isLocked
-                        ? context.textSecondary.withValues(alpha: 0.05)
-                        : context.textSecondary.withValues(alpha: 0.12),
+                        ? context.textSecondary.withValues(alpha: 0.06)
+                        : context.textSecondary.withValues(alpha: 0.1),
+                    width: 1.2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.isDark
+                          ? Colors.white.withValues(alpha: 0.02)
+                          : Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: TextField(
                   controller: _messageController,
                   enabled: !isLocked,
                   style: TextStyle(
                     color: isLocked
-                        ? context.textSecondary.withValues(alpha: 0.4)
+                        ? context.textSecondary.withValues(alpha: 0.35)
                         : context.textPrimary,
                     fontSize: 15,
+                    height: 1.3,
                   ),
                   textInputAction: TextInputAction.send,
                   minLines: 1,
@@ -1129,52 +1224,109 @@ class _MessagesScreenState extends State<MessagesScreen> {
                   decoration: InputDecoration(
                     hintText: isLocked ? 'الدردشة مغلقة — لا توجد رحلة نشطة' : l.typeMessage,
                     hintStyle: TextStyle(
-                        color: context.textSecondary.withValues(alpha: 0.45)),
+                      color: context.textSecondary.withValues(alpha: 0.4),
+                      fontSize: 14,
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 12),
+                        horizontal: 20, vertical: 14),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Container(
+            const SizedBox(width: 12),
+            _AnimatedSendButton(
+              isLocked: isLocked,
+              onTap: _sendMessage,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Animated send button with scale + glow
+// ─────────────────────────────────────────────────────────────────────────────
+class _AnimatedSendButton extends StatefulWidget {
+  final bool isLocked;
+  final VoidCallback onTap;
+
+  const _AnimatedSendButton({required this.isLocked, required this.onTap});
+
+  @override
+  State<_AnimatedSendButton> createState() => _AnimatedSendButtonState();
+}
+
+class _AnimatedSendButtonState extends State<_AnimatedSendButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+      lowerBound: 0.85,
+      upperBound: 1.0,
+    );
+    _controller.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.isLocked ? null : (_) => _controller.reverse(),
+      onTapUp: widget.isLocked
+          ? null
+          : (_) {
+              _controller.forward();
+              widget.onTap();
+            },
+      onTapCancel: widget.isLocked ? null : () => _controller.forward(),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _controller.value,
+            child: Container(
               margin: const EdgeInsets.only(bottom: 2),
               decoration: BoxDecoration(
-                gradient: isLocked
+                gradient: widget.isLocked
                     ? null
                     : const LinearGradient(
                         colors: [AppColors.primary, AppColors.secondary],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                color: isLocked ? Colors.grey.shade400 : null,
+                color: widget.isLocked ? Colors.grey.shade400 : null,
                 shape: BoxShape.circle,
-                boxShadow: isLocked
+                boxShadow: widget.isLocked
                     ? null
                     : const [
                         BoxShadow(
-                          color: Color.fromRGBO(37, 99, 235, 0.35),
-                          blurRadius: 10,
+                          color: Color.fromRGBO(37, 99, 235, 0.45),
+                          blurRadius: 12,
                           offset: Offset(0, 4),
                         ),
                       ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: isLocked ? null : _sendMessage,
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child:
-                        Icon(Icons.send_rounded, color: Colors.white, size: 24),
-                  ),
-                ),
+              child: const Padding(
+                padding: EdgeInsets.all(13),
+                child: Icon(Icons.send_rounded,
+                    color: Colors.white, size: 24),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1204,7 +1356,7 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment:
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -1212,17 +1364,17 @@ class _ChatBubble extends StatelessWidget {
         children: [
           if (!isMe) ...[
             CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              radius: 15,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
               backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
                   ? NetworkImage(avatarUrl!)
                   : null,
               child: avatarUrl == null || avatarUrl!.isEmpty
                   ? const Icon(Icons.person_rounded,
-                      size: 16, color: AppColors.primary)
+                      size: 18, color: AppColors.primary)
                   : null,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
           ],
           Flexible(
             child: Column(
@@ -1231,31 +1383,31 @@ class _ChatBubble extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                      horizontal: 18, vertical: 12),
                   decoration: BoxDecoration(
                     gradient: isMe
                         ? const LinearGradient(
-                            colors: [AppColors.primary, AppColors.secondary],
+                            colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
                         : null,
                     color: isMe ? null : context.elevatedColor,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(22),
-                      topRight: const Radius.circular(22),
-                      bottomLeft: Radius.circular(isMe ? 22 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 22),
+                      topLeft: const Radius.circular(24),
+                      topRight: const Radius.circular(24),
+                      bottomLeft: Radius.circular(isMe ? 24 : 6),
+                      bottomRight: Radius.circular(isMe ? 6 : 24),
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: isMe
-                            ? AppColors.primary.withValues(alpha: 0.18)
+                            ? const Color.fromRGBO(37, 99, 235, 0.22)
                             : (context.isDark
-                                ? Colors.white.withValues(alpha: 0.03)
-                                : Colors.black.withValues(alpha: 0.05)),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                                ? Colors.white.withValues(alpha: 0.04)
+                                : Colors.black.withValues(alpha: 0.06)),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
                       ),
                     ],
                   ),
@@ -1268,11 +1420,12 @@ class _ChatBubble extends StatelessWidget {
                         message,
                         style: TextStyle(
                           color: isMe ? Colors.white : context.textPrimary,
-                          fontSize: 15,
-                          height: 1.35,
+                          fontSize: 15.5,
+                          height: 1.4,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1280,32 +1433,26 @@ class _ChatBubble extends StatelessWidget {
                             time,
                             style: TextStyle(
                               color: isMe
-                                  ? Colors.white.withValues(alpha: 0.85)
-                                  : context.textSecondary,
+                                  ? Colors.white.withValues(alpha: 0.8)
+                                  : context.textSecondary.withValues(alpha: 0.7),
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           if (isMe) ...[
-                            const SizedBox(width: 5),
+                            const SizedBox(width: 6),
                             if (isSending)
                               SizedBox(
-                                width: 12,
-                                height: 12,
+                                width: 13,
+                                height: 13,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.8,
                                   color:
-                                      Colors.white.withValues(alpha: 0.85),
+                                      Colors.white.withValues(alpha: 0.8),
                                 ),
                               )
                             else
-                              Icon(
-                                isRead ? Icons.done_all_rounded : Icons.done_rounded,
-                                size: 14,
-                                color: isRead
-                                    ? const Color(0xFF60A5FA)
-                                    : Colors.white.withValues(alpha: 0.85),
-                              ),
+                              _ReadStatusIcon(isRead: isRead),
                           ],
                         ],
                       ),
@@ -1315,10 +1462,32 @@ class _ChatBubble extends StatelessWidget {
               ],
             ),
           ),
-          if (isMe) const SizedBox(width: 28),
+          if (isMe) const SizedBox(width: 30),
         ],
       ),
     );
+  }
+}
+
+class _ReadStatusIcon extends StatelessWidget {
+  final bool isRead;
+  const _ReadStatusIcon({required this.isRead});
+
+  @override
+  Widget build(BuildContext context) {
+    return isRead
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.done_rounded,
+                  size: 13, color: Colors.white.withValues(alpha: 0.6)),
+              const SizedBox(width: -4),
+              Icon(Icons.done_rounded,
+                  size: 13, color: Colors.white.withValues(alpha: 0.95)),
+            ],
+          )
+        : Icon(Icons.done_rounded,
+            size: 14, color: Colors.white.withValues(alpha: 0.7));
   }
 }
 

@@ -507,4 +507,38 @@ class MessagesRepository {
 
     return controller.stream;
   }
+
+  /// Stream that emits the full message payload whenever a message
+  /// relevant to the current user is inserted or updated.
+  /// Used for optimistic targeted updates in the conversations list.
+  Stream<Map<String, dynamic>> watchConversationPayloads() {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return const Stream.empty();
+
+    final controller = StreamController<Map<String, dynamic>>.broadcast();
+
+    final channel = SupabaseService.client
+        .channel('conv-payloads-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'messages',
+          callback: (payload) {
+            final newRow = payload.newRecord;
+            if (newRow.isEmpty) return;
+            final s = newRow['sender_id'] as String?;
+            final r = newRow['receiver_id'] as String?;
+            if (s == userId || r == userId) {
+              if (!controller.isClosed) controller.add(Map<String, dynamic>.from(newRow));
+            }
+          },
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
+  }
 }
