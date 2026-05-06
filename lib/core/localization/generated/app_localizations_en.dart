@@ -284,7 +284,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get arabic => 'Arabic';
 
   @override
-  String get english => 'EN';
+  String get english => 'English';
 
   @override
   String get appearance => 'Appearance';
@@ -1280,5 +1280,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String distanceWithKm(String distance) {
     return '$distance km';
+  }
+
+  @override
+  String get errorCannotGoOnlineDuringTrip =>
+      'Cannot go online while on an active trip';
+
+  @override
+  String get errorWithdrawalPending =>
+      'You already have a pending withdrawal request';
+
+  @override
+  String get errorWalletNotFound => 'Wallet not found';
+
+  @override
+  String get errorUnauthorizedOperation => 'Operation not authorized';
+
+  @override
+  String errorInsufficientBalance(String available) {
+    return 'Insufficient balance. Available: $available EGP';
+  }
+
+  @override
+  String get errorCancelTripFailed => 'Failed to cancel trip';
+
+  @override
+  String errorOccurredWithDetails(String error) {
+    return 'An error occurred: $error';
   }
 }

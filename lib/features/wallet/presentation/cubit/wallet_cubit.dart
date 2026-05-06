@@ -90,7 +90,7 @@ class WalletCubit extends Cubit<WalletState> {
         withdrawals: withdrawals,
       ));
     } catch (e) {
-      emit(WalletError('فشل تحميل بيانات المحفظة: $e'));
+      emit(WalletError('failedLoadWallet'));
     }
   }
 
@@ -120,25 +120,24 @@ class WalletCubit extends Cubit<WalletState> {
         emit(WithdrawalFailure(_mapError(err, result)));
       }
     } catch (e) {
-      emit(WithdrawalFailure('حدث خطأ: $e'));
+      emit(WithdrawalFailure('errorOccurredWithDetails'));
     }
   }
 
   String _mapError(String code, Map<String, dynamic> result) {
     switch (code) {
       case 'insufficient_balance':
-        final available = result['available'] ?? 0;
-        return 'الرصيد غير كافٍ. المتاح: $available جنيه';
+        return 'errorInsufficientBalance';
       case 'below_minimum':
-        return 'الحد الأدنى للسحب هو 50 جنيه';
+        return 'minAmount50';
       case 'pending_withdrawal_exists':
-        return 'لديك طلب سحب قيد المعالجة بالفعل';
+        return 'errorWithdrawalPending';
       case 'wallet_not_found':
-        return 'لم يتم العثور على المحفظة';
+        return 'errorWalletNotFound';
       case 'unauthorized':
-        return 'غير مصرح بهذه العملية';
+        return 'errorUnauthorizedOperation';
       default:
-        return 'حدث خطأ غير متوقع ($code)';
+        return 'errorUnexpected';
     }
   }
 }

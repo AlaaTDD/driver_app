@@ -86,7 +86,7 @@
   "aiAssistant": "المساعد الذكي",
   "privacyPolicy": "سياسة الخصوصية",
   "helpAndSupport": "المساعدة والدعم",
-  "complaints": "الشكاوي",
+  "complaints": "الشكاوى",
   "language": "اللغة",
   "arabic": "عربي",
   "english": "EN",
@@ -147,7 +147,7 @@
   "cancel": "إلغاء",
   "confirmOrigin": "تأكيد البداية",
   "confirmDest": "تأكيد الوجهة",
-  "locatingPosition": "جاري تحديد الموقع...",
+  "locatingPosition": "جارٍ تحديد الموقع...",
   "moveMapToSelect": "حرّك الخريطة للتحديد",
   "meetingPoint": "نقطة التقابل",
   "tapMapToSelect": "اضغط على الخريطة لتحديد نقطة التقابل",
@@ -545,6 +545,27 @@
   "@distanceWithKm": {
     "placeholders": {
       "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "errorCannotGoOnlineDuringTrip": "لا يمكنك التواجد في وضع المتاح أثناء رحلة نشطة",
+  "errorWithdrawalPending": "لديك طلب سحب قيد المعالجة بالفعل",
+  "errorWalletNotFound": "لم يتم العثور على المحفظة",
+  "errorUnauthorizedOperation": "غير مصرح بهذه العملية",
+  "errorInsufficientBalance": "الرصيد غير كافٍ. المتاح: {available} جنيه",
+  "@errorInsufficientBalance": {
+    "placeholders": {
+      "available": {
+        "type": "String"
+      }
+    }
+  },
+  "errorCancelTripFailed": "فشل إلغاء الرحلة",
+  "errorOccurredWithDetails": "حدث خطأ: {error}",
+  "@errorOccurredWithDetails": {
+    "placeholders": {
+      "error": {
         "type": "String"
       }
     }

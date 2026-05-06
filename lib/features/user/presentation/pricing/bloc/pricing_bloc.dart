@@ -56,21 +56,21 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
       final fallback = [
         const VehicleTypeModel(
           name: 'car',
-          displayName: 'سيارة',
+          displayName: 'car',
           icon: 'directions_car',
           baseFare: 10,
           pricePerKm: 7,
         ),
         const VehicleTypeModel(
           name: 'truck',
-          displayName: 'شاحنة',
+          displayName: 'truck',
           icon: 'airport_shuttle',
           baseFare: 20,
           pricePerKm: 12,
         ),
         const VehicleTypeModel(
           name: 'motorcycle',
-          displayName: 'موتوسيكل',
+          displayName: 'motorcycle',
           icon: 'two_wheeler',
           baseFare: 5,
           pricePerKm: 4,

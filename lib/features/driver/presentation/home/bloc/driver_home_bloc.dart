@@ -183,7 +183,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
           emit(state.copyWith(isLoading: false, clearError: true));
           await Future.delayed(const Duration(milliseconds: 50));
           emit(state.copyWith(
-            errorMessage: 'لا يمكنك أن تصبح متاحاً أثناء قيامك برحلة نشطة',
+            errorMessage: 'errorCannotGoOnlineDuringTrip',
           ));
           return;
         }
@@ -229,7 +229,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       debugPrint('❌ DriverHomeBloc: ToggleAvailability failed: $e');
       emit(state.copyWith(isLoading: false, clearError: true));
       await Future.delayed(const Duration(milliseconds: 50));
-      emit(state.copyWith(errorMessage: 'حدث خطأ غير متوقع'));
+      emit(state.copyWith(errorMessage: 'errorUnexpected'));
     }
   }
 

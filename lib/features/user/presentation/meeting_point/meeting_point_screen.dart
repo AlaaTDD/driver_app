@@ -189,13 +189,13 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           content: Text(
-            'لديك رحلة نشطة بالفعل. هل ترغب في إلغائها وبدء رحلة جديدة؟',
+            AppLocalizations.of(context)!.activeTripWarning,
             style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color, fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(AppLocalizations.of(context)!.goBack, style: TextStyle(color: Colors.grey)),
+              child: Text(AppLocalizations.of(context)!.goBack, style: TextStyle(color: context.textSecondary)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -213,7 +213,8 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   }
                 } catch (e) {
                   if (mounted) {
-                    AppToast.error('فشل إلغاء الرحلة: $e');
+                    final l = AppLocalizations.of(context)!;
+                    AppToast.error('${l.errorCancelTripFailed}: $e');
                     setState(() => _isCreatingTrip = false);
                   }
                 }

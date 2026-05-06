@@ -89,7 +89,7 @@
   "complaints": "Complaints",
   "language": "Language",
   "arabic": "Arabic",
-  "english": "EN",
+  "english": "English",
   "appearance": "Appearance",
   "dark": "Dark",
   "light": "Light",
@@ -545,6 +545,27 @@
   "@distanceWithKm": {
     "placeholders": {
       "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "errorCannotGoOnlineDuringTrip": "Cannot go online while on an active trip",
+  "errorWithdrawalPending": "You already have a pending withdrawal request",
+  "errorWalletNotFound": "Wallet not found",
+  "errorUnauthorizedOperation": "Operation not authorized",
+  "errorInsufficientBalance": "Insufficient balance. Available: {available} EGP",
+  "@errorInsufficientBalance": {
+    "placeholders": {
+      "available": {
+        "type": "String"
+      }
+    }
+  },
+  "errorCancelTripFailed": "Failed to cancel trip",
+  "errorOccurredWithDetails": "An error occurred: {error}",
+  "@errorOccurredWithDetails": {
+    "placeholders": {
+      "error": {
         "type": "String"
       }
     }

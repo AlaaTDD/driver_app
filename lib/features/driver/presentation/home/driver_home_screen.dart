@@ -148,9 +148,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                 prev.errorMessage != curr.errorMessage && curr.errorMessage != null,
             listener: (context, state) {
               if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+                final l = AppLocalizations.of(context)!;
+                final msg = switch (state.errorMessage) {
+                  'errorCannotGoOnlineDuringTrip' => l.errorCannotGoOnlineDuringTrip,
+                  'errorUnexpected' => l.errorUnexpected,
+                  _ => state.errorMessage!,
+                };
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(state.errorMessage!),
+                    content: Text(msg),
                     backgroundColor: AppColors.error,
                   ),
                 );
@@ -338,7 +344,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -349,7 +357,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                         const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          '${state.availableBalance.toStringAsFixed(0)} جنيه',
+                          AppLocalizations.of(context)!.priceWithCurrency(state.availableBalance.toStringAsFixed(0), AppLocalizations.of(context)!.egp),
                           style: TextStyle(
                             color: context.textPrimary,
                             fontWeight: FontWeight.bold,

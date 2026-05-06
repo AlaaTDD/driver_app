@@ -133,6 +133,7 @@ class MessagesRepository {
     required String text,
     required String senderName,
     required String Function(String name) newMessageFrom,
+    String? defaultUserName,
   }) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
@@ -146,7 +147,7 @@ class MessagesRepository {
     });
 
     // Notification title: e.g. "رسالة من أحمد"
-    final resolvedName = senderName.isNotEmpty ? senderName : 'مستخدم';
+    final resolvedName = senderName.isNotEmpty ? senderName : (defaultUserName ?? 'User');
     final title = newMessageFrom(resolvedName);
 
     // DB notification (in-app)
@@ -201,6 +202,7 @@ class MessagesRepository {
     required String text,
     required String senderName,
     required String Function(String name) newMessageFrom,
+    String? defaultDriverName,
   }) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
@@ -216,7 +218,7 @@ class MessagesRepository {
       'content': text,
     });
 
-    final resolvedName = senderName.isNotEmpty ? senderName : 'السائق';
+    final resolvedName = senderName.isNotEmpty ? senderName : (defaultDriverName ?? 'Driver');
     final title = newMessageFrom(resolvedName);
 
     // DB notification (in-app)

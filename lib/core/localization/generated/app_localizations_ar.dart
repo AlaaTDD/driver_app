@@ -270,7 +270,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get helpAndSupport => 'المساعدة والدعم';
 
   @override
-  String get complaints => 'الشكاوي';
+  String get complaints => 'الشكاوى';
 
   @override
   String get language => 'اللغة';
@@ -406,7 +406,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get confirmDest => 'تأكيد الوجهة';
 
   @override
-  String get locatingPosition => 'جاري تحديد الموقع...';
+  String get locatingPosition => 'جارٍ تحديد الموقع...';
 
   @override
   String get moveMapToSelect => 'حرّك الخريطة للتحديد';
@@ -1268,5 +1268,31 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String distanceWithKm(String distance) {
     return '$distance كم';
+  }
+
+  @override
+  String get errorCannotGoOnlineDuringTrip =>
+      'لا يمكنك التواجد في وضع المتاح أثناء رحلة نشطة';
+
+  @override
+  String get errorWithdrawalPending => 'لديك طلب سحب قيد المعالجة بالفعل';
+
+  @override
+  String get errorWalletNotFound => 'لم يتم العثور على المحفظة';
+
+  @override
+  String get errorUnauthorizedOperation => 'غير مصرح بهذه العملية';
+
+  @override
+  String errorInsufficientBalance(String available) {
+    return 'الرصيد غير كافٍ. المتاح: $available جنيه';
+  }
+
+  @override
+  String get errorCancelTripFailed => 'فشل إلغاء الرحلة';
+
+  @override
+  String errorOccurredWithDetails(String error) {
+    return 'حدث خطأ: $error';
   }
 }

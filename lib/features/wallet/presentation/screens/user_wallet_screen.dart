@@ -404,9 +404,15 @@ class _UserWalletScreenState extends State<UserWalletScreen>
     );
   }
 
+  Color _adaptiveIconBg(Color iconColor, BuildContext context) {
+    return context.isDark
+        ? iconColor.withValues(alpha: 0.15)
+        : iconColor.withValues(alpha: 0.08);
+  }
+
   Widget _buildTransactionCard(BuildContext context, WalletTransactionModel txn) {
     final isCredit = txn.isCredit;
-    final (icon, iconColor, bgColor, label) = switch (txn.type) {
+    final (icon, iconColor, lightBg, label) = switch (txn.type) {
       WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.tripEarning),
       WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, const Color(0xFFF97316), const Color(0xFFFFF7ED), AppLocalizations.of(context)!.withdrawal),
       WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.withdrawalRefund),
@@ -417,6 +423,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       WalletTransactionType.tripPayment     => (Icons.payment_rounded, const Color(0xFF6366F1), const Color(0xFFEEF2FF), AppLocalizations.of(context)!.tripPayment),
       WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, Colors.grey.shade600, Colors.grey.shade100, AppLocalizations.of(context)!.adjustment),
     };
+    final bgColor = _adaptiveIconBg(iconColor, context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -586,10 +593,10 @@ class _UserWalletScreenState extends State<UserWalletScreen>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
+              color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline_rounded, size: 56, color: Colors.red),
+            child: Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
           ),
           const SizedBox(height: 24),
           Text(AppLocalizations.of(context)!.anErrorOccurred, style: TextStyle(color: context.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),

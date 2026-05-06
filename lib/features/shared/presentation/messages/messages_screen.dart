@@ -448,6 +448,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           text: text,
           senderName: senderName,
           newMessageFrom: (name) => l.newMessageFrom(name),
+          defaultDriverName: l.defaultDriver,
         );
       } else {
         await _repo.sendDirectMessage(
@@ -455,6 +456,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           text: text,
           senderName: senderName,
           newMessageFrom: (name) => l.newMessageFrom(name),
+          defaultUserName: l.defaultUser,
         );
       }
     } catch (e) {
@@ -758,7 +760,9 @@ class _ChatBubble extends StatelessWidget {
                   BoxShadow(
                     color: isMe
                         ? AppColors.primary.withValues(alpha: 0.2)
-                        : Colors.black.withValues(alpha: 0.04),
+                        : (context.isDark
+                            ? Colors.white.withValues(alpha: 0.03)
+                            : Colors.black.withValues(alpha: 0.04)),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),

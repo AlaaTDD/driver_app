@@ -617,7 +617,7 @@ abstract class AppLocalizations {
   /// No description provided for @complaints.
   ///
   /// In ar, this message translates to:
-  /// **'الشكاوي'**
+  /// **'الشكاوى'**
   String get complaints;
 
   /// No description provided for @language.
@@ -881,7 +881,7 @@ abstract class AppLocalizations {
   /// No description provided for @locatingPosition.
   ///
   /// In ar, this message translates to:
-  /// **'جاري تحديد الموقع...'**
+  /// **'جارٍ تحديد الموقع...'**
   String get locatingPosition;
 
   /// No description provided for @moveMapToSelect.
@@ -2528,6 +2528,48 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'{distance} كم'**
   String distanceWithKm(String distance);
+
+  /// No description provided for @errorCannotGoOnlineDuringTrip.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يمكنك التواجد في وضع المتاح أثناء رحلة نشطة'**
+  String get errorCannotGoOnlineDuringTrip;
+
+  /// No description provided for @errorWithdrawalPending.
+  ///
+  /// In ar, this message translates to:
+  /// **'لديك طلب سحب قيد المعالجة بالفعل'**
+  String get errorWithdrawalPending;
+
+  /// No description provided for @errorWalletNotFound.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يتم العثور على المحفظة'**
+  String get errorWalletNotFound;
+
+  /// No description provided for @errorUnauthorizedOperation.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير مصرح بهذه العملية'**
+  String get errorUnauthorizedOperation;
+
+  /// No description provided for @errorInsufficientBalance.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرصيد غير كافٍ. المتاح: {available} جنيه'**
+  String errorInsufficientBalance(String available);
+
+  /// No description provided for @errorCancelTripFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل إلغاء الرحلة'**
+  String get errorCancelTripFailed;
+
+  /// No description provided for @errorOccurredWithDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ: {error}'**
+  String errorOccurredWithDetails(String error);
 }
 
 class _AppLocalizationsDelegate

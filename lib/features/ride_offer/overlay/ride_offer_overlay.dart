@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_extensions.dart';
 import '../../../services/supabase_service.dart';
 import '../bloc/ride_offer_bloc.dart';
 import '../bloc/ride_offer_event.dart';
@@ -35,8 +37,8 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
         await androidPlugin.createNotificationChannel(
           const AndroidNotificationChannel(
             'ride_offer_channel',
-            'طلبات الرحلات',
-            description: 'إشعارات طلبات الرحلات الجديدة',
+            'Ride Requests',
+            description: 'New ride request notifications',
             importance: Importance.max,
             playSound: true,
             enableVibration: true,
@@ -47,7 +49,7 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
 
     const androidDetails = AndroidNotificationDetails(
       'ride_offer_channel',
-      'طلبات الرحلات',
+      'Ride Requests',
       importance: Importance.max,
       priority: Priority.max,
       icon: '@mipmap/ic_launcher',
@@ -73,8 +75,8 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
 
     await plugin.show(
       notificationId,
-      '🚖 رحلة جديدة متاحة!',
-      '${offer.pickupAddress} → ${offer.destinationAddress}\n💰 ${offer.estimatedPrice.toStringAsFixed(0)} ج.م  ·  📍 ${offer.distance.toStringAsFixed(1)} كم',
+      '🚖 New ride available!',
+      '${offer.pickupAddress} → ${offer.destinationAddress}\n💰 ${offer.estimatedPrice.toStringAsFixed(0)} EGP  ·  📍 ${offer.distance.toStringAsFixed(1)} km',
       details,
     );
     developer.log('showRideOfferOverlay: ✅ Notification shown (id=$notificationId)');
@@ -162,7 +164,7 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
         offer = RideOfferModel(
           id: tripId,
           passengerName: '',
-          pickupAddress: data['title'] as String? ?? 'طلب رحلة جديد',
+          pickupAddress: data['title'] as String? ?? 'New Ride Request',
           destinationAddress: data['body'] as String? ?? '',
           distance: 0.0,
           estimatedPrice: 0.0,
@@ -244,8 +246,9 @@ class _RideOfferDialog extends StatefulWidget {
 class _RideOfferDialogState extends State<_RideOfferDialog> {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: context.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.all(20),
       child: Padding(
@@ -257,7 +260,7 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
             Text(
               AppLocalizations.of(context)!.newRideRequest,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                    color: context.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
               textAlign: TextAlign.center,
@@ -269,15 +272,15 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                 return Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withAlpha(30),
+                    color: AppColors.error.withAlpha(30),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '0:${state.remainingSeconds.toString().padLeft(2, '0')}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.redAccent,
+                      color: AppColors.error,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -287,11 +290,11 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
             const SizedBox(height: 16),
             Row(
               children: [
-                const Icon(Icons.person, color: Colors.white70),
+                Icon(Icons.person, color: context.textSecondary),
                 const SizedBox(width: 8),
                 Text(
                   widget.offer.passengerName,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: context.textPrimary, fontSize: 16),
                 ),
               ],
             ),
@@ -300,14 +303,14 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
               icon: Icons.location_on,
               label: AppLocalizations.of(context)!.fromLabel,
               address: widget.offer.pickupAddress,
-              color: Colors.greenAccent,
+              color: AppColors.success,
             ),
             const SizedBox(height: 8),
             _AddressRow(
               icon: Icons.flag,
               label: AppLocalizations.of(context)!.toLabel,
               address: widget.offer.destinationAddress,
-              color: Colors.orangeAccent,
+              color: AppColors.warning,
             ),
             const SizedBox(height: 16),
             Row(
@@ -318,13 +321,13 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                   value: AppLocalizations.of(context)!.priceWithCurrency(
                       widget.offer.estimatedPrice.toStringAsFixed(0),
                       AppLocalizations.of(context)!.egp),
-                  color: const Color(0xFF00E676),
+                  color: AppColors.success,
                 ),
                 _InfoChip(
                   icon: Icons.route,
                   value: AppLocalizations.of(context)!.distanceWithKm(
                       widget.offer.distance.toStringAsFixed(1)),
-                  color: Colors.blueAccent,
+                  color: AppColors.primary,
                 ),
               ],
             ),
@@ -340,7 +343,7 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                       Navigator.of(context).pop();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF5252),
+                      backgroundColor: AppColors.error,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -360,8 +363,8 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                       Navigator.of(context).pop();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00E676),
-                      foregroundColor: const Color(0xFF1A1A2E),
+                      backgroundColor: AppColors.success,
+                      foregroundColor: isDark ? context.cardColor : context.bgColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

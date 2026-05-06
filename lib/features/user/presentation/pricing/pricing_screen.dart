@@ -279,6 +279,16 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
   }
 
   
+  String _localizedVehicleName(String name, BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return switch (name) {
+      'car' => l.carType,
+      'truck' => l.truckType,
+      'motorcycle' => l.motorcycleType,
+      _ => name,
+    };
+  }
+
   Widget _buildVehicleList(PricingState state) {
     List<VehicleTypeModel> types = [];
     if (state is VehicleTypesLoaded) {
@@ -307,7 +317,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
           Expanded(
             child: _VehicleChip(
               type: v.name,
-              label: v.displayName,
+              label: _localizedVehicleName(v.name, context),
               icon: _iconFromName(v.icon),
               basePrice: '${v.baseFare.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
               selected: _selectedVehicle == v.name,

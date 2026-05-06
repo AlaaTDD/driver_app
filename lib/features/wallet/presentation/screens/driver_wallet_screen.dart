@@ -59,6 +59,21 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
     }
   }
 
+  String _localizedError(String key, BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return switch (key) {
+      'failedLoadWallet' => l.failedLoadWallet(''),
+      'errorInsufficientBalance' => l.errorInsufficientBalance(''),
+      'minAmount50' => l.minAmount50,
+      'errorWithdrawalPending' => l.errorWithdrawalPending,
+      'errorWalletNotFound' => l.errorWalletNotFound,
+      'errorUnauthorizedOperation' => l.errorUnauthorizedOperation,
+      'errorUnexpected' => l.errorUnexpected,
+      'errorOccurredWithDetails' => l.errorOccurredWithDetails(''),
+      _ => key,
+    };
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -74,18 +89,18 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
         listener: (context, state) {
           if (state is WalletError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+              SnackBar(content: Text(_localizedError(state.message, context)), backgroundColor: AppColors.error),
             );
           }
           if (state is WithdrawalSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppLocalizations.of(context)!.withdrawalSuccessMsg(state.amount.toString())), backgroundColor: Colors.green),
+              SnackBar(content: Text(AppLocalizations.of(context)!.withdrawalSuccessMsg(state.amount.toString())), backgroundColor: AppColors.success),
             );
             _loadData(); // Refresh data
           }
           if (state is WithdrawalFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error), backgroundColor: Colors.red),
+              SnackBar(content: Text(_localizedError(state.error, context)), backgroundColor: AppColors.error),
             );
           }
           if (state is WalletLoaded) {
@@ -94,7 +109,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
         },
         builder: (context, state) {
           if (state is WalletLoading) return _buildShimmer();
-          if (state is WalletError) return _buildError(state.message);
+          if (state is WalletError) return _buildError(_localizedError(state.message, context));
           if (state is WalletLoaded) return _buildLoaded(state);
           return const SizedBox();
         },
@@ -324,10 +339,10 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
+                            backgroundColor: context.cardColor,
                             foregroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1D4ED8),
-                            disabledBackgroundColor: Colors.white.withValues(alpha: 0.2),
-                            disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
+                            disabledBackgroundColor: context.cardColor.withValues(alpha: 0.2),
+                            disabledForegroundColor: context.textSecondary.withValues(alpha: 0.6),
                             elevation: wallet.balance >= 50 ? 8 : 0,
                             shadowColor: Colors.black.withValues(alpha: 0.3),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -427,9 +442,15 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
     );
   }
 
+  Color _adaptiveIconBg(Color iconColor, BuildContext context) {
+    return context.isDark
+        ? iconColor.withValues(alpha: 0.15)
+        : iconColor.withValues(alpha: 0.08);
+  }
+
   Widget _buildTransactionCard(BuildContext context, WalletTransactionModel txn) {
     final isCredit = txn.isCredit;
-    final (icon, iconColor, bgColor, label) = switch (txn.type) {
+    final (icon, iconColor, lightBg, label) = switch (txn.type) {
       WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.tripEarning),
       WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, const Color(0xFFF97316), const Color(0xFFFFF7ED), AppLocalizations.of(context)!.withdrawal),
       WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.withdrawalRefund),
@@ -440,6 +461,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
       WalletTransactionType.tripPayment     => (Icons.payment_rounded, const Color(0xFF6366F1), const Color(0xFFEEF2FF), AppLocalizations.of(context)!.tripPayment),
       WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, Colors.grey.shade600, Colors.grey.shade100, AppLocalizations.of(context)!.adjustment),
     };
+    final bgColor = _adaptiveIconBg(iconColor, context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -543,7 +565,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
   }
 
   Widget _buildWithdrawalCard(BuildContext context, WithdrawalRequestModel w) {
-    final (statusLabel, statusColor, statusBg) = switch (w.status) {
+    final (statusLabel, statusColor, lightStatusBg) = switch (w.status) {
       WithdrawalStatus.completed  => (AppLocalizations.of(context)!.statusCompleted, const Color(0xFF10B981), const Color(0xFFECFDF5)),
       WithdrawalStatus.rejected   => (AppLocalizations.of(context)!.statusRejected, const Color(0xFFEF4444), const Color(0xFFFEF2F2)),
       WithdrawalStatus.cancelled  => (AppLocalizations.of(context)!.statusCancelled, Colors.grey.shade600, Colors.grey.shade100),
@@ -551,6 +573,9 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
       WithdrawalStatus.approved   => (AppLocalizations.of(context)!.statusApproved, const Color(0xFF0EA5E9), const Color(0xFFE0F2FE)),
       WithdrawalStatus.pending    => (AppLocalizations.of(context)!.statusPending, const Color(0xFFF59E0B), const Color(0xFFFFFBEB)),
     };
+    final statusBg = context.isDark
+        ? statusColor.withValues(alpha: 0.15)
+        : lightStatusBg;
     
     final methodStr = switch (w.paymentMethod) {
       WithdrawalMethod.vodafoneCash => AppLocalizations.of(context)!.vodafoneCash,
@@ -713,10 +738,10 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
+              color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline_rounded, size: 56, color: Colors.red),
+            child: Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
           ),
           const SizedBox(height: 24),
           Text(AppLocalizations.of(context)!.anErrorOccurred, style: TextStyle(color: context.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
