@@ -1,7 +1,32 @@
-
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class AppConstants {
-  
-  static const LatLng defaultMapCenter = LatLng(24.7136, 46.6753);
+  // Storage buckets
+  static const String chatMediaBucket = 'chat_media';
+
+  // Default map center (can be overridden by user location)
+  static const LatLng defaultMapCenter = LatLng(24.7136, 46.6753); // Riyadh, Saudi Arabia
+
+  // Table names
+  static const String tableMessages = 'messages';
+  static const String tableSupportMessages = 'support_messages';
+  static const String tableNotifications = 'notifications';
+  static const String tableUserPresence = 'user_presence';
+  static const String tableTrips = 'trips';
+  static const String tableUsers = 'users';
+
+  // Message types
+  static const String messageTypeText = 'text';
+  static const String messageTypeImage = 'image';
+  static const String messageTypeLocation = 'location';
+  static const String messageTypeVoice = 'voice';
+
+  // Active trip statuses (used for chat guards)
+  static const List<String> activeTripStatuses = [
+    'pending',
+    'accepted',
+    'in_progress',
+    'arrived',
+    'picked_up',
+  ];
 }

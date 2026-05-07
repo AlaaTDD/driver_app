@@ -10,7 +10,8 @@ import '../theme/bloc/theme_bloc.dart';
 import '../theme/bloc/theme_event.dart';
 import '../theme/bloc/theme_state.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
-import '../../features/shared/presentation/messages/data/messages_repository.dart';
+import '../../features/shared/presentation/messages/bloc/messages_cubit.dart';
+import '../../features/shared/presentation/messages/bloc/messages_state.dart';
 
 
 
@@ -57,15 +58,7 @@ class AppDrawer extends StatelessWidget {
                   _NavItem(icon: Icons.account_balance_wallet_rounded, tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myWallet, onTap: onWalletTap),
                 _NavItem(icon: Icons.route_rounded,       tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myTrips,         onTap: onTripsTap),
                 if (user != null)
-                  StreamBuilder<int>(
-                    stream: MessagesRepository().getUnreadMessagesCountStream(user!.id),
-                    builder: (context, snapshot) {
-                      return _MessagesNavItemWrapper(
-                        unreadCount: snapshot.data ?? 0,
-                        onMessagesTap: onMessagesTap,
-                      );
-                    },
-                  )
+                  _MessagesNavItem(onMessagesTap: onMessagesTap)
                 else
                   _NavItem(icon: Icons.chat_bubble_rounded, tint: const Color(0xFF3B82F6), label: AppLocalizations.of(context)!.messages, onTap: onMessagesTap),
                 _NavItem(icon: Icons.auto_awesome_rounded,tint: const Color(0xFFF59E0B), label: AppLocalizations.of(context)!.aiAssistant,  onTap: onChatbotTap),
@@ -261,19 +254,48 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class _MessagesNavItemWrapper extends StatelessWidget {
-  final int unreadCount;
+class _MessagesNavItem extends StatefulWidget {
   final VoidCallback? onMessagesTap;
-  const _MessagesNavItemWrapper({required this.unreadCount, this.onMessagesTap});
+  const _MessagesNavItem({this.onMessagesTap});
+
+  @override
+  State<_MessagesNavItem> createState() => _MessagesNavItemState();
+}
+
+class _MessagesNavItemState extends State<_MessagesNavItem> {
+  late final MessagesCubit _cubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit = MessagesCubit()..loadConversations();
+  }
+
+  @override
+  void dispose() {
+    _cubit.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _NavItem(
-      icon: Icons.chat_bubble_rounded,
-      tint: const Color(0xFF3B82F6),
-      label: AppLocalizations.of(context)!.messages,
-      onTap: onMessagesTap,
-      badge: unreadCount,
+    return BlocBuilder<MessagesCubit, MessagesState>(
+      bloc: _cubit,
+      builder: (context, state) {
+        int unreadCount = 0;
+        if (state is ConversationsLoaded) {
+          for (final conv in state.conversations) {
+            unreadCount += (conv['unread_count'] as int?) ?? 0;
+          }
+        }
+        return _NavItem(
+          icon: Icons.chat_bubble_rounded,
+          tint: const Color(0xFF3B82F6),
+          label: AppLocalizations.of(context)!.messages,
+          onTap: widget.onMessagesTap,
+          badge: unreadCount,
+        );
+      },
     );
   }
 }

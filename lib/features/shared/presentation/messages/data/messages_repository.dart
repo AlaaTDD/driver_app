@@ -1,9 +1,10 @@
-
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../core/models/message_model.dart';
 import '../../../../../services/supabase_service.dart';
+import '../../../../../core/constants/app_constants.dart';
 
 /// Repository for direct user↔driver messaging (messages table)
 /// and trip-scoped chat.
@@ -14,41 +15,69 @@ class MessagesRepository {
   /// Returns a list of "conversations" – one entry per unique counterpart.
   /// Each entry has: other_user_id, other_user_name, other_user_avatar,
   /// last_message, last_message_at, unread_count.
+  /// Uses optimized RPC function to avoid n+1 queries.
   Future<List<Map<String, dynamic>>> loadConversations() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
 
     try {
-      // Fetch all messages where I am sender OR receiver (excluding soft-deleted for me)
       final data = await SupabaseService.client
-          .from('messages')
-          .select('id, sender_id, receiver_id, content, created_at, is_read')
+          .rpc('get_user_conversations', params: {'p_user_id': userId});
+
+      if (data == null) return [];
+
+      return (data as List).map((row) {
+        return {
+          'other_user_id': row['other_user_id'],
+          'other_user_name': row['other_user_name'] ?? '',
+          'other_user_avatar': row['other_user_avatar'],
+          'other_user_role': row['other_user_role'] ?? 'user',
+          'last_message': row['last_message'] ?? '',
+          'last_message_at': row['last_message_at']?.toString(),
+          'is_me_sender': row['is_me_sender'] ?? false,
+          'is_read': row['is_read'] ?? true,
+          'unread_count': row['unread_count'] ?? 0,
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('❌ MessagesRepository: loadConversations RPC failed: $e');
+      // Fallback to original method if RPC fails
+      return _loadConversationsFallback();
+    }
+  }
+
+  /// Fallback method for loading conversations if RPC fails.
+  Future<List<Map<String, dynamic>>> _loadConversationsFallback() async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return [];
+
+    try {
+      final data = await SupabaseService.client
+          .from(AppConstants.tableMessages)
+          .select('id, sender_id, receiver_id, content, created_at, is_read, type, attachment_url')
           .or('sender_id.eq.$userId,receiver_id.eq.$userId')
           .or('and(deleted_by_sender.eq.false,deleted_by_receiver.eq.false)')
           .order('created_at', ascending: false)
-          .limit(50);
+          .limit(200);
 
       if (data.isEmpty) return [];
 
-      // Build unread counts per other user
       final Map<String, int> unreadCounts = {};
       for (final row in data) {
-        final s = row['sender_id'] as String;
         final r = row['receiver_id'] as String;
         if (r == userId && !(row['is_read'] as bool? ?? false)) {
-          final sender = s;
+          final sender = row['sender_id'] as String;
           unreadCounts[sender] = (unreadCounts[sender] ?? 0) + 1;
         }
       }
 
-      // Build a map of counterpart_id → last message
       final Map<String, Map<String, dynamic>> convMap = {};
       for (final row in data) {
         final senderId = row['sender_id'] as String;
         final receiverId = row['receiver_id'] as String;
         final otherId = (senderId == userId) ? receiverId : senderId;
 
-        if (convMap.containsKey(otherId)) continue; // already have last msg
+        if (convMap.containsKey(otherId)) continue;
 
         convMap[otherId] = {
           'other_user_id': otherId,
@@ -62,10 +91,9 @@ class MessagesRepository {
 
       if (convMap.isEmpty) return [];
 
-      // Fetch names for all counterparts in one query
       final otherIds = convMap.keys.toList();
       final users = await SupabaseService.client
-          .from('users')
+          .from(AppConstants.tableUsers)
           .select('id, name, avatar_url, role')
           .inFilter('id', otherIds);
 
@@ -82,7 +110,6 @@ class MessagesRepository {
         });
       }
 
-      // Sort by last_message_at descending
       result.sort((a, b) {
         final aTime = a['last_message_at'] as String? ?? '';
         final bTime = b['last_message_at'] as String? ?? '';
@@ -91,32 +118,44 @@ class MessagesRepository {
 
       return result;
     } catch (e) {
-      debugPrint('❌ MessagesRepository: loadConversations failed: $e');
+      debugPrint('❌ MessagesRepository: loadConversations fallback failed: $e');
       return [];
     }
   }
 
   // ─── Direct chat (no tripId) ──────────────────────────────────────────────
 
-  /// Load all messages between the current user and [otherUserId].
-  Future<List<MessageModel>> loadDirectMessages(String otherUserId) async {
+  /// Load messages between current user and [otherUserId] with pagination.
+  Future<List<MessageModel>> loadDirectMessages(
+    String otherUserId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
 
-    final data = await SupabaseService.client
-        .from('messages')
-        .select('*')
-        .or('and(sender_id.eq.$userId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$userId)')
-        .isFilter('trip_id', null)
-        .or('and(sender_id.eq.$userId,deleted_by_sender.eq.false),and(receiver_id.eq.$userId,deleted_by_receiver.eq.false)')
-        .order('created_at', ascending: true);
+    try {
+      final data = await SupabaseService.client
+          .from(AppConstants.tableMessages)
+          .select('*')
+          .or('and(sender_id.eq.$userId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$userId)')
+          .isFilter('trip_id', null)
+          .or('and(sender_id.eq.$userId,deleted_by_sender.eq.false),and(receiver_id.eq.$userId,deleted_by_receiver.eq.false)')
+          .order('created_at', ascending: false) // Newest first for pagination
+          .range(offset, offset + limit - 1);
 
-    // Mark received messages as read (scoped to direct chat only)
-    await markAsRead(otherUserId, tripId: null);
+      // Mark received messages as read (scoped to direct chat only)
+      await markAsRead(otherUserId, tripId: null);
 
-    return (data as List)
-        .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+      return (data as List)
+          .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList()
+          .reversed
+          .toList();
+    } catch (e) {
+      debugPrint('❌ MessagesRepository: loadDirectMessages failed: $e');
+      rethrow;
+    }
   }
 
   /// Realtime stream of messages between current user and [otherUserId].
@@ -125,25 +164,52 @@ class MessagesRepository {
     if (userId == null) return const Stream.empty();
 
     final controller = StreamController<List<MessageModel>>.broadcast();
+    List<MessageModel> cachedMessages = [];
 
     void handlePayload(PostgresChangePayload payload) {
-      final newRow = payload.newRecord;
-      final s = newRow['sender_id'] as String?;
-      final r = newRow['receiver_id'] as String?;
-      final tid = newRow['trip_id'];
-      if (tid == null &&
-          ((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
-        // Re-fetch scoped messages for simplicity and correctness
-        loadDirectMessages(otherUserId).then((msgs) {
-          if (!controller.isClosed) controller.add(msgs);
-        });
+      if (controller.isClosed) return;
+
+      if (payload.eventType == PostgresChangeEvent.insert) {
+        final newRow = payload.newRecord;
+        if (newRow.isEmpty) return;
+
+        final newMessage = MessageModel.fromJson(newRow);
+        final s = newMessage.senderId;
+        final r = newMessage.receiverId;
+        final tid = newMessage.tripId;
+
+        if (tid == null &&
+            ((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
+          if (!cachedMessages.any((m) => m.id == newMessage.id)) {
+            cachedMessages.add(newMessage);
+            cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            controller.add(List.from(cachedMessages));
+          }
+        }
+      } else if (payload.eventType == PostgresChangeEvent.update) {
+        final newRow = payload.newRecord;
+        final updatedId = newRow['id'] as String?;
+        final isRead = newRow['is_read'] as bool? ?? false;
+
+        if (updatedId != null && isRead) {
+          final idx = cachedMessages.indexWhere((m) => m.id == updatedId);
+          if (idx != -1) {
+            cachedMessages[idx] = MessageModel.fromJson({
+              ...cachedMessages[idx].toInsertJson(),
+              'id': updatedId,
+              'created_at': cachedMessages[idx].createdAt.toIso8601String(),
+              'is_read': true,
+            });
+            controller.add(List.from(cachedMessages));
+          }
+        }
       }
     }
 
     final channel = SupabaseService.client
         .channel('direct-messages-$userId-$otherUserId')
         .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
+          event: PostgresChangeEvent.all, // Listen to INSERT and UPDATE
           schema: 'public',
           table: 'messages',
           callback: handlePayload,
@@ -156,7 +222,10 @@ class MessagesRepository {
 
     // Initial load
     loadDirectMessages(otherUserId).then((msgs) {
-      if (!controller.isClosed) controller.add(msgs);
+      if (!controller.isClosed) {
+        cachedMessages = msgs;
+        controller.add(List.from(cachedMessages));
+      }
     });
 
     return controller.stream;
@@ -169,35 +238,31 @@ class MessagesRepository {
     required String senderName,
     required String Function(String name) newMessageFrom,
     String? defaultUserName,
+    String type = 'text',
+    String? attachmentUrl,
   }) async {
     final userId = SupabaseService.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) throw Exception('User not authenticated');
 
     // Insert message
-    await SupabaseService.client.from('messages').insert({
+    await SupabaseService.client.from(AppConstants.tableMessages).insert({
       'sender_id': userId,
       'receiver_id': receiverId,
       'content': text,
       'trip_id': null,
+      'type': type,
+      if (attachmentUrl != null) 'attachment_url': attachmentUrl,
     });
 
     // Notification title: e.g. "رسالة من أحمد"
     final resolvedName = senderName.isNotEmpty ? senderName : (defaultUserName ?? 'User');
     final title = newMessageFrom(resolvedName);
 
-    // DB notification (in-app)
-    await _createNotification(
-      receiverId: receiverId,
-      title: title,
-      message: text,
-      type: 'new_message',
-    );
-
     // FCM push (works while app is background / terminated)
     await _sendFcmPush(
       userId: receiverId,
       title: title,
-      body: text,
+      body: type == 'image' ? '📷 صورة' : text,
       data: {
         'type': 'new_message',
         'senderId': userId,
@@ -209,21 +274,34 @@ class MessagesRepository {
 
   // ─── Trip chat ────────────────────────────────────────────────────────────
 
-  Future<List<MessageModel>> loadTripMessages(String tripId) async {
-    final data = await SupabaseService.client
-        .from('messages')
-        .select('*')
-        .eq('trip_id', tripId)
-        .order('created_at', ascending: true);
+  /// Load trip messages with pagination.
+  Future<List<MessageModel>> loadTripMessages(
+    String tripId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      final data = await SupabaseService.client
+          .from(AppConstants.tableMessages)
+          .select('*')
+          .eq('trip_id', tripId)
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
 
-    return (data as List)
-        .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+      return (data as List)
+          .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList()
+          .reversed
+          .toList();
+    } catch (e) {
+      debugPrint('❌ MessagesRepository: loadTripMessages failed: $e');
+      rethrow;
+    }
   }
 
   Stream<List<MessageModel>> subscribeToTripMessages(String tripId) {
     return SupabaseService.client
-        .from('messages')
+        .from(AppConstants.tableMessages)
         .stream(primaryKey: ['id'])
         .eq('trip_id', tripId)
         .order('created_at', ascending: true)
@@ -238,38 +316,33 @@ class MessagesRepository {
     required String senderName,
     required String Function(String name) newMessageFrom,
     String? defaultDriverName,
+    String type = 'text',
+    String? attachmentUrl,
   }) async {
     final userId = SupabaseService.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) throw Exception('User not authenticated');
 
     final receiverId = await _resolveReceiverId(tripId, userId);
     if (receiverId == null) return;
 
     // Insert message
-    await SupabaseService.client.from('messages').insert({
+    await SupabaseService.client.from(AppConstants.tableMessages).insert({
       'trip_id': tripId,
       'sender_id': userId,
       'receiver_id': receiverId,
       'content': text,
+      'type': type,
+      if (attachmentUrl != null) 'attachment_url': attachmentUrl,
     });
 
     final resolvedName = senderName.isNotEmpty ? senderName : (defaultDriverName ?? 'Driver');
     final title = newMessageFrom(resolvedName);
 
-    // DB notification (in-app)
-    await _createNotification(
-      receiverId: receiverId,
-      title: title,
-      message: text,
-      type: 'new_message',
-      referenceId: tripId,
-    );
-
     // FCM push (works while app is background / terminated)
     await _sendFcmPush(
       userId: receiverId,
       title: title,
-      body: text,
+      body: type == 'image' ? '📷 صورة' : text,
       data: {
         'type': 'new_message',
         'tripId': tripId,
@@ -280,6 +353,29 @@ class MessagesRepository {
     );
   }
 
+  /// Upload an image to Supabase Storage and return its public URL.
+  Future<String> uploadAttachment(File file) async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    try {
+      final extension = file.path.split('.').last;
+      final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final path = 'chat_attachments/$fileName';
+
+      await SupabaseService.client.storage
+          .from(AppConstants.chatMediaBucket)
+          .upload(path, file);
+
+      return SupabaseService.client.storage
+          .from(AppConstants.chatMediaBucket)
+          .getPublicUrl(path);
+    } catch (e) {
+      debugPrint('❌ MessagesRepository: uploadAttachment failed: $e');
+      rethrow;
+    }
+  }
+
   // ─── Mark as read ─────────────────────────────────────────────────────────
 
   Future<void> markAsRead(String senderId, {String? tripId}) async {
@@ -287,7 +383,7 @@ class MessagesRepository {
     if (userId == null) return;
     try {
       var query = SupabaseService.client
-          .from('messages')
+          .from(AppConstants.tableMessages)
           .update({'is_read': true, 'read_at': DateTime.now().toUtc().toIso8601String()})
           .eq('sender_id', senderId)
           .eq('receiver_id', userId)
@@ -305,19 +401,34 @@ class MessagesRepository {
     }
   }
 
+  /// Soft-delete a message for the current user.
+  Future<void> deleteMessage(String messageId, {required bool isSender}) async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final column = isSender ? 'deleted_by_sender' : 'deleted_by_receiver';
+      await SupabaseService.client
+          .from(AppConstants.tableMessages)
+          .update({column: true})
+          .eq('id', messageId);
+    } catch (e) {
+      debugPrint('⚠️ MessagesRepository: deleteMessage failed: $e');
+    }
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> fetchTripParticipants(String tripId) async {
     return await SupabaseService.client
-        .from('trips')
-        .select('user_id, driver_id')
+        .from(AppConstants.tableTrips)
+        .select('user_id, driver_id, status')
         .eq('id', tripId)
         .maybeSingle();
   }
 
   Future<String?> fetchUserName(String userId) async {
     final data = await SupabaseService.client
-        .from('users')
+        .from(AppConstants.tableUsers)
         .select('name')
         .eq('id', userId)
         .maybeSingle();
@@ -332,7 +443,7 @@ class MessagesRepository {
 
   Future<Map<String, dynamic>?> fetchUserInfo(String userId) async {
     return await SupabaseService.client
-        .from('users')
+        .from(AppConstants.tableUsers)
         .select('id, name, avatar_url, role')
         .eq('id', userId)
         .maybeSingle();
@@ -389,28 +500,6 @@ class MessagesRepository {
     return controller.stream;
   }
 
-  Future<void> _createNotification({
-    required String receiverId,
-    required String title,
-    required String message,
-    required String type,
-    String? referenceId,
-  }) async {
-    try {
-      await SupabaseService.client.from('notifications').insert({
-        'user_id': receiverId,
-        'title': title,
-        'title_ar': title,
-        'message': message,
-        'body_ar': message,
-        'type': type,
-        'reference_id': referenceId,
-      });
-    } catch (e) {
-      debugPrint('⚠️ MessagesRepository: createNotification failed: $e');
-    }
-  }
-
   Future<void> _sendFcmPush({
     required String userId,
     required String title,
@@ -429,7 +518,44 @@ class MessagesRepository {
     }
   }
 
-  // ─── Presence heartbeat (chat context) ──────────────────────────────────
+  /// Tracks current user's presence and optional typing status.
+  Future<void> trackPresence(RealtimeChannel channel, {bool isTyping = false, double? lat, double? lng}) async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return;
+
+    await channel.track({
+      'user_id': userId,
+      'is_typing': isTyping,
+      'online_at': DateTime.now().toUtc().toIso8601String(),
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+    });
+  }
+
+  /// Listen to presence changes including typing status.
+  void onPresenceSync(RealtimeChannel channel, Function(Map<String, bool> onlineMap, Map<String, bool> typingMap) onSync) {
+    channel.onPresenceSync((payload) {
+      final Map<String, bool> onlineMap = {};
+      final Map<String, bool> typingMap = {};
+      final states = channel.presenceState();
+      
+      for (final presence in states) {
+        final dynamic p = presence;
+        final metas = p.metas as List?;
+        if (metas != null && metas.isNotEmpty) {
+          final meta = metas[0];
+          final uid = meta['user_id'] as String?;
+          if (uid != null) {
+            onlineMap[uid] = true;
+            if (meta['is_typing'] == true) {
+              typingMap[uid] = true;
+            }
+          }
+        }
+      }
+      onSync(onlineMap, typingMap);
+    }).subscribe();
+  }
 
   /// Updates last_seen for current user without lat/lng.
   /// Call every 10s while user is in a chat screen.
@@ -440,9 +566,9 @@ class MessagesRepository {
       final payload = <String, dynamic>{
         'user_id': userId,
         'last_seen': DateTime.now().toUtc().toIso8601String(),
+        'lat': lat ?? 0.0,
+        'lng': lng ?? 0.0,
       };
-      if (lat != null) payload['lat'] = lat;
-      if (lng != null) payload['lng'] = lng;
       await SupabaseService.client.from('user_presence').upsert(
         payload,
         onConflict: 'user_id',
@@ -461,9 +587,9 @@ class MessagesRepository {
     if (userId == null) return false;
     try {
       final result = await SupabaseService.client
-          .from('trips')
+          .from(AppConstants.tableTrips)
           .select('id')
-          .inFilter('status', ['pending', 'accepted', 'in_progress', 'arrived', 'picked_up'])
+          .inFilter('status', AppConstants.activeTripStatuses)
           .or('and(user_id.eq.$userId,driver_id.eq.$otherUserId),and(user_id.eq.$otherUserId,driver_id.eq.$userId)')
           .limit(1);
       return (result as List).isNotEmpty;
@@ -518,9 +644,9 @@ class MessagesRepository {
     final controller = StreamController<Map<String, dynamic>>.broadcast();
 
     final channel = SupabaseService.client
-        .channel('conv-payloads-$userId')
+        .channel('conversations-$userId')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
+          event: PostgresChangeEvent.all, // INSERT + UPDATE
           schema: 'public',
           table: 'messages',
           callback: (payload) {

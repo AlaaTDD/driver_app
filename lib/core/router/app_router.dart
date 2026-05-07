@@ -27,7 +27,7 @@ import '../../features/driver/presentation/trip_details/trip_details_screen.dart
 import '../../features/driver/presentation/trips/driver_trips_screen.dart';
 import '../../features/driver/presentation/profile/driver_profile_screen.dart';
 import '../../features/shared/presentation/screens/pending_verification_screen.dart';
-import '../../features/shared/presentation/messages/messages_screen.dart';
+import '../../features/shared/presentation/messages/screens/conversations_screen.dart';
 import '../../features/shared/presentation/notifications/notifications_screen.dart';
 import '../../features/shared/presentation/chatbot/chatbot_screen.dart';
 import '../../features/shared/presentation/rating/rating_screen.dart';

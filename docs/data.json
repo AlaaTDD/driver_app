@@ -99,7 +99,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -159,7 +159,7 @@
     "section": "05_COLUMN",
     "table_name": "user_presence",
     "name": "user_id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -171,13 +171,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 0.3929, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 0.1071, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 0.3929, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 1, \"generated\": null, \"statistics\": {\"correlation\": 0.1071, \"avg_width_bytes\": 16, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -237,19 +237,19 @@
     "section": "02_TABLE_META",
     "table_name": "driver_wallets",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 0, \"live\": 3, \"estimated\": -1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"24 kB\", \"total_bytes\": 24576}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 3, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 0.00}"
+    "details": "{\"rows\": {\"dead\": 1, \"live\": 3, \"estimated\": -1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"24 kB\", \"total_bytes\": 24576}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 3, \"updates\": 1, \"hot_updates\": 1}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 25.00}"
   },
   {
     "section": "02_TABLE_META",
     "table_name": "drivers_profile",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 0, \"live\": 3, \"estimated\": 3}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"48 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"80\", \"operations\": {\"deletes\": 0, \"inserts\": 10, \"updates\": 992, \"hot_updates\": 580}, \"rls_forced\": false, \"description\": \"Extended driver profile linked 1-to-1 with users table via id FK.\\n   WARNING: 66.67% of drivers have NULL geohash and geohash5.\\n   get_nearby_drivers() searches by geohash prefix — only 1 in 3\\n   drivers will be found. Ensure geohash is populated on driver\\n   location updates (check user_presence_service.dart).\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.004261+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-05T10:07:10.608554+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 0.00}"
+    "details": "{\"rows\": {\"dead\": 0, \"live\": 3, \"estimated\": 3}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"48 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"80\", \"operations\": {\"deletes\": 0, \"inserts\": 10, \"updates\": 1080, \"hot_updates\": 652}, \"rls_forced\": false, \"description\": \"Extended driver profile linked 1-to-1 with users table via id FK.\\n   WARNING: 66.67% of drivers have NULL geohash and geohash5.\\n   get_nearby_drivers() searches by geohash prefix — only 1 in 3\\n   drivers will be found. Ensure geohash is populated on driver\\n   location updates (check user_presence_service.dart).\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.004261+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-06T15:28:47.120482+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 0.00}"
   },
   {
     "section": "02_TABLE_META",
     "table_name": "messages",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 0, \"live\": 0, \"estimated\": 0}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"24 kB\", \"table_size\": \"0 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"32 kB\", \"total_bytes\": 32768}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 0, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"Trip chat messages between user and driver.\\n   RLS hardened: All policies now require authenticated role.\\n   \\\"Users can send messages\\\" INSERT policy changed from public to authenticated.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.006445+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": null}"
+    "details": "{\"rows\": {\"dead\": 19, \"live\": 20, \"estimated\": 20}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"120 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"136 kB\", \"total_bytes\": 139264}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 20, \"updates\": 19, \"hot_updates\": 19}, \"rls_forced\": false, \"description\": \"Trip chat messages between user and driver.\\n   RLS hardened: All policies now require authenticated role.\\n   \\\"Users can send messages\\\" INSERT policy changed from public to authenticated.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.006445+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 48.72}"
   },
   {
     "section": "02_TABLE_META",
@@ -267,7 +267,7 @@
     "section": "02_TABLE_META",
     "table_name": "ratings",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 0, \"live\": 2, \"estimated\": 1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"64 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"80 kB\", \"total_bytes\": 81920}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 2, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 0.00}"
+    "details": "{\"rows\": {\"dead\": 0, \"live\": 3, \"estimated\": 1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"64 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"80 kB\", \"total_bytes\": 81920}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 3, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 0.00}"
   },
   {
     "section": "02_TABLE_META",
@@ -279,13 +279,13 @@
     "section": "02_TABLE_META",
     "table_name": "trip_offers",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 7, \"live\": 63, \"estimated\": 60}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"96 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"136 kB\", \"total_bytes\": 139264}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 63, \"updates\": 64, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.006065+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-03T17:56:20.268596+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 10.00}"
+    "details": "{\"rows\": {\"dead\": 11, \"live\": 65, \"estimated\": 60}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"96 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"136 kB\", \"total_bytes\": 139264}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 65, \"updates\": 68, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.006065+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-03T17:56:20.268596+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 14.47}"
   },
   {
     "section": "02_TABLE_META",
     "table_name": "trips",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 37, \"live\": 73, \"estimated\": 73}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"136 kB\", \"table_size\": \"24 kB\", \"toast_size\": \"8192 bytes\", \"total_size\": \"200 kB\", \"total_bytes\": 204800}, \"fillfactor\": \"85\", \"operations\": {\"deletes\": 0, \"inserts\": 98, \"updates\": 141, \"hot_updates\": 31}, \"rls_forced\": false, \"description\": \"Core trip lifecycle table.\\n   Status flow: searching → accepted → in_progress → completed|cancelled.\\n   Autovacuum tuned aggressively (scale_factor=0.01).\\n   NOTE: Duplicate address columns exist from legacy design:\\n     - pickup_address (NOT NULL, position 4) = origin_address (nullable, position 24)\\n     - destination_address (NOT NULL, position 7) = dest_address (nullable, position 25)\\n   The NOT NULL columns are the canonical ones used by Flutter.\\n   The nullable legacy columns (origin_address, dest_address) should be\\n   dropped once confirmed unused. idx_trips_origin_address and\\n   idx_trips_dest_address are indexes on legacy columns.\\n   Also has 9 columns at 100% NULL (payment_method, meeting_lat/lng/address,\\n   accepted_at, started_at, user_rating_to_driver, driver_rating_to_user,\\n   cancel_reason) — features designed but not yet implemented in Flutter.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.005583+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-03T14:08:15.604644+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 33.64}"
+    "details": "{\"rows\": {\"dead\": 47, \"live\": 79, \"estimated\": 73}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"136 kB\", \"table_size\": \"32 kB\", \"toast_size\": \"8192 bytes\", \"total_size\": \"208 kB\", \"total_bytes\": 212992}, \"fillfactor\": \"85\", \"operations\": {\"deletes\": 0, \"inserts\": 104, \"updates\": 151, \"hot_updates\": 33}, \"rls_forced\": false, \"description\": \"Core trip lifecycle table.\\n   Status flow: searching → accepted → in_progress → completed|cancelled.\\n   Autovacuum tuned aggressively (scale_factor=0.01).\\n   NOTE: Duplicate address columns exist from legacy design:\\n     - pickup_address (NOT NULL, position 4) = origin_address (nullable, position 24)\\n     - destination_address (NOT NULL, position 7) = dest_address (nullable, position 25)\\n   The NOT NULL columns are the canonical ones used by Flutter.\\n   The nullable legacy columns (origin_address, dest_address) should be\\n   dropped once confirmed unused. idx_trips_origin_address and\\n   idx_trips_dest_address are indexes on legacy columns.\\n   Also has 9 columns at 100% NULL (payment_method, meeting_lat/lng/address,\\n   accepted_at, started_at, user_rating_to_driver, driver_rating_to_user,\\n   cancel_reason) — features designed but not yet implemented in Flutter.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.005583+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-03T14:08:15.604644+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 37.30}"
   },
   {
     "section": "02_TABLE_META",
@@ -297,7 +297,7 @@
     "section": "02_TABLE_META",
     "table_name": "user_presence",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 2, \"live\": 2, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"56 kB\", \"total_bytes\": 57344}, \"fillfactor\": \"70\", \"operations\": {\"deletes\": 73, \"inserts\": 81, \"updates\": 21410, \"hot_updates\": 15253}, \"rls_forced\": false, \"description\": \"Ephemeral real-time presence tracking.\\n   PK is user_id by design (intentional 1-to-1 per user).\\n   Updated via upsert in user_presence_service.dart.\\n   idx_user_presence_last_seen removed to enable HOT updates.\\n   Consider UNLOGGED table or Redis at production scale.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.002947+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-05T11:48:12.684293+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 50.00}"
+    "details": "{\"rows\": {\"dead\": 1, \"live\": 2, \"estimated\": 2}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"0 bytes\", \"total_size\": \"56 kB\", \"total_bytes\": 57344}, \"fillfactor\": \"70\", \"operations\": {\"deletes\": 85, \"inserts\": 93, \"updates\": 36193, \"hot_updates\": 30036}, \"rls_forced\": false, \"description\": \"Ephemeral real-time presence tracking.\\n   PK is user_id by design (intentional 1-to-1 per user).\\n   Updated via upsert in user_presence_service.dart.\\n   idx_user_presence_last_seen removed to enable HOT updates.\\n   Consider UNLOGGED table or Redis at production scale.\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:58.002947+00:00\", \"vacuum_count\": 0, \"analyze_count\": 4, \"last_autovacuum\": \"2026-05-06T22:49:56.047447+00:00\"}, \"rls_enabled\": true, \"bloat_percentage\": 33.33}"
   },
   {
     "section": "02_TABLE_META",
@@ -309,7 +309,7 @@
     "section": "02_TABLE_META",
     "table_name": "users",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 8, \"live\": 7, \"estimated\": 7}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"80 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 32, \"updates\": 52, \"hot_updates\": 52}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:44.894342+00:00\", \"vacuum_count\": 0, \"analyze_count\": 2, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 53.33}"
+    "details": "{\"rows\": {\"dead\": 11, \"live\": 7, \"estimated\": 7}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"80 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"96 kB\", \"total_bytes\": 98304}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 32, \"updates\": 56, \"hot_updates\": 56}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": \"2026-04-28T21:57:44.894342+00:00\", \"vacuum_count\": 0, \"analyze_count\": 2, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 61.11}"
   },
   {
     "section": "02_TABLE_META",
@@ -321,7 +321,7 @@
     "section": "02_TABLE_META",
     "table_name": "wallet_transactions",
     "name": "storage_info",
-    "details": "{\"rows\": {\"dead\": 0, \"live\": 0, \"estimated\": -1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"8192 bytes\", \"table_size\": \"0 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"16 kB\", \"total_bytes\": 16384}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 0, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": null}"
+    "details": "{\"rows\": {\"dead\": 0, \"live\": 1, \"estimated\": -1}, \"owner\": \"postgres\", \"storage\": {\"index_size\": \"16 kB\", \"table_size\": \"8192 bytes\", \"toast_size\": \"8192 bytes\", \"total_size\": \"32 kB\", \"total_bytes\": 32768}, \"fillfactor\": \"100\", \"operations\": {\"deletes\": 0, \"inserts\": 1, \"updates\": 0, \"hot_updates\": 0}, \"rls_forced\": false, \"description\": \"No description\", \"maintenance\": {\"last_vacuum\": null, \"last_analyze\": null, \"vacuum_count\": 0, \"analyze_count\": 0, \"last_autovacuum\": null}, \"rls_enabled\": true, \"bloat_percentage\": 0.00}"
   },
   {
     "section": "02_TABLE_META",
@@ -375,7 +375,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "national_id",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 15, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 15, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -435,7 +435,7 @@
     "section": "05_COLUMN",
     "table_name": "user_presence",
     "name": "lat",
-    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -447,13 +447,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "name",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": -0.2143, \"avg_width_bytes\": 13, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 0.4286, \"avg_width_bytes\": 13, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "name",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": -0.2143, \"avg_width_bytes\": 13, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 2, \"generated\": null, \"statistics\": {\"correlation\": 0.4286, \"avg_width_bytes\": 13, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -543,7 +543,7 @@
     "section": "05_COLUMN",
     "table_name": "complaints",
     "name": "trip_id",
-    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -639,7 +639,7 @@
     "section": "05_COLUMN",
     "table_name": "user_presence",
     "name": "lng",
-    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"float8\", \"data_type\": \"double precision\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": 53}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -651,13 +651,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "phone",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.3929, \"avg_width_bytes\": 12, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.1071, \"avg_width_bytes\": 12, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "phone",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.3929, \"avg_width_bytes\": 12, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 3, \"generated\": null, \"statistics\": {\"correlation\": 0.1071, \"avg_width_bytes\": 12, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -692,6 +692,12 @@
   {
     "section": "04_REALTIME",
     "table_name": "notifications",
+    "name": "publication",
+    "details": "{\"active\": true, \"events\": [\"INSERT\", \"UPDATE\", \"DELETE\"], \"schema\": \"public\", \"publication_name\": \"supabase_realtime\"}"
+  },
+  {
+    "section": "04_REALTIME",
+    "table_name": "support_messages",
     "name": "publication",
     "details": "{\"active\": true, \"events\": [\"INSERT\", \"UPDATE\", \"DELETE\"], \"schema\": \"public\", \"publication_name\": \"supabase_realtime\"}"
   },
@@ -765,7 +771,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "license_number",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 12, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 12, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -825,7 +831,7 @@
     "section": "05_COLUMN",
     "table_name": "user_presence",
     "name": "last_seen",
-    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -837,13 +843,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "email",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": -0.2143, \"avg_width_bytes\": 21, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": 0.4286, \"avg_width_bytes\": 21, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "email",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": -0.2143, \"avg_width_bytes\": 21, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 255, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 4, \"generated\": null, \"statistics\": {\"correlation\": 0.4286, \"avg_width_bytes\": 21, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1072,6 +1078,12 @@
     "table_name": "ratings",
     "name": "comment",
     "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 6, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "support_messages",
+    "name": "sender_id",
+    "details": "{\"type\": {\"udt_name\": \"uuid\", \"data_type\": \"uuid\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 6, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1347,7 +1359,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_type",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 4, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{car}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 7, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 4, \"distinct_values\": -0.67, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{car}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1468,6 +1480,12 @@
     "table_name": "messages",
     "name": "chk_messages_sender_ne_receiver",
     "details": "{\"type\": \"CHECK\", \"enforced\": true, \"expression\": \"(sender_id <> receiver_id)\"}"
+  },
+  {
+    "section": "07_CONSTRAINT_CHECK",
+    "table_name": "messages",
+    "name": "messages_type_check",
+    "details": "{\"type\": \"CHECK\", \"enforced\": true, \"expression\": \"(type = ANY (ARRAY['text'::text, 'image'::text, 'location'::text, 'voice'::text]))\"}"
   },
   {
     "section": "07_CONSTRAINT_CHECK",
@@ -1605,7 +1623,19 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_brand",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 7, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 7, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "read_at",
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "read_at",
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1623,13 +1653,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "total_trips",
-    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": \"0\", \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 4, \"distinct_values\": -0.29, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{0,1}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": \"0\", \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 0.8929, \"avg_width_bytes\": 4, \"distinct_values\": -0.57, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{0,2}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "total_trips",
-    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": \"0\", \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 4, \"distinct_values\": -0.29, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{0,1}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": \"0\", \"identity\": null, \"nullable\": false, \"position\": 8, \"generated\": null, \"statistics\": {\"correlation\": 0.8929, \"avg_width_bytes\": 4, \"distinct_values\": -0.57, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{0,2}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1665,7 +1695,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "complaints",
     "name": "complaints_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"complaints\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 73}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"complaints\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 79}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1677,7 +1707,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "coupon_usages",
     "name": "coupon_usages_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"coupon_usages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 73}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"coupon_usages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 79}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1713,19 +1743,19 @@
     "section": "08_FK_OUTGOING",
     "table_name": "messages",
     "name": "messages_receiver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"receiver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"receiver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 20, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "messages",
     "name": "messages_sender_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"sender_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"sender_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 20, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "messages",
     "name": "messages_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 73}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"messages\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 20, \"target_rows\": 79}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1743,19 +1773,19 @@
     "section": "08_FK_OUTGOING",
     "table_name": "ratings",
     "name": "ratings_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 2, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 3, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "ratings",
     "name": "ratings_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 2, \"target_rows\": 73}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 3, \"target_rows\": 79}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "ratings",
     "name": "ratings_user_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"user_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 2, \"target_rows\": 7}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"ratings\", \"columns\": [\"user_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 3, \"target_rows\": 7}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1767,31 +1797,31 @@
     "section": "08_FK_OUTGOING",
     "table_name": "trip_offers",
     "name": "trip_offers_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trip_offers\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 63, \"target_rows\": 7}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trip_offers\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 65, \"target_rows\": 7}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trip_offers",
     "name": "trip_offers_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trip_offers\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 63, \"target_rows\": 73}, \"relationship_type\": \"ONE_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trip_offers\", \"columns\": [\"trip_id\"]}, \"target\": {\"table\": \"trips\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 65, \"target_rows\": 79}, \"relationship_type\": \"ONE_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trips",
     "name": "trips_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 73, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"driver_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 79, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trips",
     "name": "trips_user_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"user_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 73, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"user_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 79, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
     "table_name": "trips",
     "name": "trips_vehicle_type_fk",
-    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"]}, \"target\": {\"table\": \"vehicle_types\", \"columns\": [\"name\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 73, \"target_rows\": 4}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"]}, \"target\": {\"table\": \"vehicle_types\", \"columns\": [\"name\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 79, \"target_rows\": 4}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1815,7 +1845,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "wallet_transactions",
     "name": "wallet_transactions_wallet_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"wallet_transactions\", \"columns\": [\"wallet_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"wallet_transactions\", \"columns\": [\"wallet_id\"]}, \"target\": {\"table\": \"users\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 1, \"target_rows\": 7}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "08_FK_OUTGOING",
@@ -1833,7 +1863,7 @@
     "section": "08_FK_OUTGOING",
     "table_name": "withdrawal_requests",
     "name": "withdrawal_requests_transaction_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"withdrawal_requests\", \"columns\": [\"transaction_id\"]}, \"target\": {\"table\": \"wallet_transactions\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 0}, \"relationship_type\": \"MANY_TO_ONE\"}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\", \"match_type\": \"NONE\"}, \"source\": {\"table\": \"withdrawal_requests\", \"columns\": [\"transaction_id\"]}, \"target\": {\"table\": \"wallet_transactions\", \"columns\": [\"id\"]}, \"direction\": \"OUTGOING\", \"cardinality\": {\"source_rows\": 0, \"target_rows\": 1}, \"relationship_type\": \"MANY_TO_ONE\"}"
   },
   {
     "section": "05_COLUMN",
@@ -1857,7 +1887,19 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_model",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 9, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 6, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 9, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 6, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "deleted_by_sender",
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 9, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "deleted_by_sender",
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 9, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -1929,19 +1971,19 @@
     "section": "09_FK_INCOMING",
     "table_name": "trips",
     "name": "messages_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"messages\", \"columns\": [\"trip_id\"], \"row_count\": 0}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"messages\", \"columns\": [\"trip_id\"], \"row_count\": 20}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "trips",
     "name": "ratings_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"ratings\", \"columns\": [\"trip_id\"], \"row_count\": 2}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to ratings\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"ratings\", \"columns\": [\"trip_id\"], \"row_count\": 3}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to ratings\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "trips",
     "name": "trip_offers_trip_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trip_offers\", \"columns\": [\"trip_id\"], \"row_count\": 63}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trip_offers\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trip_offers\", \"columns\": [\"trip_id\"], \"row_count\": 65}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trip_offers\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -1989,13 +2031,13 @@
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "messages_receiver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"messages\", \"columns\": [\"receiver_id\"], \"row_count\": 0}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to messages\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"messages\", \"columns\": [\"receiver_id\"], \"row_count\": 20}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "messages_sender_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"messages\", \"columns\": [\"sender_id\"], \"row_count\": 0}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to messages\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"messages\", \"columns\": [\"sender_id\"], \"row_count\": 20}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -2007,13 +2049,13 @@
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "ratings_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"ratings\", \"columns\": [\"driver_id\"], \"row_count\": 2}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to ratings\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"ratings\", \"columns\": [\"driver_id\"], \"row_count\": 3}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to ratings\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "ratings_user_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"ratings\", \"columns\": [\"user_id\"], \"row_count\": 2}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to ratings\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"ratings\", \"columns\": [\"user_id\"], \"row_count\": 3}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to ratings\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -2025,19 +2067,19 @@
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "trip_offers_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trip_offers\", \"columns\": [\"driver_id\"], \"row_count\": 63}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trip_offers\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trip_offers\", \"columns\": [\"driver_id\"], \"row_count\": 65}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trip_offers\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "trips_driver_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"driver_id\"], \"row_count\": 73}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"SET NULL\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"driver_id\"], \"row_count\": 79}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"MEDIUM\"}}"
   },
   {
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "trips_user_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"user_id\"], \"row_count\": 73}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trips\", \"cascade_risk\": \"HIGH\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"CASCADE\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"user_id\"], \"row_count\": 79}, \"impact_analysis\": {\"warning\": \"⚠️ Deleting rows will cascade to trips\", \"cascade_risk\": \"HIGH\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -2055,7 +2097,7 @@
     "section": "09_FK_INCOMING",
     "table_name": "users",
     "name": "wallet_transactions_wallet_id_fkey",
-    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"wallet_transactions\", \"columns\": [\"wallet_id\"], \"row_count\": 0}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"PROTECTED\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"id\"], \"referenced_by\": {\"table\": \"wallet_transactions\", \"columns\": [\"wallet_id\"], \"row_count\": 1}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"PROTECTED\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -2079,7 +2121,7 @@
     "section": "09_FK_INCOMING",
     "table_name": "vehicle_types",
     "name": "trips_vehicle_type_fk",
-    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"name\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"], \"row_count\": 73}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"PROTECTED\"}}"
+    "details": "{\"rules\": {\"on_delete\": \"RESTRICT\", \"on_update\": \"NO ACTION\"}, \"direction\": \"INCOMING\", \"local_columns\": [\"name\"], \"referenced_by\": {\"table\": \"trips\", \"columns\": [\"vehicle_type\"], \"row_count\": 79}, \"impact_analysis\": {\"warning\": null, \"cascade_risk\": \"PROTECTED\"}}"
   },
   {
     "section": "09_FK_INCOMING",
@@ -2109,7 +2151,19 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_year",
-    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 4, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"int4\", \"data_type\": \"integer\", \"numeric_scale\": 0, \"char_max_length\": null, \"numeric_precision\": 32}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 4, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "deleted_by_receiver",
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "deleted_by_receiver",
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -2127,13 +2181,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "fcm_token",
-    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 100.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 146, \"distinct_values\": -0.29, \"null_fraction_pct\": 71.43, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "fcm_token",
-    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 100.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 10, \"generated\": null, \"statistics\": {\"correlation\": -1.0000, \"avg_width_bytes\": 146, \"distinct_values\": -0.29, \"null_fraction_pct\": 71.43, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -2289,7 +2343,19 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_color",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 11, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 9, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 50, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 11, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 9, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "type",
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"'text'::text\", \"identity\": null, \"nullable\": false, \"position\": 11, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "type",
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"'text'::text\", \"identity\": null, \"nullable\": false, \"position\": 11, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -2421,7 +2487,7 @@
     "section": "11_INDEX",
     "table_name": "driver_wallets",
     "name": "driver_wallets_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_wallets_pkey ON public.driver_wallets USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 24, \"is_unused\": false, \"tuples_read\": 25, \"tuples_fetched\": 25}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX driver_wallets_pkey ON public.driver_wallets USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 59, \"is_unused\": false, \"tuples_read\": 60, \"tuples_fetched\": 60}}"
   },
   {
     "section": "11_INDEX",
@@ -2444,20 +2510,50 @@
   {
     "section": "11_INDEX",
     "table_name": "messages",
-    "name": "idx_messages_trip_created",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_trip_created ON public.messages USING btree (trip_id, created_at DESC)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "name": "idx_messages_attachment_url",
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": \"(attachment_url IS NOT NULL)\", \"definition\": \"CREATE INDEX idx_messages_attachment_url ON public.messages USING btree (attachment_url) WHERE (attachment_url IS NOT NULL)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+  },
+  {
+    "section": "11_INDEX",
+    "table_name": "messages",
+    "name": "idx_messages_direct_chat",
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"receiver_id\", \"created_at\"], \"primary\": false, \"condition\": \"(trip_id IS NULL)\", \"definition\": \"CREATE INDEX idx_messages_direct_chat ON public.messages USING btree (sender_id, receiver_id, created_at) WHERE (trip_id IS NULL)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 189, \"is_unused\": false, \"tuples_read\": 1228, \"tuples_fetched\": 1228}}"
+  },
+  {
+    "section": "11_INDEX",
+    "table_name": "messages",
+    "name": "idx_messages_participants",
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"receiver_id\", \"created_at\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_participants ON public.messages USING btree (sender_id, receiver_id, created_at DESC)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 6, \"is_unused\": false, \"tuples_read\": 60, \"tuples_fetched\": 0}}"
+  },
+  {
+    "section": "11_INDEX",
+    "table_name": "messages",
+    "name": "idx_messages_receiver",
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_receiver ON public.messages USING btree (receiver_id, created_at DESC)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 42, \"is_unused\": false, \"tuples_read\": 318, \"tuples_fetched\": 0}}"
+  },
+  {
+    "section": "11_INDEX",
+    "table_name": "messages",
+    "name": "idx_messages_sender",
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"created_at\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_sender ON public.messages USING btree (sender_id, created_at DESC)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 36, \"is_unused\": false, \"tuples_read\": 248, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "messages",
     "name": "idx_messages_trip_id",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_trip_id ON public.messages USING btree (trip_id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_trip_id ON public.messages USING btree (trip_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 4, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+  },
+  {
+    "section": "11_INDEX",
+    "table_name": "messages",
+    "name": "idx_messages_type",
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_messages_type ON public.messages USING btree (type)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "messages",
     "name": "messages_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 2, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 108, \"is_unused\": false, \"tuples_read\": 106, \"tuples_fetched\": 106}}"
   },
   {
     "section": "11_INDEX",
@@ -2474,8 +2570,8 @@
   {
     "section": "11_INDEX",
     "table_name": "notifications",
-    "name": "idx_notifications_user_unread",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"created_at\"], \"primary\": false, \"condition\": \"(is_read = false)\", \"definition\": \"CREATE INDEX idx_notifications_user_unread ON public.notifications USING btree (user_id, created_at DESC) WHERE (is_read = false)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "name": "idx_notifications_user_created",
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": [\"created_at\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_notifications_user_created ON public.notifications USING btree (user_id, created_at DESC)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2535,13 +2631,13 @@
     "section": "11_INDEX",
     "table_name": "trip_offers",
     "name": "idx_trip_offers_driver_id",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_driver_id ON public.trip_offers USING btree (driver_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 143, \"is_unused\": false, \"tuples_read\": 386, \"tuples_fetched\": 227}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_driver_id ON public.trip_offers USING btree (driver_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 164, \"is_unused\": false, \"tuples_read\": 531, \"tuples_fetched\": 370}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "trip_offers",
     "name": "idx_trip_offers_status",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_status ON public.trip_offers USING btree (status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 190, \"is_unused\": false, \"tuples_read\": 150, \"tuples_fetched\": 23}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trip_offers_status ON public.trip_offers USING btree (status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 192, \"is_unused\": false, \"tuples_read\": 151, \"tuples_fetched\": 23}}"
   },
   {
     "section": "11_INDEX",
@@ -2559,7 +2655,7 @@
     "section": "11_INDEX",
     "table_name": "trip_offers",
     "name": "trip_offers_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX trip_offers_pkey ON public.trip_offers USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 54, \"is_unused\": false, \"tuples_read\": 67, \"tuples_fetched\": 53}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX trip_offers_pkey ON public.trip_offers USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 60, \"is_unused\": false, \"tuples_read\": 77, \"tuples_fetched\": 59}}"
   },
   {
     "section": "11_INDEX",
@@ -2583,7 +2679,7 @@
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_driver_status",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_driver_status ON public.trips USING btree (driver_id, status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 80, \"is_unused\": false, \"tuples_read\": 82, \"tuples_fetched\": 58}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_driver_status ON public.trips USING btree (driver_id, status)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 177, \"is_unused\": false, \"tuples_read\": 320, \"tuples_fetched\": 71}}"
   },
   {
     "section": "11_INDEX",
@@ -2607,19 +2703,19 @@
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_status_vehicle",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_status_vehicle ON public.trips USING btree (status, vehicle_type)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 555, \"is_unused\": false, \"tuples_read\": 582, \"tuples_fetched\": 462}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_status_vehicle ON public.trips USING btree (status, vehicle_type)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 558, \"is_unused\": false, \"tuples_read\": 711, \"tuples_fetched\": 462}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "idx_trips_user_id",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_user_id ON public.trips USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 87, \"is_unused\": false, \"tuples_read\": 345, \"tuples_fetched\": 301}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": false, \"columns\": null, \"primary\": false, \"condition\": null, \"definition\": \"CREATE INDEX idx_trips_user_id ON public.trips USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 132, \"is_unused\": false, \"tuples_read\": 865, \"tuples_fetched\": 741}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "trips",
     "name": "trips_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX trips_pkey ON public.trips USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 1173, \"is_unused\": false, \"tuples_read\": 1338, \"tuples_fetched\": 1245}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX trips_pkey ON public.trips USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 1435, \"is_unused\": false, \"tuples_read\": 1611, \"tuples_fetched\": 1507}}"
   },
   {
     "section": "11_INDEX",
@@ -2637,7 +2733,7 @@
     "section": "11_INDEX",
     "table_name": "user_coupons",
     "name": "uq_user_coupons_user_coupon",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"coupon_id\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX uq_user_coupons_user_coupon ON public.user_coupons USING btree (user_id, coupon_id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 125, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"coupon_id\"], \"primary\": false, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX uq_user_coupons_user_coupon ON public.user_coupons USING btree (user_id, coupon_id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 149, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2649,13 +2745,13 @@
     "section": "11_INDEX",
     "table_name": "user_presence",
     "name": "user_presence_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"user_id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX user_presence_pkey ON public.user_presence USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 22263, \"is_unused\": false, \"tuples_read\": 28173, \"tuples_fetched\": 22174}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"user_id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX user_presence_pkey ON public.user_presence USING btree (user_id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 37059, \"is_unused\": false, \"tuples_read\": 42965, \"tuples_fetched\": 36958}}"
   },
   {
     "section": "11_INDEX",
     "table_name": "user_wallets",
     "name": "user_wallets_pkey",
-    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX user_wallets_pkey ON public.user_wallets USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 4, \"is_unused\": false, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX user_wallets_pkey ON public.user_wallets USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 16, \"is_unused\": false, \"tuples_read\": 12, \"tuples_fetched\": 12}}"
   },
   {
     "section": "11_INDEX",
@@ -2703,7 +2799,7 @@
     "section": "11_INDEX",
     "table_name": "wallet_transactions",
     "name": "wallet_transactions_pkey",
-    "details": "{\"size\": \"8192 bytes\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX wallet_transactions_pkey ON public.wallet_transactions USING btree (id)\", \"size_bytes\": 8192, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
+    "details": "{\"size\": \"16 kB\", \"ready\": true, \"valid\": true, \"method\": \"btree\", \"unique\": true, \"columns\": [\"id\"], \"primary\": true, \"condition\": null, \"definition\": \"CREATE UNIQUE INDEX wallet_transactions_pkey ON public.wallet_transactions USING btree (id)\", \"size_bytes\": 16384, \"usage_stats\": {\"scans\": 0, \"is_unused\": true, \"tuples_read\": 0, \"tuples_fetched\": 0}}"
   },
   {
     "section": "11_INDEX",
@@ -2727,7 +2823,19 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "vehicle_plate",
-    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 18, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"varchar\", \"data_type\": \"character varying\", \"numeric_scale\": null, \"char_max_length\": 20, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": false, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 18, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "attachment_url",
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+  },
+  {
+    "section": "05_COLUMN",
+    "table_name": "messages",
+    "name": "attachment_url",
+    "details": "{\"type\": {\"udt_name\": \"text\", \"data_type\": \"text\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.0000, \"avg_width_bytes\": 0, \"distinct_values\": 0.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -2739,13 +2847,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "is_admin",
-    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.8929, \"avg_width_bytes\": 1, \"distinct_values\": -0.29, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{f}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.6429, \"avg_width_bytes\": 1, \"distinct_values\": -0.29, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{f}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "is_admin",
-    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.8929, \"avg_width_bytes\": 1, \"distinct_values\": -0.29, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{f}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"bool\", \"data_type\": \"boolean\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"false\", \"identity\": null, \"nullable\": true, \"position\": 12, \"generated\": null, \"statistics\": {\"correlation\": 0.6429, \"avg_width_bytes\": 1, \"distinct_values\": -0.29, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{f}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -2997,13 +3105,13 @@
     "section": "12_RLS_POLICY",
     "table_name": "messages",
     "name": "Users can read their messages",
-    "details": "{\"roles\": [\"authenticated\"], \"command\": \"SELECT\", \"applies_to\": [\"SELECT\"], \"permissive\": true, \"using_expression\": \"((auth.uid() = sender_id) OR (auth.uid() = receiver_id) OR (EXISTS ( SELECT 1\\n   FROM trips\\n  WHERE ((trips.id = messages.trip_id) AND ((trips.user_id = auth.uid()) OR (trips.driver_id = auth.uid()))))))\", \"with_check_expression\": null}"
+    "details": "{\"roles\": [\"authenticated\"], \"command\": \"SELECT\", \"applies_to\": [\"SELECT\"], \"permissive\": true, \"using_expression\": \"((auth.uid() = sender_id) OR (auth.uid() = receiver_id) OR (EXISTS ( SELECT 1\\n   FROM trips\\n  WHERE ((trips.id = messages.trip_id) AND ((trips.user_id = auth.uid()) OR (trips.driver_id = auth.uid()))))) OR ( SELECT is_admin_user() AS is_admin_user))\", \"with_check_expression\": null}"
   },
   {
     "section": "12_RLS_POLICY",
     "table_name": "messages",
     "name": "Users can send messages",
-    "details": "{\"roles\": [\"authenticated\"], \"command\": \"INSERT\", \"applies_to\": [\"INSERT\"], \"permissive\": true, \"using_expression\": null, \"with_check_expression\": \"(auth.uid() = sender_id)\"}"
+    "details": "{\"roles\": [\"authenticated\"], \"command\": \"INSERT\", \"applies_to\": [\"INSERT\"], \"permissive\": true, \"using_expression\": null, \"with_check_expression\": \"((auth.uid() = sender_id) AND (((trip_id IS NOT NULL) AND (EXISTS ( SELECT 1\\n   FROM trips\\n  WHERE ((trips.id = messages.trip_id) AND ((trips.user_id = auth.uid()) OR (trips.driver_id = auth.uid())))))) OR ((trip_id IS NULL) AND (EXISTS ( SELECT 1\\n   FROM trips\\n  WHERE (((trips.status)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'in_progress'::character varying, 'arrived'::character varying, 'picked_up'::character varying])::text[])) AND (((trips.user_id = auth.uid()) AND (trips.driver_id = messages.receiver_id)) OR ((trips.driver_id = auth.uid()) AND (trips.user_id = messages.receiver_id)))))))))\"}"
   },
   {
     "section": "12_RLS_POLICY",
@@ -3242,8 +3350,8 @@
   {
     "section": "12_RLS_POLICY",
     "table_name": "user_presence",
-    "name": "Anyone can read presence",
-    "details": "{\"roles\": [\"public\"], \"command\": \"SELECT\", \"applies_to\": [\"SELECT\"], \"permissive\": true, \"using_expression\": \"true\", \"with_check_expression\": null}"
+    "name": "Authenticated can read presence",
+    "details": "{\"roles\": [\"authenticated\"], \"command\": \"SELECT\", \"applies_to\": [\"SELECT\"], \"permissive\": true, \"using_expression\": \"true\", \"with_check_expression\": null}"
   },
   {
     "section": "12_RLS_POLICY",
@@ -3500,6 +3608,12 @@
   {
     "section": "13_TRIGGER",
     "table_name": "trips",
+    "name": "trigger_soft_delete_orphan_messages",
+    "details": "{\"level\": \"ROW\", \"events\": [\"DELETE\"], \"timing\": \"AFTER\", \"enabled\": true, \"function\": \"soft_delete_orphan_messages()\", \"condition\": null, \"trigger_type\": \"AFTER\"}"
+  },
+  {
+    "section": "13_TRIGGER",
+    "table_name": "trips",
     "name": "trip_accepted_trigger",
     "details": "{\"level\": \"ROW\", \"events\": [\"UPDATE\"], \"timing\": \"AFTER\", \"enabled\": true, \"function\": \"handle_trip_accepted()\", \"condition\": \"(((old.status)::text = 'searching'::text) AND ((new.status)::text = 'accepted'::text))\", \"trigger_type\": \"AFTER\"}"
   },
@@ -3555,13 +3669,13 @@
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "updated_at",
-    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 14, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.43, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{\\\"2026-04-26 19:04:27.576399+00\\\"}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 14, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.71, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{\\\"2026-04-26 19:04:27.576399+00\\\"}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
     "table_name": "users",
     "name": "updated_at",
-    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 14, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.43, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{\\\"2026-04-26 19:04:27.576399+00\\\"}\"}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 14, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.71, \"null_fraction_pct\": 0.00, \"most_common_values\": \"{\\\"2026-04-26 19:04:27.576399+00\\\"}\"}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -3727,6 +3841,24 @@
   },
   {
     "section": "14_FUNCTION",
+    "table_name": "get_unread_count",
+    "name": "signature",
+    "details": "{\"oid\": \"21615\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"sql\", \"security\": \"DEFINER\", \"arguments\": \"p_user_id uuid\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"integer\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+  },
+  {
+    "section": "14_FUNCTION",
+    "table_name": "get_unread_message_count",
+    "name": "signature",
+    "details": "{\"oid\": \"21616\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"sql\", \"security\": \"DEFINER\", \"arguments\": \"p_user_id uuid\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"TABLE(other_user_id uuid, unread_count bigint)\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": 1000, \"parallel_safety\": \"UNSAFE\"}"
+  },
+  {
+    "section": "14_FUNCTION",
+    "table_name": "get_user_conversations",
+    "name": "signature",
+    "details": "{\"oid\": \"21637\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_user_id uuid\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"TABLE(other_user_id uuid, other_user_name text, other_user_avatar text, other_user_role text, last_message text, last_message_at timestamp with time zone, is_me_sender boolean, is_read boolean, unread_count bigint)\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": 1000, \"parallel_safety\": \"UNSAFE\"}"
+  },
+  {
+    "section": "14_FUNCTION",
     "table_name": "handle_new_auth_user",
     "name": "signature",
     "details": "{\"oid\": \"20743\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"trigger\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
@@ -3811,6 +3943,12 @@
   },
   {
     "section": "14_FUNCTION",
+    "table_name": "soft_delete_orphan_messages",
+    "name": "signature",
+    "details": "{\"oid\": \"21629\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"INVOKER\", \"arguments\": \"\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"trigger\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+  },
+  {
+    "section": "14_FUNCTION",
     "table_name": "sync_user_coupon_is_used",
     "name": "signature",
     "details": "{\"oid\": \"20992\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"trigger\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
@@ -3837,13 +3975,13 @@
     "section": "14_FUNCTION",
     "table_name": "upsert_driver_location",
     "name": "signature",
-    "details": "{\"oid\": \"20226\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_driver_id uuid, p_lat numeric, p_lng numeric, p_heading numeric, p_geohash character varying\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": \"Updates both driver_locations (legacy) and drivers_profile (canonical) with exact geohashes.\", \"return_type\": \"void\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+    "details": "{\"oid\": \"21592\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_driver_id uuid, p_lat numeric, p_lng numeric, p_heading numeric, p_geohash text DEFAULT NULL::text, p_geohash5 text DEFAULT NULL::text\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"void\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
   },
   {
     "section": "14_FUNCTION",
     "table_name": "upsert_driver_location",
     "name": "signature",
-    "details": "{\"oid\": \"21592\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_driver_id uuid, p_lat numeric, p_lng numeric, p_heading numeric, p_geohash text DEFAULT NULL::text, p_geohash5 text DEFAULT NULL::text\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": null, \"return_type\": \"void\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
+    "details": "{\"oid\": \"20226\", \"cost\": 100, \"owner\": \"postgres\", \"strict\": false, \"language\": \"plpgsql\", \"security\": \"DEFINER\", \"arguments\": \"p_driver_id uuid, p_lat numeric, p_lng numeric, p_heading numeric, p_geohash character varying\", \"is_window\": false, \"volatility\": \"VOLATILE\", \"description\": \"Updates both driver_locations (legacy) and drivers_profile (canonical) with exact geohashes.\", \"return_type\": \"void\", \"is_aggregate\": false, \"is_procedure\": false, \"estimated_rows\": null, \"parallel_safety\": \"UNSAFE\"}"
   },
   {
     "section": "14_FUNCTION",
@@ -4124,12 +4262,6 @@
   {
     "section": "16_TABLE_PRIVILEGE",
     "table_name": "messages",
-    "name": "anon",
-    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
-  },
-  {
-    "section": "16_TABLE_PRIVILEGE",
-    "table_name": "messages",
     "name": "authenticated",
     "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
   },
@@ -4148,12 +4280,6 @@
   {
     "section": "16_TABLE_PRIVILEGE",
     "table_name": "notifications",
-    "name": "anon",
-    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
-  },
-  {
-    "section": "16_TABLE_PRIVILEGE",
-    "table_name": "notifications",
     "name": "authenticated",
     "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
   },
@@ -4220,12 +4346,6 @@
   {
     "section": "16_TABLE_PRIVILEGE",
     "table_name": "support_messages",
-    "name": "anon",
-    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
-  },
-  {
-    "section": "16_TABLE_PRIVILEGE",
-    "table_name": "support_messages",
     "name": "authenticated",
     "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
   },
@@ -4312,12 +4432,6 @@
     "table_name": "user_coupons",
     "name": "service_role",
     "details": "{\"grantee\": \"service_role\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
-  },
-  {
-    "section": "16_TABLE_PRIVILEGE",
-    "table_name": "user_presence",
-    "name": "anon",
-    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"privileges\": [\"DELETE\", \"INSERT\", \"REFERENCES\", \"SELECT\", \"TRIGGER\", \"TRUNCATE\", \"UPDATE\"], \"with_grant_option\": false}"
   },
   {
     "section": "16_TABLE_PRIVILEGE",
@@ -4461,7 +4575,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "current_lat",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 10}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 17, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.67, \"null_fraction_pct\": 33.33, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 10}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 17, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -4867,6 +4981,96 @@
   },
   {
     "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_count",
+    "name": "PUBLIC",
+    "details": "{\"grantee\": \"PUBLIC\", \"grantor\": \"postgres\", \"function\": \"get_unread_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_count",
+    "name": "anon",
+    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"function\": \"get_unread_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_count",
+    "name": "authenticated",
+    "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"function\": \"get_unread_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_count",
+    "name": "postgres",
+    "details": "{\"grantee\": \"postgres\", \"grantor\": \"postgres\", \"function\": \"get_unread_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": true}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_count",
+    "name": "service_role",
+    "details": "{\"grantee\": \"service_role\", \"grantor\": \"postgres\", \"function\": \"get_unread_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_message_count",
+    "name": "PUBLIC",
+    "details": "{\"grantee\": \"PUBLIC\", \"grantor\": \"postgres\", \"function\": \"get_unread_message_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_message_count",
+    "name": "anon",
+    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"function\": \"get_unread_message_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_message_count",
+    "name": "authenticated",
+    "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"function\": \"get_unread_message_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_message_count",
+    "name": "postgres",
+    "details": "{\"grantee\": \"postgres\", \"grantor\": \"postgres\", \"function\": \"get_unread_message_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": true}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_unread_message_count",
+    "name": "service_role",
+    "details": "{\"grantee\": \"service_role\", \"grantor\": \"postgres\", \"function\": \"get_unread_message_count\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_user_conversations",
+    "name": "PUBLIC",
+    "details": "{\"grantee\": \"PUBLIC\", \"grantor\": \"postgres\", \"function\": \"get_user_conversations\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_user_conversations",
+    "name": "anon",
+    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"function\": \"get_user_conversations\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_user_conversations",
+    "name": "authenticated",
+    "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"function\": \"get_user_conversations\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_user_conversations",
+    "name": "postgres",
+    "details": "{\"grantee\": \"postgres\", \"grantor\": \"postgres\", \"function\": \"get_user_conversations\", \"privilege\": \"EXECUTE\", \"with_grant_option\": true}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "get_user_conversations",
+    "name": "service_role",
+    "details": "{\"grantee\": \"service_role\", \"grantor\": \"postgres\", \"function\": \"get_user_conversations\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
     "table_name": "handle_new_auth_user",
     "name": "postgres",
     "details": "{\"grantee\": \"postgres\", \"grantor\": \"postgres\", \"function\": \"handle_new_auth_user\", \"privilege\": \"EXECUTE\", \"with_grant_option\": true}"
@@ -5056,6 +5260,36 @@
     "table_name": "set_user_role",
     "name": "service_role",
     "details": "{\"grantee\": \"service_role\", \"grantor\": \"postgres\", \"function\": \"set_user_role\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "soft_delete_orphan_messages",
+    "name": "PUBLIC",
+    "details": "{\"grantee\": \"PUBLIC\", \"grantor\": \"postgres\", \"function\": \"soft_delete_orphan_messages\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "soft_delete_orphan_messages",
+    "name": "anon",
+    "details": "{\"grantee\": \"anon\", \"grantor\": \"postgres\", \"function\": \"soft_delete_orphan_messages\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "soft_delete_orphan_messages",
+    "name": "authenticated",
+    "details": "{\"grantee\": \"authenticated\", \"grantor\": \"postgres\", \"function\": \"soft_delete_orphan_messages\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "soft_delete_orphan_messages",
+    "name": "postgres",
+    "details": "{\"grantee\": \"postgres\", \"grantor\": \"postgres\", \"function\": \"soft_delete_orphan_messages\", \"privilege\": \"EXECUTE\", \"with_grant_option\": true}"
+  },
+  {
+    "section": "17_FUNCTION_PRIVILEGE",
+    "table_name": "soft_delete_orphan_messages",
+    "name": "service_role",
+    "details": "{\"grantee\": \"service_role\", \"grantor\": \"postgres\", \"function\": \"soft_delete_orphan_messages\", \"privilege\": \"EXECUTE\", \"with_grant_option\": false}"
   },
   {
     "section": "17_FUNCTION_PRIVILEGE",
@@ -5253,7 +5487,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "current_lng",
-    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 11}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 18, \"generated\": null, \"statistics\": {\"correlation\": 1.0000, \"avg_width_bytes\": 8, \"distinct_values\": -0.67, \"null_fraction_pct\": 33.33, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"numeric\", \"data_type\": \"numeric\", \"numeric_scale\": 8, \"char_max_length\": null, \"numeric_precision\": 11}, \"default\": null, \"identity\": null, \"nullable\": true, \"position\": 18, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -5265,7 +5499,7 @@
     "section": "05_COLUMN",
     "table_name": "drivers_profile",
     "name": "updated_at",
-    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 19, \"generated\": null, \"statistics\": {\"correlation\": 0.5000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
+    "details": "{\"type\": {\"udt_name\": \"timestamptz\", \"data_type\": \"timestamp with time zone\", \"numeric_scale\": null, \"char_max_length\": null, \"numeric_precision\": null}, \"default\": \"now()\", \"identity\": null, \"nullable\": false, \"position\": 19, \"generated\": null, \"statistics\": {\"correlation\": -0.5000, \"avg_width_bytes\": 8, \"distinct_values\": -1.00, \"null_fraction_pct\": 0.00, \"most_common_values\": null}, \"description\": null}"
   },
   {
     "section": "05_COLUMN",
@@ -5283,7 +5517,7 @@
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "complaints",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 214, \"read\": 2}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 216, \"read\": 2}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
@@ -5295,7 +5529,7 @@
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "coupons",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 879, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 951, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
@@ -5313,25 +5547,25 @@
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "driver_wallets",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 29, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 43, \"read\": 1}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 67, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 98, \"read\": 1}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "drivers_profile",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 21480, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 16902, \"read\": 9}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 38678, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 17447, \"read\": 9}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "messages",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 29, \"read\": 5}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 549, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 705, \"read\": 14}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "notifications",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 1179, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 1182, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
@@ -5343,7 +5577,7 @@
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "ratings",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 94, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 259, \"read\": 8}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 101, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 271, \"read\": 8}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
@@ -5355,55 +5589,55 @@
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "trip_offers",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 957, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 3378, \"read\": 12}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 1049, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 3573, \"read\": 12}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "trips",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 5658, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 15004, \"read\": 17}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 6285, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 17040, \"read\": 17}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "user_coupons",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 1045, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 1189, \"read\": 7}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "user_presence",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 127032, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 59261, \"read\": 3}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 226863, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 87701, \"read\": 3}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "user_wallets",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 11, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 10, \"read\": 1}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 23, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 27, \"read\": 1}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "users",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 10036, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 9294, \"read\": 13}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 10611, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 9704, \"read\": 13}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "vehicle_types",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 480, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 416, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 518, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 426, \"read\": 6}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "wallet_transactions",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 0, \"read\": 0}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 19, \"read\": 0, \"hit_ratio\": 100.00}, \"index_blocks\": {\"hit\": 10, \"read\": 1}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "19_STORAGE_ANALYSIS",
     "table_name": "withdrawal_requests",
     "name": "io_stats",
-    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 0, \"read\": 0}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
+    "details": "{\"heap_blocks\": {\"hit\": 0, \"read\": 0, \"hit_ratio\": 100.0}, \"index_blocks\": {\"hit\": 22, \"read\": 2}, \"toast_blocks\": {\"hit\": 0, \"read\": 0}}"
   },
   {
     "section": "05_COLUMN",
@@ -5469,13 +5703,13 @@
     "section": "20_SECURITY_AUDIT",
     "table_name": "messages",
     "name": "security_status",
-    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 6}, \"grants\": {\"role_count\": 4, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
+    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 6}, \"grants\": {\"role_count\": 3, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
   },
   {
     "section": "20_SECURITY_AUDIT",
     "table_name": "notifications",
     "name": "security_status",
-    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 5}, \"grants\": {\"role_count\": 4, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
+    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 5}, \"grants\": {\"role_count\": 3, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
   },
   {
     "section": "20_SECURITY_AUDIT",
@@ -5493,7 +5727,7 @@
     "section": "20_SECURITY_AUDIT",
     "table_name": "support_messages",
     "name": "security_status",
-    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 4}, \"grants\": {\"role_count\": 4, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
+    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 4}, \"grants\": {\"role_count\": 3, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
   },
   {
     "section": "20_SECURITY_AUDIT",
@@ -5517,7 +5751,7 @@
     "section": "20_SECURITY_AUDIT",
     "table_name": "user_presence",
     "name": "security_status",
-    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 2}, \"grants\": {\"role_count\": 4, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
+    "details": "{\"rls\": {\"forced\": false, \"enabled\": true, \"policy_count\": 2}, \"grants\": {\"role_count\": 3, \"has_public_access\": false}, \"recommendations\": \"✅ Security configured\"}"
   },
   {
     "section": "20_SECURITY_AUDIT",
