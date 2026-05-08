@@ -1308,4 +1308,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String errorOccurredWithDetails(String error) {
     return 'An error occurred: $error';
   }
+
+  @override
+  String get imageAttachment => '📷 Image';
+
+  @override
+  String get read => 'Read';
+
+  @override
+  String get sent => 'Sent';
+
+  @override
+  String sentAndReadAt(String sentTime, String readTime) {
+    return 'Sent: $sentTime\nRead: $readTime';
+  }
+
+  @override
+  String get typing => 'Typing...';
+
+  @override
+  String get offline => 'Offline';
+
+  @override
+  String get searchMessages => 'Search conversations...';
+
+  @override
+  String get noResults => 'No results';
+
+  @override
+  String get tryDifferentKeywords => 'Try searching with different keywords';
+
+  @override
+  String get deleteMessage => 'Delete message';
+
+  @override
+  String get messageDeleted => 'Message deleted';
+
+  @override
+  String get imageLoadError => 'Failed to load image';
+
+  @override
+  String get sendImage => 'Send image';
 }

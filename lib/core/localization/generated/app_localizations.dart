@@ -2570,6 +2570,84 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'حدث خطأ: {error}'**
   String errorOccurredWithDetails(String error);
+
+  /// No description provided for @imageAttachment.
+  ///
+  /// In ar, this message translates to:
+  /// **'📷 صورة'**
+  String get imageAttachment;
+
+  /// No description provided for @read.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم القراءة'**
+  String get read;
+
+  /// No description provided for @sent.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الإرسال'**
+  String get sent;
+
+  /// No description provided for @sentAndReadAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُرسلت: {sentTime}\nقُرئت: {readTime}'**
+  String sentAndReadAt(String sentTime, String readTime);
+
+  /// No description provided for @typing.
+  ///
+  /// In ar, this message translates to:
+  /// **'يكتب الآن...'**
+  String get typing;
+
+  /// No description provided for @offline.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متصل'**
+  String get offline;
+
+  /// No description provided for @searchMessages.
+  ///
+  /// In ar, this message translates to:
+  /// **'بحث في المحادثات...'**
+  String get searchMessages;
+
+  /// No description provided for @noResults.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد نتائج'**
+  String get noResults;
+
+  /// No description provided for @tryDifferentKeywords.
+  ///
+  /// In ar, this message translates to:
+  /// **'جرب البحث بكلمات أخرى'**
+  String get tryDifferentKeywords;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف الرسالة'**
+  String get deleteMessage;
+
+  /// No description provided for @messageDeleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حذف الرسالة'**
+  String get messageDeleted;
+
+  /// No description provided for @imageLoadError.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذر تحميل الصورة'**
+  String get imageLoadError;
+
+  /// No description provided for @sendImage.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال صورة'**
+  String get sendImage;
 }
 
 class _AppLocalizationsDelegate

@@ -203,6 +203,19 @@ class MessagesRepository {
             controller.add(List.from(cachedMessages));
           }
         }
+      } else if (payload.eventType == PostgresChangeEvent.delete) {
+        // Handle soft deletes - remove message from cache
+        final oldRow = payload.oldRecord;
+        if (oldRow.isEmpty) return;
+
+        final deletedId = oldRow['id'] as String?;
+        if (deletedId != null) {
+          final idx = cachedMessages.indexWhere((m) => m.id == deletedId);
+          if (idx != -1) {
+            cachedMessages.removeAt(idx);
+            controller.add(List.from(cachedMessages));
+          }
+        }
       }
     }
 
@@ -243,6 +256,7 @@ class MessagesRepository {
   }) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
+    if (receiverId.isEmpty) throw Exception('receiverId cannot be empty');
 
     // Insert message
     await SupabaseService.client.from(AppConstants.tableMessages).insert({
@@ -300,14 +314,88 @@ class MessagesRepository {
   }
 
   Stream<List<MessageModel>> subscribeToTripMessages(String tripId) {
-    return SupabaseService.client
-        .from(AppConstants.tableMessages)
-        .stream(primaryKey: ['id'])
-        .eq('trip_id', tripId)
-        .order('created_at', ascending: true)
-        .map((data) => data
-            .map((e) => MessageModel.fromJson(Map<String, dynamic>.from(e)))
-            .toList());
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return const Stream.empty();
+
+    final controller = StreamController<List<MessageModel>>.broadcast();
+    List<MessageModel> cachedMessages = [];
+
+    void handlePayload(PostgresChangePayload payload) {
+      if (controller.isClosed) return;
+
+      if (payload.eventType == PostgresChangeEvent.insert) {
+        final newRow = payload.newRecord;
+        if (newRow.isEmpty) return;
+
+        final newMessage = MessageModel.fromJson(newRow);
+        final s = newMessage.senderId;
+        final r = newMessage.receiverId;
+        final tid = newMessage.tripId;
+
+        if (tid == tripId &&
+            ((s == userId && r != userId) || (s != userId && r == userId))) {
+          if (!cachedMessages.any((m) => m.id == newMessage.id)) {
+            cachedMessages.add(newMessage);
+            cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            controller.add(List.from(cachedMessages));
+          }
+        }
+      } else if (payload.eventType == PostgresChangeEvent.update) {
+        final newRow = payload.newRecord;
+        final updatedId = newRow['id'] as String?;
+        final isRead = newRow['is_read'] as bool? ?? false;
+
+        if (updatedId != null && isRead) {
+          final idx = cachedMessages.indexWhere((m) => m.id == updatedId);
+          if (idx != -1) {
+            cachedMessages[idx] = MessageModel.fromJson({
+              ...cachedMessages[idx].toInsertJson(),
+              'id': updatedId,
+              'created_at': cachedMessages[idx].createdAt.toIso8601String(),
+              'is_read': true,
+            });
+            controller.add(List.from(cachedMessages));
+          }
+        }
+      } else if (payload.eventType == PostgresChangeEvent.delete) {
+        // Handle soft deletes - remove message from cache
+        final oldRow = payload.oldRecord;
+        if (oldRow.isEmpty) return;
+
+        final deletedId = oldRow['id'] as String?;
+        if (deletedId != null) {
+          final idx = cachedMessages.indexWhere((m) => m.id == deletedId);
+          if (idx != -1) {
+            cachedMessages.removeAt(idx);
+            controller.add(List.from(cachedMessages));
+          }
+        }
+      }
+    }
+
+    final channel = SupabaseService.client
+        .channel('trip-messages-$tripId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all, // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'messages',
+          callback: handlePayload,
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    // Initial load
+    loadTripMessages(tripId).then((msgs) {
+      if (!controller.isClosed) {
+        cachedMessages = msgs;
+        controller.add(List.from(cachedMessages));
+      }
+    });
+
+    return controller.stream;
   }
 
   Future<void> sendTripMessageWithNotification({
@@ -321,9 +409,10 @@ class MessagesRepository {
   }) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
+    if (tripId.isEmpty) throw Exception('tripId cannot be empty');
 
     final receiverId = await _resolveReceiverId(tripId, userId);
-    if (receiverId == null) return;
+    if (receiverId == null) throw Exception('Could not resolve receiver ID (participant missing or deleted)');
 
     // Insert message
     await SupabaseService.client.from(AppConstants.tableMessages).insert({
@@ -450,12 +539,13 @@ class MessagesRepository {
   }
 
   Future<String?> _resolveReceiverId(String tripId, String senderId) async {
+    if (tripId.isEmpty) return null;
     final tripData = await fetchTripParticipants(tripId);
     if (tripData == null) return null;
-    final tripUserId = tripData['user_id'] as String?;
-    final tripDriverId = tripData['driver_id'] as String?;
-    if (senderId == tripUserId) return tripDriverId;
-    if (senderId == tripDriverId) return tripUserId;
+    final tripUserId = tripData['user_id'] as String? ?? '';
+    final tripDriverId = tripData['driver_id'] as String? ?? '';
+    if (senderId == tripUserId && tripDriverId.isNotEmpty) return tripDriverId;
+    if (senderId == tripDriverId && tripUserId.isNotEmpty) return tripUserId;
     return null;
   }
 
@@ -533,7 +623,7 @@ class MessagesRepository {
   }
 
   /// Listen to presence changes including typing status.
-  void onPresenceSync(RealtimeChannel channel, Function(Map<String, bool> onlineMap, Map<String, bool> typingMap) onSync) {
+  void setupPresenceSync(RealtimeChannel channel, Function(Map<String, bool> onlineMap, Map<String, bool> typingMap) onSync) {
     channel.onPresenceSync((payload) {
       final Map<String, bool> onlineMap = {};
       final Map<String, bool> typingMap = {};
@@ -541,9 +631,15 @@ class MessagesRepository {
       
       for (final presence in states) {
         final dynamic p = presence;
-        final metas = p.metas as List?;
-        if (metas != null && metas.isNotEmpty) {
-          final meta = metas[0];
+        // The object is SinglePresenceState. Its data is usually in 'payload'
+        Map<String, dynamic>? meta;
+        try {
+          meta = p.payload as Map<String, dynamic>?;
+        } catch (_) {
+          // Fallback if payload is not available
+        }
+        
+        if (meta != null) {
           final uid = meta['user_id'] as String?;
           if (uid != null) {
             onlineMap[uid] = true;
@@ -554,7 +650,7 @@ class MessagesRepository {
         }
       }
       onSync(onlineMap, typingMap);
-    }).subscribe();
+    });
   }
 
   /// Updates last_seen for current user without lat/lng.
@@ -576,6 +672,54 @@ class MessagesRepository {
     } catch (e) {
       debugPrint('⚠️ MessagesRepository: ensureMyPresence failed: $e');
     }
+  }
+
+  /// Subscribe to global app presence for a specific user.
+  Stream<bool> subscribeToUserGlobalPresence(String userId) {
+    final controller = StreamController<bool>.broadcast();
+
+    // Initial fetch
+    SupabaseService.client
+        .from('user_presence')
+        .select('last_seen')
+        .eq('user_id', userId)
+        .maybeSingle()
+        .then((data) {
+      if (data != null) {
+        controller.add(true);
+      } else {
+        controller.add(false);
+      }
+    }).catchError((_) {
+      controller.add(false);
+    });
+
+    final channel = SupabaseService.client
+        .channel('global_presence_$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'user_presence',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (payload) {
+            if (payload.eventType == PostgresChangeEvent.delete) {
+              controller.add(false);
+            } else {
+              controller.add(true);
+            }
+          },
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
   }
 
   // ─── Active trip guard ────────────────────────────────────────────────────
@@ -644,7 +788,7 @@ class MessagesRepository {
     final controller = StreamController<Map<String, dynamic>>.broadcast();
 
     final channel = SupabaseService.client
-        .channel('conversations-$userId')
+        .channel('conversations-payloads-$userId')
         .onPostgresChanges(
           event: PostgresChangeEvent.all, // INSERT + UPDATE
           schema: 'public',

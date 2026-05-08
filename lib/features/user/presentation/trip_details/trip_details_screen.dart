@@ -12,6 +12,7 @@ import '../../../../core/constants/map_styles.dart';
 import '../trips/bloc/trips_bloc.dart';
 import '../trips/bloc/trips_event.dart';
 import '../trips/bloc/trips_state.dart';
+import '../../../shared/presentation/messages/screens/messages_screen.dart';
 
 class UserTripDetailsScreen extends StatefulWidget {
   final String tripId;
@@ -54,78 +55,78 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: context.bgColor,
-      appBar: AppBar(
-        backgroundColor: context.bgColor,
-        title: Text(l.tripDetails),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadTripDetails,
-            splashRadius: 24,
-          ),
-        ],
-      ),
       body: BlocProvider.value(
         value: _tripsBloc,
         child: BlocConsumer<TripsBloc, TripsState>(
-        listener: (context, state) {
-          if (state is TripActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            _loadTripDetails();
-          } else if (state is TripsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is TripsLoading || state is TripDetailsLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
+          listener: (context, state) {
+            if (state is TripActionSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+              _loadTripDetails();
+            } else if (state is TripsError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is TripsLoading || state is TripDetailsLoading) {
+              return Scaffold(
+                appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+                backgroundColor: context.bgColor,
+                body: const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              );
+            }
 
-          if (state is TripDetailsLoaded) {
-            _tripData = state.trip;
-            return _buildTripDetails(context, state.trip);
-          }
+            if (state is TripDetailsLoaded) {
+              _tripData = state.trip;
+              return _buildTripDetails(context, state.trip);
+            }
 
-          if (state is TripsError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: context.textDisabled),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    style: TextStyle(color: context.textPrimary),
+            if (state is TripsError) {
+              return Scaffold(
+                appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+                backgroundColor: context.bgColor,
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: context.textDisabled),
+                      const SizedBox(height: 16),
+                      Text(
+                        state.message,
+                        style: TextStyle(color: context.textPrimary),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadTripDetails,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                        ),
+                        child: Text(l.retry),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadTripDetails,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                    ),
-                    child: Text(l.retry),
-                  ),
-                ],
-              ),
-            );
-          }
+                ),
+              );
+            }
 
-          return const Center(child: CircularProgressIndicator());
-        },
-      ),
+            return Scaffold(
+              appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+              backgroundColor: context.bgColor,
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          },
+        ),
       ),
     );
   }
@@ -143,50 +144,83 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
     final destLat = (trip['destination_lat'] as num?)?.toDouble();
     final destLng = (trip['destination_lng'] as num?)?.toDouble();
 
-    return SingleChildScrollView(
+    return CustomScrollView(
       physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          
-          if (pickupLat != null && pickupLng != null)
-            _buildMapSection(pickupLat, pickupLng, destLat, destLng),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                
-                _buildStatusHeader(context, trip, status),
-                const SizedBox(height: 16),
-
-                
-                if (driverData != null) ...[
-                  _buildDriverCard(context, driverData, canTrack),
-                  const SizedBox(height: 16),
+      slivers: [
+        SliverAppBar(
+          expandedHeight: (pickupLat != null && pickupLng != null) ? 300 : 0,
+          pinned: true,
+          backgroundColor: context.bgColor,
+          elevation: 0,
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: context.bgColor.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                color: context.textPrimary,
+                onPressed: _loadTripDetails,
+                splashRadius: 24,
+              ),
+            ),
+          ],
+          flexibleSpace: FlexibleSpaceBar(
+            title: Text(
+              AppLocalizations.of(context)!.tripDetails,
+              style: TextStyle(
+                color: context.textPrimary,
+                fontWeight: FontWeight.w800,
+                shadows: [
+                  Shadow(color: context.bgColor, blurRadius: 10),
                 ],
-
-                
-                _buildTripInfoCard(context, trip),
-                const SizedBox(height: 16),
-
-                
-                _buildPriceCard(context, trip),
-                const SizedBox(height: 16),
-
-                
-                _buildTimelineCard(context, trip),
-                const SizedBox(height: 24),
-
-                
-                _buildActionButtons(context, trip, canCancel, canComplain, canRate),
-                const SizedBox(height: 40),
+              ),
+            ),
+            background: (pickupLat != null && pickupLng != null)
+                ? _buildMapSection(pickupLat, pickupLng, destLat, destLng)
+                : null,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Container(
+            transform: Matrix4.translationValues(0.0, -20.0, 0.0),
+            decoration: BoxDecoration(
+              color: context.bgColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
               ],
             ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildStatusHeader(context, trip, status),
+                  const SizedBox(height: 20),
+                  if (driverData != null) ...[
+                    _buildDriverCard(context, driverData, canTrack),
+                    const SizedBox(height: 20),
+                  ],
+                  _buildTripInfoCard(context, trip),
+                  const SizedBox(height: 20),
+                  _buildPriceCard(context, trip),
+                  const SizedBox(height: 20),
+                  _buildTimelineCard(context, trip),
+                  const SizedBox(height: 32),
+                  _buildActionButtons(context, trip, canCancel, canComplain, canRate),
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -212,23 +246,36 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
     }
 
     return SizedBox(
-      height: 200,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-        child: GoogleMap(
-          initialCameraPosition: CameraPosition(
-            target: LatLng(pickupLat, pickupLng),
-            zoom: 14,
-          ),
-          style: context.isDark ? kDarkMapStyle : kLightMapStyle,
-          onMapCreated: (controller) {
-            _mapController = controller;
-          },
-          markers: markers,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          myLocationButtonEnabled: false,
+      height: 350,
+      width: double.infinity,
+      child: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: LatLng(pickupLat, pickupLng),
+          zoom: 14,
         ),
+        style: context.isDark ? kDarkMapStyle : kLightMapStyle,
+        onMapCreated: (controller) {
+          _mapController = controller;
+          if (destLat != null && destLng != null) {
+            final bounds = LatLngBounds(
+              southwest: LatLng(
+                pickupLat < destLat ? pickupLat : destLat,
+                pickupLng < destLng ? pickupLng : destLng,
+              ),
+              northeast: LatLng(
+                pickupLat > destLat ? pickupLat : destLat,
+                pickupLng > destLng ? pickupLng : destLng,
+              ),
+            );
+            Future.delayed(const Duration(milliseconds: 400), () {
+              _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 60));
+            });
+          }
+        },
+        markers: markers,
+        zoomControlsEnabled: false,
+        mapToolbarEnabled: false,
+        myLocationButtonEnabled: false,
       ),
     );
   }
@@ -409,8 +456,18 @@ class _UserTripDetailsScreenState extends State<UserTripDetailsScreen> {
                     color: AppColors.primary,
                     onTap: () {
                       final tid = _tripData?['id'] as String?;
-                      if (tid != null && tid.isNotEmpty) {
-                        context.push('${AppRoutes.userMessages}?tripId=$tid');
+                      final driverId = driver['id'] as String?;
+                      if (tid != null && tid.isNotEmpty && driverId != null && driverId.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MessagesScreen(
+                              otherUserId: driverId,
+                              tripId: tid,
+                              otherUserName: driver['name'] ?? l.theDriver,
+                            ),
+                          ),
+                        );
                       } else {
                         context.push(AppRoutes.userMessages);
                       }

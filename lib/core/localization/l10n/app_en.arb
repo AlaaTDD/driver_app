@@ -569,5 +569,28 @@
         "type": "String"
       }
     }
-  }
+  },
+  "imageAttachment": "📷 Image",
+  "read": "Read",
+  "sent": "Sent",
+  "sentAndReadAt": "Sent: {sentTime}\nRead: {readTime}",
+  "@sentAndReadAt": {
+    "placeholders": {
+      "sentTime": {
+        "type": "String"
+      },
+      "readTime": {
+        "type": "String"
+      }
+    }
+  },
+  "typing": "Typing...",
+  "offline": "Offline",
+  "searchMessages": "Search conversations...",
+  "noResults": "No results",
+  "tryDifferentKeywords": "Try searching with different keywords",
+  "deleteMessage": "Delete message",
+  "messageDeleted": "Message deleted",
+  "imageLoadError": "Failed to load image",
+  "sendImage": "Send image"
 }

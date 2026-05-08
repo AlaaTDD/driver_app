@@ -569,5 +569,28 @@
         "type": "String"
       }
     }
-  }
+  },
+  "imageAttachment": "📷 صورة",
+  "read": "تم القراءة",
+  "sent": "تم الإرسال",
+  "sentAndReadAt": "أُرسلت: {sentTime}\nقُرئت: {readTime}",
+  "@sentAndReadAt": {
+    "placeholders": {
+      "sentTime": {
+        "type": "String"
+      },
+      "readTime": {
+        "type": "String"
+      }
+    }
+  },
+  "typing": "يكتب الآن...",
+  "offline": "غير متصل",
+  "searchMessages": "بحث في المحادثات...",
+  "noResults": "لا توجد نتائج",
+  "tryDifferentKeywords": "جرب البحث بكلمات أخرى",
+  "deleteMessage": "حذف الرسالة",
+  "messageDeleted": "تم حذف الرسالة",
+  "imageLoadError": "تعذر تحميل الصورة",
+  "sendImage": "إرسال صورة"
 }

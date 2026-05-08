@@ -153,7 +153,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           
       // Start broadcasting again once trip is over
       LocationService.instance.getCurrentLocation().then((loc) {
-        UserPresenceService.instance.startBroadcasting(loc.latitude, loc.longitude);
+        UserPresenceService.instance.startBroadcasting(lat: loc.latitude, lng: loc.longitude);
       });
     }
   }
@@ -186,7 +186,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       
       // Resume broadcasting if they cancel
       final loc = await LocationService.instance.getCurrentLocation();
-      await UserPresenceService.instance.startBroadcasting(loc.latitude, loc.longitude);
+      await UserPresenceService.instance.startBroadcasting(lat: loc.latitude, lng: loc.longitude);
     } catch (e) {
       
       debugPrint('TrackingBloc: trip cancellation failed — $e');

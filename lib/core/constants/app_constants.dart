@@ -23,10 +23,8 @@ class AppConstants {
 
   // Active trip statuses (used for chat guards)
   static const List<String> activeTripStatuses = [
-    'pending',
+    'searching',
     'accepted',
     'in_progress',
-    'arrived',
-    'picked_up',
   ];
 }

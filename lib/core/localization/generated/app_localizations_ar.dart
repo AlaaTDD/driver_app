@@ -1295,4 +1295,45 @@ class AppLocalizationsAr extends AppLocalizations {
   String errorOccurredWithDetails(String error) {
     return 'حدث خطأ: $error';
   }
+
+  @override
+  String get imageAttachment => '📷 صورة';
+
+  @override
+  String get read => 'تم القراءة';
+
+  @override
+  String get sent => 'تم الإرسال';
+
+  @override
+  String sentAndReadAt(String sentTime, String readTime) {
+    return 'أُرسلت: $sentTime\nقُرئت: $readTime';
+  }
+
+  @override
+  String get typing => 'يكتب الآن...';
+
+  @override
+  String get offline => 'غير متصل';
+
+  @override
+  String get searchMessages => 'بحث في المحادثات...';
+
+  @override
+  String get noResults => 'لا توجد نتائج';
+
+  @override
+  String get tryDifferentKeywords => 'جرب البحث بكلمات أخرى';
+
+  @override
+  String get deleteMessage => 'حذف الرسالة';
+
+  @override
+  String get messageDeleted => 'تم حذف الرسالة';
+
+  @override
+  String get imageLoadError => 'تعذر تحميل الصورة';
+
+  @override
+  String get sendImage => 'إرسال صورة';
 }

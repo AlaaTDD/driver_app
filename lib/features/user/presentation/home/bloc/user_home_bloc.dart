@@ -70,7 +70,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
       await _cellService.subscribeToCells(lat, lng);
 
       
-      await _presenceService.startBroadcasting(lat, lng);
+      await _presenceService.startBroadcasting(lat: lat, lng: lng);
 
       
       _driverUpdatesSubscription?.cancel();

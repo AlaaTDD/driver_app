@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/widgets.dart';
 
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -133,6 +134,16 @@ class FCMService {
     });
 
     try {
+      if (Platform.isIOS) {
+        String? apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          developer.log('APNS token is null, waiting 3 seconds...');
+          await Future<void>.delayed(const Duration(seconds: 3));
+          apnsToken = await _messaging.getAPNSToken();
+        }
+        developer.log('APNS Token: $apnsToken');
+      }
+
       final token = await _messaging.getToken();
       developer.log('🔥 FCM INITIAL TOKEN: $token');
       if (token != null) {
@@ -164,13 +175,6 @@ class FCMService {
 
     if (type == 'ride_offer') {
       await handleRideOfferNotification(message.data);
-      return;
-    }
-
-    // Don't show local notification for new_message while app is open
-    // to avoid double notification (DB notification + FCM push)
-    if (type == 'new_message') {
-      developer.log('🔥 FCM FOREGROUND: Skipping local notification for new_message');
       return;
     }
 

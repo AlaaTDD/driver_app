@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/theme_extensions.dart';
@@ -6,6 +8,7 @@ import '../../../../../core/localization/generated/app_localizations.dart';
 import '../screens/messages_screen.dart';
 import '../bloc/messages_cubit.dart';
 import '../bloc/messages_state.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ConversationsScreen extends StatelessWidget {
   final String? tripId;
@@ -93,44 +96,54 @@ class _ConversationsViewState extends State<_ConversationsView> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppLocalizations l) {
     return AppBar(
-      backgroundColor: context.bgColor,
+      backgroundColor: context.bgColor.withValues(alpha: 0.9),
       elevation: 0,
-      centerTitle: false,
+      centerTitle: true,
+      flexibleSpace: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(color: Colors.transparent),
+        ),
+      ),
       title: Text(
         l.messages,
         style: TextStyle(
           color: context.textPrimary,
-          fontSize: 28,
+          fontSize: 24,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
         ),
       ),
       iconTheme: IconThemeData(color: context.textPrimary),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: context.divColor),
-      ),
     );
   }
 
   Widget _buildSearchBar(BuildContext context, AppLocalizations l) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Container(
         decoration: BoxDecoration(
           color: context.elevatedColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.divColor, width: 1),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: TextField(
           controller: _searchController,
           onChanged: (value) => setState(() => _searchQuery = value),
           style: TextStyle(color: context.textPrimary, fontSize: 15),
           decoration: InputDecoration(
-            hintText: 'بحث في المحادثات...',
+            hintText: AppLocalizations.of(context)!.searchMessages,
             hintStyle: TextStyle(color: context.textSecondary, fontSize: 14),
-            prefixIcon: Icon(Icons.search_rounded,
-                color: context.textSecondary, size: 22),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 12, right: 8),
+              child: Icon(Icons.search_rounded, color: AppColors.primary, size: 24),
+            ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
                     icon: Icon(Icons.close_rounded,
@@ -143,7 +156,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
                 : null,
             border: InputBorder.none,
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           ),
         ),
       ),
@@ -163,11 +176,9 @@ class _ConversationsViewState extends State<_ConversationsView> {
       color: AppColors.primary,
       backgroundColor: context.elevatedColor,
       strokeWidth: 2.5,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         itemCount: conversations.length,
-        separatorBuilder: (_, __) =>
-            Divider(height: 1, indent: 86, color: context.divColor.withValues(alpha: 0.5)),
         itemBuilder: (context, index) {
           final conv = conversations[index];
           final isMeSender = conv['is_me_sender'] as bool? ?? true;
@@ -207,8 +218,9 @@ class _ConversationsViewState extends State<_ConversationsView> {
 
   Widget _buildShimmerList() {
     return ListView.separated(
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: 8,
+      itemCount: 20,
       separatorBuilder: (_, __) => Divider(
           height: 1, indent: 86, color: context.divColor.withValues(alpha: 0.3)),
       itemBuilder: (_, __) => const _ShimmerTile(),
@@ -279,7 +291,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
           ),
           const SizedBox(height: 16),
           Text(
-            'لا توجد نتائج',
+            AppLocalizations.of(context)!.noResults,
             style: TextStyle(
               color: context.textPrimary,
               fontSize: 18,
@@ -288,7 +300,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
           ),
           const SizedBox(height: 8),
           Text(
-            'جرب البحث بكلمات أخرى',
+            AppLocalizations.of(context)!.tryDifferentKeywords,
             style: TextStyle(
               color: context.textSecondary,
               fontSize: 14,
@@ -349,109 +361,96 @@ class _ConversationsViewState extends State<_ConversationsView> {
   }
 }
 
-class _ShimmerTile extends StatefulWidget {
+class _ShimmerTile extends StatelessWidget {
   const _ShimmerTile();
 
   @override
-  State<_ShimmerTile> createState() => _ShimmerTileState();
-}
-
-class _ShimmerTileState extends State<_ShimmerTile>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-    _animation = Tween(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: context.textSecondary
-                      .withValues(alpha: _animation.value * 0.3),
-                  shape: BoxShape.circle,
-                ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Shimmer.fromColors(
+            baseColor: baseColor,
+            highlightColor: highlightColor,
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: context.textSecondary
-                                .withValues(alpha: _animation.value * 0.3),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
+                    Shimmer.fromColors(
+                      baseColor: baseColor,
+                      highlightColor: highlightColor,
+                      child: Container(
+                        width: 120,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        const Spacer(),
-                        Container(
-                          width: 40,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: context.textSecondary
-                                .withValues(alpha: _animation.value * 0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: context.textSecondary
-                            .withValues(alpha: _animation.value * 0.3),
-                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 180,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: context.textSecondary
-                            .withValues(alpha: _animation.value * 0.2),
-                        borderRadius: BorderRadius.circular(6),
+                    const Spacer(),
+                    Shimmer.fromColors(
+                      baseColor: baseColor,
+                      highlightColor: highlightColor,
+                      child: Container(
+                        width: 40,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                Shimmer.fromColors(
+                  baseColor: baseColor,
+                  highlightColor: highlightColor,
+                  child: Container(
+                    width: double.infinity,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Shimmer.fromColors(
+                  baseColor: baseColor,
+                  highlightColor: highlightColor,
+                  child: Container(
+                    width: 180,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
@@ -482,7 +481,7 @@ class _ConversationTile extends StatelessWidget {
     required this.onTap,
   });
 
-  String _formatTime(String? iso) {
+  String _formatTime(String? iso, BuildContext context) {
     if (iso == null || iso.isEmpty) return '';
     try {
       final dt = DateTime.parse(iso).toLocal();
@@ -493,10 +492,10 @@ class _ConversationTile extends StatelessWidget {
       if (msgDate == today) {
         return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
       }
-      if (msgDate == yesterday) return 'أمس';
+      if (msgDate == yesterday) return AppLocalizations.of(context)!.yesterday;
       if (now.difference(msgDate).inDays < 7) {
-        const days = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
-        return days[msgDate.weekday - 1];
+        final locale = Localizations.localeOf(context).languageCode;
+        return intl.DateFormat.EEEE(locale).format(msgDate);
       }
       return '${dt.day}/${dt.month}/${dt.year}';
     } catch (_) {
@@ -509,96 +508,113 @@ class _ConversationTile extends StatelessWidget {
     final preview = isMeSender ? 'أنت: $lastMessage' : lastMessage;
     final hasUnread = !isRead || unreadCount > 0;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              _buildAvatar(context),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: context.textPrimary,
-                              fontSize: 16,
-                              fontWeight:
-                                  hasUnread ? FontWeight.w700 : FontWeight.w500,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _formatTime(lastTime),
-                          style: TextStyle(
-                            color: hasUnread
-                                ? AppColors.primary
-                                : context.textSecondary,
-                            fontSize: 12,
-                            fontWeight: hasUnread
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        if (isMeSender && isRead) ...[
-                          const Icon(
-                            Icons.done_all,
-                            size: 16,
-                            color: AppColors.success,
-                          ),
-                          const SizedBox(width: 4),
-                        ] else if (isMeSender) ...[
-                          Icon(
-                            Icons.done,
-                            size: 16,
-                            color: context.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        Expanded(
-                          child: Text(
-                            preview,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: hasUnread
-                                  ? context.textPrimary
-                                  : context.textSecondary,
-                              fontSize: 14,
-                              height: 1.3,
-                              fontWeight: hasUnread
-                                  ? FontWeight.w500
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        if (unreadCount > 0) ...[
-                          const SizedBox(width: 8),
-                          _buildUnreadBadge(),
-                        ],
-                      ],
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: context.elevatedColor,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.divColor.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: Row(
+              children: [
+                _buildAvatar(context),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.textPrimary,
+                                fontSize: 16,
+                                fontWeight:
+                                    hasUnread ? FontWeight.w800 : FontWeight.w600,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (lastTime != null)
+                            Text(
+                              _formatTime(lastTime, context),
+                              style: TextStyle(
+                                color: hasUnread
+                                    ? AppColors.primary
+                                    : context.textSecondary,
+                                fontSize: 12,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w700
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          if (isMeSender && isRead) ...[
+                            const Icon(
+                              Icons.done_all_rounded,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 4),
+                          ] else if (isMeSender) ...[
+                            Icon(
+                              Icons.done_rounded,
+                              size: 16,
+                              color: context.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Expanded(
+                            child: Text(
+                              preview,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: hasUnread
+                                    ? context.textPrimary
+                                    : context.textSecondary,
+                                fontSize: 14,
+                                height: 1.3,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (unreadCount > 0) ...[
+                            const SizedBox(width: 8),
+                            _buildUnreadBadge(),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk -F',' '{print $2, $3}')",
+      "Bash(awk -F',' '{print $3}')",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(cat)",
+      "Bash(python3 /tmp/app_drawer_fix.py)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(git -C /Volumes/alaaMac/driverr/taxi_app status --short)",
+      "Bash(npx supabase *)",
+      "Bash(flutter clean *)",
+      "Bash(pod deintegrate *)",
+      "Bash(pod install *)",
+      "Bash(flutter build *)",
+      "Bash(git add *)",
+      "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/*)",
+      "Bash(rm -rf ~/.pub-cache/hosted)",
+      "Bash(git commit -m ' *)",
+      "Bash(git restore *)",
+      "Bash(git push *)",
+      "Bash(rm -rf /Users/alaataha/.pub-cache/hosted/pub.dev/flutter_lints-4.0.0)",
+      "Bash(/Volumes/alaaMac/developer/flutter/bin/flutter pub *)",
+      "Bash(supabase status *)"
+    ],
+    "additionalDirectories": [
+      "/Users/alaataha/.pub-cache/hosted/pub.dev"
+    ]
+  }
+}

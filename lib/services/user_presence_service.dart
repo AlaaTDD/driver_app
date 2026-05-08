@@ -32,29 +32,25 @@ class UserPresenceService with WidgetsBindingObserver {
 
   
   
-  Future<void> startBroadcasting(double lat, double lng) async {
-    _lastLat = lat;
-    _lastLng = lng;
+  Future<void> startBroadcasting({double? lat, double? lng}) async {
+    _lastLat = lat ?? _lastLat ?? 0.0;
+    _lastLng = lng ?? _lastLng ?? 0.0;
     _isBroadcasting = true;
 
-    
-    await _upsertPresence(lat, lng);
+    await _upsertPresence(_lastLat!, _lastLng!);
 
-    
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) {
-        
-        if (_lastLat == null || _lastLng == null || !_isBroadcasting) return;
-        _upsertPresence(_lastLat!, _lastLng!);
+        if (!_isBroadcasting) return;
+        _upsertPresence(_lastLat ?? 0.0, _lastLng ?? 0.0);
       },
     );
 
-    debugPrint('📡 UserPresence: Started broadcasting at ($lat, $lng)');
+    debugPrint('📡 UserPresence: Started broadcasting at ($_lastLat, $_lastLng)');
   }
 
-  
   Future<void> updateLocation(double lat, double lng) async {
     _lastLat = lat;
     _lastLng = lng;
@@ -89,11 +85,10 @@ class UserPresenceService with WidgetsBindingObserver {
       _isPausedByLifecycle = true;
       _deletePresence();
     } else if (state == AppLifecycleState.resumed) {
-      
-      if (_isPausedByLifecycle && _lastLat != null && _lastLng != null) {
+      if (_isPausedByLifecycle) {
         debugPrint('📡 UserPresence: App resumed, restarting broadcast');
         _isPausedByLifecycle = false;
-        startBroadcasting(_lastLat!, _lastLng!);
+        startBroadcasting(lat: _lastLat, lng: _lastLng);
       }
     }
   }
