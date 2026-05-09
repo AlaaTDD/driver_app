@@ -136,7 +136,7 @@ class LocationService {
     yield* _geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
+        distanceFilter: 2,
       ),
     );
   }
@@ -172,6 +172,27 @@ class LocationService {
         );
       }
     });
+
+    // IMMEDIATELY fetch location so we don't wait for the stream (which has distance filter)
+    getCurrentLocation().then((pos) {
+      if (_lastLat == null) {
+        _lastLat = pos.latitude;
+        _lastLng = pos.longitude;
+        _lastHeading = pos.heading;
+        
+        _broadcastChannel?.sendBroadcastMessage(
+          event: 'location_update',
+          payload: {'lat': pos.latitude, 'lng': pos.longitude, 'heading': pos.heading},
+        );
+        
+        try {
+          SupabaseService.client.from('drivers_profile').update({
+            'current_lat': pos.latitude,
+            'current_lng': pos.longitude,
+          }).eq('id', driverId);
+        } catch (_) {}
+      }
+    }).catchError((_) {});
     
     _tripTrackingSub = getLocationStream().listen((pos) async {
       // Save last known position for heartbeat

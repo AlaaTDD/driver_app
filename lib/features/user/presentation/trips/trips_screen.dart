@@ -50,7 +50,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: context.bgColor,
+      backgroundColor: const Color(0xFF0D0F18), // Dark background matching trip_details
       body: SafeArea(
         top: true,
         child: BlocConsumer<TripsBloc, TripsState>(

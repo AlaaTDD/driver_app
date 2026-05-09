@@ -3,24 +3,24 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Background
-  static const background      = Color(0xFF070C18);
-  static const surface         = Color(0xFF0D1829);
-  static const surfaceElevated = Color(0xFF142238);
-  static const divider         = Color(0xFF1C2E48);
+  static const background      = Color(0xFF0D0F18); // _C.bg
+  static const surface         = Color(0xFF181C2A); // _C.card
+  static const surfaceElevated = Color(0xFF1E2336); // _C.elevated
+  static const divider         = Color(0xFF252A3D); // _C.border
 
   // Brand
-  static const primary        = Color(0xFF3B82F6); // Blue-500
-  static const primaryDark    = Color(0xFF2563EB); // Blue-600
-  static const secondary      = Color(0xFF6366F1); // Indigo-500 (gradients)
-  static const primarySurface = Color(0xFF0B1A32);
+  static const primary        = Color(0xFF4C8BF5); // _C.blue
+  static const primaryDark    = Color(0xFF3868C0); // Darker blue
+  static const secondary      = Color(0xFF1FC87A); // _C.emerald
+  static const primarySurface = Color(0xFF12151F); // _C.sheet
 
   // Text
-  static const textPrimary   = Color(0xFFEEF4FF);
-  static const textSecondary = Color(0xFF7A9CB8);
-  static const textDisabled  = Color(0xFF2A3D58);
+  static const textPrimary   = Color(0xFFEEF0FF); // _C.t1
+  static const textSecondary = Color(0xFF7B82A3); // _C.t2
+  static const textDisabled  = Color(0xFF3A4060); // _C.t3
 
   // Semantic
-  static const success = Color(0xFF22C55E);
-  static const warning = Color(0xFFF59E0B);
-  static const error   = Color(0xFFEF4444);
+  static const success = Color(0xFF1FC87A); // _C.emerald
+  static const warning = Color(0xFFF5A524); // _C.amber
+  static const error   = Color(0xFFFF4060); // _C.rose
 }

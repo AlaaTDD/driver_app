@@ -1514,6 +1514,12 @@ abstract class AppLocalizations {
   /// **'عميل جديد'**
   String get newCustomer;
 
+  /// No description provided for @passenger.
+  ///
+  /// In ar, this message translates to:
+  /// **'راكب'**
+  String get passenger;
+
   /// No description provided for @failedLoadMessages.
   ///
   /// In ar, this message translates to:
@@ -1567,6 +1573,18 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'هل أنت متأكد من إلغاء هذه الرحلة؟'**
   String get areYouSureCancelTrip;
+
+  /// No description provided for @areYouSureRejectTrip.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد من رفض هذه الرحلة؟'**
+  String get areYouSureRejectTrip;
+
+  /// No description provided for @areYouSureCompleteTrip.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد من إكمال هذه الرحلة؟'**
+  String get areYouSureCompleteTrip;
 
   /// No description provided for @noLabel.
   ///

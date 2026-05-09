@@ -1,9 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
-import '../../../../../core/theme/theme_extensions.dart';
-import '../../../../../core/theme/app_colors.dart';
 import 'animated_trip_card.dart';
 
 class TripListView extends StatelessWidget {
@@ -22,7 +21,6 @@ class TripListView extends StatelessWidget {
       return EmptyState(isActive: isActive);
     }
 
-    
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final trip in trips) {
       final date = _formatDate(trip['created_at']);
@@ -30,7 +28,7 @@ class TripListView extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       itemCount: grouped.length,
       itemBuilder: (context, index) {
         final entry = grouped.entries.elementAt(index);
@@ -49,7 +47,6 @@ class TripListView extends StatelessWidget {
       final date = DateTime.parse(dateValue.toString());
       return DateFormat('MMM dd, yyyy').format(date);
     } catch (e) {
-      debugPrint('⚠️ TripListView: Error parsing date: $e');
       return 'Unknown';
     }
   }
@@ -69,19 +66,29 @@ class TripDateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const t2 = Color(0xFF7B82A3);
+    const blue = Color(0xFF4C8BF5);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-          child: Text(
-            dateLabel,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.7),
+          padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
+          child: Row(children: [
+            Container(width: 4, height: 16, decoration: BoxDecoration(
+              color: blue, borderRadius: BorderRadius.circular(2)
+            )),
+            const SizedBox(width: 8),
+            Text(
+              dateLabel,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: t2,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
+          ]),
         ),
         ...trips.asMap().entries.map((entry) {
           return AnimatedTripCard(
@@ -97,114 +104,66 @@ class TripDateSection extends StatelessWidget {
 
 class EmptyState extends StatelessWidget {
   final bool isActive;
-
   const EmptyState({super.key, this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
-    // Need to import localizations at top, but we can do it via AppLocalizations
     final l = AppLocalizations.of(context)!;
+    const blue = Color(0xFF4C8BF5);
+    const t1   = Color(0xFFEEF0FF);
+    const t2   = Color(0xFF7B82A3);
     
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: blue.withValues(alpha: 0.1),
               shape: BoxShape.circle,
+              border: Border.all(color: blue.withValues(alpha: 0.2)),
             ),
             child: Icon(
-              isActive ? Icons.local_taxi_outlined : Icons.route_outlined,
-              size: 64,
-              color: AppColors.primary.withValues(alpha: 0.5),
+              isActive ? Icons.local_taxi_rounded : Icons.route_rounded,
+              size: 56,
+              color: blue.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 24),
           Text(
             l.noTrips,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(color: t1, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
             isActive ? l.noActiveTrips : l.tripsWillAppearHere,
-            style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: t2, fontSize: 14),
           ),
           if (isActive) ...[
-            const SizedBox(height: 24),
-            _GradientButton(
-              onPressed: () => Navigator.pop(context),
-              icon: Icons.local_taxi,
-              label: l.backToHome,
+            const SizedBox(height: 28),
+            GestureDetector(
+              onTap: () => context.pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [blue, Color(0xFF1F5EC4)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  Text(l.backToHome,
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                ]),
+              ),
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _GradientButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final IconData icon;
-  final String label;
-
-  const _GradientButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

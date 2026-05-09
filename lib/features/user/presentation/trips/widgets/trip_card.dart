@@ -1,10 +1,22 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../../core/theme/app_colors.dart';
-import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/constants/app_routes.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
+
+// Shared color tokens — mirrors trip_details_screen._C
+const _bg      = Color(0xFF0D0F18);
+const _card    = Color(0xFF181C2A);
+const _elevated= Color(0xFF1E2336);
+const _border  = Color(0xFF252A3D);
+const _blue    = Color(0xFF4C8BF5);
+const _emerald = Color(0xFF1FC87A);
+const _rose    = Color(0xFFFF4060);
+const _amber   = Color(0xFFF5A524);
+const _violet  = Color(0xFF8B5CF6);
+const _t1      = Color(0xFFEEF0FF);
+const _t2      = Color(0xFF7B82A3);
+const _t3      = Color(0xFF3A4060);
 
 class TripCard extends StatelessWidget {
   final Map<String, dynamic> trip;
@@ -15,10 +27,9 @@ class TripCard extends StatelessWidget {
   String _formatTime(String? createdAt) {
     if (createdAt == null) return '';
     try {
-      final dt = DateTime.parse(createdAt);
+      final dt = DateTime.parse(createdAt).toLocal();
       return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      debugPrint('❌ Error: $e');
+    } catch (_) {
       return '';
     }
   }
@@ -28,20 +39,25 @@ class TripCard extends StatelessWidget {
     final l = AppLocalizations.of(context)!;
     final status = trip['status'] as String?;
     final distance = (trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0';
-    final price = (trip['price'] as num?)?.toStringAsFixed(2) ?? '0.00';
+    final price = (trip['price'] as num?)?.toStringAsFixed(0) ?? '0';
+    final pickup = trip['pickup_address'] as String? ?? trip['meeting_address'] as String? ?? '';
+    final dest = trip['destination_address'] as String? ?? '';
+    final time = _formatTime(trip['created_at'] as String?);
+
+    final statusColor = _statusColor(status);
+    final statusLabel = _statusLabel(status, l);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: context.cardColor,
+        color: _card,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: context.textPrimary.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: isActive
+            ? Border.all(color: _blue.withValues(alpha: 0.4), width: 1.5)
+            : Border.all(color: _border, width: 1),
+        boxShadow: isActive
+            ? [BoxShadow(color: _blue.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))]
+            : [const BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -49,38 +65,124 @@ class TripCard extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.push('${AppRoutes.userTripDetails}?tripId=${trip['id']}'),
+            splashColor: _blue.withValues(alpha: 0.08),
+            highlightColor: _elevated.withValues(alpha: 0.5),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      _StatusBadge(status: status, l: l),
-                      const Spacer(),
-                      Icon(Icons.access_time, size: 14, color: context.textSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatTime(trip['created_at'] as String?),
-                        style: TextStyle(color: context.textSecondary, fontSize: 13),
+                  // ── Header row ──────────────────────────────────────────────
+                  Row(children: [
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
                       ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Container(
+                          width: 6, height: 6,
+                          decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(statusLabel, style: TextStyle(
+                          color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                    const Spacer(),
+                    if (time.isNotEmpty) ...[
+                      const Icon(Icons.access_time_rounded, size: 12, color: _t3),
+                      const SizedBox(width: 4),
+                      Text(time, style: const TextStyle(color: _t2, fontSize: 12)),
                     ],
-                  ),
+                  ]),
+
+                  const SizedBox(height: 14),
+
+                  // ── Route ──────────────────────────────────────────────────
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    // Dots + line
+                    Column(children: [
+                      Container(
+                        width: 9, height: 9,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: _emerald,
+                          boxShadow: [BoxShadow(color: _emerald.withValues(alpha: 0.4), blurRadius: 5)],
+                        ),
+                      ),
+                      Container(
+                        width: 1.5, height: 28,
+                        margin: const EdgeInsets.symmetric(vertical: 3),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [_emerald.withValues(alpha: 0.4), _blue.withValues(alpha: 0.4)],
+                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 9, height: 9,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: _blue,
+                          boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.4), blurRadius: 5)],
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(width: 10),
+                    // Addresses
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(
+                        pickup.isEmpty ? '---' : pickup,
+                        style: const TextStyle(color: _t1, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        dest.isEmpty ? '---' : dest,
+                        style: const TextStyle(color: _t1, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ])),
+                  ]),
+
+                  const SizedBox(height: 14),
+                  Container(height: 1, color: _border),
                   const SizedBox(height: 12),
-                  Text(
-                    '${trip['pickup_address'] ?? 'Unknown'} → ${trip['destination_address'] ?? 'Unknown'}',
-                    style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text('$distance ${AppLocalizations.of(context)!.km}', style: TextStyle(color: context.textSecondary, fontSize: 12)),
-                      const SizedBox(width: 12),
-                      Text('$price ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(color: AppColors.success, fontSize: 13, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
+
+                  // ── Footer: distance + price ────────────────────────────────
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _elevated,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.straighten_rounded, size: 12, color: _t2),
+                        const SizedBox(width: 4),
+                        Text('$distance ${l.km}',
+                          style: const TextStyle(color: _t2, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_blue, Color(0xFF1F5EC4)],
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))],
+                      ),
+                      child: Text('$price ${l.currencySar}',
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
                 ],
               ),
             ),
@@ -89,35 +191,21 @@ class TripCard extends StatelessWidget {
       ),
     );
   }
+
+  Color _statusColor(String? s) => switch (s) {
+    'completed'                   => _emerald,
+    'cancelled'                   => _rose,
+    'in_progress' || 'accepted'   => _blue,
+    'searching'                   => _amber,
+    _                             => _t2,
+  };
+
+  String _statusLabel(String? s, AppLocalizations l) => switch (s) {
+    'completed'   => l.completed,
+    'cancelled'   => l.cancelled,
+    'in_progress' => l.inProgress,
+    'accepted'    => l.tripAccepted,
+    'searching'   => l.searchingForDriver,
+    _             => l.pending,
+  };
 }
-
-class _StatusBadge extends StatelessWidget {
-  final String? status;
-  final AppLocalizations l;
-
-  const _StatusBadge({required this.status, required this.l});
-
-  @override
-  Widget build(BuildContext context) {
-    final (color, text) = switch (status) {
-      'completed' => (AppColors.success, l.completed),
-      'cancelled' => (AppColors.error, l.cancelled),
-      'in_progress' => (AppColors.warning, l.inProgress),
-      'accepted' => (AppColors.primary, 'Accepted'),
-      _ => (context.textSecondary, l.pending),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-

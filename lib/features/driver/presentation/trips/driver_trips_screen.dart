@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import 'bloc/driver_trips_bloc.dart';
 import 'bloc/driver_trips_state.dart';
 import 'bloc/driver_trips_event.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/theme_extensions.dart';
+
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/trip_status.dart';
@@ -49,13 +48,13 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: context.bgColor,
+      backgroundColor: const Color(0xFF0D0F18),
       body: SafeArea(
         top: true,
         child: BlocConsumer<DriverTripsBloc, DriverTripsState>(
           listener: (context, state) {
             if (state is DriverTripsError) {
-              _showToast(state.message, AppColors.error);
+              _showToast(state.message, const Color(0xFFFF4060));
             }
           },
           builder: (context, state) {
@@ -139,9 +138,11 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
   }
 
   Widget _buildLoadingState() {
+    const card     = Color(0xFF181C2A);
+    const elevated = Color(0xFF1E2336);
     return Shimmer.fromColors(
-      baseColor: context.cardColor,
-      highlightColor: context.elevatedColor,
+      baseColor: card,
+      highlightColor: elevated,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -149,7 +150,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
               height: 180,
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.cardColor,
+                color: card,
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -160,7 +161,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
                 height: 140,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: context.cardColor,
+                  color: card,
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
@@ -173,31 +174,49 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
   }
 
   Widget _buildErrorState(String message, AppLocalizations l) {
+    const rose = Color(0xFFFF4060);
+    const blue = Color(0xFF4C8BF5);
+    const t1   = Color(0xFFEEF0FF);
+    const t2   = Color(0xFF7B82A3);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            width: 88, height: 88,
             decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
+              border: Border.all(color: rose.withValues(alpha: 0.3)),
+              color: rose.withValues(alpha: 0.08),
             ),
-            child: const Icon(Icons.error_outline,
-                size: 64, color: AppColors.error),
+            child: const Icon(Icons.cloud_off_rounded, size: 40, color: rose),
           ),
           const SizedBox(height: 24),
           Text(
             message,
-            style: TextStyle(color: context.textPrimary, fontSize: 16),
+            style: const TextStyle(color: t2, fontSize: 14, height: 1.6),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          _GradientButton(
-            onPressed: () =>
-                context.read<DriverTripsBloc>().add(const LoadDriverTrips()),
-            icon: Icons.refresh,
-            label: l.retry,
+          const SizedBox(height: 32),
+          GestureDetector(
+            onTap: () => context.read<DriverTripsBloc>().add(const LoadDriverTrips()),
+            child: Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [blue, Color(0xFF1F5EC4)],
+                  begin: Alignment.topLeft, end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.refresh_rounded, color: Colors.white, size: 17),
+                const SizedBox(width: 8),
+                Text(l.retry, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+              ]),
+            ),
           ),
         ],
       ),
@@ -265,63 +284,7 @@ class _ToastWidget extends StatelessWidget {
   }
 }
 
-class _GradientButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final IconData icon;
-  final String label;
 
-  const _GradientButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _TripsHeader extends StatelessWidget {
   final int total;
@@ -341,139 +304,92 @@ class _TripsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    const card    = Color(0xFF181C2A);
+    const elevated= Color(0xFF1E2336);
+    const border  = Color(0xFF252A3D);
+    const blue    = Color(0xFF4C8BF5);
+    const emerald = Color(0xFF1FC87A);
+    const rose    = Color(0xFFFF4060);
+    const t1      = Color(0xFFEEF0FF);
+    const t2      = Color(0xFF7B82A3);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: blue.withValues(alpha: 0.25), width: 1),
         boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: blue.withValues(alpha: 0.10), blurRadius: 20, offset: const Offset(0, 6)),
+          const BoxShadow(color: Colors.black38, blurRadius: 10),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
-          Row(
-            children: [
-              _HeaderActionButton(
-                icon: Icons.arrow_back_ios_new,
-                onTap: onBack,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.myTrips,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      AppLocalizations.of(context)!.totalTripsLabel(total),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
+          Row(children: [
+            GestureDetector(
+              onTap: onBack,
+              child: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: elevated, shape: BoxShape.circle,
+                  border: Border.all(color: border, width: 1),
                 ),
+                child: const Icon(Icons.arrow_back_ios_new_rounded, color: t1, size: 16),
               ),
-              GestureDetector(
-                onTap: onNewTrip,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1,
-                    ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(l.myTrips,
+                style: const TextStyle(color: t1, fontSize: 20, fontWeight: FontWeight.w800, height: 1.2)),
+              const SizedBox(height: 2),
+              Text(l.totalTripsLabel(total),
+                style: const TextStyle(color: t2, fontSize: 12, height: 1.2)),
+            ])),
+            GestureDetector(
+              onTap: onNewTrip,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [blue, Color(0xFF1F5EC4)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.local_taxi, color: Colors.white, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        AppLocalizations.of(context)!.startWorking,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.local_taxi_rounded, color: Colors.white, size: 15),
+                  const SizedBox(width: 5),
+                  Text(l.startWorking,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                ]),
               ),
-            ],
-          ),
+            ),
+          ]),
+
+          const SizedBox(height: 16),
+          Container(height: 1, color: border),
           const SizedBox(height: 14),
-          
-          Row(
-            children: [
-              Expanded(
-                child: _CompactStat(
-                  icon: Icons.check_circle,
-                  value: completed.toString(),
-                  label: l.completed,
-                  color: AppColors.success,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _CompactStat(
-                  icon: Icons.cancel,
-                  value: cancelled.toString(),
-                  label: l.cancelled,
-                  color: const Color(0xFFEF4444),
-                ),
-              ),
-            ],
-          ),
+
+          Row(children: [
+            Expanded(child: _CompactStat(
+              icon: Icons.check_circle_rounded,
+              value: completed.toString(),
+              label: l.completed,
+              color: emerald,
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: _CompactStat(
+              icon: Icons.cancel_rounded,
+              value: cancelled.toString(),
+              label: l.cancelled,
+              color: rose,
+            )),
+          ]),
         ],
-      ),
-    );
-  }
-}
-
-class _HeaderActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _HeaderActionButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: Colors.white, size: 22),
-        ),
       ),
     );
   }
@@ -486,62 +402,40 @@ class _CompactStat extends StatelessWidget {
   final Color color;
 
   const _CompactStat({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
+    required this.icon, required this.value,
+    required this.label, required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    const elevated = Color(0xFF1E2336);
+    const t1       = Color(0xFFEEF0FF);
+    const t2       = Color(0xFF7B82A3);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1,
+        color: elevated,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 16),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(value,
+            style: const TextStyle(color: t1, fontSize: 18, fontWeight: FontWeight.w800, height: 1.2)),
+          Text(label,
+            style: const TextStyle(color: t2, fontSize: 11, height: 1.2)),
+        ])),
+      ]),
     );
   }
 }
@@ -564,33 +458,34 @@ class _SegmentedControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    const elevated = Color(0xFF1E2336);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: context.elevatedColor,
+          color: elevated,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             _SegmentButton(
-              icon: Icons.pending_actions,
+              icon: Icons.pending_actions_rounded,
               label: l.inProgress,
               count: inProgressCount,
               isSelected: selectedIndex == 0,
               onTap: () => onIndexChanged(0),
             ),
             _SegmentButton(
-              icon: Icons.check_circle,
+              icon: Icons.check_circle_rounded,
               label: l.completed,
               count: completedCount,
               isSelected: selectedIndex == 1,
               onTap: () => onIndexChanged(1),
             ),
             _SegmentButton(
-              icon: Icons.cancel,
+              icon: Icons.cancel_rounded,
               label: l.cancelled,
               count: cancelledCount,
               isSelected: selectedIndex == 2,
@@ -620,43 +515,43 @@ class _SegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const blue = Color(0xFF4C8BF5);
+    const card = Color(0xFF181C2A);
+    const t2   = Color(0xFF7B82A3);
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [blue, Color(0xFF1F5EC4)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  )
+                : null,
+            color: isSelected ? null : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
+                ? [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))]
                 : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? Colors.white : context.textSecondary,
-              ),
+              Icon(icon, size: 16, color: isSelected ? Colors.white : t2),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : context.textSecondary,
+                    color: isSelected ? Colors.white : t2,
                     fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -666,17 +561,15 @@ class _SegmentButton extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : context.cardColor,
+                    color: isSelected ? Colors.white.withValues(alpha: 0.2) : card,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     count.toString(),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : context.textPrimary,
+                      color: isSelected ? Colors.white : t2,
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -708,8 +601,8 @@ class _TripListView extends StatelessWidget {
       onRefresh: () async {
         context.read<DriverTripsBloc>().add(const LoadDriverTrips());
       },
-      color: AppColors.primary,
-      backgroundColor: context.cardColor,
+      color: const Color(0xFF4C8BF5),
+      backgroundColor: const Color(0xFF181C2A),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: grouped.length,
@@ -759,54 +652,63 @@ class _TripListView extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final bool isActive;
-
   const _EmptyState({this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-
+    const blue = Color(0xFF4C8BF5);
+    const t1   = Color(0xFFEEF0FF);
+    const t2   = Color(0xFF7B82A3);
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: blue.withValues(alpha: 0.1),
               shape: BoxShape.circle,
+              border: Border.all(color: blue.withValues(alpha: 0.2)),
             ),
             child: Icon(
-              isActive ? Icons.local_taxi_outlined : Icons.route_outlined,
-              size: 64,
-              color: AppColors.primary.withValues(alpha: 0.5),
+              isActive ? Icons.local_taxi_rounded : Icons.route_rounded,
+              size: 56,
+              color: blue.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 24),
           Text(
             l.noTrips,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(color: t1, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            isActive
-                ? AppLocalizations.of(context)!.noActiveTrips
-                : AppLocalizations.of(context)!.tripsWillAppearHere,
-            style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 14,
-            ),
+            isActive ? AppLocalizations.of(context)!.noActiveTrips : AppLocalizations.of(context)!.tripsWillAppearHere,
+            style: const TextStyle(color: t2, fontSize: 14),
           ),
           if (isActive) ...[
-            const SizedBox(height: 24),
-            _GradientButton(
-              onPressed: () => context.pop(),
-              icon: Icons.local_taxi,
-              label: AppLocalizations.of(context)!.backToHome,
+            const SizedBox(height: 28),
+            GestureDetector(
+              onTap: () => context.pop(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [blue, Color(0xFF1F5EC4)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  Text(AppLocalizations.of(context)!.backToHome,
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                ]),
+              ),
             ),
           ],
         ],
@@ -828,51 +730,30 @@ class _TripDateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const t2   = Color(0xFF7B82A3);
+    const blue = Color(0xFF4C8BF5);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          child: Row(children: [
+            Container(width: 4, height: 16, decoration: BoxDecoration(
+              color: blue, borderRadius: BorderRadius.circular(2)
+            )),
+            const SizedBox(width: 8),
+            Text(
+              dateLabel,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: t2,
+                letterSpacing: 0.5,
               ),
-              const SizedBox(width: 10),
-              Text(
-                dateLabel,
-                style: TextStyle(
-                  color: context.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: context.elevatedColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  trips.length.toString(),
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ]),
         ),
-        
         ...trips.asMap().entries.map((entry) {
           return _AnimatedTripCard(
             trip: entry.value,
@@ -952,35 +833,41 @@ class _TripCard extends StatelessWidget {
   const _TripCard({required this.trip, this.isActive = false});
 
   String _formatTime(DateTime createdAt) {
-    final hour = createdAt.hour.toString().padLeft(2, '0');
-    final minute = createdAt.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    final local = createdAt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final userData = trip.userData;
-    final userName = userData?['name'] as String? ?? '';
     final l = AppLocalizations.of(context)!;
     final status = trip.status;
-    final canNavigate = status == TripStatus.accepted || status == TripStatus.inProgress;
-    final price = trip.price.toStringAsFixed(2);
+    final distance = trip.distanceKm.toStringAsFixed(1);
+    final price = trip.price.toStringAsFixed(0);
+    final time = _formatTime(trip.createdAt);
+    
+    final statusColor = _getStatusColor(status);
+    final statusLabel = _getStatusText(status, l);
+
+    const card     = Color(0xFF181C2A);
+    const elevated = Color(0xFF1E2336);
+    const border   = Color(0xFF252A3D);
+    const blue     = Color(0xFF4C8BF5);
+    const emerald  = Color(0xFF1FC87A);
+    const t1       = Color(0xFFEEF0FF);
+    const t2       = Color(0xFF7B82A3);
+    const t3       = Color(0xFF3A4060);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: context.cardColor,
+        color: card,
         borderRadius: BorderRadius.circular(20),
         border: isActive
-            ? Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+            ? Border.all(color: blue.withValues(alpha: 0.4), width: 1.5)
+            : Border.all(color: border, width: 1),
+        boxShadow: isActive
+            ? [BoxShadow(color: blue.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))]
+            : [const BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -988,208 +875,124 @@ class _TripCard extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.push('${AppRoutes.driverTripDetails}?tripId=${trip.id}'),
+            splashColor: blue.withValues(alpha: 0.08),
+            highlightColor: elevated.withValues(alpha: 0.5),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
-                  Row(
-                    children: [
-                      
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(status).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _getStatusIcon(status),
-                            const SizedBox(width: 6),
-                            Text(
-                              _getStatusText(status, l),
-                              style: TextStyle(
-                                color: _getStatusColor(status),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                  // ── Header row ──────────────────────────────────────────────
+                  Row(children: [
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1),
                       ),
-                      const Spacer(),
-                      
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: context.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _formatTime(trip.createdAt),
-                            style: TextStyle(
-                              color: context.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _RouteVisualizer(
-                    pickup: trip.pickupAddress,
-                    destination: trip.destinationAddress,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Row(
-                    children: [
-                      
-                      if (userName.isNotEmpty) ...[
-                        Hero(
-                          tag: 'user_${trip.id}',
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: userData?['avatar_url'] != null
-                                  ? CachedNetworkImage(
-                                      imageUrl: userData!['avatar_url'],
-                                      width: 40,
-                                      height: 40,
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => Container(
-                                        width: 40,
-                                        height: 40,
-                                        color: AppColors.primary.withValues(alpha: 0.1),
-                                        child: const Icon(
-                                          Icons.person,
-                                          size: 20,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                      errorWidget: (context, url, error) => Container(
-                                        width: 40,
-                                        height: 40,
-                                        color: AppColors.primary.withValues(alpha: 0.1),
-                                        child: const Icon(
-                                          Icons.person,
-                                          size: 20,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 40,
-                                      height: 40,
-                                      color: AppColors.primary.withValues(alpha: 0.1),
-                                      child: const Icon(
-                                        Icons.person,
-                                        size: 20,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                userName,
-                                style: TextStyle(
-                                  color: context.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (userData?['phone'] != null)
-                                Text(
-                                  userData!['phone'],
-                                  style: TextStyle(
-                                    color: context.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ] else ...[
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.person_outline,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
+                          width: 6, height: 6,
+                          decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          AppLocalizations.of(context)!.newCustomer,
-                          style: TextStyle(
-                            color: context.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const Spacer(),
-                      ],
-                      
-                      if (canNavigate)
-                        _ActionButton(
-                          icon: Icons.navigation,
-                          color: AppColors.primary,
-                          onTap: () => context.push('${AppRoutes.driverTripDetails}?tripId=${trip.id}'),
-                        ),
-                      const SizedBox(width: 12),
-                      
+                        const SizedBox(width: 5),
+                        Text(statusLabel, style: TextStyle(
+                          color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                    const Spacer(),
+                    if (time.isNotEmpty) ...[
+                      const Icon(Icons.access_time_rounded, size: 12, color: t3),
+                      const SizedBox(width: 4),
+                      Text(time, style: const TextStyle(color: t2, fontSize: 12)),
+                    ],
+                  ]),
+
+                  const SizedBox(height: 14),
+
+                  // ── Route ──────────────────────────────────────────────────
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    // Dots + line
+                    Column(children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        width: 9, height: 9,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: emerald,
+                          boxShadow: [BoxShadow(color: emerald.withValues(alpha: 0.4), blurRadius: 5)],
+                        ),
+                      ),
+                      Container(
+                        width: 1.5, height: 28,
+                        margin: const EdgeInsets.symmetric(vertical: 3),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withValues(alpha: 0.9),
-                              AppColors.primaryDark,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          '$price ${l.currencySar}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                            colors: [emerald.withValues(alpha: 0.4), blue.withValues(alpha: 0.4)],
+                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                      Container(
+                        width: 9, height: 9,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: blue,
+                          boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.4), blurRadius: 5)],
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(width: 10),
+                    // Addresses
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(
+                        trip.pickupAddress.isEmpty ? '---' : trip.pickupAddress,
+                        style: const TextStyle(color: t1, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        trip.destinationAddress.isEmpty ? '---' : trip.destinationAddress,
+                        style: const TextStyle(color: t1, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ])),
+                  ]),
+
+                  const SizedBox(height: 14),
+                  Container(height: 1, color: border),
+                  const SizedBox(height: 12),
+
+                  // ── Footer: distance + price ────────────────────────────────
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: elevated,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: border),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.straighten_rounded, size: 12, color: t2),
+                        const SizedBox(width: 4),
+                        Text('$distance ${l.km}',
+                          style: const TextStyle(color: t2, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [blue, Color(0xFF1F5EC4)],
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))],
+                      ),
+                      child: Text('$price ${l.currencySar}',
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
                 ],
               ),
             ),
@@ -1199,26 +1002,19 @@ class _TripCard extends StatelessWidget {
     );
   }
 
-  Widget _getStatusIcon(TripStatus? status) {
-    final iconData = switch (status) {
-      TripStatus.completed => Icons.check_circle,
-      TripStatus.cancelled => Icons.cancel,
-      TripStatus.inProgress => Icons.local_taxi,
-      TripStatus.accepted => Icons.thumb_up,
-      TripStatus.searching => Icons.search,
-      _ => Icons.trip_origin,
-    };
-    return Icon(iconData, size: 14, color: _getStatusColor(status));
-  }
-
   Color _getStatusColor(TripStatus? status) {
+    const blue    = Color(0xFF4C8BF5);
+    const emerald = Color(0xFF1FC87A);
+    const rose    = Color(0xFFFF4060);
+    const amber   = Color(0xFFF5A524);
+    const t2      = Color(0xFF7B82A3);
+    
     return switch (status) {
-      TripStatus.completed => AppColors.success,
-      TripStatus.cancelled => const Color(0xFF6B7280),
-      TripStatus.inProgress => AppColors.primary,
-      TripStatus.accepted => const Color(0xFF8B5CF6),
-      TripStatus.searching => const Color(0xFFF59E0B),
-      _ => AppColors.textDisabled,
+      TripStatus.completed => emerald,
+      TripStatus.cancelled => rose,
+      TripStatus.inProgress || TripStatus.accepted => blue,
+      TripStatus.searching => amber,
+      _ => t2,
     };
   }
 
@@ -1231,163 +1027,5 @@ class _TripCard extends StatelessWidget {
       TripStatus.searching => l.searchingForDriver,
       _ => status?.name ?? '',
     };
-  }
-}
-
-class _RouteVisualizer extends StatelessWidget {
-  final String pickup;
-  final String destination;
-
-  const _RouteVisualizer({required this.pickup, required this.destination});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        
-        Column(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-                border: Border.all(color: context.cardColor, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.success.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: 2,
-              height: 36,
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.success.withValues(alpha: 0.5),
-                    AppColors.primary.withValues(alpha: 0.5),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: context.cardColor, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 12),
-        
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _LocationPoint(
-                label: AppLocalizations.of(context)!.startingPoint,
-                address: pickup,
-                isDestination: false,
-              ),
-              const SizedBox(height: 20),
-              _LocationPoint(
-                label: AppLocalizations.of(context)!.destination,
-                address: destination,
-                isDestination: true,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LocationPoint extends StatelessWidget {
-  final String label;
-  final String address;
-  final bool isDestination;
-
-  const _LocationPoint({
-    required this.label,
-    required this.address,
-    required this.isDestination,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: isDestination ? AppColors.primary : AppColors.success,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          address.isEmpty ? '---' : address,
-          style: TextStyle(
-            color: context.textPrimary,
-            fontSize: 13,
-            height: 1.4,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-      ),
-    );
   }
 }

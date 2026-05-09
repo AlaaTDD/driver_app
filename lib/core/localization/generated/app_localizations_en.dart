@@ -745,6 +745,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newCustomer => 'New Customer';
 
   @override
+  String get passenger => 'Passenger';
+
+  @override
   String get failedLoadMessages => 'Failed to load messages';
 
   @override
@@ -773,6 +776,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get areYouSureCancelTrip =>
       'Are you sure you want to cancel this trip?';
+
+  @override
+  String get areYouSureRejectTrip =>
+      'Are you sure you want to reject this trip?';
+
+  @override
+  String get areYouSureCompleteTrip =>
+      'Are you sure you want to complete this trip?';
 
   @override
   String get noLabel => 'No';

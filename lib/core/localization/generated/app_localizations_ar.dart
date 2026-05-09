@@ -738,6 +738,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get newCustomer => 'عميل جديد';
 
   @override
+  String get passenger => 'راكب';
+
+  @override
   String get failedLoadMessages => 'فشل في تحميل الرسائل';
 
   @override
@@ -765,6 +768,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get areYouSureCancelTrip => 'هل أنت متأكد من إلغاء هذه الرحلة؟';
+
+  @override
+  String get areYouSureRejectTrip => 'هل أنت متأكد من رفض هذه الرحلة؟';
+
+  @override
+  String get areYouSureCompleteTrip => 'هل أنت متأكد من إكمال هذه الرحلة؟';
 
   @override
   String get noLabel => 'لا';
