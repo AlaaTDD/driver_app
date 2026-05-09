@@ -66,14 +66,14 @@ class MessagesCubit extends Cubit<MessagesState> {
 
   // ─── Chat ────────────────────────────────────────────────────────
 
-  Future<void> initDirectChat(String otherUserId, {String? otherUserName}) async {
+  Future<void> initDirectChat(String otherUserId, {String? otherUserName, String? tripId}) async {
     // Validate UUID format
     if (!_isValidUuid(otherUserId)) {
       emit(MessagesError('invalidUserId'));
       return;
     }
     if (isClosed) return;
-    emit(MessagesChatLoaded(messages: [], otherName: otherUserName ?? '', otherUserId: otherUserId));
+    emit(MessagesChatLoaded(messages: [], otherName: otherUserName ?? '', otherUserId: otherUserId, tripId: tripId));
     try {
       final canSend = await _repo.hasActiveTripWith(otherUserId);
       if (isClosed) return;
@@ -87,6 +87,7 @@ class MessagesCubit extends Cubit<MessagesState> {
         messages: messages,
         otherName: name,
         otherUserId: otherUserId,
+        tripId: tripId,
         otherAvatarUrl: avatar,
         canSend: canSend,
         hasMore: messages.length >= 50,
@@ -98,7 +99,6 @@ class MessagesCubit extends Cubit<MessagesState> {
         final ids = [currentUserId, otherUserId]..sort();
         startPresence('presence-${ids.join('-')}');
       }
-      
       // Subscribe to global presence for online/offline status
       _globalPresenceSub?.cancel();
       _globalPresenceSub = _repo.subscribeToUserGlobalPresence(otherUserId).listen((isOnline) {
@@ -146,8 +146,9 @@ class MessagesCubit extends Cubit<MessagesState> {
           : tripData['user_id'];
       String otherName = '';
       String? otherAvatar;
+      Map<String, dynamic>? info;
       if (otherId != null) {
-        final info = await _repo.fetchUserInfo(otherId);
+        info = await _repo.fetchUserInfo(otherId);
         if (isClosed) return;
         otherName = info?['name'] as String? ?? '';
         otherAvatar = info?['avatar_url'] as String?;

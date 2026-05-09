@@ -824,7 +824,14 @@ class _UserStrip extends StatelessWidget {
         // Chat icon
         _CircleAction(
           icon: Icons.chat_bubble_rounded, color: _C.blue,
-          onTap: () => context.push('${AppRoutes.driverMessages}?tripId=$tripId'),
+          onTap: () {
+            final uId = user['id'] as String?;
+            if (uId != null) {
+              context.push('${AppRoutes.driverMessages}?tripId=$tripId&otherUserId=$uId&otherUserName=${Uri.encodeComponent(name)}');
+            } else {
+              context.push('${AppRoutes.driverMessages}?tripId=$tripId');
+            }
+          },
         ),
       ]),
     );

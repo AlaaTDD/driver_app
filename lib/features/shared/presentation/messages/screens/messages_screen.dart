@@ -35,10 +35,10 @@ class MessagesScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) {
         final cubit = MessagesCubit();
-        if (tripId != null && tripId!.isNotEmpty) {
+        if (otherUserId != null && otherUserId!.isNotEmpty) {
+          cubit.initDirectChat(otherUserId!, otherUserName: otherUserName, tripId: tripId);
+        } else if (tripId != null && tripId!.isNotEmpty) {
           cubit.initTripChat(tripId!);
-        } else if (otherUserId != null && otherUserId!.isNotEmpty) {
-          cubit.initDirectChat(otherUserId!, otherUserName: otherUserName);
         }
         return cubit;
       },

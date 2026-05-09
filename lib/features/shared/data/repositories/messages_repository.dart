@@ -139,7 +139,6 @@ class MessagesRepository {
           .from(AppConstants.tableMessages)
           .select('*')
           .or('and(sender_id.eq.$userId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$userId)')
-          .isFilter('trip_id', null)
           .or('and(sender_id.eq.$userId,deleted_by_sender.eq.false),and(receiver_id.eq.$userId,deleted_by_receiver.eq.false)')
           .order('created_at', ascending: false) // Newest first for pagination
           .range(offset, offset + limit - 1);
@@ -178,8 +177,7 @@ class MessagesRepository {
         final r = newMessage.receiverId;
         final tid = newMessage.tripId;
 
-        if (tid == null &&
-            ((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
+        if (((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
           if (!cachedMessages.any((m) => m.id == newMessage.id)) {
             cachedMessages.add(newMessage);
             cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -480,8 +478,6 @@ class MessagesRepository {
 
       if (tripId != null) {
         query = query.eq('trip_id', tripId);
-      } else {
-        query = query.isFilter('trip_id', null);
       }
 
       await query;
@@ -678,6 +674,17 @@ class MessagesRepository {
   Stream<bool> subscribeToUserGlobalPresence(String userId) {
     final controller = StreamController<bool>.broadcast();
 
+    bool isRecent(String? lastSeenIso) {
+      if (lastSeenIso == null) return false;
+      try {
+        final lastSeen = DateTime.parse(lastSeenIso).toUtc();
+        final now = DateTime.now().toUtc();
+        return now.difference(lastSeen).inSeconds <= 30; // 30s threshold
+      } catch (_) {
+        return false;
+      }
+    }
+
     // Initial fetch
     SupabaseService.client
         .from('user_presence')
@@ -685,7 +692,7 @@ class MessagesRepository {
         .eq('user_id', userId)
         .maybeSingle()
         .then((data) {
-      if (data != null) {
+      if (data != null && isRecent(data['last_seen'] as String?)) {
         controller.add(true);
       } else {
         controller.add(false);
@@ -709,18 +716,42 @@ class MessagesRepository {
             if (payload.eventType == PostgresChangeEvent.delete) {
               controller.add(false);
             } else {
-              controller.add(true);
+              final newRow = payload.newRecord;
+              if (newRow.isNotEmpty && isRecent(newRow['last_seen'] as String?)) {
+                controller.add(true);
+              } else {
+                controller.add(false);
+              }
             }
           },
         )
         .subscribe();
 
+    // Also run a local timer to auto-offline if no updates are received
+    final fallbackTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      SupabaseService.client
+          .from('user_presence')
+          .select('last_seen')
+          .eq('user_id', userId)
+          .maybeSingle()
+          .then((data) {
+        if (data != null && isRecent(data['last_seen'] as String?)) {
+          controller.add(true);
+        } else {
+          controller.add(false);
+        }
+      }).catchError((_) {});
+    });
+
     controller.onCancel = () {
+      fallbackTimer.cancel();
       SupabaseService.client.removeChannel(channel);
     };
 
     return controller.stream;
   }
+
+
 
   // ─── Active trip guard ────────────────────────────────────────────────────
 

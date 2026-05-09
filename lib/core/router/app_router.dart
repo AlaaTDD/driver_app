@@ -28,6 +28,7 @@ import '../../features/driver/presentation/trips/driver_trips_screen.dart';
 import '../../features/driver/presentation/profile/driver_profile_screen.dart';
 import '../../features/shared/presentation/screens/pending_verification_screen.dart';
 import '../../features/shared/presentation/messages/screens/conversations_screen.dart';
+import '../../features/shared/presentation/messages/screens/messages_screen.dart';
 import '../../features/shared/presentation/notifications/notifications_screen.dart';
 import '../../features/shared/presentation/chatbot/chatbot_screen.dart';
 import '../../features/shared/presentation/rating/rating_screen.dart';
@@ -213,10 +214,15 @@ class AppRouter {
           pageBuilder: (context, state) {
             final tripId = state.uri.queryParameters['tripId'];
             final otherUserId = state.uri.queryParameters['otherUserId'];
-            return MaterialPage(child: ConversationsScreen(
-              tripId: tripId,
-              otherUserId: otherUserId,
-            ));
+            final otherUserName = state.uri.queryParameters['otherUserName'];
+            if (otherUserId != null && otherUserId.isNotEmpty) {
+              return MaterialPage(child: MessagesScreen(
+                tripId: tripId,
+                otherUserId: otherUserId,
+                otherUserName: otherUserName,
+              ));
+            }
+            return const MaterialPage(child: ConversationsScreen());
           },
         ),
         GoRoute(
@@ -338,10 +344,15 @@ class AppRouter {
           pageBuilder: (context, state) {
             final tripId = state.uri.queryParameters['tripId'];
             final otherUserId = state.uri.queryParameters['otherUserId'];
-            return MaterialPage(child: ConversationsScreen(
-              tripId: tripId,
-              otherUserId: otherUserId,
-            ));
+            final otherUserName = state.uri.queryParameters['otherUserName'];
+            if (otherUserId != null && otherUserId.isNotEmpty) {
+              return MaterialPage(child: MessagesScreen(
+                tripId: tripId,
+                otherUserId: otherUserId,
+                otherUserName: otherUserName,
+              ));
+            }
+            return const MaterialPage(child: ConversationsScreen());
           },
         ),
         GoRoute(
