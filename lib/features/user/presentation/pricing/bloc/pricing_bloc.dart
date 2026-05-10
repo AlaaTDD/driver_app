@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
-import '../data/coupon_repository.dart';
+import 'package:snapix/features/user/data/repositories/coupon_repository.dart';
 import 'pricing_event.dart';
 import 'pricing_state.dart';
 

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import 'complaints_repository.dart';
+import 'package:snapix/features/shared/data/repositories/complaints_repository.dart';
 
 class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});

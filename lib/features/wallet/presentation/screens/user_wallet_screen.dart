@@ -78,19 +78,31 @@ class _UserWalletScreenState extends State<UserWalletScreen>
 
     try {
       final wallet = await _repo.getUserWallet(userId);
-      final txns = await _repo.getTransactionHistory(userId: userId, limit: 50);
+      if (wallet == null) {
+        throw Exception('Wallet not found');
+      }
+      final txns = await _repo.getTransactionHistory(userId: userId, walletType: 'user', limit: 50);
 
       if (!mounted) return;
-      setState(() => _state = _Loaded(wallet: wallet!, transactions: txns));
+      setState(() => _state = _Loaded(wallet: wallet, transactions: txns));
       _fadeCtrl.forward(from: 0);
 
       // Real-time wallet updates
       _walletSub?.cancel();
-      _walletSub = _repo.watchUserWallet(userId).listen((w) {
+      _walletSub = _repo.watchUserWallet(userId).listen((w) async {
         if (!mounted || w == null) return;
         final cur = _state;
         if (cur is _Loaded) {
+          // Temporarily update just the balance
           setState(() => _state = _Loaded(wallet: w, transactions: cur.transactions));
+          
+          // Fetch updated transactions in the background
+          try {
+            final updatedTxns = await _repo.getTransactionHistory(userId: userId, walletType: 'user', limit: 50);
+            if (mounted && _state is _Loaded) {
+              setState(() => _state = _Loaded(wallet: w, transactions: updatedTxns));
+            }
+          } catch (_) {}
         }
       });
     } catch (e) {

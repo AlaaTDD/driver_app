@@ -4,23 +4,34 @@ import '../models/wallet_transaction_model.dart';
 import '../models/withdrawal_request_model.dart';
 import '../models/user_wallet_model.dart';
 import '../models/driver_wallet_model.dart';
+import '../../../../core/utils/uuid_helper.dart';
 
 class WalletRepository {
   final _client = SupabaseService.client;
 
   /// جلب ملخص أرباح السائق
   Future<Map<String, dynamic>> getDriverEarningsSummary(String driverId) async {
-    final data = await _client
-        .from('driver_earnings_summary')
-        .select()
-        .eq('driver_id', driverId)
-        .single();
-    return data;
+    try {
+      final data = await _client
+          .from('driver_earnings_summary')
+          .select()
+          .eq('driver_id', driverId)
+          .single();
+      return data;
+    } catch (e) {
+      debugPrint('❌ WalletRepository.getDriverEarningsSummary: $e');
+      return {
+        'total_earnings': 0.0,
+        'available_balance': 0.0,
+        'completed_trips': 0,
+      };
+    }
   }
 
   /// Get typed transaction history
   Future<List<WalletTransactionModel>> getTransactionHistory({
     required String userId,
+    required String walletType, // 'driver' or 'user'
     int limit = 20,
     DateTime? before,
   }) async {
@@ -28,7 +39,8 @@ class WalletRepository {
       var filterBuilder = _client
           .from('wallet_transactions')
           .select()
-          .eq('wallet_id', userId);
+          .eq('wallet_id', userId)
+          .eq('wallet_type', walletType);
 
       if (before != null) {
         filterBuilder = filterBuilder.lt('created_at', before.toIso8601String());
@@ -55,15 +67,17 @@ class WalletRepository {
     required Map<String, dynamic> accountDetails,
     String? idempotencyKey,
   }) async {
+    final params = <String, dynamic>{
+      'p_driver_id': driverId,
+      'p_amount': amount,
+      'p_payment_method': paymentMethod,
+      'p_account_details': accountDetails,
+      'p_idempotency_key': idempotencyKey ?? UuidHelper.generateV4(),
+    };
+
     final result = await _client.rpc(
       'request_driver_withdrawal',
-      params: {
-        'p_driver_id': driverId,
-        'p_amount': amount,
-        'p_payment_method': paymentMethod,
-        'p_account_details': accountDetails,
-        'p_idempotency_key': idempotencyKey ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      },
+      params: params,
     );
     return (result as Map<String, dynamic>?) ?? {'success': false, 'error': 'unknown_error'};
   }

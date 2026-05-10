@@ -39,15 +39,17 @@ class RideOfferBloc extends Bloc<RideOfferEvent, RideOfferState> {
     emit(state.copyWith(status: RideOfferStatus.accepted));
 
     try {
+      final result = await SupabaseService.client.rpc('driver_accept_trip', params: {
+        'p_trip_id': state.currentOffer?.id ?? event.offerId,
+      });
       
-      await SupabaseService.client
-          .from('trip_offers')
-          .update({
-            'driver_id': SupabaseService.client.auth.currentUser?.id,
-            'status': 'accepted',
-            'accepted_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', event.offerId);
+      if (result == null || result['success'] != true) {
+        emit(state.copyWith(
+          status: RideOfferStatus.error,
+          errorMessage: result?['error'] ?? 'Failed to accept offer',
+        ));
+        return;
+      }
 
       debugPrint('RideOfferBloc: Offer ${event.offerId} accepted');
     } catch (e) {

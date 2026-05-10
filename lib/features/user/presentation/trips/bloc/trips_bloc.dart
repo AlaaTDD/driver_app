@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
-import '../data/trips_repository.dart';
+import 'package:snapix/features/user/data/repositories/trips_repository.dart';
 import 'trips_event.dart';
 import 'trips_state.dart';
 

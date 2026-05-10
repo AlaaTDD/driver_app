@@ -6,7 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_routes.dart';
-import 'data/notifications_repository.dart';
+import 'package:snapix/features/shared/data/repositories/notifications_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});

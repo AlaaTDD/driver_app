@@ -16,14 +16,14 @@ Future<T> withRetry<T>(
   int maxAttempts = 3,
   Duration initialDelay = const Duration(milliseconds: 500),
   Duration maxDelay = const Duration(seconds: 8),
-  bool Function(Exception error)? retryIf,
-  void Function(Exception error, int attempt)? onRetry,
+  bool Function(Object error)? retryIf,
+  void Function(Object error, int attempt)? onRetry,
 }) async {
   var attempt = 1;
   while (true) {
     try {
       return await operation();
-    } on Exception catch (e) {
+    } catch (e) {
       if (attempt >= maxAttempts || (retryIf != null && !retryIf(e))) {
         rethrow;
       }

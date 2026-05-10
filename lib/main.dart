@@ -38,17 +38,7 @@ import 'firebase_options.dart';
 
 
 
-Future<void> _cleanupStaleTrips() async {
-  try {
-    final result = await Supabase.instance.client.rpc('cleanup_stuck_trips');
-    
-    if (result is int && result > 0) {
-      debugPrint('Stale trip cleanup completed: $result trip(s) cleaned');
-    }
-  } catch (e) {
-    debugPrint('Stale trip cleanup failed (RPC may not exist yet): $e');
-  }
-}
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,21 +64,36 @@ void main() async {
   }
 
   
-  ConnectivityService().init();
-
-  
-  _cleanupStaleTrips();
+  await ConnectivityService().init();
 
   final prefs = await SharedPreferences.getInstance();
   Bloc.observer = AppBlocObserver();
 
-  runApp(MyApp(prefs: prefs));
+  final r2StorageService = R2StorageService();
+  final authRepository = AuthRepositoryImpl(r2StorageService);
+  final authBloc = AuthBloc(authRepository)..add(CheckAuthStatus());
+
+  runApp(MyApp(
+    prefs: prefs,
+    r2StorageService: r2StorageService,
+    authRepository: authRepository,
+    authBloc: authBloc,
+  ));
 }
 
 class MyApp extends StatefulWidget {
   final SharedPreferences prefs;
+  final R2StorageService r2StorageService;
+  final AuthRepositoryImpl authRepository;
+  final AuthBloc authBloc;
 
-  const MyApp({super.key, required this.prefs});
+  const MyApp({
+    super.key,
+    required this.prefs,
+    required this.r2StorageService,
+    required this.authRepository,
+    required this.authBloc,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -96,53 +101,34 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
-  bool _routerReady = false;
 
   @override
   void initState() {
     super.initState();
-    
-  }
-
-  void _initRouter(AuthBloc authBloc) {
-    
-    if (!mounted || _routerReady) return;
-    _router = AppRouter.router(authBloc);
-    _routerReady = true;
+    _router = AppRouter.router(widget.authBloc);
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<R2StorageService>(
-          create: (_) => R2StorageService(),
+        RepositoryProvider<R2StorageService>.value(
+          value: widget.r2StorageService,
         ),
-        RepositoryProvider<AuthRepositoryImpl>(
-          create: (context) => AuthRepositoryImpl(
-            context.read<R2StorageService>(),
-          ),
+        RepositoryProvider<AuthRepositoryImpl>.value(
+          value: widget.authRepository,
         ),
       ],
       child: MultiBlocProvider(
-        
-        
-        
-        
-        
         providers: [
-          
           BlocProvider<LanguageBloc>(
             create: (_) => LanguageBloc(widget.prefs)..add(LoadSavedLanguage()),
           ),
           BlocProvider<ThemeBloc>(
             create: (_) => ThemeBloc(widget.prefs)..add(LoadSavedTheme()),
           ),
-          
-          BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc(
-              context.read<AuthRepositoryImpl>(),
-            )..add(CheckAuthStatus()),
+          BlocProvider<AuthBloc>.value(
+            value: widget.authBloc,
           ),
         ],
         child: BlocBuilder<LanguageBloc, LanguageState>(
@@ -150,9 +136,7 @@ class _MyAppState extends State<MyApp> {
             final locale = langState is LanguageLoaded
                 ? langState.locale
                 : const Locale('ar');
-            final authBloc = context.read<AuthBloc>();
             
-            _initRouter(authBloc);
             return BlocBuilder<ThemeBloc, ThemeState>(
               builder: (context, themeState) {
                 return MaterialApp.router(

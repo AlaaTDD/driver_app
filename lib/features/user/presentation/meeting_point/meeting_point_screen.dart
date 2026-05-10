@@ -16,7 +16,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/utils/geohash_helper.dart';
-import 'data/meeting_point_repository.dart';
+import 'package:snapix/features/user/data/repositories/meeting_point_repository.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
@@ -48,7 +48,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         args!.originLat!, args.originLng!,
         args.originAddress?.isNotEmpty == true ? args.originAddress! : AppLocalizations.of(context)!.startingPoint,
       ));
-      Future.delayed(Duration.zero, () async {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!_mapController.isCompleted) return;
         final ctrl = await _mapController.future;
         ctrl.animateCamera(CameraUpdate.newLatLngZoom(
@@ -56,6 +56,12 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         ));
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _geocodeDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _onMapTap(LatLng pos) async {

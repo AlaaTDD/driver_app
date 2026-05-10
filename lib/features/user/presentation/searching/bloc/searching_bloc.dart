@@ -98,31 +98,14 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       debugPrint(
           '🔍 SearchingBloc: Trip $tripId - lat=${tripDetails['pickup_lat']}, lng=${tripDetails['pickup_lng']}, vehicle=${tripDetails['vehicle_type']}');
 
-      final driverIds = await _broadcastService.findNearbyDrivers(
+      await _broadcastService.findAndBroadcast(
+        tripId: tripId,
         originLat: (tripDetails['pickup_lat'] as num).toDouble(),
         originLng: (tripDetails['pickup_lng'] as num).toDouble(),
         vehicleType: (tripDetails['vehicle_type'] as String).trim().toLowerCase(),
       );
-
       
-      final newDriverIds = driverIds
-          .where((id) => !_broadcastedDriverIds.contains(id))
-          .toList();
-      _broadcastedDriverIds.addAll(newDriverIds);
-
-      debugPrint(
-          '🔍 SearchingBloc: Found ${driverIds.length} total drivers, ${newDriverIds.length} new for trip $tripId');
-
-      if (newDriverIds.isNotEmpty) {
-        debugPrint('🔍 SearchingBloc: Broadcasting to new drivers: $newDriverIds');
-        await _broadcastService.broadcastTripOffers(
-          tripId: tripId,
-          driverIds: newDriverIds,
-        );
-        debugPrint('🔍 SearchingBloc: Broadcast completed for trip $tripId');
-      } else if (driverIds.isEmpty) {
-        debugPrint('⚠️ SearchingBloc: No drivers found yet for trip $tripId, will retry...');
-      }
+      debugPrint('🔍 SearchingBloc: Broadcast completed for trip $tripId');
     } catch (e) {
       debugPrint('❌ SearchingBloc: Error broadcasting trip: $e');
     }
@@ -143,6 +126,8 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     if (event.remainingSeconds <= 0 && state is SearchingInProgress) {
       _countdownTimer?.cancel();
       _rebroadcastTimer?.cancel();
+      await _tripSubscription?.cancel();
+      _tripSubscription = null;
       
       try {
         final tripId = (state as SearchingInProgress).tripId;

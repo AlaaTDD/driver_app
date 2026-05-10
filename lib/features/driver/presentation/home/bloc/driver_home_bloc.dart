@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../services/location_service.dart';
 import '../../../../../services/heatmap_service.dart';
-import '../data/driver_home_repository.dart';
+import 'package:snapix/features/driver/data/repositories/driver_home_repository.dart';
 import 'driver_home_event.dart';
 import 'driver_home_state.dart';
 
@@ -22,9 +22,9 @@ import 'driver_home_state.dart';
 
 
 class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
-  final LocationService _locationService = LocationService();
-  final HeatmapService _heatmapService = HeatmapService.instance;
-  final DriverHomeRepository _repository = DriverHomeRepository();
+  final LocationService _locationService;
+  final HeatmapService _heatmapService;
+  final DriverHomeRepository _repository;
   StreamSubscription? _locationSubscription;
   StreamSubscription? _tripsSubscription;
   StreamSubscription? _heatmapSubscription;
@@ -47,7 +47,14 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     set.add(id);
   }
 
-  DriverHomeBloc() : super(const DriverHomeState()) {
+  DriverHomeBloc({
+    LocationService? locationService,
+    HeatmapService? heatmapService,
+    DriverHomeRepository? repository,
+  })  : _locationService = locationService ?? LocationService(),
+        _heatmapService = heatmapService ?? HeatmapService.instance,
+        _repository = repository ?? DriverHomeRepository(),
+        super(const DriverHomeState()) {
     on<LoadDriverStatus>(_onLoadDriverStatus);
     on<ToggleAvailability>(_onToggleAvailability);
     on<NewTripOfferReceived>(_onNewTripOffer);
@@ -217,6 +224,11 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         await _repository.setDriverOffline(userId);
 
         debugPrint('🔴 Driver OFFLINE');
+
+        _pendingPushTimer?.cancel();
+        _pendingLat = null;
+        _pendingLng = null;
+        _pendingHeading = null;
 
         await _locationSubscription?.cancel();
         await _tripsSubscription?.cancel();

@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
-import '../data/rating_repository.dart';
+import 'package:snapix/features/shared/data/repositories/rating_repository.dart';
 import 'rating_event.dart';
 import 'rating_state.dart';
 

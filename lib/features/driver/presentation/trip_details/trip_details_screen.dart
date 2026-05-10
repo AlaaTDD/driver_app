@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -65,7 +66,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   LatLng? _animatedDriverPosition;
   LatLng? _targetDriverPosition;
   double _driverRotation = 0.0;
-  Timer? _animationTimer;
+  Ticker? _animationTicker;
 
   // animations
   late AnimationController _sheetCtrl;
@@ -196,7 +197,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   }
 
   void _startAnimationLoop() {
-    _animationTimer = Timer.periodic(const Duration(milliseconds: 32), (_) {
+    _animationTicker ??= createTicker((_) {
       final target = _targetDriverPosition;
       if (target == null) return;
       final prev = _animatedDriverPosition ?? target;
@@ -216,6 +217,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         zIndex: 2,
       );
     });
+    _animationTicker?.start();
   }
 
   Future<void> _fetchRoute(double oLat, double oLng, double dLat, double dLng) async {
@@ -230,7 +232,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   @override
   void dispose() {
     _locationSub?.cancel();
-    _animationTimer?.cancel();
+    _animationTicker?.dispose();
     _driverMarkerNotifier.dispose();
     _sheetCtrl.dispose();
     _pulseCtrl.dispose();

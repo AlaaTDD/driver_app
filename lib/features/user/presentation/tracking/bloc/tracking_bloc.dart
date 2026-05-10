@@ -220,7 +220,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     _driverLocationSubscription?.cancel();
     _driverLocationChannel?.unsubscribe();
 
-    debugPrint('📡 TrackingBloc: Subscribing to driver $driverId location (broadcast + DB)');
+    debugPrint('📡 TrackingBloc: Subscribing to driver $driverId location (broadcast)');
 
     // ── PRIMARY: Broadcast channel (instant, works even when driver is offline in DB) ──
     _driverLocationChannel = SupabaseService.client.channel('trip-tracking-$driverId');
@@ -242,26 +242,6 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         .subscribe((status, [error]) {
           debugPrint('📡 TrackingBloc: Channel status=$status error=$error');
         });
-
-    // ── FALLBACK: DB stream (covers the case where driver already has a position stored) ──
-    _driverLocationSubscription = SupabaseService.client
-        .from('drivers_profile')
-        .stream(primaryKey: ['id'])
-        .eq('id', driverId)
-        .listen((rows) {
-      if (rows.isNotEmpty) {
-        final row = rows.first;
-        final lat = row['current_lat'];
-        final lng = row['current_lng'];
-        if (lat != null && lng != null) {
-          debugPrint('📡 TrackingBloc: DB update received lat=$lat lng=$lng');
-          add(DriverLocationUpdated(
-            lat: (lat as num).toDouble(),
-            lng: (lng as num).toDouble(),
-          ));
-        }
-      }
-    });
   }
 
   @override

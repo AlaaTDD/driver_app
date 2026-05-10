@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../services/location_service.dart';
 import '../../../../../core/utils/geohash_helper.dart';
-import '../data/trip_details_repository.dart';
+import 'package:snapix/features/driver/data/repositories/trip_details_repository.dart';
 import 'trip_details_event.dart';
 import 'trip_details_state.dart';
 

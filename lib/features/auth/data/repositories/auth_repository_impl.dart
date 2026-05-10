@@ -62,7 +62,7 @@ class AuthRepositoryImpl implements AuthRepository {
       try {
         userData = await SupabaseService.client
             .from('users')
-            .select()
+            .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
             .eq('id', user.id)
             .single();
       } on PostgrestException catch (pe) {
@@ -83,7 +83,6 @@ class AuthRepositoryImpl implements AuthRepository {
             'total_trips': 0,
             'language': 'ar',
             'is_active': true,
-            'is_admin': false,
             'updated_at': DateTime.now().toIso8601String(),
           }).select().single();
         } else {
@@ -140,17 +139,21 @@ class AuthRepositoryImpl implements AuthRepository {
           'total_trips': 0,
           'language': 'ar',
           'is_active': true,
-          'is_admin': false,
           'updated_at': DateTime.now().toIso8601String(),
         }).select().single();
       } catch (e) {
-        // Fallback if upsert still fails
-        userData = await SupabaseService.client
-            .from('users')
-            .select()
-            .eq('id', user.id)
-            .single();
-        debugPrint('AuthRepositoryImpl: User already exists, fetched existing data');
+        try {
+          // Fallback if upsert still fails
+          userData = await SupabaseService.client
+              .from('users')
+              .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+              .eq('id', user.id)
+              .single();
+          debugPrint('AuthRepositoryImpl: User already exists, fetched existing data');
+        } catch (innerE) {
+          debugPrint('AuthRepositoryImpl: Fallback fetch failed: $innerE');
+          return const Left('errorCreateAccountFailed');
+        }
       }
 
       final userModel = UserModel.fromJson(userData);
@@ -220,7 +223,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userData = await SupabaseService.client
           .from('users')
-          .select()
+          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .eq('id', user.id)
           .single();
 
@@ -251,7 +254,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userData = await SupabaseService.client
           .from('users')
-          .select()
+          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .eq('id', user.id)
           .single();
 
@@ -277,7 +280,6 @@ class AuthRepositoryImpl implements AuthRepository {
                 'total_trips': 0,
                 'language': 'ar',
                 'is_active': true,
-                'is_admin': false,
                 'updated_at': DateTime.now().toIso8601String(),
               }).select().single();
               return Right(UserModel.fromJson(userData).toEntity());
@@ -308,7 +310,7 @@ class AuthRepositoryImpl implements AuthRepository {
           .from('users')
           .update(updateData)
           .eq('id', userId)
-          .select()
+          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .single();
 
       final userModel = UserModel.fromJson(userData);

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import 'data/chatbot_repository.dart';
+import 'package:snapix/features/shared/data/repositories/chatbot_repository.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});

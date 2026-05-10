@@ -33,22 +33,26 @@ class UserPresenceService with WidgetsBindingObserver {
   
   
   Future<void> startBroadcasting({double? lat, double? lng}) async {
-    _lastLat = lat ?? _lastLat ?? 0.0;
-    _lastLng = lng ?? _lastLng ?? 0.0;
+    _lastLat = lat ?? _lastLat;
+    _lastLng = lng ?? _lastLng;
     _isBroadcasting = true;
 
-    await _upsertPresence(_lastLat!, _lastLng!);
+    if (_lastLat != null && _lastLng != null) {
+      await _upsertPresence(_lastLat!, _lastLng!);
+    }
 
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 20),
       (_) {
         if (!_isBroadcasting) return;
-        _upsertPresence(_lastLat ?? 0.0, _lastLng ?? 0.0);
+        if (_lastLat != null && _lastLng != null) {
+          _upsertPresence(_lastLat!, _lastLng!);
+        }
       },
     );
 
-    debugPrint('📡 UserPresence: Started broadcasting at ($_lastLat, $_lastLng)');
+    debugPrint('📡 UserPresence: Started broadcasting loop');
   }
 
   Future<void> updateLocation(double lat, double lng) async {
@@ -116,12 +120,15 @@ class UserPresenceService with WidgetsBindingObserver {
 
     try {
       await withRetry(
-        () => SupabaseService.client.from('user_presence').upsert({
-          'user_id': user.id,
-          'lat': lat,
-          'lng': lng,
-          'last_seen': DateTime.now().toUtc().toIso8601String(),
-        }, onConflict: 'user_id'),
+        () async {
+          if (!_isBroadcasting) return;
+          await SupabaseService.client.from('user_presence').upsert({
+            'user_id': user.id,
+            'lat': lat,
+            'lng': lng,
+            'last_seen': DateTime.now().toUtc().toIso8601String(),
+          }, onConflict: 'user_id');
+        },
         maxAttempts: 3,
         onRetry: (e, attempt) => debugPrint('📡 UserPresence: Upsert failed, retrying ($attempt/3)...'),
       );

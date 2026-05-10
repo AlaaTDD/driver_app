@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
-import '../data/driver_profile_repository.dart';
+import 'package:snapix/features/driver/data/repositories/driver_profile_repository.dart';
 import 'driver_profile_event.dart';
 import 'driver_profile_state.dart';
 

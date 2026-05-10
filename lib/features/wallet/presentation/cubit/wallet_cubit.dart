@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/driver_wallet_model.dart';
@@ -81,7 +82,7 @@ class WalletCubit extends Cubit<WalletState> {
       final walletJson = await _repo.getDriverEarningsSummary(driverId);
       walletJson['driver_id'] = driverId;
 
-      final transactions = await _repo.getTransactionHistory(userId: driverId, limit: 30);
+      final transactions = await _repo.getTransactionHistory(userId: driverId, walletType: 'driver', limit: 30);
       final withdrawals = await _repo.getWithdrawalRequests(driverId);
 
       emit(WalletLoaded(
@@ -89,6 +90,8 @@ class WalletCubit extends Cubit<WalletState> {
         transactions: transactions,
         withdrawals: withdrawals,
       ));
+      
+      watchWallet(driverId);
     } catch (e) {
       emit(WalletError('failedLoadWallet'));
     }
@@ -139,5 +142,44 @@ class WalletCubit extends Cubit<WalletState> {
       default:
         return 'errorUnexpected';
     }
+  }
+
+  StreamSubscription? _walletSub;
+
+  void watchWallet(String driverId) {
+    _walletSub?.cancel();
+    _walletSub = _repo.watchDriverWallet(driverId).listen((newWallet) async {
+      if (newWallet != null && state is WalletLoaded) {
+        final currentWallet = (state as WalletLoaded).wallet;
+        
+        // Preserve summary stats from currentWallet since real-time stream (from driver_wallets) 
+        // doesn't have earningsThisWeek, earningsLast30Days, and completedTrips
+        final mergedWallet = newWallet.copyWith(
+          earningsLastWeek: currentWallet.earningsLastWeek,
+          earningsLast30Days: currentWallet.earningsLast30Days,
+          completedTrips: currentWallet.completedTrips,
+        );
+
+        emit((state as WalletLoaded).copyWith(wallet: mergedWallet));
+        
+        // Also fetch latest transactions and withdrawals since the balance changed
+        try {
+          final transactions = await _repo.getTransactionHistory(userId: driverId, walletType: 'driver', limit: 30);
+          final withdrawals = await _repo.getWithdrawalRequests(driverId);
+          if (state is WalletLoaded && !isClosed) {
+            emit((state as WalletLoaded).copyWith(
+              transactions: transactions,
+              withdrawals: withdrawals,
+            ));
+          }
+        } catch (_) {}
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _walletSub?.cancel();
+    return super.close();
   }
 }

@@ -8,30 +8,14 @@ import '../core/constants/env_constants.dart';
 
 
 class R2StorageService {
-  Minio? _minio;
+  late final Minio _minio = Minio(
+    endPoint: '${EnvConstants.r2AccountId}.r2.cloudflarestorage.com',
+    accessKey: EnvConstants.r2AccessKeyId,
+    secretKey: EnvConstants.r2SecretKey,
+    region: 'auto',
+  );
 
-  
-  static const int _maxFileSizeBytes = 10 * 1024 * 1024;
-
-  
-  static const Set<String> _allowedExtensions = {
-    'jpg', 'jpeg', 'png', 'webp', 'pdf',
-  };
-
-  Minio _getClient() {
-    if (_minio != null) return _minio!;
-    try {
-      _minio = Minio(
-        endPoint: '${EnvConstants.r2AccountId}.r2.cloudflarestorage.com',
-        accessKey: EnvConstants.r2AccessKeyId,
-        secretKey: EnvConstants.r2SecretKey,
-        region: 'auto',
-      );
-    } catch (e) {
-      throw Exception('R2 initialization failed: $e');
-    }
-    return _minio!;
-  }
+  static const int _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
   Future<String> uploadFile({
     required File file,
@@ -50,7 +34,14 @@ class R2StorageService {
 
       
       final fileExtension = file.path.split('.').last.toLowerCase();
-      if (!_allowedExtensions.contains(fileExtension)) {
+      
+      final bytes = await file.openRead(0, 4).first;
+      final isJpg = bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+      final isPng = bytes.length >= 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47;
+      final isPdf = bytes.length >= 4 && bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46;
+      final isWebp = bytes.length >= 4 && bytes[0] == 0x52 && bytes[1] == 0x49;
+
+      if (!isJpg && !isPng && !isPdf && !isWebp) {
         throw Exception('errorFileUnsupported');
       }
 
@@ -70,7 +61,7 @@ class R2StorageService {
 
       final stream = file.openRead().map((chunk) => Uint8List.fromList(chunk));
 
-      await _getClient().putObject(
+      await _minio.putObject(
         EnvConstants.r2BucketName,
         fullPath,
         stream,
@@ -92,7 +83,7 @@ class R2StorageService {
       final publicUrlPrefix = '${EnvConstants.r2PublicUrl}/';
       if (url.startsWith(publicUrlPrefix)) {
         final objectName = url.substring(publicUrlPrefix.length);
-        await _getClient().removeObject(EnvConstants.r2BucketName, objectName);
+        await _minio.removeObject(EnvConstants.r2BucketName, objectName);
         debugPrint('🗑️ R2: Deleted $objectName');
       }
     } catch (e) {

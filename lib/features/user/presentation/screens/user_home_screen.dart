@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -33,7 +34,7 @@ class UserHomeScreen extends StatefulWidget {
 }
 
 class _UserHomeScreenState extends State<UserHomeScreen>
-    with WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   GoogleMapController? _mapController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -48,7 +49,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   final Map<String, LatLng> _animatedDriverPositions = {};
   final Map<String, double> _driverRotations = {};
   final ValueNotifier<Set<Marker>> _markersNotifier = ValueNotifier({});
-  Timer? _animationTimer;
+  Ticker? _animationTicker;
 
   BitmapDescriptor? _carIcon;
 
@@ -67,8 +68,8 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   }
 
   void _startAnimationLoop() {
-    _animationTimer?.cancel();
-    _animationTimer = Timer.periodic(const Duration(milliseconds: 32), (_) {
+    _animationTicker?.dispose();
+    _animationTicker = createTicker((_) {
       bool needsUpdate = false;
       for (final id in _targetDriverPositions.keys) {
         final prev = _animatedDriverPositions[id] ?? _targetDriverPositions[id]!;
@@ -91,6 +92,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         _markersNotifier.value = _buildDriverMarkers();
       }
     });
+    _animationTicker?.start();
   }
 
   double _calculateBearing(LatLng start, LatLng end) {
@@ -152,7 +154,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _animationTimer?.cancel();
+    _animationTicker?.dispose();
     _markersNotifier.dispose();
     _mapController?.dispose();
     _mapController = null;

@@ -12,6 +12,7 @@ import 'bloc/tracking_event.dart';
 import 'bloc/tracking_state.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_constants.dart';
+import 'package:flutter/scheduler.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/map_styles.dart';
 
@@ -23,7 +24,7 @@ class TripTrackingScreen extends StatefulWidget {
   State<TripTrackingScreen> createState() => _TripTrackingScreenState();
 }
 
-class _TripTrackingScreenState extends State<TripTrackingScreen> {
+class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTickerProviderStateMixin {
   GoogleMapController? _mapController;
   BitmapDescriptor? _carIcon;
   BitmapDescriptor? _pickupIcon;
@@ -34,7 +35,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
   LatLng? _targetDriverPosition;
   LatLng? _animatedDriverPosition;
   double _driverRotation = 0.0;
-  Timer? _animationTimer;
+  Ticker? _animationTicker;
 
   static const _defaultCamera = CameraPosition(
     target: AppConstants.defaultMapCenter,
@@ -79,7 +80,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
   }
 
   void _startAnimationLoop() {
-    _animationTimer = Timer.periodic(const Duration(milliseconds: 32), (_) {
+    _animationTicker = createTicker((_) {
       final target = _targetDriverPosition;
       if (target == null) return;
 
@@ -100,6 +101,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
         zIndex: 2,
       );
     });
+    _animationTicker?.start();
   }
 
   Future<void> _loadCarIcon() async {
@@ -123,7 +125,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
 
   @override
   void dispose() {
-    _animationTimer?.cancel();
+    _animationTicker?.dispose();
     _driverMarkerNotifier.dispose();
     _mapController?.dispose();
     super.dispose();

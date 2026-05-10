@@ -175,6 +175,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     
     
     await _presenceService.stopBroadcasting();
+    await _cellService.dispose();
     
     return super.close();
   }

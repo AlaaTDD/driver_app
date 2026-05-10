@@ -70,8 +70,9 @@ class ChatbotRepository {
         },
       ];
 
-      if (history is List && history.isNotEmpty) {
-        for (final msg in history.reversed) {
+      final historyList = (history as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      if (historyList.isNotEmpty) {
+        for (final msg in historyList.reversed) {
           final role =
               (msg['sender_role'] as String?) == 'user' ? 'user' : 'assistant';
           final content = msg['message'] as String? ?? '';
@@ -86,10 +87,7 @@ class ChatbotRepository {
       final response = await SupabaseService.client.functions.invoke(
         'chatbot-ai',
         body: {
-          'model': EnvConstants.aiModel,
           'messages': messages,
-          'max_tokens': EnvConstants.aiMaxTokens,
-          'temperature': EnvConstants.aiTemperature,
         },
       );
 

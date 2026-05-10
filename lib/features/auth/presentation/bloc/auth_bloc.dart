@@ -41,13 +41,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final verifiedResult = await _authRepository.getDriverIsVerified(user.id);
           final isVerified = verifiedResult.getOrElse(() => false);
           if (isVerified) {
-            UserPresenceService.instance.startBroadcasting();
+            await UserPresenceService.instance.startBroadcasting();
             emit(AuthAuthenticated(user));
           } else {
             emit(AuthDriverPending(user));
           }
         } else {
-          UserPresenceService.instance.startBroadcasting();
+          await UserPresenceService.instance.startBroadcasting();
           emit(AuthAuthenticated(user));
         }
       },
@@ -71,13 +71,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final verifiedResult = await _authRepository.getDriverIsVerified(user.id);
           final isVerified = verifiedResult.getOrElse(() => false);
           if (isVerified) {
-            UserPresenceService.instance.startBroadcasting();
+            await UserPresenceService.instance.startBroadcasting();
             emit(AuthAuthenticated(user));
           } else {
             emit(AuthDriverPending(user));
           }
         } else {
-          UserPresenceService.instance.startBroadcasting();
+          await UserPresenceService.instance.startBroadcasting();
           emit(AuthAuthenticated(user));
         }
       },
@@ -113,7 +113,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (error) async => emit(AuthError(error)),
       (user) async {
         await _storeFcmToken(user.id);
-        UserPresenceService.instance.startBroadcasting();
+        await UserPresenceService.instance.startBroadcasting();
         emit(AuthAuthenticated(user));
       },
     );

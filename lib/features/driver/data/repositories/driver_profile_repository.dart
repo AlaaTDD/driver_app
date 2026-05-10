@@ -9,7 +9,7 @@ class DriverProfileRepository {
   
   Future<Map<String, dynamic>?> loadDriverProfile(String driverId) async {
     final results = await Future.wait([
-      _client.from('users').select('*').eq('id', driverId).single(),
+      _client.from('users').select('id,name,phone,avatar_url,rating,total_trips,language,is_active').eq('id', driverId).single(),
       _client.from('drivers_profile').select('*').eq('id', driverId).single(),
       _client
           .from('driver_earnings_summary')

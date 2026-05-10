@@ -37,16 +37,13 @@ dependencies:
 
   # Image
   cached_network_image: ^3.4.1
-  flutter_cache_manager: ^3.4.1
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
 
   # Loading & Animation
   shimmer: ^3.0.0
-  lottie: ^3.1.2
 
   # UI
-  flutter_svg: ^2.0.10+1
   google_fonts: ^6.2.1
 
   # Toast — نظام الـ feedback الوحيد في التطبيق

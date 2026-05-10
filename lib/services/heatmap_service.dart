@@ -59,6 +59,9 @@ class HeatmapService with WidgetsBindingObserver {
   
   
   Future<void> startRealtimeUpdates() async {
+    _isDisposed = false; // Allow restarting after sign-out
+    if (_realtimeChannel != null) return;
+
     await _fetchAllPresence();
     _subscribeToRealtime();
     _startStaleCleanup();
@@ -79,10 +82,12 @@ class HeatmapService with WidgetsBindingObserver {
   
   void dispose() {
     _isDisposed = true;
-    WidgetsBinding.instance.removeObserver(this);
+    // WidgetsBinding.instance.removeObserver(this); // Singleton stays alive
     stopRealtimeUpdates();
+    // Do NOT close _heatmapController because this is a Singleton.
+    // If user signs out and signs back in, the stream must still be open.
     if (!_heatmapController.isClosed) {
-      _heatmapController.close();
+      _heatmapController.add([]); // Emit empty to clear map
     }
   }
 
@@ -257,6 +262,8 @@ class HeatmapService with WidgetsBindingObserver {
   
   
   
+  Timer? _rebuildDebounce;
+
   void _rebuildHexCells() {
     if (_presenceMap.isEmpty) {
       _currentCells = [];
@@ -264,7 +271,8 @@ class HeatmapService with WidgetsBindingObserver {
       return;
     }
 
-    Future.microtask(() => _computeHexCells());
+    _rebuildDebounce?.cancel();
+    _rebuildDebounce = Timer(const Duration(milliseconds: 100), _computeHexCells);
   }
 
   void _computeHexCells() {

@@ -21,8 +21,13 @@ class ConnectivityService {
 
   StreamSubscription? _subscription;
 
-  void init() {
+  Future<void> init() async {
     _subscription?.cancel();
+    
+    // Set initial status
+    _lastStatus = (await isOnline()) ? NetworkStatus.online : NetworkStatus.offline;
+    _controller.add(_lastStatus);
+    
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
       final isOnline = results.any((r) =>
           r == ConnectivityResult.wifi ||

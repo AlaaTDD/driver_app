@@ -20,49 +20,7 @@ import '../core/constants/app_routes.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   developer.log('🔥 FCM BACKGROUND: Message received! ID: ${message.messageId}');
-  developer.log('🔥 FCM BACKGROUND: Data payload: ${message.data}');
-  developer.log('🔥 FCM BACKGROUND: Notification payload: ${message.notification?.title}');
-
-  // 1. Ensure Flutter bindings are initialized in this background isolate
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-  } catch (e) {
-    developer.log('WidgetsFlutterBinding init error: $e');
-  }
-
-  // 2. Ensure Firebase is initialized
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-  } catch (e) {
-    developer.log('Firebase init error: $e');
-  }
-
-  // 3. Initialize Local Notifications for this isolate so fallback works
-  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const initSettings = InitializationSettings(android: androidInit);
-  await flutterLocalNotificationsPlugin.initialize(initSettings);
-
-  // 4. Load Supabase env
-  try {
-    Supabase.instance.client.auth.currentSession;
-  } catch (_) {
-    try {
-      await dotenv.load(fileName: '.env');
-      await Supabase.initialize(
-        url: EnvConstants.supabaseUrl,
-        anonKey: EnvConstants.supabaseAnonKey,
-      );
-    } catch (e) {
-      developer.log('Background Supabase init error: $e');
-    }
-  }
-
-  await handleRideOfferNotification(message.data);
+  // Do not initialize Supabase or UI in background isolate
 }
 
 class FCMService {
@@ -170,7 +128,22 @@ class FCMService {
     }
   }
 
+  final Set<String> _handledMessageIds = {};
+
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    final messageId = message.messageId;
+    if (messageId != null) {
+      if (_handledMessageIds.contains(messageId)) {
+        developer.log('🔥 FCM FOREGROUND: Duplicate message ignored: $messageId');
+        return;
+      }
+      _handledMessageIds.add(messageId);
+      // Clean up old message IDs to prevent memory leaks
+      if (_handledMessageIds.length > 100) {
+        _handledMessageIds.clear();
+      }
+    }
+
     final type = message.data['type'] ?? message.data['notification_type'];
 
     if (type == 'ride_offer') {

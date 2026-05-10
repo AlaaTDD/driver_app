@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
+import '../core/utils/geohash_helper.dart';
 
 
 
@@ -54,19 +55,8 @@ class LocationService {
       final last = await _geolocator.getLastKnownPosition();
       if (last != null) return last;
       
-      debugPrint('⚠️ LocationService: GPS disabled. Using fallback location.');
-      return Position(
-        longitude: 31.2357,
-        latitude: 30.0444,
-        timestamp: DateTime.now(),
-        accuracy: 100.0,
-        altitude: 0.0,
-        heading: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-        altitudeAccuracy: 0.0,
-        headingAccuracy: 0.0,
-      );
+      debugPrint('⚠️ LocationService: GPS disabled and no last known location. Throwing error.');
+      throw Exception('location_disabled');
     }
 
     try {
@@ -117,19 +107,7 @@ class LocationService {
   Stream<Position> _createLocationStream() async* {
     final isEnabled = await _geolocator.isLocationServiceEnabled();
     if (!isEnabled) {
-      debugPrint('⚠️ LocationService (Stream): GPS disabled. Emitting fallback location.');
-      yield* Stream.periodic(const Duration(seconds: 5), (_) => Position(
-        longitude: 31.2357,
-        latitude: 30.0444,
-        timestamp: DateTime.now(),
-        accuracy: 100.0,
-        altitude: 0.0,
-        heading: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-        altitudeAccuracy: 0.0,
-        headingAccuracy: 0.0,
-      ));
+      debugPrint('⚠️ LocationService (Stream): GPS disabled. Waiting for location to be enabled.');
       return;
     }
 
@@ -142,7 +120,10 @@ class LocationService {
   }
 
   void startTripTracking(String driverId) {
-    if (_tripTrackingSub != null) return;
+    if (_tripTrackingSub != null) {
+      if (_activeTripDriverId == driverId) return;
+      stopTripTracking();
+    }
     _activeTripDriverId = driverId;
     debugPrint('📍 LocationService: Starting global trip tracking for driver $driverId');
     
@@ -186,9 +167,13 @@ class LocationService {
         );
         
         try {
+          final geohash = GeohashHelper.encode(pos.latitude, pos.longitude);
+          final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
           SupabaseService.client.from('drivers_profile').update({
             'current_lat': pos.latitude,
             'current_lng': pos.longitude,
+            'geohash': geohash,
+            'geohash5': geohash5,
           }).eq('id', driverId);
         } catch (_) {}
       }
@@ -216,7 +201,7 @@ class LocationService {
 
       // 2) Also write to DB so it persists (best-effort)
       try {
-        final geohash = _encodeGeohash(pos.latitude, pos.longitude);
+        final geohash = GeohashHelper.encode(pos.latitude, pos.longitude);
         final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
         await SupabaseService.client.rpc('upsert_driver_location', params: {
           'p_driver_id': driverId,
@@ -230,9 +215,13 @@ class LocationService {
         debugPrint('⚠️ LocationService: DB update failed: $e');
         // Fallback: direct update
         try {
+          final geohash = GeohashHelper.encode(pos.latitude, pos.longitude);
+          final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
           await SupabaseService.client.from('drivers_profile').update({
             'current_lat': pos.latitude,
             'current_lng': pos.longitude,
+            'geohash': geohash,
+            'geohash5': geohash5,
           }).eq('id', driverId);
         } catch (_) {}
       }
@@ -253,45 +242,8 @@ class LocationService {
       _lastLng = null;
       _lastHeading = null;
     }
+    // We shouldn't nullify _broadcastStream since it's a broadcast stream
+    // that might be re-used or shouldn't leak its inner subscriptions
   }
 
-  String _encodeGeohash(double lat, double lng, {int precision = 9}) {
-    const base32 = '0123456789bcdefghjkmnpqrstuvwxyz';
-    int i = 0;
-    bool isEven = true;
-    double latMin = -90.0, latMax = 90.0;
-    double lngMin = -180.0, lngMax = 180.0;
-    double bit = 0.0;
-    int ch = 0;
-    String hash = '';
-
-    while (hash.length < precision) {
-      if (isEven) {
-        bit = (lngMin + lngMax) / 2;
-        if (lng > bit) {
-          ch |= (1 << (4 - i));
-          lngMin = bit;
-        } else {
-          lngMax = bit;
-        }
-      } else {
-        bit = (latMin + latMax) / 2;
-        if (lat > bit) {
-          ch |= (1 << (4 - i));
-          latMin = bit;
-        } else {
-          latMax = bit;
-        }
-      }
-      isEven = !isEven;
-      if (i < 4) {
-        i++;
-      } else {
-        hash += base32[ch];
-        i = 0;
-        ch = 0;
-      }
-    }
-    return hash;
-  }
 }

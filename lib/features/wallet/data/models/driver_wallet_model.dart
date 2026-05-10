@@ -35,6 +35,30 @@ class DriverWalletModel {
     );
   }
 
+  DriverWalletModel copyWith({
+    String? driverId,
+    double? balance,
+    double? totalEarned,
+    double? totalWithdrawn,
+    double? pendingWithdrawal,
+    double? commissionRate,
+    double? earningsLastWeek,
+    double? earningsLast30Days,
+    int? completedTrips,
+  }) {
+    return DriverWalletModel(
+      driverId: driverId ?? this.driverId,
+      balance: balance ?? this.balance,
+      totalEarned: totalEarned ?? this.totalEarned,
+      totalWithdrawn: totalWithdrawn ?? this.totalWithdrawn,
+      pendingWithdrawal: pendingWithdrawal ?? this.pendingWithdrawal,
+      commissionRate: commissionRate ?? this.commissionRate,
+      earningsLastWeek: earningsLastWeek ?? this.earningsLastWeek,
+      earningsLast30Days: earningsLast30Days ?? this.earningsLast30Days,
+      completedTrips: completedTrips ?? this.completedTrips,
+    );
+  }
+
   /// نصيب المنصة من الأرباح الكلية
   double get totalPlatformFees => totalEarned * commissionRate / (1 - commissionRate);
 

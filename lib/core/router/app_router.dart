@@ -71,7 +71,7 @@ Page<dynamic> _buildSlideTransition({required Widget child}) {
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
+    _subscription = stream.listen(
       (_) => notifyListeners(),
       onError: (e) => debugPrint('GoRouterRefreshStream error: $e'),
     );
@@ -288,6 +288,7 @@ class AppRouter {
           name: AppRoutes.userTracking,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
+            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(child: BlocProvider(create: (_) => TrackingBloc(), child: TripTrackingScreen(tripId: tripId)));
           },
         ),
@@ -296,6 +297,7 @@ class AppRouter {
           name: AppRoutes.userRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
+            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(child: BlocProvider(create: (_) => RatingBloc(), child: RatingScreen(tripId: tripId)));
           },
         ),
@@ -304,6 +306,7 @@ class AppRouter {
           name: AppRoutes.userTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
+            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(child: BlocProvider(create: (_) => TripsBloc(), child: UserTripDetailsScreen(tripId: tripId)));
           },
         ),
@@ -370,7 +373,7 @@ class AppRouter {
           name: AppRoutes.driverTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            
+            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(child: BlocProvider(create: (_) => TripDetailsBloc(), child: DriverTripDetailsScreen(tripId: tripId)));
           },
         ),
@@ -379,7 +382,7 @@ class AppRouter {
           name: AppRoutes.driverRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            
+            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(child: BlocProvider(create: (_) => RatingBloc(), child: RatingScreen(tripId: tripId)));
           },
         ),

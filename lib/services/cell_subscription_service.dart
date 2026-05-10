@@ -81,7 +81,6 @@ class CellSubscriptionService {
 
     await _fetchInitialDrivers();
     _subscribeToRealtimeChanges();
-    _startPeriodicRefresh();
     _startStaleCleanup();
   }
 
@@ -157,6 +156,11 @@ class CellSubscriptionService {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'drivers_profile',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.inFilter,
+            column: 'geohash5',
+            value: _subscribedCells5,
+          ),
           callback: (payload) {
             _handleDriverChange(payload);
           },
@@ -276,24 +280,16 @@ class CellSubscriptionService {
 
   /// Unsubscribe everything (channels + timers)
   Future<void> _unsubscribeAll() async {
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = null;
     _unsubscribeRealtime();
+    _driversMap.clear();
+    if (!_driverUpdatesController.isClosed) {
+      _driverUpdatesController.add({});
+    }
   }
 
-  Timer? _refreshTimer;
   Timer? _staleCleanupTimer;
-
-  /// Periodic DB re-fetch every 5 seconds — safety net when realtime events
-  /// fail to arrive (requires REPLICA IDENTITY FULL for instant offline detection).
-  void _startPeriodicRefresh() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (_subscribedCells.isNotEmpty) _fetchInitialDrivers();
-    });
-  }
 
   /// Stale cleanup every 15 seconds — removes drivers not updated in 2 minutes.
   void _startStaleCleanup() {
@@ -314,8 +310,6 @@ class CellSubscriptionService {
   }
 
   Future<void> dispose() async {
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = null;
     _boundaryDebounceTimer?.cancel();
@@ -325,7 +319,7 @@ class CellSubscriptionService {
     _subscribedCells = [];
     _subscribedCells5 = [];
     if (!_driverUpdatesController.isClosed) {
-      await _driverUpdatesController.close();
+      _driverUpdatesController.add({});
     }
   }
 }
