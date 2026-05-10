@@ -1,20 +1,11 @@
-
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:minio/minio.dart';
+import 'package:http/http.dart' as http;
+import 'supabase_service.dart';
 import '../core/constants/env_constants.dart';
 
-
-
 class R2StorageService {
-  late final Minio _minio = Minio(
-    endPoint: '${EnvConstants.r2AccountId}.r2.cloudflarestorage.com',
-    accessKey: EnvConstants.r2AccessKeyId,
-    secretKey: EnvConstants.r2SecretKey,
-    region: 'auto',
-  );
-
   static const int _maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
   Future<String> uploadFile({
@@ -22,17 +13,14 @@ class R2StorageService {
     required String path,
   }) async {
     try {
-      
       final fileLength = await file.length();
       if (fileLength > _maxFileSizeBytes) {
-        throw Exception(
-            'errorFileTooLarge');
+        throw Exception('errorFileTooLarge');
       }
       if (fileLength == 0) {
         throw Exception('errorFileEmpty');
       }
 
-      
       final fileExtension = file.path.split('.').last.toLowerCase();
       
       final bytes = await file.openRead(0, 4).first;
@@ -45,32 +33,34 @@ class R2StorageService {
         throw Exception('errorFileUnsupported');
       }
 
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.split('/').last}';
-      final fullPath = '$path/$fileName';
+      final fileBytes = await file.readAsBytes();
 
-      String contentType = 'application/octet-stream';
-      if (fileExtension == 'jpg' || fileExtension == 'jpeg') {
-        contentType = 'image/jpeg';
-      } else if (fileExtension == 'png') {
-        contentType = 'image/png';
-      } else if (fileExtension == 'webp') {
-        contentType = 'image/webp';
-      } else if (fileExtension == 'pdf') {
-        contentType = 'application/pdf';
-      }
-
-      final stream = file.openRead().map((chunk) => Uint8List.fromList(chunk));
-
-      await _minio.putObject(
-        EnvConstants.r2BucketName,
-        fullPath,
-        stream,
-        size: fileLength,
-        metadata: {'Content-Type': contentType},
+      final uri = Uri.parse('${EnvConstants.supabaseUrl}/functions/v1/upload-file');
+      final request = http.MultipartRequest('POST', uri);
+      
+      final token = SupabaseService.client.auth.currentSession?.accessToken ?? EnvConstants.supabaseAnonKey;
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      request.fields['action'] = 'upload';
+      request.fields['path'] = path;
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          fileBytes,
+          filename: file.path.split('/').last,
+        ),
       );
 
-      final url = '${EnvConstants.r2PublicUrl}/$fullPath';
-      debugPrint('📤 R2: Uploaded $fullPath (${(fileLength / 1024).toStringAsFixed(0)} KB)');
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final jsonResponse = jsonDecode(responseBody);
+
+      if (response.statusCode != 200) {
+        throw Exception(jsonResponse['error'] ?? 'Upload failed');
+      }
+
+      final url = jsonResponse['url'];
+      debugPrint('📤 R2: Uploaded via Edge Function (${(fileLength / 1024).toStringAsFixed(0)} KB)');
       return url;
     } catch (e) {
       debugPrint('❌ R2: Upload failed: $e');
@@ -80,12 +70,22 @@ class R2StorageService {
 
   Future<void> deleteFile(String url) async {
     try {
-      final publicUrlPrefix = '${EnvConstants.r2PublicUrl}/';
-      if (url.startsWith(publicUrlPrefix)) {
-        final objectName = url.substring(publicUrlPrefix.length);
-        await _minio.removeObject(EnvConstants.r2BucketName, objectName);
-        debugPrint('🗑️ R2: Deleted $objectName');
+      final uri = Uri.parse('${EnvConstants.supabaseUrl}/functions/v1/upload-file');
+      final request = http.MultipartRequest('POST', uri);
+      
+      final token = SupabaseService.client.auth.currentSession?.accessToken ?? EnvConstants.supabaseAnonKey;
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      request.fields['action'] = 'delete';
+      request.fields['url'] = url;
+
+      final response = await request.send();
+      if (response.statusCode != 200) {
+        final responseBody = await response.stream.bytesToString();
+        final jsonResponse = jsonDecode(responseBody);
+        throw Exception(jsonResponse['error'] ?? 'Delete failed');
       }
+      debugPrint('🗑️ R2: Deleted via Edge Function');
     } catch (e) {
       debugPrint('❌ R2: Delete failed: $e');
       throw Exception('Failed to delete file: $e');

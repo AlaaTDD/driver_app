@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,9 +21,7 @@ import 'core/router/app_router.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-import 'features/auth/presentation/bloc/auth_state.dart';
 
-import 'features/driver/presentation/home/bloc/driver_home_bloc.dart';
 import 'services/fcm_service.dart';
 import 'services/r2_storage_service.dart';
 import 'core/services/connectivity_service.dart';
@@ -52,7 +51,9 @@ void main() async {
 
   try {
     await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+      options: (kIsWeb || defaultTargetPlatform == TargetPlatform.windows)
+          ? DefaultFirebaseOptions.currentPlatform
+          : null,
     );
     await FCMService().initialize();
     SystemChrome.setPreferredOrientations([
@@ -64,7 +65,7 @@ void main() async {
   }
 
   
-  await ConnectivityService().init();
+  ConnectivityService().init();
 
   final prefs = await SharedPreferences.getInstance();
   Bloc.observer = AppBlocObserver();

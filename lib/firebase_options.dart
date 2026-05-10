@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 class DefaultFirebaseOptions {
@@ -31,51 +32,35 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDeqIgIbEjzwEV6iijrLN9CkL4H2op-rjE',
-    appId: '1:741233752146:web:33dc1f9bbf59ae6268878b',
-    messagingSenderId: '741233752146',
-    projectId: 'arai-449ca',
-    authDomain: 'arai-449ca.firebaseapp.com',
-    storageBucket: 'arai-449ca.firebasestorage.app',
-    measurementId: 'G-NWK1DGRJKM',
+  static FirebaseOptions get web => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WEB_API_KEY'] ?? '',
+    appId: dotenv.env['FIREBASE_WEB_APP_ID'] ?? '',
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+    projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+    authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
+    measurementId: dotenv.env['FIREBASE_WEB_MEASUREMENT_ID'] ?? '',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCRw-PPmQ_7iG6T4cRjTa5kTY7T8BBkPzI',
-    appId: '1:741233752146:android:0cea4e402b5067a468878b',
-    messagingSenderId: '741233752146',
-    projectId: 'arai-449ca',
-    storageBucket: 'arai-449ca.firebasestorage.app',
-  );
+  static FirebaseOptions get android => throw UnsupportedError(
+        'Use google-services.json for Android native initialization instead of hardcoded options.',
+      );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBZvdq0Dfs3-hUX_pnZUf7nnTlInvptp-Q',
-    appId: '1:741233752146:ios:27f5ebe06503b65368878b',
-    messagingSenderId: '741233752146',
-    projectId: 'arai-449ca',
-    storageBucket: 'arai-449ca.firebasestorage.app',
-    iosClientId: '741233752146-75akd28o15lggvd77essrn4ol5s382t2.apps.googleusercontent.com',
-    iosBundleId: 'com.example.taxiApp',
-  );
+  static FirebaseOptions get ios => throw UnsupportedError(
+        'Use GoogleService-Info.plist for iOS native initialization instead of hardcoded options.',
+      );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBZvdq0Dfs3-hUX_pnZUf7nnTlInvptp-Q',
-    appId: '1:741233752146:ios:27f5ebe06503b65368878b',
-    messagingSenderId: '741233752146',
-    projectId: 'arai-449ca',
-    storageBucket: 'arai-449ca.firebasestorage.app',
-    iosClientId: '741233752146-75akd28o15lggvd77essrn4ol5s382t2.apps.googleusercontent.com',
-    iosBundleId: 'com.example.taxiApp',
-  );
+  static FirebaseOptions get macos => throw UnsupportedError(
+        'Use GoogleService-Info.plist for macOS native initialization instead of hardcoded options.',
+      );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDeqIgIbEjzwEV6iijrLN9CkL4H2op-rjE',
-    appId: '1:741233752146:web:74b47ca31701645368878b',
-    messagingSenderId: '741233752146',
-    projectId: 'arai-449ca',
-    authDomain: 'arai-449ca.firebaseapp.com',
-    storageBucket: 'arai-449ca.firebasestorage.app',
-    measurementId: 'G-H1MW92XRHB',
+  static FirebaseOptions get windows => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WINDOWS_API_KEY'] ?? '',
+    appId: dotenv.env['FIREBASE_WINDOWS_APP_ID'] ?? '',
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+    projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+    authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
+    measurementId: dotenv.env['FIREBASE_WINDOWS_MEASUREMENT_ID'] ?? '',
   );
 }

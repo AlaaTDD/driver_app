@@ -23,7 +23,7 @@ import 'user_home_state.dart';
 
 
 class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
-  final LocationService _locationService = LocationService();
+  final LocationService _locationService = LocationService.instance;
   final CellSubscriptionService _cellService = CellSubscriptionService.instance;
   final UserPresenceService _presenceService = UserPresenceService.instance;
   StreamSubscription? _driverUpdatesSubscription;

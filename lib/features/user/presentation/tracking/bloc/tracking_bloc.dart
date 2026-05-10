@@ -41,14 +41,14 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       if (tripData['driver_id'] != null) {
         try {
           driverProfile = Map<String, dynamic>.from(tripData['driver'] ?? {});
-          final profileData = await SupabaseService.client
-              .from('drivers_profile')
-              .select('vehicle_model, vehicle_plate, vehicle_color')
+          final driverProfileData = await SupabaseService.client
+              .from('driver_public_profile')
+              .select('id, vehicle_brand, vehicle_model, vehicle_color, vehicle_plate, is_verified')
               .eq('id', tripData['driver_id'])
               .maybeSingle();
           
-          if (profileData != null) {
-            driverProfile.addAll(profileData);
+          if (driverProfileData != null) {
+            driverProfile.addAll(driverProfileData);
           }
         } catch (e) {
           debugPrint('TrackingBloc: driver profile merge failed — $e');
@@ -81,7 +81,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       if (tripData['driver_id'] != null) {
         try {
           final driverPos = await SupabaseService.client
-              .from('drivers_profile')
+              .from('driver_public_profile')
               .select('current_lat, current_lng')
               .eq('id', tripData['driver_id'])
               .maybeSingle();

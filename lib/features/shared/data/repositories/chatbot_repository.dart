@@ -89,17 +89,21 @@ class ChatbotRepository {
         body: {
           'messages': messages,
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
-      if (response.status == 200 && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
+      if (response.status == 200 && response.data != null && response.data is Map) {
+        final data = Map<String, dynamic>.from(response.data as Map);
         final choices = data['choices'] as List?;
         if (choices != null && choices.isNotEmpty) {
-          final choice = choices[0] as Map<String, dynamic>?;
-          final message = choice?['message'] as Map<String, dynamic>?;
-          final content = message?['content'] as String?;
-          if (content != null && content.trim().isNotEmpty) {
-            return content.trim();
+          final choice = choices[0];
+          if (choice is Map) {
+            final message = choice['message'];
+            if (message is Map) {
+              final content = message['content'] as String?;
+              if (content != null && content.trim().isNotEmpty) {
+                return content.trim();
+              }
+            }
           }
         }
       }

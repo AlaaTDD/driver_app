@@ -97,11 +97,24 @@ class LocationService {
   
   
   
-  Stream<Position>? _broadcastStream;
+  StreamController<Position>? _locationController;
+  StreamSubscription<Position>? _geolocatorSub;
 
   Stream<Position> getLocationStream() {
-    _broadcastStream ??= _createLocationStream().asBroadcastStream();
-    return _broadcastStream!;
+    if (_locationController == null || _locationController!.isClosed) {
+      _locationController = StreamController<Position>.broadcast(
+        onListen: () {
+          _geolocatorSub = _createLocationStream().listen(
+            (pos) => _locationController?.add(pos),
+            onError: (e) => _locationController?.addError(e),
+          );
+        },
+        onCancel: () {
+          _geolocatorSub?.cancel();
+        },
+      );
+    }
+    return _locationController!.stream;
   }
 
   Stream<Position> _createLocationStream() async* {
@@ -147,10 +160,12 @@ class LocationService {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_lastLat != null && _broadcastChannel != null) {
-        _broadcastChannel!.sendBroadcastMessage(
-          event: 'location_update',
-          payload: {'lat': _lastLat, 'lng': _lastLng, 'heading': _lastHeading ?? 0.0},
-        );
+        try {
+          _broadcastChannel!.sendBroadcastMessage(
+            event: 'location_update',
+            payload: {'lat': _lastLat, 'lng': _lastLng, 'heading': _lastHeading ?? 0.0},
+          );
+        } catch (_) {}
       }
     });
 
@@ -240,10 +255,17 @@ class LocationService {
       _activeTripDriverId = null;
       _lastLat = null;
       _lastLng = null;
-      _lastHeading = null;
     }
-    // We shouldn't nullify _broadcastStream since it's a broadcast stream
-    // that might be re-used or shouldn't leak its inner subscriptions
+  }
+
+  void stopAllTracking() {
+    stopTripTracking();
+    _geolocatorSub?.cancel();
+    _geolocatorSub = null;
+    if (_locationController != null && !_locationController!.isClosed) {
+      _locationController?.close();
+    }
+    _locationController = null;
   }
 
 }

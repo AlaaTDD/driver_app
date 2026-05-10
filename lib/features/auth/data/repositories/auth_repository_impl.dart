@@ -62,7 +62,7 @@ class AuthRepositoryImpl implements AuthRepository {
       try {
         userData = await SupabaseService.client
             .from('users')
-            .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+            .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
             .eq('id', user.id)
             .single();
       } on PostgrestException catch (pe) {
@@ -146,7 +146,7 @@ class AuthRepositoryImpl implements AuthRepository {
           // Fallback if upsert still fails
           userData = await SupabaseService.client
               .from('users')
-              .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+              .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
               .eq('id', user.id)
               .single();
           debugPrint('AuthRepositoryImpl: User already exists, fetched existing data');
@@ -223,7 +223,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userData = await SupabaseService.client
           .from('users')
-          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .eq('id', user.id)
           .single();
 
@@ -254,7 +254,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userData = await SupabaseService.client
           .from('users')
-          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .eq('id', user.id)
           .single();
 
@@ -310,7 +310,7 @@ class AuthRepositoryImpl implements AuthRepository {
           .from('users')
           .update(updateData)
           .eq('id', userId)
-          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,fcm_token,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .single();
 
       final userModel = UserModel.fromJson(userData);

@@ -7,6 +7,7 @@ import '../../../../services/cell_subscription_service.dart';
 import '../../../../services/heatmap_service.dart';
 import '../../../../services/supabase_service.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../services/location_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -26,6 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckAuthStatus event,
     Emitter<AuthState> emit,
   ) async {
+    if (state is AuthLoading) return;
     emit(AuthLoading());
     final result = await _authRepository.getCurrentUser();
     await result.fold(
@@ -58,6 +60,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SignInRequested event,
     Emitter<AuthState> emit,
   ) async {
+    if (state is AuthLoading) return;
     emit(AuthLoading());
     final result = await _authRepository.signIn(
       email: event.email,
@@ -102,6 +105,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SignUpUserRequested event,
     Emitter<AuthState> emit,
   ) async {
+    if (state is AuthLoading) return;
     emit(AuthLoading());
     final result = await _authRepository.signUpUser(
       name: event.name,
@@ -123,6 +127,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     SignUpDriverRequested event,
     Emitter<AuthState> emit,
   ) async {
+    if (state is AuthLoading) return;
     emit(AuthLoading());
     final result = await _authRepository.signUpDriver(
       name: event.name,
@@ -157,6 +162,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await UserPresenceService.instance.stopBroadcasting();
     await CellSubscriptionService.instance.dispose();
     HeatmapService.instance.dispose();
+    LocationService.instance.stopAllTracking(); // Fix: Stop GPS tracking completely on logout
     final result = await _authRepository.signOut();
     result.fold(
       (error) => emit(AuthError(error)),

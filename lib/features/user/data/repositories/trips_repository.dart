@@ -34,7 +34,7 @@ class TripsRepository {
           .select('id, name, avatar_url, phone, rating')
           .inFilter('id', driverIds),
       _client
-          .from('drivers_profile')
+          .from('driver_public_profile')
           .select('id, vehicle_type, vehicle_plate, vehicle_model, vehicle_color')
           .inFilter('id', driverIds),
     ]);

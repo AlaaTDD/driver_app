@@ -9,7 +9,6 @@ class CellSubscriptionService {
   CellSubscriptionService._();
   static final CellSubscriptionService instance = CellSubscriptionService._();
 
-  final List<RealtimeChannel> _activeChannels = [];
   String? _currentCenterCell;
   List<String> _subscribedCells = [];
   List<String> _subscribedCells5 = []; // precision-5 prefixes for DB filter
@@ -46,8 +45,6 @@ class CellSubscriptionService {
     });
   }
 
-  /// Force refresh: re-fetch drivers from DB and reconnect realtime channel.
-  /// Safe to call on app resume.
   Future<void> refresh() async {
     if (_currentCenterCell == null || _subscribedCells.isEmpty) return;
     debugPrint('📍 CellSystem: Forcing refresh and realtime reconnect...');
@@ -55,8 +52,7 @@ class CellSubscriptionService {
     // First: quickly fetch fresh data from DB (fast path)
     await _fetchInitialDrivers();
 
-    // Then: reconnect realtime channel in background (slow path)
-    _unsubscribeRealtime();
+    // Then: restart polling timer
     _subscribeToRealtimeChanges();
   }
 
@@ -84,20 +80,12 @@ class CellSubscriptionService {
     _startStaleCleanup();
   }
 
-  /// Fetch drivers from DB and REPLACE the local map completely.
-  /// FIX: was doing merge which caused offline drivers to persist.
   Future<void> _fetchInitialDrivers() async {
     try {
-      // FIX: Use geohash5 column (precision=5) that matches our cell prefixes.
-      // The old code used 'geohash' (precision=9) vs cells (precision=6) → never matched!
-      final data = await SupabaseService.client
-          .from('drivers_profile')
-          .select(
-              'id, current_lat, current_lng, is_available, vehicle_type, geohash5, updated_at')
-          .eq('is_available', true)
-          .not('current_lat', 'is', null)
-          .not('current_lng', 'is', null)
-          .inFilter('geohash5', _subscribedCells5);
+      final data = await SupabaseService.client.rpc(
+        'get_nearby_drivers_secure',
+        params: {'p_geohash5': _subscribedCells5},
+      );
 
       final newDrivers = <String, DriverLocation>{};
       final now = DateTime.now().toUtc();
@@ -107,7 +95,6 @@ class CellSubscriptionService {
         final driverId = row['id'] as String;
         if (driverId == currentUserId) continue;
 
-        // Skip stale drivers (no update in last 5 minutes = likely crashed/offline)
         final updatedAtStr = row['updated_at'] as String?;
         DateTime lastUpdated = now;
         if (updatedAtStr != null) {
@@ -116,7 +103,7 @@ class CellSubscriptionService {
           } catch (_) {}
         }
 
-        if (now.difference(lastUpdated).inMinutes > 2) continue; // 2 min stale threshold
+        if (now.difference(lastUpdated).inMinutes > 2) continue;
 
         final driverLat = (row['current_lat'] as num).toDouble();
         final driverLng = (row['current_lng'] as num).toDouble();
@@ -130,159 +117,34 @@ class CellSubscriptionService {
         );
       }
 
-      // FIX: Full replace instead of merge.
-      // Old code only added new drivers but never removed offline ones.
       _driversMap.clear();
       _driversMap.addAll(newDrivers);
 
-      debugPrint(
-          '📍 CellSystem: Fetched ${_driversMap.length} nearby available drivers');
       if (!_driverUpdatesController.isClosed) {
         _driverUpdatesController.add(Map.from(_driversMap));
       }
     } catch (e) {
-      debugPrint('❌ CellSystem: Failed to fetch initial drivers: $e');
+      debugPrint('❌ CellSystem: Failed to fetch drivers: $e');
     }
   }
+
+  Timer? _pollingTimer;
 
   void _subscribeToRealtimeChanges() {
-    // Use a unique channel name to avoid conflicts after reconnection
-    final channelName =
-        'nearby-drivers-rt-${DateTime.now().millisecondsSinceEpoch}';
-    final channel = SupabaseService.client.channel(channelName);
-
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'drivers_profile',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.inFilter,
-            column: 'geohash5',
-            value: _subscribedCells5,
-          ),
-          callback: (payload) {
-            _handleDriverChange(payload);
-          },
-        )
-        .subscribe((status, [error]) {
-      debugPrint('📍 CellSystem: Realtime channel status: $status');
-      if (error != null) {
-        debugPrint('❌ CellSystem: Realtime error: $error');
-      }
+    // Instead of subscribing to Realtime which requires permissive RLS (and exposes national_id),
+    // we poll the secure RPC every 5 seconds. This is more secure and reliable.
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _fetchInitialDrivers();
     });
-
-    _activeChannels.add(channel);
-  }
-
-  void _handleDriverChange(PostgresChangePayload payload) {
-    final newRecord = payload.newRecord;
-
-    // ── DELETE event ──────────────────────────────────────────────────────
-    if (newRecord.isEmpty) {
-      final oldRecord = payload.oldRecord;
-      if (oldRecord.isNotEmpty) {
-        final driverId = oldRecord['id'] as String?;
-        if (driverId != null && _driversMap.containsKey(driverId)) {
-          _driversMap.remove(driverId);
-          if (!_driverUpdatesController.isClosed) {
-            _driverUpdatesController.add(Map.from(_driversMap));
-          }
-          debugPrint('📍 CellSystem: Driver $driverId DELETED');
-        }
-      }
-      return;
-    }
-
-    final driverId = newRecord['id'] as String?;
-    if (driverId == null) return;
-
-    final currentUserId = SupabaseService.currentUser?.id;
-    if (driverId == currentUserId) return;
-
-    // ── Check is_available ────────────────────────────────────────────────
-    // NOTE: Without REPLICA IDENTITY FULL on drivers_profile, Supabase will
-    // NOT send any event when is_available transitions true→false (RLS filter).
-    // Run: ALTER TABLE drivers_profile REPLICA IDENTITY FULL;
-    // to fix realtime delivery. Until then, periodic refresh is the fallback.
-    final hasIsAvailable = newRecord.containsKey('is_available');
-    final isAvailable = newRecord['is_available'] as bool?;
-    if (hasIsAvailable && isAvailable != true) {
-      if (_driversMap.containsKey(driverId)) {
-        _driversMap.remove(driverId);
-        if (!_driverUpdatesController.isClosed) {
-          _driverUpdatesController.add(Map.from(_driversMap));
-        }
-        debugPrint('📍 CellSystem: Driver $driverId went OFFLINE (is_available=$isAvailable)');
-      }
-      return;
-    }
-
-    // ── Check location ────────────────────────────────────────────────────
-    final lat = newRecord['current_lat'];
-    final lng = newRecord['current_lng'];
-
-    // FIX: null lat/lng means set_driver_offline cleared the location.
-    // Old code kept the driver in _driversMap when lat/lng were null.
-    if (lat == null || lng == null) {
-      if (_driversMap.containsKey(driverId)) {
-        _driversMap.remove(driverId);
-        if (!_driverUpdatesController.isClosed) {
-          _driverUpdatesController.add(Map.from(_driversMap));
-        }
-        debugPrint('📍 CellSystem: Driver $driverId removed — null location (went offline)');
-      }
-      return;
-    }
-
-    final driverLat = (lat as num).toDouble();
-    final driverLng = (lng as num).toDouble();
-    final driverCell =
-        GeohashHelper.encode(driverLat, driverLng, precision: 6);
-
-    if (_subscribedCells.contains(driverCell)) {
-      final vehicleType = newRecord['vehicle_type'] as String? ??
-          (_driversMap[driverId]?.vehicleType ?? 'car');
-      _driversMap[driverId] = DriverLocation(
-        driverId: driverId,
-        lat: driverLat,
-        lng: driverLng,
-        vehicleType: vehicleType,
-        lastUpdatedAt: DateTime.now().toUtc(),
-      );
-      debugPrint(
-          '📍 CellSystem: Driver $driverId at ($driverLat, $driverLng) cell=$driverCell');
-    } else {
-      // Driver moved out of our cells
-      if (_driversMap.containsKey(driverId)) {
-        _driversMap.remove(driverId);
-        debugPrint(
-            '📍 CellSystem: Driver $driverId moved OUT of range ($driverCell)');
-      }
-    }
-
-    if (!_driverUpdatesController.isClosed) {
-      _driverUpdatesController.add(Map.from(_driversMap));
-    }
-  }
-
-  /// Unsubscribe only realtime channels (keeps timers)
-  void _unsubscribeRealtime() {
-    for (final channel in _activeChannels) {
-      try {
-        SupabaseService.client.removeChannel(channel);
-      } catch (e) {
-        debugPrint('CellSubscriptionService: removeChannel error — $e');
-      }
-    }
-    _activeChannels.clear();
   }
 
   /// Unsubscribe everything (channels + timers)
   Future<void> _unsubscribeAll() async {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = null;
-    _unsubscribeRealtime();
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
     _driversMap.clear();
     if (!_driverUpdatesController.isClosed) {
       _driverUpdatesController.add({});
