@@ -595,5 +595,20 @@
   "deleteMessage": "حذف الرسالة",
   "messageDeleted": "تم حذف الرسالة",
   "imageLoadError": "تعذر تحميل الصورة",
-  "sendImage": "إرسال صورة"
+  "sendImage": "إرسال صورة",
+  "locationDeniedTitle": "يلزم السماح بالوصول للموقع",
+  "locationDeniedSubtitle": "اسمح بالوصول لموقعك لعرض السائقين القريبين وحجز الرحلات",
+  "locationPermanentlyDeniedTitle": "الوصول للموقع محظور",
+  "locationPermanentlyDeniedSubtitle": "افتح الإعدادات وفعّل صلاحية الموقع للمتابعة",
+  "locationServiceDisabledTitle": "خدمات الموقع معطّلة",
+  "locationServiceDisabledSubtitle": "فعّل خدمات الموقع من إعدادات جهازك",
+  "locationEnableAction": "تفعيل",
+  "locationGoToSettings": "الإعدادات",
+  "locationCtaShort": "الموقع",
+  "platformCoveredCoupon": "المنصة تغطّي هذا الخصم",
+  "yourEarnings": "أرباحك",
+  "couponApplied": "تم تطبيق الكوبون بنجاح",
+  "couponSubsidy": "دعم الكوبون",
+  "bookNow": "احجز الآن",
+  "commission": "العمولة"
 }

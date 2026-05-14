@@ -52,6 +52,7 @@ import '../../features/driver/presentation/trips/bloc/driver_trips_bloc.dart';
 import '../../features/driver/presentation/profile/bloc/driver_profile_bloc.dart';
 import '../../features/driver/presentation/home/bloc/driver_home_bloc.dart';
 import '../../features/shared/presentation/rating/bloc/rating_bloc.dart';
+import '../../core/bloc/location_permission_cubit.dart';
 
 
 Page<dynamic> _buildSlideTransition({required Widget child}) {
@@ -191,7 +192,13 @@ class AppRouter {
           path: AppRoutes.userHome,
           name: AppRoutes.userHome,
           pageBuilder: (context, state) => _buildSlideTransition(
-            child: BlocProvider(create: (_) => UserHomeBloc(), child: const UserHomeScreen()),
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => UserHomeBloc()),
+                BlocProvider(create: (_) => LocationPermissionCubit()),
+              ],
+              child: const UserHomeScreen(),
+            ),
           ),
         ),
         GoRoute(
@@ -215,7 +222,7 @@ class AppRouter {
             final tripId = state.uri.queryParameters['tripId'];
             final otherUserId = state.uri.queryParameters['otherUserId'];
             final otherUserName = state.uri.queryParameters['otherUserName'];
-            if (otherUserId != null && otherUserId.isNotEmpty) {
+            if ((tripId != null && tripId.isNotEmpty) || (otherUserId != null && otherUserId.isNotEmpty)) {
               return MaterialPage(child: MessagesScreen(
                 tripId: tripId,
                 otherUserId: otherUserId,
@@ -324,7 +331,13 @@ class AppRouter {
           path: AppRoutes.driverHome,
           name: AppRoutes.driverHome,
           pageBuilder: (context, state) => _buildSlideTransition(
-            child: BlocProvider(create: (_) => DriverHomeBloc(), child: const DriverHomeScreen()),
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider(create: (_) => DriverHomeBloc()),
+                BlocProvider(create: (_) => LocationPermissionCubit()),
+              ],
+              child: const DriverHomeScreen(),
+            ),
           ),
         ),
         GoRoute(
@@ -348,7 +361,7 @@ class AppRouter {
             final tripId = state.uri.queryParameters['tripId'];
             final otherUserId = state.uri.queryParameters['otherUserId'];
             final otherUserName = state.uri.queryParameters['otherUserName'];
-            if (otherUserId != null && otherUserId.isNotEmpty) {
+            if ((tripId != null && tripId.isNotEmpty) || (otherUserId != null && otherUserId.isNotEmpty)) {
               return MaterialPage(child: MessagesScreen(
                 tripId: tripId,
                 otherUserId: otherUserId,

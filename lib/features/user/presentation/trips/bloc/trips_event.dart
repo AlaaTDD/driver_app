@@ -14,11 +14,12 @@ class LoadUserTrips extends TripsEvent {
 
 class LoadTripDetails extends TripsEvent {
   final String tripId;
+  final bool silent;
 
-  const LoadTripDetails(this.tripId);
+  const LoadTripDetails(this.tripId, {this.silent = false});
 
   @override
-  List<Object?> get props => [tripId];
+  List<Object?> get props => [tripId, silent];
 }
 
 class CancelUserTrip extends TripsEvent {

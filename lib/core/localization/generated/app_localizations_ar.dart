@@ -1345,4 +1345,52 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sendImage => 'إرسال صورة';
+
+  @override
+  String get locationDeniedTitle => 'يلزم السماح بالوصول للموقع';
+
+  @override
+  String get locationDeniedSubtitle =>
+      'اسمح بالوصول لموقعك لعرض السائقين القريبين وحجز الرحلات';
+
+  @override
+  String get locationPermanentlyDeniedTitle => 'الوصول للموقع محظور';
+
+  @override
+  String get locationPermanentlyDeniedSubtitle =>
+      'افتح الإعدادات وفعّل صلاحية الموقع للمتابعة';
+
+  @override
+  String get locationServiceDisabledTitle => 'خدمات الموقع معطّلة';
+
+  @override
+  String get locationServiceDisabledSubtitle =>
+      'فعّل خدمات الموقع من إعدادات جهازك';
+
+  @override
+  String get locationEnableAction => 'تفعيل';
+
+  @override
+  String get locationGoToSettings => 'الإعدادات';
+
+  @override
+  String get locationCtaShort => 'الموقع';
+
+  @override
+  String get platformCoveredCoupon => 'المنصة تغطّي هذا الخصم';
+
+  @override
+  String get yourEarnings => 'أرباحك';
+
+  @override
+  String get couponApplied => 'تم تطبيق الكوبون بنجاح';
+
+  @override
+  String get couponSubsidy => 'دعم الكوبون';
+
+  @override
+  String get bookNow => 'احجز الآن';
+
+  @override
+  String get commission => 'العمولة';
 }

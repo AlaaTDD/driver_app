@@ -75,7 +75,7 @@ class MessagesCubit extends Cubit<MessagesState> {
     if (isClosed) return;
     emit(MessagesChatLoaded(messages: [], otherName: otherUserName ?? '', otherUserId: otherUserId, tripId: tripId));
     try {
-      final canSend = await _repo.hasActiveTripWith(otherUserId);
+      final canSend = true; // Always allow sending in direct chat if conversation exists
       if (isClosed) return;
       final info = await _repo.fetchUserInfo(otherUserId);
       if (isClosed) return;
@@ -161,7 +161,7 @@ class MessagesCubit extends Cubit<MessagesState> {
         otherUserId: otherId,
         tripId: tripId,
         otherAvatarUrl: otherAvatar,
-        canSend: active,
+        canSend: true, // Always allow sending
         hasMore: messages.length >= 50,
       ));
       if (isClosed) return;

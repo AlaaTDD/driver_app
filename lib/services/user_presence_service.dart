@@ -33,22 +33,18 @@ class UserPresenceService with WidgetsBindingObserver {
   
   
   Future<void> startBroadcasting({double? lat, double? lng}) async {
-    _lastLat = lat ?? _lastLat;
-    _lastLng = lng ?? _lastLng;
+    _lastLat = lat ?? _lastLat ?? 0.0;
+    _lastLng = lng ?? _lastLng ?? 0.0;
     _isBroadcasting = true;
 
-    if (_lastLat != null && _lastLng != null) {
-      await _upsertPresence(_lastLat!, _lastLng!);
-    }
+    await _upsertPresence(_lastLat!, _lastLng!);
 
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
       const Duration(seconds: 20),
       (_) {
         if (!_isBroadcasting) return;
-        if (_lastLat != null && _lastLng != null) {
-          _upsertPresence(_lastLat!, _lastLng!);
-        }
+        _upsertPresence(_lastLat!, _lastLng!);
       },
     );
 
@@ -61,7 +57,6 @@ class UserPresenceService with WidgetsBindingObserver {
 
     if (!_isBroadcasting) return;
 
-    
     _upsertPresence(lat, lng);
   }
 

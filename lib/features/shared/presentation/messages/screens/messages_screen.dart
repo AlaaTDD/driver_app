@@ -35,10 +35,10 @@ class MessagesScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) {
         final cubit = MessagesCubit();
-        if (otherUserId != null && otherUserId!.isNotEmpty) {
-          cubit.initDirectChat(otherUserId!, otherUserName: otherUserName, tripId: tripId);
-        } else if (tripId != null && tripId!.isNotEmpty) {
+        if (tripId != null && tripId!.isNotEmpty) {
           cubit.initTripChat(tripId!);
+        } else if (otherUserId != null && otherUserId!.isNotEmpty) {
+          cubit.initDirectChat(otherUserId!, otherUserName: otherUserName);
         }
         return cubit;
       },
@@ -497,38 +497,40 @@ class _ChatUIState extends State<_ChatUI> {
                   ),
                 ),
                 const SizedBox(height: 3),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: _isOtherTyping
-                      ? Row(
-                          key: const ValueKey('typing'),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const _AnimatedTypingDots(),
-                            const SizedBox(width: 6),
-                            Text(
-                              AppLocalizations.of(context)!.typing,
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                ExcludeSemantics(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _isOtherTyping
+                        ? Row(
+                            key: const ValueKey('typing'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const _AnimatedTypingDots(),
+                              const SizedBox(width: 6),
+                              Text(
+                                AppLocalizations.of(context)!.typing,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
+                            ],
+                          )
+                        : Text(
+                            key: const ValueKey('status'),
+                            _isOtherOnline
+                                ? AppLocalizations.of(context)!.online
+                                : AppLocalizations.of(context)!.offline,
+                            style: TextStyle(
+                              color: _isOtherOnline
+                                  ? AppColors.success
+                                  : context.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        )
-                      : Text(
-                          key: const ValueKey('status'),
-                          _isOtherOnline
-                              ? AppLocalizations.of(context)!.online
-                              : AppLocalizations.of(context)!.offline,
-                          style: TextStyle(
-                            color: _isOtherOnline
-                                ? AppColors.success
-                                : context.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
                           ),
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -593,29 +595,32 @@ class _ChatUIState extends State<_ChatUI> {
   }
 
   Widget _buildTypingBanner(BuildContext context) {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-      child: _isOtherTyping
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              color: context.elevatedColor.withValues(alpha: 0.5),
-              child: Row(
-                children: [
-                  const _AnimatedTypingDots(),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppLocalizations.of(context)!.typing,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+    return ExcludeSemantics(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 250),
+        alignment: Alignment.topCenter,
+        curve: Curves.easeInOut,
+        child: _isOtherTyping
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: context.elevatedColor.withValues(alpha: 0.5),
+                child: Row(
+                  children: [
+                    const _AnimatedTypingDots(),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppLocalizations.of(context)!.typing,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
+                  ],
+                ),
+              )
+            : const SizedBox(width: double.infinity, height: 0),
+      ),
     );
   }
 
@@ -716,13 +721,15 @@ class _ChatUIState extends State<_ChatUI> {
           bottom: _showScrollToBottom ? 16 : -56,
           left: 0,
           right: 0,
-          child: Center(
-            child: FloatingActionButton.small(
-              onPressed: widget.onScrollToBottom,
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 4,
-              child: const Icon(Icons.keyboard_arrow_down_rounded, size: 24),
+          child: ExcludeSemantics(
+            child: Center(
+              child: FloatingActionButton.small(
+                onPressed: widget.onScrollToBottom,
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                child: const Icon(Icons.keyboard_arrow_down_rounded, size: 24),
+              ),
             ),
           ),
         ),
@@ -1083,21 +1090,16 @@ class _ChatBubble extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: IntrinsicWidth(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: _buildContent(context),
-                        ),
-                        const SizedBox(height: 4),
-                        Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: _buildTimeAndStatus(context),
-                        ),
-                      ],
-                    ),
+                  child: Wrap(
+                    alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
+                    crossAxisAlignment: WrapCrossAlignment.end,
+                    children: [
+                      _buildContent(context),
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(start: 8, top: 4),
+                        child: _buildTimeAndStatus(context),
+                      ),
+                    ],
                   ),
                 ),
               ),

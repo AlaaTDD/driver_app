@@ -70,16 +70,20 @@ class MeetingPointRepository {
       onRetry: (e, attempt) => debugPrint('Trip insert attempt $attempt failed: $e'),
     );
 
-    
+    // Apply coupon to the trip atomically (re-validates server-side)
     if (couponCode != null && couponCode.isNotEmpty) {
       try {
-        await _client.rpc('use_coupon_atomic', params: {
-          'p_user_id': userId,
-          'p_coupon_code': couponCode,
+        final couponResult = await _client.rpc('apply_coupon_to_trip', params: {
           'p_trip_id': result['id'],
+          'p_coupon_code': couponCode,
+          'p_user_id': userId,
+          'p_original_price': price,
         });
+        debugPrint('🎫 Coupon applied: $couponResult');
       } catch (e) {
-        debugPrint('⚠️ MeetingPointRepository: Failed to record coupon usage: $e');
+        debugPrint('⚠️ MeetingPointRepository: Failed to apply coupon: $e');
+        // Non-blocking: trip is created even if coupon fails.
+        // The user will pay the full price in that case.
       }
     }
 

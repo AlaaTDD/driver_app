@@ -54,6 +54,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   final Completer<GoogleMapController> _mapController = Completer();
   List<LatLng> _routePoints = [];
   bool _routeFetchRequested = false;
+  Map<String, dynamic>? _trip;
 
   // driver location
   StreamSubscription<Position>? _locationSub;
@@ -153,9 +154,15 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       _updateDriverPosition(loc);
       if (_cameraFollowing && _mapController.isCompleted) {
         final ctrl = await _mapController.future;
-        ctrl.animateCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
-        ));
+        if (mounted) {
+          try {
+            ctrl.animateCamera(CameraUpdate.newCameraPosition(
+              CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
+            ));
+          } catch (e) {
+            debugPrint('animateCamera error: $e');
+          }
+        }
       }
     });
   }
@@ -243,6 +250,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   // ══════════════════════════════════════════════════════════
   // BUILD
   // ══════════════════════════════════════════════════════════
+  bool _animationTriggered = false;
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -255,24 +264,45 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
               final status = state.trip['status'] as String?;
               if (status == 'completed') {
                 _toast(ctx, AppLocalizations.of(ctx)!.tripCompleted, ok: true);
-                context.go('${AppRoutes.driverRating}?tripId=${widget.tripId}');
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (ctx.mounted) {
+                    ctx.go('${AppRoutes.driverRating}?tripId=${widget.tripId}');
+                  }
+                });
+                return;
               }
               // snap camera to pickup
               final pLat = (state.trip['pickup_lat'] as num?)?.toDouble();
               final pLng = (state.trip['pickup_lng'] as num?)?.toDouble();
               if (pLat != null && _mapController.isCompleted) {
-                _mapController.future.then((c) => c.animateCamera(
-                    CameraUpdate.newLatLng(LatLng(pLat, pLng!))));
+                _mapController.future.then((c) {
+                  if (ctx.mounted) {
+                    try {
+                      c.animateCamera(CameraUpdate.newLatLng(LatLng(pLat, pLng!)));
+                    } catch (e) {
+                      debugPrint('animateCamera error: $e');
+                    }
+                  }
+                });
               }
-              _sheetCtrl.forward(from: 0);
+              if (!_animationTriggered) {
+                _animationTriggered = true;
+                _sheetCtrl.forward(from: 0);
+              }
             } else if (state is TripDetailsError) {
               _toast(ctx, state.message, ok: false);
             }
           },
           builder: (ctx, state) {
-            if (state is TripDetailsLoading || state is TripDetailsInitial) return _skeleton();
-            if (state is TripDetailsError) return _errorView(state.message);
-            if (state is TripDetailsLoaded) return _body(state.trip);
+            if (state is TripDetailsLoaded) {
+              _trip = state.trip;
+              return _body(state.trip);
+            }
+            if (state is TripDetailsError) {
+              if (_trip != null) return _body(_trip!);
+              return _errorView(state.message);
+            }
+            if (_trip != null) return _body(_trip!);
             return _skeleton();
           },
         ),
@@ -301,11 +331,12 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   // SKELETON
   // ══════════════════════════════════════════════════════════
   Widget _skeleton() {
-    return AnimatedBuilder(
-      animation: _shimCtrl,
-      builder: (_, __) {
-        final t = (_shimCtrl.value * 2 - 1).abs();
-        Color sh(Color b) => Color.lerp(b, _C.elevated, t)!;
+    return ExcludeSemantics(
+      child: AnimatedBuilder(
+        animation: _shimCtrl,
+        builder: (_, __) {
+          final t = (_shimCtrl.value * 2 - 1).abs();
+          Color sh(Color b) => Color.lerp(b, _C.elevated, t)!;
         return Column(children: [
           Container(height: MediaQuery.of(context).size.height * 0.45, color: sh(_C.card)),
           Expanded(
@@ -329,7 +360,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             ),
           ),
         ]);
-      },
+        },
+      ),
     );
   }
 
@@ -418,9 +450,15 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             setState(() => _cameraFollowing = true);
             if (_driverLocation != null && _mapController.isCompleted) {
               final ctrl = await _mapController.future;
-              ctrl.animateCamera(CameraUpdate.newCameraPosition(
-                CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
-              ));
+              if (mounted) {
+                try {
+                  ctrl.animateCamera(CameraUpdate.newCameraPosition(
+                    CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
+                  ));
+                } catch (e) {
+                  debugPrint('animateCamera error: $e');
+                }
+              }
             }
           },
         ),
@@ -554,9 +592,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         builder: (context, driverMarker, _) {
           final allMarkers = Set<Marker>.from(markers);
           if (driverMarker != null) allMarkers.add(driverMarker);
-          return GoogleMap(
-            initialCameraPosition: CameraPosition(target: initTarget, zoom: 15),
-            style: kDarkMapStyle,
+          return ExcludeSemantics(
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(target: initTarget, zoom: 15),
+              style: kDarkMapStyle,
             minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 70,
@@ -580,7 +619,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             myLocationEnabled: false,
             myLocationButtonEnabled: false,
             compassEnabled: false,
-          );
+          ));
         },
       ),
       // bottom fade
@@ -623,41 +662,39 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     final label = _statusLabel(status);
     final live  = status == 'in_progress' || status == 'searching';
 
-    return AnimatedBuilder(
-      animation: _pulseAnim,
-      builder: (_, child) => Transform.scale(
-        scale: live ? (0.97 + 0.03 * _pulseAnim.value) : 1.0,
-        child: child,
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-        decoration: BoxDecoration(
-          color: _C.sheet.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 22, spreadRadius: 2),
-            const BoxShadow(color: Colors.black54, blurRadius: 10),
-          ],
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (live)
-            AnimatedBuilder(
-              animation: _pulseAnim,
-              builder: (_, __) => Container(
-                width: 9, height: 9,
-                decoration: BoxDecoration(
-                  color: color, shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: color.withValues(alpha: _pulseAnim.value), blurRadius: 8)],
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+          decoration: BoxDecoration(
+            color: _C.sheet.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 22, spreadRadius: 2),
+              const BoxShadow(color: Colors.black54, blurRadius: 10),
+            ],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (live)
+              AnimatedBuilder(
+                animation: _pulseAnim,
+                builder: (_, __) => Container(
+                  width: 9, height: 9,
+                  decoration: BoxDecoration(
+                    color: color, shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: color.withValues(alpha: _pulseAnim.value), blurRadius: 8)],
+                  ),
                 ),
-              ),
-            )
-          else
-            Icon(icon, color: color, size: 16),
-          const SizedBox(width: 9),
-          Text(label, style: TextStyle(color: color, fontSize: 13,
-              fontWeight: FontWeight.w800, letterSpacing: 0.2)),
-        ]),
+              )
+            else
+              Icon(icon, color: color, size: 16),
+            const SizedBox(width: 9),
+            Text(label, style: TextStyle(color: color, fontSize: 13,
+                fontWeight: FontWeight.w800, letterSpacing: 0.2)),
+          ]),
+        ),
       ),
     );
   }
@@ -672,7 +709,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       cancelLabel: l.cancel,
       onConfirm: () {
         context.pop();
-        context.read<TripDetailsBloc>().add(RejectTrip(widget.tripId));
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (context.mounted) {
+            context.read<TripDetailsBloc>().add(RejectTrip(widget.tripId));
+          }
+        });
       },
     ));
   }
@@ -686,7 +727,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       cancelLabel: l.cancel,
       onConfirm: () {
         context.pop();
-        context.read<TripDetailsBloc>().add(CompleteTrip(widget.tripId));
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (context.mounted) {
+            context.read<TripDetailsBloc>().add(CompleteTrip(widget.tripId));
+          }
+        });
       },
     ));
   }
@@ -949,16 +994,21 @@ class _RouteTicket extends StatelessWidget {
   }
 }
 
-// ── Price Box ─────────────────────────────────────────────────────────────────
+// ── Price Box (coupon-aware) ───────────────────────────────────────────────────
 class _PriceBox extends StatelessWidget {
   final Map<String, dynamic> trip;
   const _PriceBox({required this.trip});
 
   @override
   Widget build(BuildContext context) {
-    final l     = AppLocalizations.of(context)!;
-    final price = (trip['price'] as num?)?.toDouble() ?? 0;
-    final isPaid = trip['is_paid'] as bool? ?? false;
+    final l              = AppLocalizations.of(context)!;
+    final price          = (trip['price'] as num?)?.toDouble() ?? 0;
+    final couponDiscount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
+    final finalPrice     = (trip['final_price'] as num?)?.toDouble() ?? price;
+    final driverEarnings = (trip['driver_earnings'] as num?)?.toDouble();
+    final platformCommission = (trip['platform_commission'] as num?)?.toDouble();
+    final isPaid         = trip['is_paid'] as bool? ?? false;
+    final hasCoupon      = couponDiscount > 0;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -972,6 +1022,8 @@ class _PriceBox extends StatelessWidget {
             style: const TextStyle(color: _C.t3, fontSize: 9,
                 fontWeight: FontWeight.w800, letterSpacing: 1.8)),
         const SizedBox(height: 10),
+
+        // ── Original fare (large) ─────────────────
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -988,7 +1040,107 @@ class _PriceBox extends StatelessWidget {
             ],
           ),
         ),
+
+        // ── Coupon discount badge ─────────────────
+        if (hasCoupon) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _C.violet.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.violet.withValues(alpha: 0.25)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.local_offer_rounded, color: _C.violet, size: 12),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  '${l.discount}: -${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
+                  style: const TextStyle(color: _C.violet, fontSize: 10,
+                      fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 4),
+          // Platform subsidy credit
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _C.emerald.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.emerald.withValues(alpha: 0.2)),
+            ),
+            child: Row(children: [
+              Icon(Icons.verified_rounded, color: _C.emerald.withValues(alpha: 0.8), size: 11),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  l.platformCoveredCoupon,
+                  style: TextStyle(color: _C.emerald.withValues(alpha: 0.8), fontSize: 9,
+                      fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text('+${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
+                  style: TextStyle(color: _C.emerald.withValues(alpha: 0.9), fontSize: 10,
+                      fontWeight: FontWeight.w800),
+                  textDirection: TextDirection.ltr),
+            ]),
+          ),
+        ],
+
+        // ── Driver earnings row ───────────────────
+        if (driverEarnings != null && driverEarnings > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: _C.blue.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _C.blue.withValues(alpha: 0.2)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.account_balance_wallet_rounded, color: _C.blue, size: 13),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(l.yourEarnings,
+                    style: const TextStyle(color: _C.t2, fontSize: 10, fontWeight: FontWeight.w600)),
+              ),
+              Text('${driverEarnings.toStringAsFixed(2)} ${l.currencySar}',
+                  style: const TextStyle(color: _C.blue, fontSize: 12,
+                      fontWeight: FontWeight.w800),
+                  textDirection: TextDirection.ltr),
+            ]),
+          ),
+        ],
+
+        // ── Platform commission row ───────────────
+        if (platformCommission != null && platformCommission > 0) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(children: [
+              Icon(Icons.receipt_long_rounded, color: _C.t3, size: 10),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(l.commission,
+                    style: TextStyle(color: _C.t3, fontSize: 9, fontWeight: FontWeight.w500)),
+              ),
+              Text('${platformCommission.toStringAsFixed(2)} ${l.currencySar}',
+                  style: TextStyle(color: _C.t3, fontSize: 9, fontWeight: FontWeight.w600),
+                  textDirection: TextDirection.ltr),
+            ]),
+          ),
+        ],
+
         const Spacer(),
+
+        // ── Paid / Unpaid badge ───────────────────
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
@@ -1239,14 +1391,15 @@ class _Btn extends StatelessWidget {
             boxShadow: outlined ? null
                 : [BoxShadow(color: color.withValues(alpha: 0.26), blurRadius: 12, offset: const Offset(0, 4))],
           ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(icon, color: outlined ? color : Colors.white, size: 17),
             const SizedBox(width: 7),
-            Flexible(child: Text(label, overflow: TextOverflow.ellipsis,
+            Text(label, overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: outlined ? color : Colors.white,
                   fontSize: 12, fontWeight: FontWeight.w700,
-                ))),
+                )),
           ]),
         ),
       );
@@ -1294,8 +1447,11 @@ class _NightDialog extends StatelessWidget {
                       style: const TextStyle(color: _C.t2, fontWeight: FontWeight.w600)),
                 ),
                 const Spacer(),
-                _Btn(label: confirmLabel, icon: Icons.check_rounded,
-                    color: confirmColor, compact: true, onTap: onConfirm),
+                SizedBox(
+                  width: 130,
+                  child: _Btn(label: confirmLabel, icon: Icons.check_rounded,
+                      color: confirmColor, compact: true, onTap: onConfirm),
+                ),
               ]),
             ]),
         ),

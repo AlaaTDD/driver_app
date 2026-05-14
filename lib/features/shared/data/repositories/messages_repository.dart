@@ -55,6 +55,7 @@ class MessagesRepository {
       final data = await SupabaseService.client
           .from(AppConstants.tableMessages)
           .select('id, sender_id, receiver_id, content, created_at, is_read, type, attachment_url')
+          .isFilter('trip_id', null)
           .or('sender_id.eq.$userId,receiver_id.eq.$userId')
           .or('and(deleted_by_sender.eq.false,deleted_by_receiver.eq.false)')
           .order('created_at', ascending: false)
@@ -138,6 +139,7 @@ class MessagesRepository {
       final data = await SupabaseService.client
           .from(AppConstants.tableMessages)
           .select('*')
+          .isFilter('trip_id', null)
           .or('and(sender_id.eq.$userId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$userId)')
           .or('and(sender_id.eq.$userId,deleted_by_sender.eq.false),and(receiver_id.eq.$userId,deleted_by_receiver.eq.false)')
           .order('created_at', ascending: false) // Newest first for pagination
@@ -177,7 +179,7 @@ class MessagesRepository {
         final r = newMessage.receiverId;
         final tid = newMessage.tripId;
 
-        if (((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
+        if (tid == null && ((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
           if (!cachedMessages.any((m) => m.id == newMessage.id)) {
             cachedMessages.add(newMessage);
             cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -320,54 +322,56 @@ class MessagesRepository {
 
     void handlePayload(PostgresChangePayload payload) {
       if (controller.isClosed) return;
+      try {
+        if (payload.eventType == PostgresChangeEvent.insert) {
+          final newRow = payload.newRecord;
+          if (newRow.isEmpty) return;
 
-      if (payload.eventType == PostgresChangeEvent.insert) {
-        final newRow = payload.newRecord;
-        if (newRow.isEmpty) return;
+          final newMessage = MessageModel.fromJson(newRow);
+          final s = newMessage.senderId;
+          final r = newMessage.receiverId;
+          final tid = newMessage.tripId;
 
-        final newMessage = MessageModel.fromJson(newRow);
-        final s = newMessage.senderId;
-        final r = newMessage.receiverId;
-        final tid = newMessage.tripId;
+          if (tid == tripId &&
+              ((s == userId && r != userId) || (s != userId && r == userId))) {
+            if (!cachedMessages.any((m) => m.id == newMessage.id)) {
+              cachedMessages.add(newMessage);
+              cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+              controller.add(List.from(cachedMessages));
+            }
+          }
+        } else if (payload.eventType == PostgresChangeEvent.update) {
+          final newRow = payload.newRecord;
+          final updatedId = newRow['id'] as String?;
+          final isRead = newRow['is_read'] as bool? ?? false;
 
-        if (tid == tripId &&
-            ((s == userId && r != userId) || (s != userId && r == userId))) {
-          if (!cachedMessages.any((m) => m.id == newMessage.id)) {
-            cachedMessages.add(newMessage);
-            cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-            controller.add(List.from(cachedMessages));
+          if (updatedId != null && isRead) {
+            final idx = cachedMessages.indexWhere((m) => m.id == updatedId);
+            if (idx != -1) {
+              cachedMessages[idx] = MessageModel.fromJson({
+                ...cachedMessages[idx].toInsertJson(),
+                'id': updatedId,
+                'created_at': cachedMessages[idx].createdAt.toIso8601String(),
+                'is_read': true,
+              });
+              controller.add(List.from(cachedMessages));
+            }
+          }
+        } else if (payload.eventType == PostgresChangeEvent.delete) {
+          final oldRow = payload.oldRecord;
+          if (oldRow.isEmpty) return;
+
+          final deletedId = oldRow['id'] as String?;
+          if (deletedId != null) {
+            final idx = cachedMessages.indexWhere((m) => m.id == deletedId);
+            if (idx != -1) {
+              cachedMessages.removeAt(idx);
+              controller.add(List.from(cachedMessages));
+            }
           }
         }
-      } else if (payload.eventType == PostgresChangeEvent.update) {
-        final newRow = payload.newRecord;
-        final updatedId = newRow['id'] as String?;
-        final isRead = newRow['is_read'] as bool? ?? false;
-
-        if (updatedId != null && isRead) {
-          final idx = cachedMessages.indexWhere((m) => m.id == updatedId);
-          if (idx != -1) {
-            cachedMessages[idx] = MessageModel.fromJson({
-              ...cachedMessages[idx].toInsertJson(),
-              'id': updatedId,
-              'created_at': cachedMessages[idx].createdAt.toIso8601String(),
-              'is_read': true,
-            });
-            controller.add(List.from(cachedMessages));
-          }
-        }
-      } else if (payload.eventType == PostgresChangeEvent.delete) {
-        // Handle soft deletes - remove message from cache
-        final oldRow = payload.oldRecord;
-        if (oldRow.isEmpty) return;
-
-        final deletedId = oldRow['id'] as String?;
-        if (deletedId != null) {
-          final idx = cachedMessages.indexWhere((m) => m.id == deletedId);
-          if (idx != -1) {
-            cachedMessages.removeAt(idx);
-            controller.add(List.from(cachedMessages));
-          }
-        }
+      } catch (e) {
+        debugPrint('⚠️ MessagesRepository: handlePayload error: $e');
       }
     }
 
@@ -377,6 +381,11 @@ class MessagesRepository {
           event: PostgresChangeEvent.all, // Listen to INSERT, UPDATE, DELETE
           schema: 'public',
           table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'trip_id',
+            value: tripId,
+          ),
           callback: handlePayload,
         )
         .subscribe();
@@ -478,6 +487,8 @@ class MessagesRepository {
 
       if (tripId != null) {
         query = query.eq('trip_id', tripId);
+      } else {
+        query = query.isFilter('trip_id', null);
       }
 
       await query;
@@ -672,7 +683,9 @@ class MessagesRepository {
 
   /// Subscribe to global app presence for a specific user.
   Stream<bool> subscribeToUserGlobalPresence(String userId) {
-    final controller = StreamController<bool>.broadcast();
+    late final StreamController<bool> controller;
+    Timer? fallbackTimer;
+    RealtimeChannel? channel;
 
     bool isRecent(String? lastSeenIso) {
       if (lastSeenIso == null) return false;
@@ -685,68 +698,71 @@ class MessagesRepository {
       }
     }
 
-    // Initial fetch
-    SupabaseService.client
-        .from('user_presence')
-        .select('last_seen')
-        .eq('user_id', userId)
-        .maybeSingle()
-        .then((data) {
-      if (data != null && isRecent(data['last_seen'] as String?)) {
-        controller.add(true);
-      } else {
-        controller.add(false);
-      }
-    }).catchError((_) {
-      controller.add(false);
-    });
-
-    final channel = SupabaseService.client
-        .channel('global_presence_$userId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'user_presence',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: userId,
-          ),
-          callback: (payload) {
-            if (payload.eventType == PostgresChangeEvent.delete) {
-              controller.add(false);
-            } else {
-              final newRow = payload.newRecord;
-              if (newRow.isNotEmpty && isRecent(newRow['last_seen'] as String?)) {
-                controller.add(true);
-              } else {
-                controller.add(false);
-              }
-            }
-          },
-        )
-        .subscribe();
-
-    // Also run a local timer to auto-offline if no updates are received
-    final fallbackTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      SupabaseService.client
-          .from('user_presence')
-          .select('last_seen')
-          .eq('user_id', userId)
-          .maybeSingle()
-          .then((data) {
-        if (data != null && isRecent(data['last_seen'] as String?)) {
-          controller.add(true);
-        } else {
+    controller = StreamController<bool>.broadcast(
+      onListen: () {
+        // Initial fetch
+        SupabaseService.client
+            .from('user_presence')
+            .select('last_seen')
+            .eq('user_id', userId)
+            .maybeSingle()
+            .then((data) {
+          if (data != null && isRecent(data['last_seen'] as String?)) {
+            controller.add(true);
+          } else {
+            controller.add(false);
+          }
+        }).catchError((_) {
           controller.add(false);
-        }
-      }).catchError((_) {});
-    });
+        });
 
-    controller.onCancel = () {
-      fallbackTimer.cancel();
-      SupabaseService.client.removeChannel(channel);
-    };
+        channel = SupabaseService.client
+            .channel('global_presence_$userId')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'user_presence',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'user_id',
+                value: userId,
+              ),
+              callback: (payload) {
+                if (payload.eventType == PostgresChangeEvent.delete) {
+                  controller.add(false);
+                } else {
+                  final newRow = payload.newRecord;
+                  if (newRow.isNotEmpty && isRecent(newRow['last_seen'] as String?)) {
+                    controller.add(true);
+                  } else {
+                    controller.add(false);
+                  }
+                }
+              },
+            )
+            .subscribe();
+
+        // Also run a local timer to auto-offline if no updates are received
+        fallbackTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+          SupabaseService.client
+              .from('user_presence')
+              .select('last_seen')
+              .eq('user_id', userId)
+              .maybeSingle()
+              .then((data) {
+            if (data != null && isRecent(data['last_seen'] as String?)) {
+              controller.add(true);
+            } else {
+              controller.add(false);
+            }
+          }).catchError((_) {});
+        });
+      },
+      onCancel: () {
+        fallbackTimer?.cancel();
+        if (channel != null) SupabaseService.client.removeChannel(channel!);
+      },
+    );
 
     return controller.stream;
   }

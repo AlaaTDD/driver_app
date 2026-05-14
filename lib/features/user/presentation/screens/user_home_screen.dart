@@ -17,10 +17,14 @@ import '../../../../core/error/error_mapper.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/bottom_sheet_container.dart';
 import '../../../../core/widgets/map_button.dart';
+import '../../../../core/widgets/location_permission_cta.dart';
+import '../../../../core/bloc/location_permission_cubit.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../services/cell_subscription_service.dart';
+import '../../../../services/supabase_service.dart';
+import '../../data/repositories/coupon_repository.dart';
 import '../home/bloc/user_home_bloc.dart';
 import '../home/bloc/user_home_event.dart';
 import '../home/bloc/user_home_state.dart';
@@ -65,6 +69,8 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     WidgetsBinding.instance.addObserver(this);
     _loadCarIcon();
     _startAnimationLoop();
+    // Check location permission on init
+    context.read<LocationPermissionCubit>().check();
   }
 
   void _startAnimationLoop() {
@@ -164,6 +170,9 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Re-check location permission when returning from Settings
+      context.read<LocationPermissionCubit>().recheck();
+
       final bloc = context.read<UserHomeBloc>();
       if (bloc.state is UserHomeLoaded) {
         final loaded = bloc.state as UserHomeLoaded;
@@ -450,70 +459,106 @@ class _UserHomeScreenState extends State<UserHomeScreen>
       right: 0,
       bottom: 0,
       child: BottomSheetContainer(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.whereToGo,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: context.textPrimary,
-                letterSpacing: -0.3,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 14),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => context.push(AppRoutes.userLocationSelect),
-              child: Container(
-                height: 52,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: context.elevatedColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.divColor, width: 1),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search_rounded,
-                      color: context.textSecondary,
-                      size: 21,
+        child: BlocBuilder<LocationPermissionCubit, LocationPermissionState>(
+          builder: (context, permState) {
+            // ── Location blocked → show CTA instead of search ──
+            if (permState.isBlocked) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.whereToGo,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                      letterSpacing: -0.3,
+                      height: 1.2,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      AppLocalizations.of(context)!.searchDestination,
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
+                  ),
+                  const SizedBox(height: 14),
+                  LocationPermissionCta(
+                    variant: LocationCtaVariant.card,
+                    onGranted: () {
+                      // Re-init location when granted
+                      final authState = context.read<AuthBloc>().state;
+                      if (authState is AuthAuthenticated) {
+                        context.read<UserHomeBloc>().add(InitUserHome(authState.user.id));
+                      }
+                    },
+                  ),
+                ],
+              );
+            }
+
+            // ── Normal state → search bar + promo ──
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.whereToGo,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                    letterSpacing: -0.3,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            BlocBuilder<UserHomeBloc, UserHomeState>(
-              builder: (context, state) {
-                if (state is UserHomeLoaded && state.coupons.isNotEmpty) {
-                  final userCoupon = state.coupons.first;
-                  final coupon = userCoupon['coupons'] as Map<String, dynamic>?;
-                  if (coupon != null) {
-                    return _CouponBanner(
-                      code: coupon['code']?.toString() ?? '',
-                      discount: coupon['discount_value']?.toString() ?? '',
-                    );
-                  }
-                }
-                return const _PromoBanner();
-              },
-            ),
-          ],
+                const SizedBox(height: 14),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.push(AppRoutes.userLocationSelect),
+                  child: Container(
+                    height: 52,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: context.elevatedColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.divColor, width: 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.search_rounded,
+                          color: context.textSecondary,
+                          size: 21,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          AppLocalizations.of(context)!.searchDestination,
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                BlocBuilder<UserHomeBloc, UserHomeState>(
+                  builder: (context, state) {
+                    if (state is UserHomeLoaded && state.coupons.isNotEmpty) {
+                      final userCoupon = state.coupons.first;
+                      final coupon = userCoupon['coupons'] as Map<String, dynamic>?;
+                      if (coupon != null) {
+                        return _CouponBanner(
+                          code: coupon['code']?.toString() ?? '',
+                          discount: coupon['discount_value']?.toString() ?? '',
+                        );
+                      }
+                    }
+                    return const _PromoBanner();
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -564,122 +609,494 @@ class _CouponBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: context.primaryTint,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.local_offer_rounded,
-              color: AppColors.primary,
-              size: 18,
-            ),
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.userLocationSelect),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.08),
+              AppColors.primary.withValues(alpha: 0.03),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(context)!.haveCoupon,
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    height: 1.3,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  AppLocalizations.of(context)!
-                      .discountWithCode(discount, code),
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 11,
-                    height: 1.4,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.local_offer_rounded,
+                color: AppColors.primary,
+                size: 18,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 20),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.haveCoupon,
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppLocalizations.of(context)!
+                        .discountWithCode(discount, code),
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 11,
+                      height: 1.4,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 20),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _PromoBanner extends StatelessWidget {
+class _PromoBanner extends StatefulWidget {
   const _PromoBanner();
 
   @override
+  State<_PromoBanner> createState() => _PromoBannerState();
+}
+
+class _PromoBannerState extends State<_PromoBanner> {
+  bool _showCouponInput = false;
+  final _codeController = TextEditingController();
+
+  // Validation state
+  bool _isValidating = false;
+  bool? _isValid; // null = not checked, true = valid, false = invalid
+  String? _validatedCode;
+  double? _validatedDiscount;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  void _toggleCouponInput() {
+    setState(() {
+      _showCouponInput = !_showCouponInput;
+      if (!_showCouponInput) {
+        // Reset validation state when closing
+        _isValid = null;
+        _errorMessage = null;
+      }
+    });
+  }
+
+  Future<void> _validateAndApply() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isValidating = true;
+      _isValid = null;
+      _errorMessage = null;
+    });
+
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) {
+        setState(() {
+          _isValidating = false;
+          _isValid = false;
+          _errorMessage = AppLocalizations.of(context)!.errorApplyCoupon;
+        });
+        return;
+      }
+
+      final repo = CouponRepository();
+      // Validate against a reasonable trip price to check basic validity
+      final result = await repo.validateCoupon(
+        couponCode: code,
+        originalPrice: 100, // Dummy price for validation check
+        userId: userId,
+      );
+
+      if (!mounted) return;
+
+      if (result.isSuccess) {
+        setState(() {
+          _isValidating = false;
+          _isValid = true;
+          _validatedCode = result.couponCode;
+          _validatedDiscount = result.discount;
+        });
+      } else {
+        setState(() {
+          _isValidating = false;
+          _isValid = false;
+          _errorMessage = _mapErrorKey(result.errorKey);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isValidating = false;
+        _isValid = false;
+        _errorMessage = AppLocalizations.of(context)!.errorApplyCoupon;
+      });
+    }
+  }
+
+  String _mapErrorKey(String? key) {
+    final l = AppLocalizations.of(context)!;
+    return switch (key) {
+      'errorInvalidCoupon' => l.errorInvalidCoupon,
+      'errorCouponDepleted' => l.errorCouponDepleted,
+      'errorCouponUsed' => l.errorCouponUsed,
+      'errorApplyCoupon' => l.errorApplyCoupon,
+      _ => l.invalidCouponCode,
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: context.elevatedColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Main promo / coupon toggle banner
+        GestureDetector(
+          onTap: _toggleCouponInput,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: context.primaryTint,
-              borderRadius: BorderRadius.circular(10),
+              color: _showCouponInput
+                  ? AppColors.primary.withValues(alpha: 0.06)
+                  : context.elevatedColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _showCouponInput
+                    ? AppColors.primary.withValues(alpha: 0.3)
+                    : context.divColor,
+                width: 1,
+              ),
             ),
-            child: const Icon(
-              Icons.local_taxi_rounded,
-              color: AppColors.primary,
-              size: 19,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  AppLocalizations.of(context)!.rideSafely,
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    height: 1.3,
-                    letterSpacing: 0.1,
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _showCouponInput
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : context.primaryTint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    _showCouponInput
+                        ? Icons.local_offer_rounded
+                        : Icons.local_taxi_rounded,
+                    color: AppColors.primary,
+                    size: 19,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  AppLocalizations.of(context)!.bookNowEnjoy,
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 11,
-                    height: 1.4,
-                    letterSpacing: 0.1,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _showCouponInput
+                            ? AppLocalizations.of(context)!.haveDiscountCoupon
+                            : AppLocalizations.of(context)!.rideSafely,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _showCouponInput
+                            ? AppLocalizations.of(context)!.enterDiscountCode
+                            : AppLocalizations.of(context)!.bookNowEnjoy,
+                        style: TextStyle(
+                          color: context.textSecondary,
+                          fontSize: 11,
+                          height: 1.4,
+                          letterSpacing: 0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedRotation(
+                  turns: _showCouponInput ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    _showCouponInput
+                        ? Icons.close_rounded
+                        : Icons.confirmation_number_outlined,
+                    color: _showCouponInput
+                        ? context.textSecondary
+                        : AppColors.primary,
+                    size: 20,
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        // Expandable coupon input — uses AnimatedSize instead of SizeTransition
+        // to prevent semantics.parentDataDirty assertion errors
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _showCouponInput
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: context.elevatedColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.divColor, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 42,
+                                child: TextField(
+                                  controller: _codeController,
+                                  textCapitalization: TextCapitalization.characters,
+                                  onChanged: (_) {
+                                    // Reset validation on input change
+                                    if (_isValid != null) {
+                                      setState(() {
+                                        _isValid = null;
+                                        _errorMessage = null;
+                                      });
+                                    }
+                                  },
+                                  style: TextStyle(
+                                    color: context.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.5,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'PROMO20',
+                                    hintStyle: TextStyle(
+                                      color: context.textSecondary
+                                          .withValues(alpha: 0.4),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      letterSpacing: 1.5,
+                                    ),
+                                    filled: true,
+                                    fillColor: context.bgColor,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 10),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                          color: _isValid == true
+                                              ? AppColors.success.withValues(alpha: 0.5)
+                                              : _isValid == false
+                                                  ? AppColors.error.withValues(alpha: 0.5)
+                                                  : context.divColor,
+                                          width: _isValid != null ? 1.5 : 0.8),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                          color: AppColors.primary, width: 1.2),
+                                    ),
+                                    prefixIcon: Icon(Icons.local_offer_rounded,
+                                        color: _isValid == true
+                                            ? AppColors.success
+                                            : _isValid == false
+                                                ? AppColors.error
+                                                : context.textSecondary,
+                                        size: 16),
+                                    suffixIcon: _isValid == true
+                                        ? const Icon(Icons.check_circle_rounded,
+                                            color: AppColors.success, size: 18)
+                                        : _isValid == false
+                                            ? const Icon(Icons.error_outline_rounded,
+                                                color: AppColors.error, size: 18)
+                                            : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              height: 42,
+                              child: ElevatedButton(
+                                onPressed: _isValidating ? null : _validateAndApply,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _isValid == true
+                                      ? AppColors.success
+                                      : AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  elevation: 0,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 16),
+                                ),
+                                child: _isValidating
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : _isValid == true
+                                        ? const Icon(Icons.check_rounded, size: 20)
+                                        : Text(
+                                            AppLocalizations.of(context)!.apply,
+                                            style: const TextStyle(
+                                                fontSize: 13, fontWeight: FontWeight.w700),
+                                          ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Validation feedback banner ──
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        child: _isValid == true
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: AppColors.success.withValues(alpha: 0.25)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.check_circle_rounded,
+                                          color: AppColors.success, size: 16),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          AppLocalizations.of(context)!.couponApplied,
+                                          style: TextStyle(
+                                            color: AppColors.success,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          // Navigate with validated coupon
+                                          context.push(AppRoutes.userLocationSelect);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.success,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            AppLocalizations.of(context)!.bookNow,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : _isValid == false
+                                ? Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.error.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: AppColors.error.withValues(alpha: 0.25)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.error_outline_rounded,
+                                              color: AppColors.error, size: 16),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _errorMessage ?? AppLocalizations.of(context)!.invalidCouponCode,
+                                              style: TextStyle(
+                                                color: AppColors.error,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }

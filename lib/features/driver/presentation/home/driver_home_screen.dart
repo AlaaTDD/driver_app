@@ -15,6 +15,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/map_button.dart';
+import '../../../../core/widgets/location_permission_cta.dart';
+import '../../../../core/bloc/location_permission_cubit.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
@@ -62,6 +64,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Check location permission on init
+    context.read<LocationPermissionCubit>().check();
   }
 
   @override
@@ -87,6 +91,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     
     if (state == AppLifecycleState.resumed) {
+      // Re-check location permission when returning from Settings
+      context.read<LocationPermissionCubit>().recheck();
+
       final bloc = context.read<DriverHomeBloc>();
       if (bloc.state.isAvailable) {
         bloc.add(RefreshDriverLocation());
@@ -413,79 +420,95 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       left: 0,
       right: 0,
       child: Center(
-        child: BlocBuilder<DriverHomeBloc, DriverHomeState>(
-          builder: (context, state) {
-            final isOnline = state.isAvailable;
-            final isLoading = state.isLoading;
-            
-            return GestureDetector(
-              onTap: isLoading
-                  ? null
-                  : () {
-                      context
-                          .read<DriverHomeBloc>()
-                          .add(ToggleAvailability(!isOnline));
-                    },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.fastOutSlowIn,
-                width: 75,
-                height: 75,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: isOnline
-                        ? [
-                            const Color(0xFF10B981), 
-                            const Color(0xFF047857), 
-                          ]
-                        : [
-                            const Color(0xFFEF4444), 
-                            const Color(0xFFB91C1C), 
-                          ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    width: 3,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isOnline ? const Color(0xFF10B981) : const Color(0xFFEF4444))
-                          .withValues(alpha: 0.5),
-                      blurRadius: isOnline ? 25 : 15,
-                      spreadRadius: isOnline ? 8 : 2,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              isOnline ? Icons.sensors_rounded : Icons.power_settings_new_rounded,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              isOnline ? AppLocalizations.of(context)!.onlineStatus : AppLocalizations.of(context)!.offlineStatus,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12.5,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
+        child: BlocBuilder<LocationPermissionCubit, LocationPermissionState>(
+          builder: (context, permState) {
+            // ── Location blocked → show CTA button instead of GO ──
+            if (permState.isBlocked) {
+              return LocationPermissionCta(
+                variant: LocationCtaVariant.button,
+                onGranted: () {
+                  // Re-load driver status when permission is granted
+                  context.read<DriverHomeBloc>().add(LoadDriverStatus());
+                },
+              );
+            }
+
+            // ── Normal GO button ──
+            return BlocBuilder<DriverHomeBloc, DriverHomeState>(
+              builder: (context, state) {
+                final isOnline = state.isAvailable;
+                final isLoading = state.isLoading;
+                
+                return GestureDetector(
+                  onTap: isLoading
+                      ? null
+                      : () {
+                          context
+                              .read<DriverHomeBloc>()
+                              .add(ToggleAvailability(!isOnline));
+                        },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.fastOutSlowIn,
+                    width: 75,
+                    height: 75,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: isOnline
+                            ? [
+                                const Color(0xFF10B981), 
+                                const Color(0xFF047857), 
+                              ]
+                            : [
+                                const Color(0xFFEF4444), 
+                                const Color(0xFFB91C1C), 
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isOnline ? const Color(0xFF10B981) : const Color(0xFFEF4444))
+                              .withValues(alpha: 0.5),
+                          blurRadius: isOnline ? 25 : 15,
+                          spreadRadius: isOnline ? 8 : 2,
+                          offset: const Offset(0, 8),
                         ),
-                ),
-              ),
+                      ],
+                    ),
+                    child: Center(
+                      child: isLoading
+                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  isOnline ? Icons.sensors_rounded : Icons.power_settings_new_rounded,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  isOnline ? AppLocalizations.of(context)!.onlineStatus : AppLocalizations.of(context)!.offlineStatus,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12.5,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                );
+              },
             );
           },
         ),

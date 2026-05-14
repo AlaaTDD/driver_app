@@ -55,27 +55,6 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         }
       }
 
-      
-      List<LatLng> routePoints = const [];
-      final pickupLat = tripData['pickup_lat'];
-      final pickupLng = tripData['pickup_lng'];
-      final destLat = tripData['destination_lat'];
-      final destLng = tripData['destination_lng'];
-      if (pickupLat != null && pickupLng != null && destLat != null && destLng != null) {
-        try {
-          final result = await DirectionsService.getRoute(
-            originLat: (pickupLat as num).toDouble(),
-            originLng: (pickupLng as num).toDouble(),
-            destLat: (destLat as num).toDouble(),
-            destLng: (destLng as num).toDouble(),
-            apiKey: EnvConstants.googleMapsApiKey,
-          );
-          if (result != null) routePoints = result.points;
-        } catch (e) {
-          debugPrint('⚠️ TrackingBloc: Directions fetch failed: $e');
-        }
-      }
-
       // ─── Fetch driver's current position immediately ───────────────────────
       LatLng? initialDriverLocation;
       if (tripData['driver_id'] != null) {
@@ -97,6 +76,39 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         } catch (e) {
           debugPrint('⚠️ TrackingBloc: Failed to get initial driver position: $e');
         }
+      }
+
+      // ─── Fetch Route Points ──────────────────────────────────────────────────
+      List<LatLng> routePoints = const [];
+      final pickupLat = tripData['pickup_lat'];
+      final pickupLng = tripData['pickup_lng'];
+      final destLat = tripData['destination_lat'];
+      final destLng = tripData['destination_lng'];
+      
+      try {
+        if (tripData['status'] == 'accepted' && initialDriverLocation != null && pickupLat != null && pickupLng != null) {
+          // Driver is heading to pickup, so show route from driver to pickup
+          final result = await DirectionsService.getRoute(
+            originLat: initialDriverLocation.latitude,
+            originLng: initialDriverLocation.longitude,
+            destLat: (pickupLat as num).toDouble(),
+            destLng: (pickupLng as num).toDouble(),
+            apiKey: EnvConstants.googleMapsApiKey,
+          );
+          if (result != null) routePoints = result.points;
+        } else if (pickupLat != null && pickupLng != null && destLat != null && destLng != null) {
+          // Trip is in progress or searching, show route from pickup to destination
+          final result = await DirectionsService.getRoute(
+            originLat: (pickupLat as num).toDouble(),
+            originLng: (pickupLng as num).toDouble(),
+            destLat: (destLat as num).toDouble(),
+            destLng: (destLng as num).toDouble(),
+            apiKey: EnvConstants.googleMapsApiKey,
+          );
+          if (result != null) routePoints = result.points;
+        }
+      } catch (e) {
+        debugPrint('⚠️ TrackingBloc: Directions fetch failed: $e');
       }
       // ────────────────────────────────────────────────────────────────────────
 

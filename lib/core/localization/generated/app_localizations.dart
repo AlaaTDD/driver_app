@@ -2666,6 +2666,96 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'إرسال صورة'**
   String get sendImage;
+
+  /// No description provided for @locationDeniedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'يلزم السماح بالوصول للموقع'**
+  String get locationDeniedTitle;
+
+  /// No description provided for @locationDeniedSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'اسمح بالوصول لموقعك لعرض السائقين القريبين وحجز الرحلات'**
+  String get locationDeniedSubtitle;
+
+  /// No description provided for @locationPermanentlyDeniedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'الوصول للموقع محظور'**
+  String get locationPermanentlyDeniedTitle;
+
+  /// No description provided for @locationPermanentlyDeniedSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'افتح الإعدادات وفعّل صلاحية الموقع للمتابعة'**
+  String get locationPermanentlyDeniedSubtitle;
+
+  /// No description provided for @locationServiceDisabledTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'خدمات الموقع معطّلة'**
+  String get locationServiceDisabledTitle;
+
+  /// No description provided for @locationServiceDisabledSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'فعّل خدمات الموقع من إعدادات جهازك'**
+  String get locationServiceDisabledSubtitle;
+
+  /// No description provided for @locationEnableAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفعيل'**
+  String get locationEnableAction;
+
+  /// No description provided for @locationGoToSettings.
+  ///
+  /// In ar, this message translates to:
+  /// **'الإعدادات'**
+  String get locationGoToSettings;
+
+  /// No description provided for @locationCtaShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'الموقع'**
+  String get locationCtaShort;
+
+  /// No description provided for @platformCoveredCoupon.
+  ///
+  /// In ar, this message translates to:
+  /// **'المنصة تغطّي هذا الخصم'**
+  String get platformCoveredCoupon;
+
+  /// No description provided for @yourEarnings.
+  ///
+  /// In ar, this message translates to:
+  /// **'أرباحك'**
+  String get yourEarnings;
+
+  /// No description provided for @couponApplied.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تطبيق الكوبون بنجاح'**
+  String get couponApplied;
+
+  /// No description provided for @couponSubsidy.
+  ///
+  /// In ar, this message translates to:
+  /// **'دعم الكوبون'**
+  String get couponSubsidy;
+
+  /// No description provided for @bookNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'احجز الآن'**
+  String get bookNow;
+
+  /// No description provided for @commission.
+  ///
+  /// In ar, this message translates to:
+  /// **'العمولة'**
+  String get commission;
 }
 
 class _AppLocalizationsDelegate

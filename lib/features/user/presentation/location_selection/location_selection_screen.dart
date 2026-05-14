@@ -447,8 +447,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
             ),
 
             
-            if (_pickMode != _PickMode.none)
-              Positioned.fill(child: _buildCenterPin()),
+            Positioned.fill(
+              child: _pickMode != _PickMode.none ? _buildCenterPin() : const SizedBox.shrink(),
+            ),
 
             
             Positioned(

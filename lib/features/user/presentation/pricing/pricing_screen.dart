@@ -392,15 +392,38 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: context.elevatedColor,
+                        color: state is CouponApplied
+                            ? AppColors.success.withValues(alpha: 0.08)
+                            : context.elevatedColor,
                         borderRadius: BorderRadius.circular(12),
+                        border: state is CouponApplied
+                            ? Border.all(color: AppColors.success.withValues(alpha: 0.3))
+                            : null,
                       ),
                       child: Row(children: [
-                        const Icon(Icons.local_offer_rounded, color: AppColors.primary, size: 15),
+                        Icon(
+                          state is CouponApplied ? Icons.check_circle_rounded : Icons.local_offer_rounded,
+                          color: state is CouponApplied ? AppColors.success : AppColors.primary,
+                          size: 15,
+                        ),
                         const SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.haveDiscountCoupon, style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
-                        const Spacer(),
-                        Icon(_showCoupon ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, color: AppColors.primary, size: 20),
+                        Expanded(
+                          child: Text(
+                            state is CouponApplied
+                                ? '${AppLocalizations.of(context)!.couponApplied} — ${(state as CouponApplied).couponCode}'
+                                : AppLocalizations.of(context)!.haveDiscountCoupon,
+                            style: TextStyle(
+                              color: state is CouponApplied ? AppColors.success : AppColors.primary,
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Icon(
+                          _showCoupon ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                          color: state is CouponApplied ? AppColors.success : AppColors.primary,
+                          size: 20,
+                        ),
                       ]),
                     ),
                   ),
@@ -410,14 +433,37 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                       Expanded(
                         child: TextField(
                           controller: _couponCtrl,
-                          style: TextStyle(color: context.textPrimary, fontSize: 13),
+                          textCapitalization: TextCapitalization.characters,
+                          style: TextStyle(
+                            color: context.textPrimary, fontSize: 13,
+                            letterSpacing: 1.2, fontWeight: FontWeight.w600,
+                          ),
                           decoration: InputDecoration(
                             hintText: AppLocalizations.of(context)!.enterDiscountCode,
                             hintStyle: TextStyle(color: context.textSecondary, fontSize: 13),
                             filled: true, fillColor: context.elevatedColor,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: state is CouponApplied
+                                  ? BorderSide(color: AppColors.success.withValues(alpha: 0.5), width: 1.2)
+                                  : BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: state is CouponApplied
+                                  ? BorderSide(color: AppColors.success.withValues(alpha: 0.4), width: 1)
+                                  : BorderSide.none,
+                            ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                             isDense: true,
+                            prefixIcon: Icon(
+                              Icons.local_offer_rounded,
+                              color: state is CouponApplied ? AppColors.success : context.textSecondary,
+                              size: 15,
+                            ),
+                            suffixIcon: state is CouponApplied
+                                ? const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18)
+                                : null,
                           ),
                         ),
                       ),
@@ -430,8 +476,15 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                               context.read<PricingBloc>().add(ApplyCoupon(_couponCtrl.text, state.finalPrice));
                             }
                           },
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
-                          child: Text(AppLocalizations.of(context)!.apply, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: state is CouponApplied ? AppColors.success : AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: state is CouponApplied
+                              ? const Icon(Icons.check_rounded, size: 20)
+                              : Text(AppLocalizations.of(context)!.apply, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         ),
                       ),
                     ]),
@@ -479,7 +532,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     if (state is CouponApplied) {
       return Column(children: [
         _PriceRow(label: AppLocalizations.of(context)!.basePrice, value: state.finalPrice + state.discount),
-        _PriceRow(label: AppLocalizations.of(context)!.discount, value: -state.discount, isDiscount: true),
+        _PriceRow(label: '${AppLocalizations.of(context)!.discount} (${state.couponCode})', value: -state.discount, isDiscount: true),
         Divider(color: context.divColor, height: 16),
         _PriceRow(label: AppLocalizations.of(context)!.total, value: state.finalPrice, isTotal: true),
       ]);

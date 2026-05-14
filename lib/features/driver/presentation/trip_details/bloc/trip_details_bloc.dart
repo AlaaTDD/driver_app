@@ -147,7 +147,9 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
       } else {
         emit(TripDetailsError(result?['error']?.toString() ?? 'errorCompleteTrip'));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ CompleteTrip failed: $e');
+      debugPrint(stackTrace.toString());
       emit(TripDetailsError('errorCompleteTrip'));
     }
   }

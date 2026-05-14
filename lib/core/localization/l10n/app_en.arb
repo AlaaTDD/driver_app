@@ -595,5 +595,20 @@
   "deleteMessage": "Delete message",
   "messageDeleted": "Message deleted",
   "imageLoadError": "Failed to load image",
-  "sendImage": "Send image"
+  "sendImage": "Send image",
+  "locationDeniedTitle": "Location access required",
+  "locationDeniedSubtitle": "Allow location access to find nearby drivers and book rides",
+  "locationPermanentlyDeniedTitle": "Location access blocked",
+  "locationPermanentlyDeniedSubtitle": "Open Settings and enable location access to continue",
+  "locationServiceDisabledTitle": "Location services are off",
+  "locationServiceDisabledSubtitle": "Turn on location services from your device settings",
+  "locationEnableAction": "Enable",
+  "locationGoToSettings": "Settings",
+  "locationCtaShort": "Location",
+  "platformCoveredCoupon": "Platform covered this discount",
+  "yourEarnings": "Your Earnings",
+  "couponApplied": "Coupon applied successfully",
+  "couponSubsidy": "Coupon Subsidy",
+  "bookNow": "Book Now",
+  "commission": "Commission"
 }

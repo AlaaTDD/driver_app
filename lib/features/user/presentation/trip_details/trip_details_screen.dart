@@ -109,12 +109,12 @@ class _ScreenState extends State<UserTripDetailsScreen>
     return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
   }
 
-  void _load() {
+  void _load({bool silent = false}) {
     _loadCircleIcons();
     _animationTriggered = false;
     _routeFetchRequested = false;
     _routePoints = [];
-    context.read<TripsBloc>().add(LoadTripDetails(widget.tripId));
+    context.read<TripsBloc>().add(LoadTripDetails(widget.tripId, silent: silent));
   }
 
   Future<void> _fetchRoute(
@@ -152,7 +152,14 @@ class _ScreenState extends State<UserTripDetailsScreen>
           listener: (ctx, state) {
             if (state is TripActionSuccess) {
               _toast(ctx, state.message, ok: true);
-              _load();
+              // Defer the reload to the next frame.  Calling _load() (which
+              // dispatches LoadTripDetails → emit TripDetailsLoading) synchronously
+              // inside the listener causes a second widget-tree swap in the same
+              // frame, dirtying semantics parentData and crashing with
+              // `!semantics.parentDataDirty`.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _load(silent: true);
+              });
             } else if (state is TripsError) {
               _toast(ctx, state.message, ok: false);
             } else if (state is TripDetailsLoaded) {
@@ -172,6 +179,12 @@ class _ScreenState extends State<UserTripDetailsScreen>
               return _body(state.trip);
             }
             if (state is TripsError) return _errorView(state.message);
+            // TripActionSuccess (and any other transient state) must NOT switch
+            // to _skeleton().  Swapping _body() → _skeleton() while _pulseCtrl
+            // and _shimCtrl are both repeating dirties semantics parentData in
+            // the same frame, causing `!semantics.parentDataDirty` crash.
+            // Keep showing the last known body using the cached _trip.
+            if (_trip != null) return _body(_trip!);
             return _skeleton();
           },
         ),
@@ -202,11 +215,12 @@ class _ScreenState extends State<UserTripDetailsScreen>
   // SKELETON
   // ══════════════════════════════════════════════════════════
   Widget _skeleton() {
-    return AnimatedBuilder(
-      animation: _shimCtrl,
-      builder: (_, __) {
-        final t = (_shimCtrl.value * 2 - 1).abs();
-        Color sh(Color b) => Color.lerp(b, _C.elevated, t)!;
+    return ExcludeSemantics(
+      child: AnimatedBuilder(
+        animation: _shimCtrl,
+        builder: (_, __) {
+          final t = (_shimCtrl.value * 2 - 1).abs();
+          Color sh(Color b) => Color.lerp(b, _C.elevated, t)!;
         return Column(children: [
           Container(
               height: MediaQuery.of(context).size.height * 0.45,
@@ -232,7 +246,8 @@ class _ScreenState extends State<UserTripDetailsScreen>
             ),
           ),
         ]);
-      },
+        },
+      ),
     );
   }
 
@@ -301,17 +316,14 @@ class _ScreenState extends State<UserTripDetailsScreen>
 
     return Stack(children: [
       // ── [1] Full-bleed map behind everything
-      if (pLat != null && pLng != null && pLat != 0.0 && pLng != 0.0)
-        Positioned.fill(
-          child: _buildMap(pLat, pLng, dLat, dLng, screenH - mapH),
-        )
-      else
-        Positioned.fill(
-          child: Container(
+      Positioned.fill(
+        child: (pLat != null && pLng != null && pLat != 0.0 && pLng != 0.0)
+          ? _buildMap(pLat, pLng, dLat, dLng, screenH - mapH)
+          : Container(
               color: _C.card,
               child: const Center(
                   child: Icon(Icons.map_outlined, color: _C.t3, size: 64))),
-        ),
+      ),
 
       // ── [2] Header (Back, Status, Refresh)
       Positioned(
@@ -338,22 +350,21 @@ class _ScreenState extends State<UserTripDetailsScreen>
       ),
 
       // ── [3.5] My Location button
-      if (pLat != null && pLng != null)
-        Positioned.directional(
-          textDirection: Directionality.of(context),
-          top: mapH - 70,
-          end: 14,
-          child: _MapCircleBtn(
-            icon: Icons.my_location_rounded,
-            onTap: () {
-              if (_mapCtrl != null) {
-                _mapCtrl!.animateCamera(CameraUpdate.newCameraPosition(
-                  CameraPosition(target: LatLng(pLat, pLng), zoom: 16),
-                ));
-              }
-            },
-          ),
-        ),
+      Positioned.directional(
+        textDirection: Directionality.of(context),
+        top: mapH - 70,
+        end: 14,
+        child: (pLat != null && pLng != null) ? _MapCircleBtn(
+          icon: Icons.my_location_rounded,
+          onTap: () {
+            if (_mapCtrl != null) {
+              _mapCtrl!.animateCamera(CameraUpdate.newCameraPosition(
+                CameraPosition(target: LatLng(pLat, pLng), zoom: 16),
+              ));
+            }
+          },
+        ) : const SizedBox.shrink(),
+      ),
 
       // ── [4] Bottom sheet slides up over map
       Positioned(
@@ -439,11 +450,12 @@ class _ScreenState extends State<UserTripDetailsScreen>
       ),
 
       // ── [5] Sticky action bar pinned at bottom
-      if (canCancel || canRate || canComplain)
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: 0,
+        child: Offstage(
+          offstage: !(canCancel || canRate || canComplain),
           child: FadeTransition(
             opacity: _fadeAnim,
             child: _ActionBar(
@@ -457,6 +469,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
             ),
           ),
         ),
+      ),
     ]);
   }
 
@@ -561,14 +574,17 @@ class _ScreenState extends State<UserTripDetailsScreen>
     final label = _statusLabel(status);
     final live = status == 'in_progress' || status == 'searching';
 
-    return AnimatedBuilder(
-      animation: _pulseAnim,
-      builder: (_, child) => Transform.scale(
-        scale: live ? (0.97 + 0.03 * _pulseAnim.value) : 1.0,
-        child: child,
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _pulseAnim,
+          builder: (_, child) => Transform.scale(
+            scale: live ? (0.97 + 0.03 * _pulseAnim.value) : 1.0,
+            child: child,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         decoration: BoxDecoration(
           color: _C.sheet.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(32),
@@ -610,15 +626,18 @@ class _ScreenState extends State<UserTripDetailsScreen>
                   letterSpacing: 0.2)),
         ]),
       ),
+      ),
+      ),
     );
   }
 
   // ── Dialogs ────────────────────────────────────────────────────────────────
   void _cancelDialog(String tripId) {
     final l = AppLocalizations.of(context)!;
+    final bloc = context.read<TripsBloc>();
     showDialog(
       context: context,
-      builder: (_) => _NightDialog(
+      builder: (dialogCtx) => _NightDialog(
         icon: Icons.warning_amber_rounded,
         iconColor: _C.rose,
         title: l.cancelTrip,
@@ -627,8 +646,8 @@ class _ScreenState extends State<UserTripDetailsScreen>
         confirmColor: _C.rose,
         cancelLabel: l.noLabel,
         onConfirm: () {
-          context.pop();
-          context.read<TripsBloc>().add(CancelUserTrip(tripId));
+          Navigator.of(dialogCtx).pop();
+          bloc.add(CancelUserTrip(tripId));
         },
       ),
     );
@@ -639,9 +658,10 @@ class _ScreenState extends State<UserTripDetailsScreen>
     final tCtrl = TextEditingController();
     final dCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    final bloc = context.read<TripsBloc>();
     showDialog(
       context: context,
-      builder: (_) => Dialog(
+      builder: (dialogCtx) => Dialog(
         backgroundColor: _C.card,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
@@ -684,7 +704,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
             const SizedBox(height: 20),
             Row(children: [
               TextButton(
-                onPressed: () => context.pop(),
+                onPressed: () => Navigator.of(dialogCtx).pop(),
                 child: Text(l.cancel,
                     style: const TextStyle(
                         color: _C.t2, fontWeight: FontWeight.w600)),
@@ -697,8 +717,8 @@ class _ScreenState extends State<UserTripDetailsScreen>
                   compact: true,
                   onTap: () {
                     if (formKey.currentState?.validate() == true) {
-                      context.pop();
-                      context.read<TripsBloc>().add(SubmitTripComplaint(
+                      Navigator.of(dialogCtx).pop();
+                      bloc.add(SubmitTripComplaint(
                           tripId: tripId,
                           title: tCtrl.text,
                           description: dCtrl.text));
@@ -1493,6 +1513,9 @@ class _Btn extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: compact ? 44 : 50,
+          padding: compact
+              ? const EdgeInsets.symmetric(horizontal: 20)
+              : null,
           decoration: BoxDecoration(
             gradient: outlined
                 ? null
@@ -1514,18 +1537,21 @@ class _Btn extends StatelessWidget {
                         offset: const Offset(0, 4))
                   ],
           ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, color: outlined ? color : Colors.white, size: 17),
-            const SizedBox(width: 7),
-            Flexible(
-                child: Text(label,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: outlined ? color : Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ))),
-          ]),
+          child: Row(
+            mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: outlined ? color : Colors.white, size: 17),
+              const SizedBox(width: 7),
+              Text(label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: outlined ? color : Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  )),
+            ],
+          ),
         ),
       );
 }
@@ -1581,7 +1607,7 @@ class _NightDialog extends StatelessWidget {
                 const SizedBox(height: 24),
                 Row(children: [
                   TextButton(
-                    onPressed: () => context.pop(),
+                    onPressed: () => Navigator.of(context).pop(),
                     child: Text(cancelLabel,
                         style: const TextStyle(
                             color: _C.t2, fontWeight: FontWeight.w600)),

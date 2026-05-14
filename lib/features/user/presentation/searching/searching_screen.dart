@@ -244,29 +244,33 @@ class _SearchingScreenState extends State<SearchingScreen>
             alignment: Alignment.center,
             children: [
               
-              AnimatedBuilder(
-                animation: _pulseAnim,
-                builder: (_, __) => Transform.scale(
-                  scale: _pulseAnim.value,
-                  child: Container(
-                    width: 110, height: 110,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.12), width: 2),
+              ExcludeSemantics(
+                child: AnimatedBuilder(
+                  animation: _pulseAnim,
+                  builder: (_, __) => Transform.scale(
+                    scale: _pulseAnim.value,
+                    child: Container(
+                      width: 110, height: 110,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12), width: 2),
+                      ),
                     ),
                   ),
                 ),
               ),
               
-              AnimatedBuilder(
-                animation: _pulseAnim,
-                builder: (_, __) => Transform.scale(
-                  scale: 2 - _pulseAnim.value,
-                  child: Container(
-                    width: 85, height: 85,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.22), width: 2),
+              ExcludeSemantics(
+                child: AnimatedBuilder(
+                  animation: _pulseAnim,
+                  builder: (_, __) => Transform.scale(
+                    scale: 2 - _pulseAnim.value,
+                    child: Container(
+                      width: 85, height: 85,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.22), width: 2),
+                      ),
                     ),
                   ),
                 ),

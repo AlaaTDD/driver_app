@@ -1360,4 +1360,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendImage => 'Send image';
+
+  @override
+  String get locationDeniedTitle => 'Location access required';
+
+  @override
+  String get locationDeniedSubtitle =>
+      'Allow location access to find nearby drivers and book rides';
+
+  @override
+  String get locationPermanentlyDeniedTitle => 'Location access blocked';
+
+  @override
+  String get locationPermanentlyDeniedSubtitle =>
+      'Open Settings and enable location access to continue';
+
+  @override
+  String get locationServiceDisabledTitle => 'Location services are off';
+
+  @override
+  String get locationServiceDisabledSubtitle =>
+      'Turn on location services from your device settings';
+
+  @override
+  String get locationEnableAction => 'Enable';
+
+  @override
+  String get locationGoToSettings => 'Settings';
+
+  @override
+  String get locationCtaShort => 'Location';
+
+  @override
+  String get platformCoveredCoupon => 'Platform covered this discount';
+
+  @override
+  String get yourEarnings => 'Your Earnings';
+
+  @override
+  String get couponApplied => 'Coupon applied successfully';
+
+  @override
+  String get couponSubsidy => 'Coupon Subsidy';
+
+  @override
+  String get bookNow => 'Book Now';
+
+  @override
+  String get commission => 'Commission';
 }

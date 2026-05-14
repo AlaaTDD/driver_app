@@ -39,7 +39,9 @@ class TripCard extends StatelessWidget {
     final l = AppLocalizations.of(context)!;
     final status = trip['status'] as String?;
     final distance = (trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0';
-    final price = (trip['price'] as num?)?.toStringAsFixed(0) ?? '0';
+    final price = (trip['price'] as num?)?.toDouble() ?? 0;
+    final couponDiscount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
+    final displayPrice = (trip['final_price'] as num?)?.toDouble() ?? price;
     final pickup = trip['pickup_address'] as String? ?? trip['meeting_address'] as String? ?? '';
     final dest = trip['destination_address'] as String? ?? '';
     final time = _formatTime(trip['created_at'] as String?);
@@ -168,6 +170,24 @@ class TripCard extends StatelessWidget {
                           style: const TextStyle(color: _t2, fontSize: 11, fontWeight: FontWeight.w600)),
                       ]),
                     ),
+                    // Coupon discount badge (if applicable)
+                    if (couponDiscount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _violet.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _violet.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.local_offer_rounded, size: 10, color: _violet),
+                          const SizedBox(width: 3),
+                          Text('-${couponDiscount.toStringAsFixed(0)}',
+                            style: const TextStyle(color: _violet, fontSize: 10, fontWeight: FontWeight.w700)),
+                        ]),
+                      ),
+                    ],
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -179,7 +199,7 @@ class TripCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))],
                       ),
-                      child: Text('$price ${l.currencySar}',
+                      child: Text('${displayPrice.toStringAsFixed(0)} ${l.currencySar}',
                         style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
                     ),
                   ]),

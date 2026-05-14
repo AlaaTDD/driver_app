@@ -184,6 +184,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
         final targetLng = (state.trip[isHeadingToDest ? 'destination_lng' : 'pickup_lng'] as num?)?.toDouble();
         
         if (targetLat != null && targetLng != null && targetLat != 0.0 && targetLng != 0.0) {
+          if ((lat - targetLat).abs() < 0.0001 && (lng - targetLng).abs() < 0.0001) {
+            await _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 17));
+            return;
+          }
+
           final bounds = LatLngBounds(
             southwest: LatLng(math.min(lat, targetLat), math.min(lng, targetLng)),
             northeast: LatLng(math.max(lat, targetLat), math.max(lng, targetLng)),
@@ -199,6 +204,25 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     } catch (e) {
       debugPrint('⚠️ TrackingScreen: animateCamera failed: $e');
     }
+  }
+
+  // ─── Simulator route command printer ────────────────────────────────────
+  bool _routeCommandPrinted = false;
+
+  void _printSimulatorRouteCommand(List<LatLng> routePoints) {
+    if (_routeCommandPrinted || routePoints.isEmpty) return;
+    _routeCommandPrinted = true;
+
+    final deviceId = '4974EF7A-D797-4988-947C-C06ED3D50A7E'; // ← replace with your simulator UDID
+    final buffer = StringBuffer();
+    buffer.write('xcrun simctl location $deviceId start --speed=50 --interval=1');
+
+    for (final point in routePoints) {
+      buffer.write(' ${point.latitude},${point.longitude}');
+    }
+
+    // Use print() — single line, no truncation, no "flutter:" splitting
+    print(buffer.toString());
   }
 
   // ── color tokens (matches trip_details) ─────────────────────────────────
@@ -222,15 +246,36 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
       child: BlocListener<TrackingBloc, TrackingState>(
         listener: (context, state) {
           if (state is TrackingLoaded) {
-            final loc = state.driverLocation;
-            if (loc != null) {
-              _animateTo(loc.latitude, loc.longitude);
-              _updateDriverPosition(LatLng(loc.latitude, loc.longitude));
+            final tripStatus = state.trip['status'] as String?;
+
+            // ─── Print xcrun simctl location command for route simulation ───
+            _printSimulatorRouteCommand(state.routePoints);
+
+            // Only update map/marker when we are NOT about to navigate away.
+            // Updating _driverMarkerNotifier (ValueNotifier) marks semantics
+            // parentData dirty; if we immediately call context.go() in the
+            // same frame the widget tree is torn down before Flutter can flush
+            // semantics, triggering `!semantics.parentDataDirty` assertion.
+            if (tripStatus != 'completed' && tripStatus != 'cancelled') {
+              final loc = state.driverLocation;
+              if (loc != null) {
+                _animateTo(loc.latitude, loc.longitude);
+                _updateDriverPosition(LatLng(loc.latitude, loc.longitude));
+              }
             }
-            if (state.trip['status'] == 'completed') {
-              context.go('${AppRoutes.userRating}?tripId=${state.trip['id']}');
-            } else if (state.trip['status'] == 'cancelled') {
-              context.go(AppRoutes.userHome);
+
+            if (tripStatus == 'completed') {
+              // Defer navigation to after the current frame so Flutter can
+              // finish semantics flush on the existing tree first.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  context.go('${AppRoutes.userRating}?tripId=${state.trip['id']}');
+                }
+              });
+            } else if (tripStatus == 'cancelled') {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) context.go(AppRoutes.userHome);
+              });
             }
           }
         },
@@ -361,39 +406,41 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     return Stack(children: [
       // Full-bleed map
       Positioned.fill(
-        child: ValueListenableBuilder<Marker?>(
-          valueListenable: _driverMarkerNotifier,
-          builder: (context, driverMarker, _) {
-            final allMarkers = Set<Marker>.from(staticMarkers);
-            if (driverMarker != null) allMarkers.add(driverMarker);
-            return Stack(fit: StackFit.expand, children: [
-              GoogleMap(
-                initialCameraPosition: _defaultCamera,
-                onMapCreated: (ctrl) { _mapController = ctrl; _fitBounds(ctrl, state); },
-                myLocationEnabled: false,
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                compassEnabled: false,
-                mapToolbarEnabled: false,
-                minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 70,
-                  bottom: (screenH - mapH) + 20,
-                ),
-                markers: allMarkers,
-                polylines: polylines,
-                style: kDarkMapStyle,
-              ),
-              Positioned(bottom: 0, left: 0, right: 0, height: 80,
-                child: DecoratedBox(decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.transparent, _bg.withValues(alpha: 0.88)],
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        child: Stack(fit: StackFit.expand, children: [
+          ExcludeSemantics(
+            child: ValueListenableBuilder<Marker?>(
+              valueListenable: _driverMarkerNotifier,
+              builder: (context, driverMarker, _) {
+                final allMarkers = Set<Marker>.from(staticMarkers);
+                if (driverMarker != null) allMarkers.add(driverMarker);
+                return GoogleMap(
+                  initialCameraPosition: _defaultCamera,
+                  onMapCreated: (ctrl) { _mapController = ctrl; _fitBounds(ctrl, state); },
+                  myLocationEnabled: false,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassEnabled: false,
+                  mapToolbarEnabled: false,
+                  minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 70,
+                    bottom: (screenH - mapH) + 20,
                   ),
-                ))),
-            ]);
-          },
-        ),
+                  markers: allMarkers,
+                  polylines: polylines,
+                  style: kDarkMapStyle,
+                );
+              },
+            ),
+          ),
+          Positioned(bottom: 0, left: 0, right: 0, height: 80,
+            child: DecoratedBox(decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.transparent, _bg.withValues(alpha: 0.88)],
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              ),
+            ))),
+        ]),
       ),
 
       // Header
@@ -413,7 +460,10 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                 Expanded(
                   child: Center(child: _statusPill(tripStatus, l)),
                 ),
-                const SizedBox(width: 42), // Balance the row
+                _MapBtn(
+                  icon: Icons.refresh_rounded,
+                  onTap: () => context.read<TrackingBloc>().add(LoadTripTracking(widget.tripId)),
+                ),
               ],
             ),
           ),
@@ -461,9 +511,12 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                 ],
                 _buildRouteCard(context, state.trip, l),
                 const SizedBox(height: 12),
+                // Trip stats row
+                _buildTripStatsRow(context, state.trip, l),
+                const SizedBox(height: 12),
                 if (tripStatus != 'completed' && tripStatus != 'cancelled')
                   GestureDetector(
-                    onTap: () => context.read<TrackingBloc>().add(CancelTrip(widget.tripId)),
+                    onTap: () => _showCancelDialog(context, widget.tripId, l),
                     child: Container(
                       height: 50,
                       decoration: BoxDecoration(
@@ -520,45 +573,36 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
   Widget _buildRouteCard(BuildContext context, Map<String, dynamic> trip, AppLocalizations l) {
     final pickup = trip['meeting_address'] ?? trip['pickup_address'] ?? '';
     final dest = trip['destination_address'] ?? '';
-    final price = trip['price'];
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: _card, borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _border, width: 1),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(width: 9, height: 9, decoration: BoxDecoration(
-            shape: BoxShape.circle, color: _emerald,
-            boxShadow: [BoxShadow(color: _emerald.withValues(alpha: 0.5), blurRadius: 6)])),
-          const SizedBox(width: 8),
-          Expanded(child: Text(pickup.isEmpty ? '---' : pickup,
-            style: const TextStyle(color: _t1, fontSize: 13, fontWeight: FontWeight.w600),
-            maxLines: 1, overflow: TextOverflow.ellipsis)),
-        ]),
-        Padding(padding: const EdgeInsets.fromLTRB(4, 6, 0, 6),
-          child: Container(width: 1, height: 18, color: _border)),
-        Row(children: [
-          Container(width: 9, height: 9, decoration: BoxDecoration(
-            shape: BoxShape.circle, color: _blue,
-            boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.4), blurRadius: 6)])),
-          const SizedBox(width: 8),
-          Expanded(child: Text(dest.isEmpty ? '---' : dest,
-            style: const TextStyle(color: _t1, fontSize: 13, fontWeight: FontWeight.w600),
-            maxLines: 1, overflow: TextOverflow.ellipsis)),
-        ]),
-        if (price != null) ...[
-          const SizedBox(height: 12),
-          Container(height: 1, color: _border),
-          const SizedBox(height: 12),
-          Row(children: [
-            const Icon(Icons.payments_rounded, color: _amber, size: 16),
-            const SizedBox(width: 8),
-            Text('$price ${l.currencySar}',
-              style: const TextStyle(color: _t1, fontSize: 14, fontWeight: FontWeight.w700)),
-          ]),
-        ],
+      child: Row(children: [
+        // Destination (left side)
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(l.destination.toUpperCase(),
+            style: const TextStyle(color: _blue, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+          const SizedBox(height: 6),
+          Text(dest.isEmpty ? '---' : dest,
+            style: const TextStyle(color: _t1, fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
+            maxLines: 2, overflow: TextOverflow.ellipsis),
+        ])),
+        // Arrow
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: const Icon(Icons.arrow_back_rounded, color: _t3, size: 16),
+        ),
+        // Pickup (right side)
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(l.meetingPointLabel.toUpperCase(),
+            style: const TextStyle(color: _emerald, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+          const SizedBox(height: 6),
+          Text(pickup.isEmpty ? '---' : pickup,
+            style: const TextStyle(color: _t1, fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
+            maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end),
+        ])),
       ]),
     );
   }
@@ -570,6 +614,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     final rating = driver['rating']?.toString() ?? '0.0';
     final plate = driver['vehicle_plate'] as String? ?? '';
     final driverId = driver['id'] as String?;
+    final phone = driver['phone'] as String?;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -578,6 +623,40 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
         border: Border.all(color: _border, width: 1),
       ),
       child: Row(children: [
+        // Location center button
+        _buildActionIcon(Icons.my_location_rounded, _amber, () {
+          if (_mapController != null && state.driverLocation != null) {
+            _mapController!.animateCamera(CameraUpdate.newCameraPosition(
+              CameraPosition(target: state.driverLocation!, zoom: 16),
+            ));
+          }
+        }),
+        // Phone button
+        if (phone != null) ...[
+          const SizedBox(width: 8),
+          _buildActionIcon(Icons.phone_rounded, _emerald, () {}),
+        ],
+        // Chat button
+        const SizedBox(width: 8),
+        _buildActionIcon(Icons.chat_bubble_rounded, _blue, () {
+          if (tripId != null && tripId.isNotEmpty && driverId != null) {
+            context.push('${AppRoutes.userMessages}?tripId=$tripId&otherUserId=$driverId&otherUserName=${Uri.encodeComponent(name)}');
+          } else {
+            context.push(AppRoutes.userMessages);
+          }
+        }),
+        const SizedBox(width: 12),
+        // Name + meta
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(name, style: const TextStyle(color: _t1, fontSize: 14, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            const Icon(Icons.star_rounded, color: _amber, size: 13),
+            const SizedBox(width: 3),
+            Text(rating, style: const TextStyle(color: _amber, fontSize: 11, fontWeight: FontWeight.w700)),
+          ]),
+        ])),
+        const SizedBox(width: 12),
         // Avatar
         Stack(children: [
           Container(
@@ -605,46 +684,270 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                 color: _emerald, shape: BoxShape.circle,
                 border: Border.all(color: _card, width: 2)))),
         ]),
-        const SizedBox(width: 12),
-        // Name + meta
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name, style: const TextStyle(color: _t1, fontSize: 14, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Row(children: [
-            const Icon(Icons.star_rounded, color: _amber, size: 13),
-            const SizedBox(width: 3),
-            Text(rating, style: const TextStyle(color: _amber, fontSize: 11, fontWeight: FontWeight.w700)),
-            if (plate.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _elevated, borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: _border)),
-                child: Text(plate, style: const TextStyle(
-                  color: _t2, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
-              ),
-            ],
-          ]),
-        ])),
-        // Chat button
-        GestureDetector(
-          onTap: () {
-            if (tripId != null && tripId.isNotEmpty && driverId != null) {
-              context.push('${AppRoutes.userMessages}?tripId=$tripId&otherUserId=$driverId&otherUserName=${Uri.encodeComponent(name)}');
-            } else {
-              context.push(AppRoutes.userMessages);
-            }
-          },
-          child: Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: _blue.withValues(alpha: 0.1), shape: BoxShape.circle,
-              border: Border.all(color: _blue.withValues(alpha: 0.25), width: 1)),
-            child: const Icon(Icons.chat_bubble_rounded, color: _blue, size: 16)),
-        ),
       ]),
     );
+  }
+
+  Widget _buildActionIcon(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1), shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.25), width: 1)),
+        child: Icon(icon, color: color, size: 16),
+      ),
+    );
+  }
+
+  void _showCancelDialog(BuildContext ctx, String tripId, AppLocalizations l) {
+    final bloc = ctx.read<TrackingBloc>();
+    showDialog(
+      context: ctx,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _rose.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _rose.withValues(alpha: 0.25)),
+                  ),
+                  child: const Icon(Icons.warning_amber_rounded, color: _rose, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Text(l.cancelTrip,
+                  style: const TextStyle(color: _t1, fontSize: 17, fontWeight: FontWeight.w800)),
+              ]),
+              const SizedBox(height: 14),
+              Text(l.areYouSureCancelTrip,
+                style: const TextStyle(color: _t2, fontSize: 14, height: 1.6)),
+              const SizedBox(height: 24),
+              Row(children: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: Text(l.noLabel,
+                    style: const TextStyle(color: _t2, fontWeight: FontWeight.w600)),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(dialogCtx).pop();
+                    bloc.add(CancelTrip(tripId));
+                  },
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [_rose, _rose.withValues(alpha: 0.75)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(color: _rose.withValues(alpha: 0.26), blurRadius: 12, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.check_rounded, color: Colors.white, size: 17),
+                      const SizedBox(width: 7),
+                      Text(l.yesCancel, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTripStatsRow(BuildContext context, Map<String, dynamic> trip, AppLocalizations l) {
+    final dist = (trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0';
+    final price = (trip['price'] as num?)?.toDouble() ?? 0;
+    final couponDiscount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
+    final finalPrice = (trip['final_price'] as num?)?.toDouble() ?? price;
+    final hasCoupon = couponDiscount > 0;
+    final vType = trip['vehicle_type'] as String? ?? 'car';
+    final pay = trip['payment_method'] as String? ?? 'cash';
+    final isPaid = trip['is_paid'] as bool? ?? false;
+
+    final vName = switch (vType) {
+      'sedan' => l.sedan,
+      'suv' => l.suv,
+      'van' => l.van,
+      'minibus' => l.minibus,
+      'motorcycle' => l.motorcycle,
+      _ => l.car,
+    };
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Price card
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _border, width: 1),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(l.fareDetails.toUpperCase(),
+                  style: const TextStyle(color: _t3, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                const SizedBox(height: 8),
+
+                // ── Price display (coupon-aware) ──
+                if (hasCoupon) ...[
+                  // Original price with strikethrough
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${price.toStringAsFixed(0)} ${l.currencySar}',
+                      style: const TextStyle(
+                        color: _t3,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.lineThrough,
+                        decorationColor: _t3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // Final price (large)
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(finalPrice.toStringAsFixed(0),
+                          style: const TextStyle(color: _t1, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -2, height: 1)),
+                        const SizedBox(width: 4),
+                        Text(l.currencySar,
+                          style: const TextStyle(color: _t2, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Coupon discount badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.25)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.local_offer_rounded, color: Color(0xFF8B5CF6), size: 11),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          '-${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
+                          style: const TextStyle(color: Color(0xFF8B5CF6), fontSize: 10, fontWeight: FontWeight.w700),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ]),
+                  ),
+                ] else ...[
+                  // Normal price (no coupon)
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(price.toStringAsFixed(0),
+                          style: const TextStyle(color: _t1, fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -2, height: 1)),
+                        const SizedBox(width: 4),
+                        Text(l.currencySar,
+                          style: const TextStyle(color: _t2, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isPaid ? _emerald.withValues(alpha: 0.1) : _amber.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: isPaid ? _emerald.withValues(alpha: 0.28) : _amber.withValues(alpha: 0.28)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(width: 6, height: 6,
+                      decoration: BoxDecoration(color: isPaid ? _emerald : _amber, shape: BoxShape.circle)),
+                    const SizedBox(width: 5),
+                    Text(isPaid ? l.paid : l.unpaid,
+                      style: TextStyle(color: isPaid ? _emerald : _amber, fontSize: 10, fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Stats card
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _border, width: 1),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(l.tripDetails.toUpperCase(),
+                  style: const TextStyle(color: _t3, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                const SizedBox(height: 12),
+                _buildStatItem(Icons.straighten_rounded, _blue, '$dist ${l.km}'),
+                const SizedBox(height: 8),
+                _buildStatItem(Icons.directions_car_rounded, const Color(0xFF8B5CF6), vName),
+                const SizedBox(height: 8),
+                _buildStatItem(
+                  pay == 'cash' ? Icons.payments_rounded : Icons.credit_card_rounded,
+                  _amber,
+                  pay == 'cash' ? l.cash : l.bankCard,
+                ),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, Color color, String label) {
+    return Row(children: [
+      Container(
+        width: 26, height: 26,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Icon(icon, color: color, size: 13),
+      ),
+      const SizedBox(width: 8),
+      Flexible(child: Text(label,
+        style: const TextStyle(color: _t1, fontSize: 11, fontWeight: FontWeight.w600))),
+    ]);
   }
 
   void _fitBounds(GoogleMapController ctrl, TrackingLoaded state) {

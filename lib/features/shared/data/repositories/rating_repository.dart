@@ -10,7 +10,7 @@ class RatingRepository {
     try {
       return await _client
           .from('trips')
-          .select('driver_id, user_rating_to_driver')
+          .select('user_id, driver_id, user_rating_to_driver, driver_rating_to_user')
           .eq('id', tripId)
           .single();
     } catch (e) {
@@ -20,18 +20,40 @@ class RatingRepository {
   }
 
   /// Check if the current user has already rated this trip
-  Future<bool> hasExistingRating(String tripId, String userId) async {
+  Future<bool> hasExistingRating(String tripId, String currentUserId, String tripUserId, String tripDriverId) async {
+    final isDriver = currentUserId == tripDriverId;
     try {
-      final existing = await _client
-          .from('ratings')
-          .select('id')
-          .eq('trip_id', tripId)
-          .eq('user_id', userId)
-          .maybeSingle();
-      return existing != null;
+      if (isDriver) {
+        final existing = await _client
+            .from('user_ratings')
+            .select('id')
+            .eq('trip_id', tripId)
+            .eq('driver_id', currentUserId)
+            .maybeSingle();
+        return existing != null;
+      } else {
+        final existing = await _client
+            .from('ratings')
+            .select('id')
+            .eq('trip_id', tripId)
+            .eq('user_id', currentUserId)
+            .maybeSingle();
+        return existing != null;
+      }
     } catch (e) {
-      debugPrint('❌ RatingRepository: Failed to check existing rating: $e');
-      return false;
+      debugPrint('⚠️ RatingRepository: Failed to check existing rating table: $e');
+      // Fallback to checking the trips table directly if the ratings tables fail or don't exist
+      try {
+        final trip = await getTripData(tripId);
+        if (trip == null) return false;
+        if (isDriver) {
+          return trip['driver_rating_to_user'] != null;
+        } else {
+          return trip['user_rating_to_driver'] != null;
+        }
+      } catch (e2) {
+        return false;
+      }
     }
   }
 
@@ -41,29 +63,54 @@ class RatingRepository {
   /// 2. Marks `trips.user_rating_to_driver` so we know rating was submitted.
   Future<void> submitRating({
     required String tripId,
-    required String userId,
-    required String driverId,
+    required String currentUserId,
+    required String tripUserId,
+    required String tripDriverId,
     required int rating,
     String? comment,
   }) async {
-    // Step 1: Insert into ratings — DB trigger auto-recalculates driver's average rating
-    await _client.from('ratings').insert({
-      'trip_id': tripId,
-      'user_id': userId,
-      'driver_id': driverId,
-      'rating': rating,
-      if (comment != null && comment.isNotEmpty) 'comment': comment,
-    });
+    final isDriver = currentUserId == tripDriverId;
 
-    // Step 2: Mark the trip so UI knows a rating was submitted for this trip
-    try {
-      await _client
-          .from('trips')
-          .update({'user_rating_to_driver': rating})
-          .eq('id', tripId);
-    } catch (e) {
-      // Non-critical: rating was already submitted, just trip mark failed
-      debugPrint('⚠️ RatingRepository: Could not mark trip rating field: $e');
+    if (isDriver) {
+      // Driver is rating the user
+      try {
+        await _client.from('user_ratings').insert({
+          'trip_id': tripId,
+          'driver_id': currentUserId,
+          'user_id': tripUserId,
+          'rating': rating,
+          if (comment != null && comment.isNotEmpty) 'comment': comment,
+        });
+      } catch (e) {
+        debugPrint('⚠️ RatingRepository: Could not insert into user_ratings (table might not exist): $e');
+      }
+
+      try {
+        await _client
+            .from('trips')
+            .update({'driver_rating_to_user': rating})
+            .eq('id', tripId);
+      } catch (e) {
+        debugPrint('⚠️ RatingRepository: Could not mark trip driver_rating_to_user field: $e');
+      }
+    } else {
+      // User is rating the driver
+      await _client.from('ratings').insert({
+        'trip_id': tripId,
+        'user_id': currentUserId,
+        'driver_id': tripDriverId,
+        'rating': rating,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      });
+
+      try {
+        await _client
+            .from('trips')
+            .update({'user_rating_to_driver': rating})
+            .eq('id', tripId);
+      } catch (e) {
+        debugPrint('⚠️ RatingRepository: Could not mark trip user_rating_to_driver field: $e');
+      }
     }
   }
 }

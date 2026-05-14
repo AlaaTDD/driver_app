@@ -149,31 +149,36 @@ class WalletCubit extends Cubit<WalletState> {
   void watchWallet(String driverId) {
     _walletSub?.cancel();
     _walletSub = _repo.watchDriverWallet(driverId).listen((newWallet) async {
-      if (newWallet != null && state is WalletLoaded) {
-        final currentWallet = (state as WalletLoaded).wallet;
-        
-        // Preserve summary stats from currentWallet since real-time stream (from driver_wallets) 
-        // doesn't have earningsThisWeek, earningsLast30Days, and completedTrips
-        final mergedWallet = newWallet.copyWith(
-          earningsLastWeek: currentWallet.earningsLastWeek,
-          earningsLast30Days: currentWallet.earningsLast30Days,
-          completedTrips: currentWallet.completedTrips,
-        );
+      if (isClosed || newWallet == null || state is! WalletLoaded) return;
+      
+      final currentState = state as WalletLoaded;
+      final currentWallet = currentState.wallet;
+      
+      // Preserve summary-only fields that the real-time stream (driver_wallets table) doesn't have.
+      // Core financial fields (balance, totalEarned, totalWithdrawn, pendingWithdrawal) 
+      // come from the stream and are correctly mapped by fromJson.
+      final mergedWallet = newWallet.copyWith(
+        earningsLastWeek: currentWallet.earningsLastWeek,
+        earningsLast30Days: currentWallet.earningsLast30Days,
+        completedTrips: currentWallet.completedTrips,
+      );
 
-        emit((state as WalletLoaded).copyWith(wallet: mergedWallet));
-        
-        // Also fetch latest transactions and withdrawals since the balance changed
-        try {
-          final transactions = await _repo.getTransactionHistory(userId: driverId, walletType: 'driver', limit: 30);
-          final withdrawals = await _repo.getWithdrawalRequests(driverId);
-          if (state is WalletLoaded && !isClosed) {
-            emit((state as WalletLoaded).copyWith(
-              transactions: transactions,
-              withdrawals: withdrawals,
-            ));
-          }
-        } catch (_) {}
-      }
+      if (isClosed) return;
+      emit(currentState.copyWith(wallet: mergedWallet));
+      
+      // Fetch latest transactions and withdrawals since balance changed
+      try {
+        final results = await Future.wait([
+          _repo.getTransactionHistory(userId: driverId, walletType: 'driver', limit: 30),
+          _repo.getWithdrawalRequests(driverId),
+        ]);
+        if (!isClosed && state is WalletLoaded) {
+          emit((state as WalletLoaded).copyWith(
+            transactions: results[0] as List<WalletTransactionModel>,
+            withdrawals: results[1] as List<WithdrawalRequestModel>,
+          ));
+        }
+      } catch (_) {}
     });
   }
 

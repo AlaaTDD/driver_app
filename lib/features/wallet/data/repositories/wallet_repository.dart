@@ -9,21 +9,47 @@ import '../../../../core/utils/uuid_helper.dart';
 class WalletRepository {
   final _client = SupabaseService.client;
 
-  /// جلب ملخص أرباح السائق
+  /// جلب ملخص أرباح السائق (merged from view + detailed function)
   Future<Map<String, dynamic>> getDriverEarningsSummary(String driverId) async {
     try {
-      final data = await _client
-          .from('driver_earnings_summary')
-          .select()
-          .eq('driver_id', driverId)
-          .single();
-      return data;
+      // Fetch from both data sources in parallel
+      final results = await Future.wait([
+        // Primary: the summary view (balance, total_earnings, pending, etc.)
+        _client
+            .from('driver_earnings_summary')
+            .select()
+            .eq('driver_id', driverId)
+            .single(),
+        // Secondary: the detailed function (earnings_7d, earnings_30d)
+        _client.rpc('get_driver_earnings_detailed', params: {
+          'p_driver_id': driverId,
+        }).then((res) {
+          if (res is List && res.isNotEmpty) return res.first;
+          if (res is Map) return res;
+          return <String, dynamic>{};
+        }).catchError((_) => <String, dynamic>{}),
+      ]);
+
+      final summaryData = Map<String, dynamic>.from(results[0] as Map);
+      final detailedData = results[1] as Map<String, dynamic>? ?? {};
+
+      // Merge: detailed function provides earnings_7d and earnings_30d
+      if (detailedData.containsKey('earnings_7d')) {
+        summaryData['earnings_7d'] = detailedData['earnings_7d'];
+      }
+      if (detailedData.containsKey('earnings_30d') && !summaryData.containsKey('earnings_30d')) {
+        summaryData['earnings_30d'] = detailedData['earnings_30d'];
+      }
+
+      return summaryData;
     } catch (e) {
       debugPrint('❌ WalletRepository.getDriverEarningsSummary: $e');
       return {
         'total_earnings': 0.0,
         'available_balance': 0.0,
         'completed_trips': 0,
+        'earnings_7d': 0.0,
+        'earnings_30d': 0.0,
       };
     }
   }

@@ -68,7 +68,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
     LoadTripDetails event,
     Emitter<TripsState> emit,
   ) async {
-    emit(TripDetailsLoading());
+    if (!event.silent) emit(TripDetailsLoading());
     try {
       
       final trip = await _repository.loadTripDetails(event.tripId);
@@ -100,7 +100,6 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
     CancelUserTrip event,
     Emitter<TripsState> emit,
   ) async {
-    emit(TripsLoading());
     try {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) {
@@ -123,7 +122,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
 
       
       final status = trip['status'] as String?;
-      if (status != 'searching' && status != 'accepted') {
+      if (status != 'searching' && status != 'accepted' && status != 'in_progress') {
         emit(const TripsError('errorCancelStatus'));
         return;
       }
@@ -142,7 +141,6 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
     SubmitTripComplaint event,
     Emitter<TripsState> emit,
   ) async {
-    emit(TripsLoading());
     try {
       final userId = SupabaseService.currentUser?.id;
       await _repository.submitComplaint(
