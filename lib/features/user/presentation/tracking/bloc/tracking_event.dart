@@ -19,11 +19,13 @@ class LoadTripTracking extends TrackingEvent {
 
 class CancelTrip extends TrackingEvent {
   final String tripId;
+  final String? cancelReason;
+  final String? cancelReasonCategory;
 
-  const CancelTrip(this.tripId);
+  const CancelTrip(this.tripId, {this.cancelReason, this.cancelReasonCategory});
 
   @override
-  List<Object?> get props => [tripId];
+  List<Object?> get props => [tripId, cancelReason, cancelReasonCategory];
 }
 
 class DriverLocationUpdated extends TrackingEvent {

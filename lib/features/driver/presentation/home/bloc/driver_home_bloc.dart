@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +5,7 @@ import '../../../../../services/supabase_service.dart';
 import '../../../../../services/location_service.dart';
 import '../../../../../services/heatmap_service.dart';
 import 'package:snapix/features/driver/data/repositories/driver_home_repository.dart';
+import 'package:snapix/features/driver/data/repositories/trip_details_repository.dart';
 import 'driver_home_event.dart';
 import 'driver_home_state.dart';
 
@@ -281,7 +281,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
 
     try {
       
-      final result = await _repository.acceptTrip(event.tripId);
+      final tripRepo = TripDetailsRepository();
+      final result = await tripRepo.acceptTrip(event.tripId);
 
       debugPrint('🚦 DriverHomeBloc: driver_accept_trip result = $result');
 
@@ -332,9 +333,10 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     debugPrint('🚦 DriverHomeBloc: Rejecting trip ${event.tripId} for driver $userId');
 
     try {
-      final result = await _repository.rejectTrip(event.tripId);
+      final tripRepo = TripDetailsRepository();
+      await tripRepo.rejectTripOffer(tripId: event.tripId, driverId: userId);
 
-      debugPrint('🚦 DriverHomeBloc: driver_reject_trip result = $result');
+      debugPrint('🚦 DriverHomeBloc: driver_reject_trip result = success');
     } catch (rpcError) {
       debugPrint('⚠️ DriverHomeBloc: RPC reject failed ($rpcError).');
       

@@ -181,8 +181,16 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           'p_trip_id': event.tripId,
           'p_user_id': SupabaseService.currentUser!.id,
           'p_cancelled_by': 'user',
+          if (event.cancelReason != null) 'p_cancel_reason': event.cancelReason,
         },
       );
+      // Update structured category if provided
+      if (event.cancelReasonCategory != null) {
+        await SupabaseService.client
+            .from('trips')
+            .update({'cancel_reason_category': event.cancelReasonCategory})
+            .eq('id', event.tripId);
+      }
       await _tripSubscription?.cancel();
       await _driverLocationSubscription?.cancel();
       if (state is TrackingLoaded) {

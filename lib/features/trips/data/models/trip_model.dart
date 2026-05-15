@@ -44,6 +44,8 @@ class TripModel extends TripEntity {
     super.platformCommission,
     super.couponDiscount,
     super.paymentSource,
+    super.serviceAreaId,
+    super.estimatedDurationMin,
     this.userData,
   });
 
@@ -83,6 +85,8 @@ class TripModel extends TripEntity {
       platformCommission: json['platform_commission'] != null ? (json['platform_commission'] as num).toDouble() : null,
       couponDiscount: json['coupon_discount'] != null ? (json['coupon_discount'] as num).toDouble() : null,
       paymentSource: json['payment_source'] as String?,
+      serviceAreaId: json['service_area_id'] as String?,
+      estimatedDurationMin: json['estimated_duration_min'] != null ? (json['estimated_duration_min'] as num).toDouble() : null,
       userData: json['user'] as Map<String, dynamic>?,
     );
   }
@@ -123,6 +127,8 @@ class TripModel extends TripEntity {
       'platform_commission': platformCommission,
       'coupon_discount': couponDiscount,
       'payment_source': paymentSource,
+      'service_area_id': serviceAreaId,
+      'estimated_duration_min': estimatedDurationMin,
       if (userData != null) 'user': userData,
     };
   }

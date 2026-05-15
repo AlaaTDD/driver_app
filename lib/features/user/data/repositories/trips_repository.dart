@@ -101,7 +101,12 @@ class TripsRepository {
 
   
   
-  Future<void> cancelTrip(String tripId, String userId) async {
+  Future<void> cancelTrip(
+    String tripId,
+    String userId, {
+    String? cancelReason,
+    String? cancelReasonCategory,
+  }) async {
     try {
       await _client.rpc(
         'cancel_trip',
@@ -109,8 +114,17 @@ class TripsRepository {
           'p_trip_id': tripId,
           'p_user_id': SupabaseService.currentUser!.id,
           'p_cancelled_by': 'user',
+          if (cancelReason != null) 'p_cancel_reason': cancelReason,
         },
       );
+
+      // Update structured category separately if provided
+      if (cancelReasonCategory != null) {
+        await _client
+            .from('trips')
+            .update({'cancel_reason_category': cancelReasonCategory})
+            .eq('id', tripId);
+      }
     } catch (e) {
       debugPrint('❌ TripsRepository: Failed to cancel trip: $e');
       rethrow;

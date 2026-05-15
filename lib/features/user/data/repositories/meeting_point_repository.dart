@@ -43,6 +43,10 @@ class MeetingPointRepository {
     required String paymentMethod,
     String? geohash,
     String? couponCode,
+    double? meetingLat,
+    double? meetingLng,
+    String? meetingAddress,
+    double? estimatedDurationMin,
   }) async {
     final tripData = <String, dynamic>{
       'user_id': userId,
@@ -58,6 +62,10 @@ class MeetingPointRepository {
       'payment_method': paymentMethod,
       'status': 'searching',
       if (geohash != null) 'geohash': geohash,
+      if (meetingLat != null) 'meeting_lat': meetingLat,
+      if (meetingLng != null) 'meeting_lng': meetingLng,
+      if (meetingAddress != null) 'meeting_address': meetingAddress,
+      if (estimatedDurationMin != null) 'estimated_duration_min': estimatedDurationMin,
     };
 
     final result = await withRetry<Map<String, dynamic>>(
@@ -90,3 +98,4 @@ class MeetingPointRepository {
     return result;
   }
 }
+

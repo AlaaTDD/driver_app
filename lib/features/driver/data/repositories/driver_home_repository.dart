@@ -120,21 +120,8 @@ class DriverHomeRepository {
     });
   }
 
-  
-  Future<Map<String, dynamic>?> acceptTrip(String tripId) async {
-    return await _client.rpc(
-      'driver_accept_trip',
-      params: {'p_trip_id': tripId},
-    );
-  }
-
-  
-  Future<Map<String, dynamic>?> rejectTrip(String tripId) async {
-    return await _client.rpc(
-      'driver_reject_trip',
-      params: {'p_trip_id': tripId},
-    );
-  }
+  // NOTE: acceptTrip() and rejectTrip() are in TripDetailsRepository.
+  // Use TripDetailsRepository for trip lifecycle actions to avoid duplication.
 
   
   Future<bool> hasActiveTrip(String userId) async {

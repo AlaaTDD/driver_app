@@ -37,6 +37,8 @@ class TripEntity extends Equatable {
   final double? platformCommission;
   final double? couponDiscount;
   final String? paymentSource;
+  final String? serviceAreaId;
+  final double? estimatedDurationMin;
 
   const TripEntity({
     required this.id,
@@ -73,6 +75,8 @@ class TripEntity extends Equatable {
     this.platformCommission,
     this.couponDiscount,
     this.paymentSource,
+    this.serviceAreaId,
+    this.estimatedDurationMin,
   });
 
   @override
@@ -111,5 +115,7 @@ class TripEntity extends Equatable {
         platformCommission,
         couponDiscount,
         paymentSource,
+        serviceAreaId,
+        estimatedDurationMin,
       ];
 }

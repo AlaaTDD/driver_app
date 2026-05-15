@@ -73,26 +73,18 @@ class RatingRepository {
 
     if (isDriver) {
       // Driver is rating the user
-      try {
-        await _client.from('user_ratings').insert({
-          'trip_id': tripId,
-          'driver_id': currentUserId,
-          'user_id': tripUserId,
-          'rating': rating,
-          if (comment != null && comment.isNotEmpty) 'comment': comment,
-        });
-      } catch (e) {
-        debugPrint('⚠️ RatingRepository: Could not insert into user_ratings (table might not exist): $e');
-      }
+      await _client.from('user_ratings').insert({
+        'trip_id': tripId,
+        'driver_id': currentUserId,
+        'user_id': tripUserId,
+        'rating': rating,
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+      });
 
-      try {
-        await _client
-            .from('trips')
-            .update({'driver_rating_to_user': rating})
-            .eq('id', tripId);
-      } catch (e) {
-        debugPrint('⚠️ RatingRepository: Could not mark trip driver_rating_to_user field: $e');
-      }
+      await _client
+          .from('trips')
+          .update({'driver_rating_to_user': rating})
+          .eq('id', tripId);
     } else {
       // User is rating the driver
       await _client.from('ratings').insert({
