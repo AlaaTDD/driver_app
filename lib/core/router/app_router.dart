@@ -36,6 +36,7 @@ import '../../features/shared/presentation/screens/complaints_screen.dart';
 import '../../features/wallet/presentation/cubit/wallet_cubit.dart';
 import '../../features/wallet/presentation/screens/driver_wallet_screen.dart';
 import '../../features/wallet/presentation/screens/user_wallet_screen.dart';
+import '../../features/driver/presentation/bonus/bonus_screen.dart';
 import '../constants/app_routes.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -413,6 +414,11 @@ class AppRouter {
               child: const DriverWalletScreen(),
             ),
           ),
+        ),
+        GoRoute(
+          path: AppRoutes.driverBonus,
+          name: AppRoutes.driverBonus,
+          pageBuilder: (context, state) => const MaterialPage(child: DriverBonusScreen()),
         ),
       ],
     );

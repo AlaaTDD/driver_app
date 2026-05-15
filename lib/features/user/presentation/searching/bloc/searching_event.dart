@@ -37,11 +37,12 @@ class TripStatusChanged extends SearchingEvent {
 
 class CancelSearch extends SearchingEvent {
   final String tripId;
+  final String? cancelReason;
 
-  const CancelSearch(this.tripId);
+  const CancelSearch(this.tripId, {this.cancelReason});
 
   @override
-  List<Object?> get props => [tripId];
+  List<Object?> get props => [tripId, cancelReason];
 }
 
 

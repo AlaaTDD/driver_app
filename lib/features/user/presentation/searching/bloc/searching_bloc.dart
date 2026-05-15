@@ -200,6 +200,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
             'p_trip_id': event.tripId,
             'p_user_id': SupabaseService.currentUser!.id,
             'p_cancelled_by': 'user',
+            if (event.cancelReason != null) 'p_cancel_reason': event.cancelReason,
           },
         ),
         maxAttempts: 2,

@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../core/utils/geohash_helper.dart';
+import '../../../../../core/repositories/driver_earnings_helper.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
 
 
@@ -32,47 +33,7 @@ class DriverHomeRepository {
 
   
   Future<Map<String, dynamic>> getEarningsSummary(String userId) async {
-    try {
-      // Fetch summary view + detailed function in parallel for complete data
-      final results = await Future.wait([
-        _client
-            .from('driver_earnings_summary')
-            .select()
-            .eq('driver_id', userId)
-            .single(),
-        _client.rpc('get_driver_earnings_detailed', params: {
-          'p_driver_id': userId,
-        }).then((res) {
-          if (res is List && res.isNotEmpty) return res.first;
-          if (res is Map) return res;
-          return <String, dynamic>{};
-        }).catchError((_) => <String, dynamic>{}),
-      ]);
-
-      final summary = results[0] as Map<String, dynamic>;
-      final detailed = results[1] as Map<String, dynamic>? ?? {};
-
-      return {
-        'totalEarnings': (summary['total_earnings'] as num?)?.toDouble() ?? 0,
-        'availableBalance': (summary['available_balance'] as num?)?.toDouble() ?? 0,
-        // earnings_7d comes from the detailed function
-        'earningsThisWeek': (detailed['earnings_7d'] as num?)?.toDouble() ?? 0,
-        // earnings_30d comes from summary or detailed
-        'earningsLast30Days': (summary['earnings_30d'] as num?)?.toDouble()
-            ?? (detailed['earnings_30d'] as num?)?.toDouble()
-            ?? 0,
-        'completedTrips': (summary['completed_trips'] as int?) ?? 0,
-      };
-    } catch (e) {
-      debugPrint('⚠️ getEarningsSummary failed: $e');
-      return {
-        'totalEarnings': 0.0,
-        'availableBalance': 0.0,
-        'earningsThisWeek': 0.0,
-        'earningsLast30Days': 0.0,
-        'completedTrips': 0,
-      };
-    }
+    return DriverEarningsHelper.fetch(userId);
   }
 
   

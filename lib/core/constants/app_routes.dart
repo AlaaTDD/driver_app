@@ -36,4 +36,5 @@ class AppRoutes {
   static const String driverRating = '/driver/rating';
   static const String driverComplaints = '/driver/complaints';
   static const String driverWallet = '/driver/wallet';
+  static const String driverBonus = '/driver/bonus';
 }
