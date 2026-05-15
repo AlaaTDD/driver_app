@@ -1393,4 +1393,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commission => 'العمولة';
+
+  @override
+  String get bonusRewards => 'المكافآت والحوافز';
+
+  @override
+  String get todayProgress => 'تقدم اليوم';
+
+  @override
+  String get bonusRules => 'قواعد المكافآت';
+
+  @override
+  String get bonusHistory => 'سجل المكافآت';
+
+  @override
+  String get noBonusYet => 'لم يتم الحصول على مكافآت بعد';
+
+  @override
+  String get tripsDay => 'رحلة / يوم';
+
+  @override
+  String get tripsWeek => 'رحلة / أسبوع';
+
+  @override
+  String get ratingStars => 'تقييم بالنجوم';
 }

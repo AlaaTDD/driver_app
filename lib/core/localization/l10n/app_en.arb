@@ -610,5 +610,13 @@
   "couponApplied": "Coupon applied successfully",
   "couponSubsidy": "Coupon Subsidy",
   "bookNow": "Book Now",
-  "commission": "Commission"
+  "commission": "Commission",
+  "bonusRewards": "Bonus & Rewards",
+  "todayProgress": "Today's Progress",
+  "bonusRules": "Bonus Rules",
+  "bonusHistory": "Bonus History",
+  "noBonusYet": "No bonuses awarded yet",
+  "tripsDay": "Trips / Day",
+  "tripsWeek": "Trips / Week",
+  "ratingStars": "Stars Rating"
 }

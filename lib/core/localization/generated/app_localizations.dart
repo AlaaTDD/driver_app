@@ -2756,6 +2756,15 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'العمولة'**
   String get commission;
+
+  String get bonusRewards;
+  String get todayProgress;
+  String get bonusRules;
+  String get bonusHistory;
+  String get noBonusYet;
+  String get tripsDay;
+  String get tripsWeek;
+  String get ratingStars;
 }
 
 class _AppLocalizationsDelegate

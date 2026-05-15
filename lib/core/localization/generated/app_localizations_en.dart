@@ -1408,4 +1408,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commission => 'Commission';
+
+  @override
+  String get bonusRewards => 'Bonus & Rewards';
+
+  @override
+  String get todayProgress => 'Today\'s Progress';
+
+  @override
+  String get bonusRules => 'Bonus Rules';
+
+  @override
+  String get bonusHistory => 'Bonus History';
+
+  @override
+  String get noBonusYet => 'No bonuses awarded yet';
+
+  @override
+  String get tripsDay => 'Trips / Day';
+
+  @override
+  String get tripsWeek => 'Trips / Week';
+
+  @override
+  String get ratingStars => 'Stars Rating';
 }

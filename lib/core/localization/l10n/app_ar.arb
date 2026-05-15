@@ -610,5 +610,13 @@
   "couponApplied": "تم تطبيق الكوبون بنجاح",
   "couponSubsidy": "دعم الكوبون",
   "bookNow": "احجز الآن",
-  "commission": "العمولة"
+  "commission": "العمولة",
+  "bonusRewards": "المكافآت والحوافز",
+  "todayProgress": "تقدم اليوم",
+  "bonusRules": "قواعد المكافآت",
+  "bonusHistory": "سجل المكافآت",
+  "noBonusYet": "لم يتم الحصول على مكافآت بعد",
+  "tripsDay": "رحلة / يوم",
+  "tripsWeek": "رحلة / أسبوع",
+  "ratingStars": "تقييم بالنجوم"
 }
