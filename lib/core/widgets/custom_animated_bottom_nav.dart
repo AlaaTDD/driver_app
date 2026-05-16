@@ -89,7 +89,9 @@ class CustomAnimatedBottomNav extends StatelessWidget {
           // ── FAB ───────────────────────────────
           if (_hasFab)
             Positioned(
-              bottom: height - notchRadius * 0.9, // aligns FAB center with notch arc apex
+              // FAB circle center sits at bar top (bottom = height means center at height + r)
+              // We want the FAB to float just above the bar top with a 2px gap
+              bottom: height - 2,
               child: _buildFab(),
             ),
         ],
@@ -238,39 +240,40 @@ class _NotchPainter extends CustomPainter {
     if (notchRadius == 0) {
       path.addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     } else {
-      final cx = size.width / 2;
-      final notchR = notchRadius;
-      final margin = 8.0;
+      final cx     = size.width / 2;
+      final r      = notchRadius;       // actual FAB circle radius (e.g. 38)
+      // The notch sits 2px above the bar top — FAB protrudes by (r - 2) above the bar
+      // depth = how far the valley goes below the bar top edge
+      const depth  = 4.0;              // valley sits 4px below top edge
+      // The half-width of the gap opening — slightly wider than r for breathing room
+      final hw     = r + 10.0;
 
-      // Corner radius of the bar's top edge
+      // Corner radius of the bar's top-left / top-right rounded corners
       const barCorner = 20.0;
 
       path.moveTo(0, barCorner);
       path.quadraticBezierTo(0, 0, barCorner, 0);
 
-      // Left side up to notch
-      path.lineTo(cx - notchR - margin, 0);
+      // ── Left approach line ──────────────────────────────────────────
+      path.lineTo(cx - hw, 0);
 
-      // Left notch curve
+      // ── Left cubic bezier — matches the circle's tangent ──────────
+      // P0 = (cx-hw, 0), P3 = (cx, depth)
+      // Control points approximate the circle tangent at entry/exit
       path.cubicTo(
-        cx - notchR * 0.6,
-        0,
-        cx - notchR * 0.6,
-        notchR * 1.1,
-        cx,
-        notchR * 1.1,
+        cx - hw * 0.45, 0,          // CP1: gentle outward pull
+        cx - r * 0.6,  depth,       // CP2: curves in at valley level
+        cx,            depth,        // end = valley bottom center
       );
 
-      // Right notch curve
+      // ── Right cubic bezier — mirror ────────────────────────────────
       path.cubicTo(
-        cx + notchR * 0.6,
-        notchR * 1.1,
-        cx + notchR * 0.6,
-        0,
-        cx + notchR + margin,
-        0,
+        cx + r * 0.6,  depth,
+        cx + hw * 0.45, 0,
+        cx + hw,       0,
       );
 
+      // ── Right approach line and bottom corners ──────────────────────
       path.lineTo(size.width - barCorner, 0);
       path.quadraticBezierTo(size.width, 0, size.width, barCorner);
       path.lineTo(size.width, size.height - 8);

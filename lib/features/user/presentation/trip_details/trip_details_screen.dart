@@ -140,6 +140,25 @@ class _ScreenState extends State<UserTripDetailsScreen>
     );
     if (!mounted || result == null) return;
     setState(() => _routePoints = result.points);
+    // ✅ After fetching route, fit camera to full polyline
+    _fitPolylineToBounds(result.points);
+  }
+
+  /// Fits the map camera so the full polyline is visible with padding.
+  void _fitPolylineToBounds(List<LatLng> points) {
+    if (_mapCtrl == null || points.length < 2) return;
+    final lats = points.map((p) => p.latitude);
+    final lngs = points.map((p) => p.longitude);
+    final sw = LatLng(lats.reduce(math.min), lngs.reduce(math.min));
+    final ne = LatLng(lats.reduce(math.max), lngs.reduce(math.max));
+    Future.delayed(const Duration(milliseconds: 150), () {
+      _mapCtrl?.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(southwest: sw, northeast: ne),
+          72, // padding in logical pixels
+        ),
+      );
+    });
   }
 
   @override
@@ -432,47 +451,23 @@ class _ScreenState extends State<UserTripDetailsScreen>
                           const SizedBox(height: 13),
                         ],
 
-                        // Route ticket
+                        // ── Route section + stopovers ──────────────────────
                         BlocBuilder<TripRouteCubit, TripRouteState>(
                           bloc: _routeCubit,
                           builder: (context, routeState) {
-                            final isEditable = ['pending', 'searching', 'accepted', 'in_progress'].contains(trip['status']);
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (routeState.waypoints.isNotEmpty)
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: _C.card,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: _C.border, width: 1),
-                                    ),
-                                    padding: const EdgeInsets.all(16),
-                                    child: WaypointsTimeline(
-                                      waypoints: routeState.waypoints,
-                                      isEditable: isEditable,
-                                      onAddStopover: () => _showAddStopoverDialog(context),
-                                      onRemoveStopover: (id) => _routeCubit.removeStopover(id),
-                                    ),
-                                  )
-                                else
-                                  _RouteTicket(trip: trip),
-                                
-                                if (routeState.waypoints.isEmpty && isEditable) ...[
-                                  const SizedBox(height: 8),
-                                  OutlinedButton.icon(
-                                    onPressed: () => _showAddStopoverDialog(context),
-                                    icon: const Icon(Icons.add_location_alt_rounded, size: 18),
-                                    label: const Text('إضافة محطة توقف'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: _C.blue,
-                                      side: const BorderSide(color: _C.blue),
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    ),
-                                  ),
-                                ]
-                              ],
+                            final stopovers = routeState.waypoints
+                                .where((w) => w.isStopover)
+                                .toList();
+                            final isEditable = ['pending', 'searching', 'accepted', 'in_progress']
+                                .contains(trip['status']);
+
+                            return _StopoverCard(
+                              trip: trip,
+                              stopovers: stopovers,
+                              isEditable: isEditable,
+                              routeState: routeState,
+                              onAddStop: () => _showAddStopoverDialog(context),
+                              onRemoveStop: (id) => _routeCubit.removeStopover(id),
                             );
                           },
                         ),
@@ -613,10 +608,12 @@ class _ScreenState extends State<UserTripDetailsScreen>
         ),
         onMapCreated: (ctrl) {
           _mapCtrl = ctrl;
-          // Fit camera to include ALL markers (pickup + dest + waypoints)
-          final allPts = markers.map((m) => m.position)
-              .where((p) => p.latitude != 0.0 && p.longitude != 0.0)
-              .toList();
+          // Initial fit to markers; polyline fit happens after route loads
+          final allPts = [
+            LatLng(pLat, pLng),
+            if (dLat != null && dLng != null) LatLng(dLat, dLng),
+            ...stopovers.map((w) => LatLng(w.lat, w.lng)),
+          ].where((p) => p.latitude != 0.0 && p.longitude != 0.0).toList();
           if (allPts.length >= 2) {
             final sw = LatLng(
               allPts.map((p) => p.latitude).reduce(math.min),
@@ -626,15 +623,18 @@ class _ScreenState extends State<UserTripDetailsScreen>
               allPts.map((p) => p.latitude).reduce(math.max),
               allPts.map((p) => p.longitude).reduce(math.max),
             );
-            Future.delayed(
-                const Duration(milliseconds: 500),
-                () => _mapCtrl?.animateCamera(
-                    CameraUpdate.newLatLngBounds(
-                        LatLngBounds(southwest: sw, northeast: ne), 80)));
-          } else if (allPts.length == 1) {
-            Future.delayed(const Duration(milliseconds: 400),
-                () => _mapCtrl?.animateCamera(
-                    CameraUpdate.newLatLngZoom(allPts.first, 15)));
+            Future.delayed(const Duration(milliseconds: 500), () =>
+              _mapCtrl?.animateCamera(
+                CameraUpdate.newLatLngBounds(
+                  LatLngBounds(southwest: sw, northeast: ne), 80)));
+          } else {
+            Future.delayed(const Duration(milliseconds: 400), () =>
+              _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(pLat, pLng), 15)));
+          }
+          // If polyline already loaded (screen revisit), re-fit to it immediately
+          if (_routePoints.length >= 2) {
+            Future.delayed(const Duration(milliseconds: 600),
+                () => _fitPolylineToBounds(_routePoints));
           }
         },
         markers: markers,
@@ -1070,6 +1070,242 @@ class _CircleAction extends StatelessWidget {
           child: Icon(icon, color: color, size: 17),
         ),
       );
+}
+
+// ── Stopover Card (unified route + stop management UI) ────────────────────────
+class _StopoverCard extends StatelessWidget {
+  final Map<String, dynamic> trip;
+  final List<TripRouteWaypointModel> stopovers;
+  final bool isEditable;
+  final TripRouteState routeState;
+  final VoidCallback onAddStop;
+  final void Function(String id) onRemoveStop;
+
+  const _StopoverCard({
+    required this.trip,
+    required this.stopovers,
+    required this.isEditable,
+    required this.routeState,
+    required this.onAddStop,
+    required this.onRemoveStop,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pickup = trip['pickup_address'] as String? ?? '';
+    final dest   = trip['destination_address'] as String? ?? '';
+    final hasStops = stopovers.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _C.card,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _C.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Header ─────────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _C.blue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.alt_route_rounded, color: _C.blue, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Text('مسار الرحلة',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _C.t1)),
+              const Spacer(),
+              if (hasStops)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _C.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _C.amber.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('${stopovers.length} محطة',
+                      style: const TextStyle(fontSize: 10, color: _C.amber,
+                          fontWeight: FontWeight.w700)),
+                ),
+            ]),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ── Route spine ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(children: [
+              // Origin row
+              _SpineRow(
+                dot: _SpineDot(color: _C.emerald, icon: Icons.trip_origin_rounded),
+                label: pickup.isNotEmpty ? pickup : 'نقطة الانطلاق',
+                isFirst: true,
+              ),
+
+              // Stopovers
+              ...List.generate(stopovers.length, (i) {
+                final wp = stopovers[i];
+                return _SpineRow(
+                  dot: _SpineDot(
+                    color: _C.amber,
+                    icon: Icons.radio_button_checked_rounded,
+                    index: i + 1,
+                  ),
+                  label: wp.address ?? 'محطة ${i + 1}',
+                  isFirst: false,
+                  trailing: isEditable ? GestureDetector(
+                    onTap: () => onRemoveStop(wp.id),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _C.rose.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _C.rose.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.remove_circle_outline_rounded, color: _C.rose, size: 13),
+                        SizedBox(width: 4),
+                        Text('حذف', style: TextStyle(fontSize: 10, color: _C.rose,
+                            fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                  ) : null,
+                );
+              }),
+
+              // Destination row
+              _SpineRow(
+                dot: _SpineDot(color: _C.rose, icon: Icons.location_on_rounded),
+                label: dest.isNotEmpty ? dest : 'الوجهة',
+                isFirst: false,
+                isLast: true,
+              ),
+            ]),
+          ),
+
+          // ── Add stop row (only when editable) ──────────────────────────────
+          if (isEditable) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Divider(color: _C.border, height: 1),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onAddStop,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(children: [
+                    Container(
+                      width: 30, height: 30,
+                      decoration: BoxDecoration(
+                        color: _C.blue.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: _C.blue.withValues(alpha: 0.25)),
+                      ),
+                      child: const Icon(Icons.add_location_alt_rounded,
+                          color: _C.blue, size: 15),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text('إضافة محطة توقف',
+                        style: TextStyle(fontSize: 12, color: _C.blue,
+                            fontWeight: FontWeight.w700)),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right_rounded, color: _C.t3, size: 18),
+                  ]),
+                ),
+              ),
+            ),
+          ] else
+            const SizedBox(height: 14),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpineDot extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final int? index;
+  const _SpineDot({required this.color, required this.icon, this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(alignment: Alignment.center, children: [
+      Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.13),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.45), width: 1.5),
+        ),
+        child: index != null
+            ? Center(child: Text('$index',
+                style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w900)))
+            : Icon(icon, color: color, size: 13),
+      ),
+    ]);
+  }
+}
+
+class _SpineRow extends StatelessWidget {
+  final _SpineDot dot;
+  final String label;
+  final bool isFirst;
+  final bool isLast;
+  final Widget? trailing;
+
+  const _SpineRow({
+    required this.dot,
+    required this.label,
+    required this.isFirst,
+    this.isLast = false,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // Spine column
+        SizedBox(width: 28, child: Column(children: [
+          if (!isFirst)
+            Expanded(child: Center(child: Container(width: 1.5,
+                color: _C.border))),
+          dot,
+          if (!isLast)
+            Expanded(child: Center(child: Container(width: 1.5,
+                color: _C.border))),
+          if (isLast) const SizedBox(height: 4),
+        ])),
+        const SizedBox(width: 10),
+        // Label
+        Expanded(child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(children: [
+            Expanded(child: Text(label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isFirst ? _C.t1 : isLast ? _C.t1 : _C.t2,
+                  fontWeight: isFirst || isLast ? FontWeight.w600 : FontWeight.w400,
+                ))),
+            if (trailing != null) ...[const SizedBox(width: 6), trailing!],
+          ]),
+        )),
+      ]),
+    );
+  }
 }
 
 // ── Route Ticket ──────────────────────────────────────────────────────────────
