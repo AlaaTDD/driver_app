@@ -13,14 +13,28 @@ class SearchingInitial extends SearchingState {}
 class SearchingInProgress extends SearchingState {
   final int remainingSeconds;
   final String tripId;
+  final List<Map<String, dynamic>> offers;
 
   const SearchingInProgress({
     required this.remainingSeconds,
     required this.tripId,
+    this.offers = const [],
   });
 
+  SearchingInProgress copyWith({
+    int? remainingSeconds,
+    String? tripId,
+    List<Map<String, dynamic>>? offers,
+  }) {
+    return SearchingInProgress(
+      remainingSeconds: remainingSeconds ?? this.remainingSeconds,
+      tripId: tripId ?? this.tripId,
+      offers: offers ?? this.offers,
+    );
+  }
+
   @override
-  List<Object?> get props => [remainingSeconds, tripId];
+  List<Object?> get props => [remainingSeconds, tripId, offers];
 }
 
 class SearchingSuccess extends SearchingState {

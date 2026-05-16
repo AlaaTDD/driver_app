@@ -54,3 +54,19 @@ class RebroadcastTripOffers extends SearchingEvent {
   @override
   List<Object?> get props => [tripId];
 }
+
+class OffersUpdated extends SearchingEvent {
+  final List<Map<String, dynamic>> offers;
+  const OffersUpdated(this.offers);
+
+  @override
+  List<Object?> get props => [offers];
+}
+
+class AcceptDriverOffer extends SearchingEvent {
+  final String offerId;
+  const AcceptDriverOffer(this.offerId);
+
+  @override
+  List<Object?> get props => [offerId];
+}

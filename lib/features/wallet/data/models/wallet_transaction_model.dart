@@ -12,11 +12,13 @@ enum WalletTransactionType {
   refund,
   bonus,
   penalty,
+  couponSubsidy,
   adjustment;
 
   static WalletTransactionType fromString(String? s) {
     switch (s) {
-      case 'trip_earning':     return WalletTransactionType.tripEarning;
+      case 'trip_earning':
+      case 'trip_fare':        return WalletTransactionType.tripEarning;
       case 'trip_payment':     return WalletTransactionType.tripPayment;
       case 'withdrawal':       return WalletTransactionType.withdrawal;
       case 'withdrawal_refund':return WalletTransactionType.withdrawalRefund;
@@ -24,6 +26,7 @@ enum WalletTransactionType {
       case 'refund':           return WalletTransactionType.refund;
       case 'bonus':            return WalletTransactionType.bonus;
       case 'penalty':          return WalletTransactionType.penalty;
+      case 'coupon_subsidy':   return WalletTransactionType.couponSubsidy;
       default:                 return WalletTransactionType.adjustment;
     }
   }
@@ -38,6 +41,7 @@ enum WalletTransactionType {
       case WalletTransactionType.refund:          return 'refund';
       case WalletTransactionType.bonus:           return 'bonus';
       case WalletTransactionType.penalty:         return 'penalty';
+      case WalletTransactionType.couponSubsidy:   return 'coupon_subsidy';
       case WalletTransactionType.adjustment:      return 'adjustment';
     }
   }
@@ -122,6 +126,7 @@ class WalletTransactionModel extends Equatable {
     WalletTransactionType.topUp,
     WalletTransactionType.refund,
     WalletTransactionType.bonus,
+    WalletTransactionType.couponSubsidy,
     WalletTransactionType.withdrawalRefund,
   ].contains(type);
 

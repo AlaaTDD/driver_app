@@ -146,7 +146,7 @@ class DriverBonusScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '+${bonusAmount.toStringAsFixed(0)} ${l.currency}',
+                    '+${bonusAmount.toStringAsFixed(0)} ${l.currencySar}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -264,7 +264,7 @@ class DriverBonusScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '+${amount.toStringAsFixed(0)} ${l.currency}',
+                    '+${amount.toStringAsFixed(0)} ${l.currencySar}',
                     style: const TextStyle(
                       color: AppColors.success,
                       fontWeight: FontWeight.bold,
@@ -377,7 +377,7 @@ class DriverBonusScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '+${amount.toStringAsFixed(0)} ${l.currency}',
+                    '+${amount.toStringAsFixed(0)} ${l.currencySar}',
                     style: const TextStyle(
                       color: AppColors.success,
                       fontWeight: FontWeight.bold,

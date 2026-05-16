@@ -16,6 +16,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../trips/presentation/bloc/trip_route_cubit.dart';
+import '../trip_details/trip_details_screen.dart';
 
 class SearchingScreen extends StatefulWidget {
   final String tripId;
@@ -42,12 +44,14 @@ class _SearchingScreenState extends State<SearchingScreen>
   final _mapCtrl = Completer<GoogleMapController>();
   late final AnimationController _pulseCtrl;
   late final Animation<double> _pulseAnim;
+  late final TripRouteCubit _routeCubit;
   List<LatLng> _routePoints = [];
 
   @override
   void initState() {
     super.initState();
     context.read<SearchingBloc>().add(StartSearching(widget.tripId));
+    _routeCubit = TripRouteCubit()..watchTripRoutes(widget.tripId);
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
     _pulseAnim = Tween<double>(begin: 0.85, end: 1.15).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
     _fetchRoute();
@@ -67,6 +71,7 @@ class _SearchingScreenState extends State<SearchingScreen>
   @override
   void dispose() {
     _pulseCtrl.dispose();
+    _routeCubit.close();
     super.dispose();
   }
 
@@ -116,11 +121,25 @@ class _SearchingScreenState extends State<SearchingScreen>
       ]);
       final pts = _routePoints.isNotEmpty ? _routePoints : [origin, dest];
       polylines.add(Polyline(
-        polylineId: const PolylineId('route'),
+        polylineId: const PolylineId('route_bg'),
+        points: pts,
+        color: AppColors.primary.withValues(alpha: 0.25),
+        width: 12,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 0,
+      ));
+      polylines.add(Polyline(
+        polylineId: const PolylineId('route_fg'),
         points: pts,
         color: AppColors.primary,
         width: 5,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
         patterns: _routePoints.isNotEmpty ? [] : [PatternItem.dash(24), PatternItem.gap(10)],
+        zIndex: 1,
       ));
     }
 
@@ -313,6 +332,102 @@ class _SearchingScreenState extends State<SearchingScreen>
             minHeight: 4,
           ),
         ),
+        
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              if (widget.originLat == null || widget.originLng == null) return;
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => MapStopoverPicker(
+                  initialCenter: LatLng(widget.originLat!, widget.originLng!),
+                  originPoint: LatLng(widget.originLat!, widget.originLng!),                             // ✅ show pickup
+                  destPoint: (widget.destLat != null && widget.destLng != null)                          // ✅ show destination
+                      ? LatLng(widget.destLat!, widget.destLng!)
+                      : null,
+                ),
+              )).then((result) {
+                if (result != null && result is Map<String, dynamic>) {
+                  _routeCubit.addStopover(
+                    lat: result['lat'], lng: result['lng'],
+                    address: result['address'],
+                  );
+                }
+              });
+            },
+            icon: const Icon(Icons.add_location_alt_rounded, size: 18),
+            label: const Text('إضافة محطة توقف (مسار متعدد)'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ),
+        
+        if (state.offers.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'عروض السائقين (${state.offers.length}):',
+              style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: state.offers.length,
+              itemBuilder: (context, index) {
+                final offer = state.offers[index];
+                final price = offer['proposed_price']?.toString() ?? '...';
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.divColor),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: context.primaryTint,
+                        child: const Icon(Icons.person, color: AppColors.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('سائق متاح', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold)),
+                            Text('$price ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => context.read<SearchingBloc>().add(AcceptDriverOffer(offer['id'])),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 36),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        child: const Text('قبول'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity, height: 48,

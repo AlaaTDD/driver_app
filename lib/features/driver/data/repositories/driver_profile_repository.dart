@@ -1,4 +1,6 @@
 
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../services/supabase_service.dart';
 
 
@@ -37,6 +39,41 @@ class DriverProfileRepository {
     }
 
     return merged;
+  }
+
+  /// Realtime stream for driver profile changes (e.g. admin verification).
+  Stream<Map<String, dynamic>?> watchDriverProfile(String driverId) {
+    final controller = StreamController<Map<String, dynamic>?>.broadcast();
+
+    Future<void> reload() async {
+      try {
+        final data = await loadDriverProfile(driverId);
+        if (!controller.isClosed) controller.add(data);
+      } catch (_) {}
+    }
+
+    reload();
+
+    final channel = SupabaseService.client
+        .channel('driver-profile-$driverId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'drivers_profile',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: driverId,
+          ),
+          callback: (_) => reload(),
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
   }
 
   
@@ -80,3 +117,4 @@ class DriverProfileRepository {
     return await loadDriverProfile(driverId);
   }
 }
+

@@ -455,6 +455,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
       WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, const Color(0xFFF97316), const Color(0xFFFFF7ED), AppLocalizations.of(context)!.withdrawal),
       WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.withdrawalRefund),
       WalletTransactionType.bonus           => (Icons.star_rounded, const Color(0xFFF59E0B), const Color(0xFFFFFBEB), AppLocalizations.of(context)!.bonus),
+      WalletTransactionType.couponSubsidy   => (Icons.local_offer_rounded, const Color(0xFF8B5CF6), const Color(0xFFF5F3FF), AppLocalizations.of(context)!.couponSubsidy),
       WalletTransactionType.penalty         => (Icons.remove_circle_rounded, const Color(0xFFEF4444), const Color(0xFFFEF2F2), AppLocalizations.of(context)!.penalty),
       WalletTransactionType.topUp           => (Icons.add_card_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.topUp),
       WalletTransactionType.refund          => (Icons.keyboard_return_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.refund),

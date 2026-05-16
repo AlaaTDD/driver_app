@@ -85,4 +85,43 @@ class NotificationsRepository {
 
     return controller.stream;
   }
+
+  /// Realtime stream of all notifications for current user.
+  /// Auto-refreshes when notifications table changes.
+  Stream<List<NotificationModel>> watchNotifications() {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return const Stream.empty();
+
+    final controller = StreamController<List<NotificationModel>>.broadcast();
+
+    Future<void> fetchAll() async {
+      try {
+        final list = await loadNotifications();
+        if (!controller.isClosed) controller.add(list);
+      } catch (_) {}
+    }
+
+    fetchAll();
+
+    final channel = SupabaseService.client
+        .channel('notifications-list-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (_) => fetchAll(),
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
+  }
 }

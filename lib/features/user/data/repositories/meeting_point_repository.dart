@@ -78,7 +78,9 @@ class MeetingPointRepository {
       onRetry: (e, attempt) => debugPrint('Trip insert attempt $attempt failed: $e'),
     );
 
-    // Apply coupon to the trip atomically (re-validates server-side)
+    // Apply coupon to the trip ATOMICALLY — if the coupon was promised to the
+    // user and fails to apply, we must NOT silently charge full price.  Instead,
+    // cancel the orphan trip and rethrow so the UI can show an error / retry.
     if (couponCode != null && couponCode.isNotEmpty) {
       try {
         final couponResult = await _client.rpc('apply_coupon_to_trip', params: {
@@ -89,9 +91,17 @@ class MeetingPointRepository {
         });
         debugPrint('🎫 Coupon applied: $couponResult');
       } catch (e) {
-        debugPrint('⚠️ MeetingPointRepository: Failed to apply coupon: $e');
-        // Non-blocking: trip is created even if coupon fails.
-        // The user will pay the full price in that case.
+        debugPrint('🚨 MeetingPointRepository: Coupon failed — rolling back trip: $e');
+        // Roll back: cancel the trip that was just created so the user
+        // is not charged full price while expecting a discount.
+        try {
+          await _client.from('trips').delete().eq('id', result['id']);
+        } catch (rollbackErr) {
+          debugPrint('⚠️ Rollback also failed: $rollbackErr');
+        }
+        // Rethrow so the calling Bloc/UI shows a user-friendly error
+        // and the user can retry the trip creation.
+        rethrow;
       }
     }
 

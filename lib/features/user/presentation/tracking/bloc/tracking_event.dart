@@ -41,3 +41,13 @@ class DriverLocationUpdated extends TrackingEvent {
 class TripCompleted extends TrackingEvent {
   const TripCompleted();
 }
+
+class RecalculateRoute extends TrackingEvent {
+  final String tripId;
+
+  const RecalculateRoute(this.tripId);
+
+  @override
+  List<Object?> get props => [tripId];
+}
+

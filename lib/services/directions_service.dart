@@ -28,9 +28,10 @@ class DirectionsService {
   static const _cacheTtl = Duration(minutes: 5);
   static const int _maxCacheSize = 50;
 
-  static String _cacheKey(double oLat, double oLng, double dLat, double dLng) {
+  static String _cacheKey(double oLat, double oLng, double dLat, double dLng, List<LatLng>? waypoints) {
+    final wpStr = waypoints?.map((e) => '${e.latitude.toStringAsFixed(4)},${e.longitude.toStringAsFixed(4)}').join('|') ?? '';
     return '${oLat.toStringAsFixed(4)},${oLng.toStringAsFixed(4)}'
-        '→${dLat.toStringAsFixed(4)},${dLng.toStringAsFixed(4)}';
+        '→${dLat.toStringAsFixed(4)},${dLng.toStringAsFixed(4)}|$wpStr';
   }
 
   static Future<DirectionsResult?> getRoute({
@@ -38,10 +39,11 @@ class DirectionsService {
     required double originLng,
     required double destLat,
     required double destLng,
+    List<LatLng>? waypoints,
     required String apiKey,
   }) async {
     
-    final key = _cacheKey(originLat, originLng, destLat, destLng);
+    final key = _cacheKey(originLat, originLng, destLat, destLng, waypoints);
     final cached = _cache[key];
     if (cached != null && DateTime.now().difference(cached.timestamp) < _cacheTtl) {
       debugPrint('📍 DirectionsService: Cache HIT for $key');
@@ -49,10 +51,17 @@ class DirectionsService {
     }
 
     try {
+      String waypointsQuery = '';
+      if (waypoints != null && waypoints.isNotEmpty) {
+        final wpStr = waypoints.map((w) => '${w.latitude},${w.longitude}').join('|');
+        waypointsQuery = '&waypoints=$wpStr';
+      }
+
       final uri = Uri.parse(
         '$_baseUrl'
         '?origin=$originLat,$originLng'
         '&destination=$destLat,$destLng'
+        '$waypointsQuery'
         '&alternatives=false'
         '&key=$apiKey',
       );
@@ -61,10 +70,16 @@ class DirectionsService {
       final data = json.decode(response.body) as Map<String, dynamic>;
       if (data['status'] != 'OK') return null;
       final route = (data['routes'] as List).first as Map<String, dynamic>;
-      final leg = (route['legs'] as List).first as Map<String, dynamic>;
+      final legs = route['legs'] as List;
       final encodedPolyline = route['overview_polyline']['points'] as String;
-      final distanceMeters = (leg['distance']['value'] as int);
-      final durationSeconds = (leg['duration']['value'] as int);
+      
+      int distanceMeters = 0;
+      int durationSeconds = 0;
+      for (final leg in legs) {
+        distanceMeters += ((leg as Map)['distance']['value'] as num).toInt();
+        durationSeconds += ((leg as Map)['duration']['value'] as num).toInt();
+      }
+
       final result = DirectionsResult(
         points: _decodePolyline(encodedPolyline),
         distanceMeters: distanceMeters,

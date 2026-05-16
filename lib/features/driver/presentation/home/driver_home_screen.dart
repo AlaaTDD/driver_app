@@ -1,12 +1,12 @@
 
 import 'dart:async';
 import 'package:snapix/core/localization/generated/app_localizations.dart';
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 import 'bloc/driver_home_bloc.dart';
 import 'bloc/driver_home_event.dart';
 import 'bloc/driver_home_state.dart';
@@ -22,7 +22,9 @@ import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../services/supabase_service.dart';
 import '../../../../services/heatmap_service.dart';
+import '../../../../core/widgets/custom_animated_bottom_nav.dart';
 
 import '../widgets/driver_offer_overlay.dart';
 
@@ -40,6 +42,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   
   GoogleMapController? _mapController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  int _bottomNavIndex = -1;
 
   static const _defaultCamera = CameraPosition(
     target: AppConstants.defaultMapCenter,
@@ -171,6 +174,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         child: DriverOfferOverlay(
           child: Scaffold(
             key: _scaffoldKey,
+            extendBody: true,
             backgroundColor: context.bgColor,
             drawer: _buildDrawer(context),
             body: Stack(
@@ -178,9 +182,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                 _buildMap(),
                 _buildTopBar(),
                 _buildLocationButton(),
-                _buildGoButton(),
               ],
             ),
+            bottomNavigationBar: _buildBottomNav(),
           ),
         ),
       ),
@@ -217,9 +221,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         return GoogleMap(
           initialCameraPosition: initialCamera,
           onMapCreated: (ctrl) {
-            
-            
-            _mapController?.dispose();
             _mapController = ctrl;
 
             
@@ -393,7 +394,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   Widget _buildLocationButton() {
     return Positioned(
-      bottom: 40,
+      bottom: 20,
       right: 16,
       child: MapButton(
         icon: Icons.my_location_rounded,
@@ -412,15 +413,53 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  
+  Widget _buildBottomNav() {
+    return CustomAnimatedBottomNav(
+      items: const [
+        BottomNavItem(
+          icon: Icons.list_alt_outlined,
+          activeIcon: Icons.list_alt_rounded,
+          label: 'الرحلات',
+        ),
+        BottomNavItem(
+          icon: Icons.alt_route_outlined,
+          activeIcon: Icons.alt_route_rounded,
+          label: 'الوجهة',
+        ),
+      ],
+      onTap: (index) {
+        if (index == 0) {
+          context.push(AppRoutes.driverRequestFeed); // ✅ real-time request feed
+        } else if (index == 1) {
+          _showCorridorPicker(context);
+        }
+      },
+      itemColor: context.textSecondary,
+      backgroundColor: context.cardColor,
+      notchColor: Colors.transparent,
+      notchRadius: 42,
+      gapWidth: 90,
+      floatingActionButton: _buildGoButtonInner(),
+    );
+  }
 
-  Widget _buildGoButton() {
-    return Positioned(
-      bottom: 40,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: BlocBuilder<LocationPermissionCubit, LocationPermissionState>(
+  void _showCorridorPicker(BuildContext context) {
+    final bloc = context.read<DriverHomeBloc>();
+    final lat  = bloc.state.driverLat ?? AppConstants.defaultMapCenter.latitude;
+    final lng  = bloc.state.driverLng ?? AppConstants.defaultMapCenter.longitude;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _CorridorPickerScreen(
+          driverLocation: LatLng(lat, lng),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoButtonInner() {
+    return BlocBuilder<LocationPermissionCubit, LocationPermissionState>(
           builder: (context, permState) {
             // ── Location blocked → show CTA button instead of GO ──
             if (permState.isBlocked) {
@@ -450,8 +489,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 350),
                     curve: Curves.fastOutSlowIn,
-                    width: 75,
-                    height: 75,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
@@ -511,9 +548,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
               },
             );
           },
-        ),
-      ),
-    );
+        );
   }
 
   
@@ -556,4 +591,383 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  CORRIDOR PICKER SCREEN (replaces _TargetRouteDialog)
+// ═══════════════════════════════════════════════════════════════════════════
 
+class _CorridorPickerScreen extends StatefulWidget {
+  final LatLng driverLocation;
+  const _CorridorPickerScreen({required this.driverLocation});
+
+  @override
+  State<_CorridorPickerScreen> createState() => _CorridorPickerScreenState();
+}
+
+class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
+  LatLng? _destPoint;
+  String? _destAddress;
+  double _destRadiusKm  = 3.0;
+  double _originRadiusKm = 2.0;
+  bool _isResolving = false;
+  bool _isSaving    = false;
+
+  Future<void> _onMapTap(LatLng ll) async {
+    setState(() { _destPoint = ll; _isResolving = true; _destAddress = null; });
+    try {
+      final placemarks = await placemarkFromCoordinates(ll.latitude, ll.longitude);
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        setState(() => _destAddress = '${p.street ?? ''}, ${p.locality ?? ''}');
+      }
+    } catch (_) {
+      setState(() => _destAddress =
+          '${ll.latitude.toStringAsFixed(4)}, ${ll.longitude.toStringAsFixed(4)}');
+    } finally {
+      setState(() => _isResolving = false);
+    }
+  }
+
+  Future<void> _save() async {
+    if (_destPoint == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await SupabaseService.client.rpc('set_driver_target_route', params: {
+        'p_lat': _destPoint!.latitude,
+        'p_lng': _destPoint!.longitude,
+        'p_address': _destAddress ?? '',
+        'p_active': true,
+      });
+      // Also update the 4 corridor columns directly (RPC may not have them yet)
+      await SupabaseService.client
+          .from('drivers_profile')
+          .update({
+            'target_origin_lat'      : widget.driverLocation.latitude,
+            'target_origin_lng'      : widget.driverLocation.longitude,
+            'target_origin_radius_km': _originRadiusKm,
+            'target_route_radius_km' : _destRadiusKm,
+          })
+          .eq('id', SupabaseService.currentUser!.id);
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تحديد الممر المفضل: $_destAddress'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _clear() async {
+    try {
+      await SupabaseService.client.rpc('set_driver_target_route', params: {
+        'p_lat': null, 'p_lng': null, 'p_address': null, 'p_active': false,
+      });
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إلغاء الممر المفضل')),
+        );
+      }
+    } catch (e) {
+      debugPrint('CorridorPicker: clear failed $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF12151F) : Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+            ),
+            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 17, color: Colors.white70),
+          ),
+        ),
+        actions: [
+          GestureDetector(
+            onTap: _clear,
+            child: Container(
+              margin: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red.shade900.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text('إلغاء الممر', style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+          ),
+        ],
+      ),
+      body: Stack(children: [
+        // ── Map ───────────────────────────────────────────────────────────
+        GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: widget.driverLocation,
+            zoom: 13,
+          ),
+          onTap: _onMapTap,
+          style: isDark ? kDarkMapStyle : kLightMapStyle,
+          myLocationEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          circles: {
+            // Origin zone — fixed at driver current position
+            Circle(
+              circleId: const CircleId('origin_zone'),
+              center: widget.driverLocation,
+              radius: _originRadiusKm * 1000,
+              fillColor: Colors.green.withValues(alpha: 0.12),
+              strokeColor: Colors.green.withValues(alpha: 0.7),
+              strokeWidth: 2,
+            ),
+            // Destination zone — user taps to place
+            if (_destPoint != null)
+              Circle(
+                circleId: const CircleId('dest_zone'),
+                center: _destPoint!,
+                radius: _destRadiusKm * 1000,
+                fillColor: Colors.blue.withValues(alpha: 0.12),
+                strokeColor: Colors.blue.withValues(alpha: 0.7),
+                strokeWidth: 2,
+              ),
+          },
+          polylines: _destPoint != null ? {
+            Polyline(
+              polylineId: const PolylineId('corridor_line'),
+              points: [widget.driverLocation, _destPoint!],
+              color: Colors.blue.withValues(alpha: 0.55),
+              width: 3,
+              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+            ),
+          } : {},
+          markers: {
+            Marker(
+              markerId: const MarkerId('origin'),
+              position: widget.driverLocation,
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+              infoWindow: const InfoWindow(title: 'موقعك الحالي'),
+            ),
+            if (_destPoint != null)
+              Marker(
+                markerId: const MarkerId('dest'),
+                position: _destPoint!,
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+                infoWindow: InfoWindow(title: _destAddress ?? 'الوجهة المستهدفة'),
+              ),
+          },
+        ),
+
+        // ── Hint overlay (tap to select) ──────────────────────────────────
+        if (_destPoint == null)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 64,
+            left: 0, right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.touch_app_rounded, color: Colors.white70, size: 18),
+                  SizedBox(width: 8),
+                  Text('اضغط على الخريطة لتحديد الوجهة المستهدفة',
+                      style: TextStyle(color: Colors.white, fontSize: 13)),
+                ]),
+              ),
+            ),
+          ),
+
+        // ── Bottom controls panel ─────────────────────────────────────────
+        Positioned(
+          bottom: 0, left: 0, right: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0D1526) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(0, -4))],
+            ),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 20),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              // Drag handle
+              Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(100)))),
+              const SizedBox(height: 16),
+
+              // Title + selected address
+              Row(children: [
+                Container(width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.alt_route_rounded, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('تحديد الممر المفضل',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  Text(
+                    _isResolving ? 'جاري التحليل...' :
+                    _destAddress ?? (_destPoint == null ? 'لم يتم التحديد بعد' : 'تم التحديد'),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                ])),
+              ]),
+
+              const SizedBox(height: 20),
+
+              // Origin radius slider (green)
+              _RadiusSlider(
+                label: 'نطاق نقطة الانطلاق',
+                color: Colors.green,
+                value: _originRadiusKm,
+                min: 0.5, max: 10.0,
+                onChanged: (v) => setState(() => _originRadiusKm = v),
+              ),
+              const SizedBox(height: 12),
+
+              // Destination radius slider (blue) — enabled only when dest chosen
+              _RadiusSlider(
+                label: 'نطاق الوجهة',
+                color: Colors.blue,
+                value: _destRadiusKm,
+                min: 0.5, max: 15.0,
+                enabled: _destPoint != null,
+                onChanged: (v) => setState(() => _destRadiusKm = v),
+              ),
+              const SizedBox(height: 20),
+
+              // Legend chips
+              Row(children: [
+                _LegendChip(color: Colors.green, label: 'منطقة الانطلاق'),
+                const SizedBox(width: 10),
+                _LegendChip(color: Colors.blue, label: 'منطقة الوصول'),
+              ]),
+              const SizedBox(height: 20),
+
+              // Save button
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: (_isSaving || _destPoint == null || _isResolving) ? null : _save,
+                  icon: _isSaving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save_rounded),
+                  label: Text(_destPoint == null ? 'اختر وجهة أولاً' : 'حفظ الممر المفضل'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade800,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _RadiusSlider extends StatelessWidget {
+  final String label;
+  final Color color;
+  final double value;
+  final double min;
+  final double max;
+  final bool enabled;
+  final ValueChanged<double> onChanged;
+
+  const _RadiusSlider({
+    required this.label,
+    required this.color,
+    required this.value,
+    required this.min,
+    required this.max,
+    this.enabled = true,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      SizedBox(
+        width: 120,
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: enabled ? null : Colors.grey)),
+      ),
+      Expanded(
+        child: SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: enabled ? color : Colors.grey.shade700,
+            inactiveTrackColor: Colors.grey.withValues(alpha: 0.2),
+            thumbColor: enabled ? color : Colors.grey,
+            overlayColor: color.withValues(alpha: 0.1),
+            trackHeight: 3,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+          ),
+          child: Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            divisions: ((max - min) / 0.5).round(),
+            onChanged: enabled ? onChanged : null,
+          ),
+        ),
+      ),
+      SizedBox(
+        width: 44,
+        child: Text('${value.toStringAsFixed(1)} كم',
+            style: TextStyle(fontSize: 11, color: enabled ? color : Colors.grey,
+                fontWeight: FontWeight.w700),
+            textAlign: TextAlign.end),
+      ),
+    ]);
+  }
+}
+
+class _LegendChip extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendChip({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 12, height: 12,
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.3), shape: BoxShape.circle,
+            border: Border.all(color: color, width: 1.5))),
+    const SizedBox(width: 6),
+    Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+  ]);
+}

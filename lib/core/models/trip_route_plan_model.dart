@@ -1,20 +1,21 @@
 import 'package:equatable/equatable.dart';
 
 /// Status values for a route plan (matches DB enum `route_plan_status`).
+/// [CSV | section: 01_ENUM | enum: route_plan_status | values: draft,active,inactive,archived]
 enum RoutePlanStatus {
   draft,
   active,
-  completed,
-  cancelled;
+  inactive,
+  archived;
 
   static RoutePlanStatus fromString(String? value) {
     switch (value) {
       case 'active':
         return RoutePlanStatus.active;
-      case 'completed':
-        return RoutePlanStatus.completed;
-      case 'cancelled':
-        return RoutePlanStatus.cancelled;
+      case 'inactive':
+        return RoutePlanStatus.inactive;
+      case 'archived':
+        return RoutePlanStatus.archived;
       case 'draft':
       default:
         return RoutePlanStatus.draft;
@@ -22,6 +23,12 @@ enum RoutePlanStatus {
   }
 
   String toDbString() => name;
+
+  /// Whether this plan is currently usable.
+  bool get isUsable => this == RoutePlanStatus.active || this == RoutePlanStatus.draft;
+
+  /// Whether this plan has been deactivated/ended.
+  bool get isTerminal => this == RoutePlanStatus.inactive || this == RoutePlanStatus.archived;
 }
 
 /// Maps to `trip_route_plans` table.

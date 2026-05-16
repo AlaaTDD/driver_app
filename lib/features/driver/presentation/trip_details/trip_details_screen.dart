@@ -9,6 +9,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'bloc/trip_details_bloc.dart';
 import 'bloc/trip_details_event.dart';
 import 'bloc/trip_details_state.dart';
+import '../../../trips/presentation/bloc/trip_route_cubit.dart';
+import '../../../trips/presentation/widgets/waypoints_timeline.dart';
+import '../../../../core/models/trip_route_waypoint_model.dart';
+import 'package:geocoding/geocoding.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -54,6 +58,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   final Completer<GoogleMapController> _mapController = Completer();
   List<LatLng> _routePoints = [];
   bool _routeFetchRequested = false;
+  String _lastStopoversHash = '';
+  bool _is3DMode = false;
   Map<String, dynamic>? _trip;
 
   // driver location
@@ -100,10 +106,12 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
 
   BitmapDescriptor? _pickupIcon;
   BitmapDescriptor? _destIcon;
+  BitmapDescriptor? _waypointIcon;
 
   Future<void> _loadCircleIcons() async {
     _pickupIcon = await _createCircleMarker(_C.emerald);
     _destIcon = await _createCircleMarker(_C.rose);
+    _waypointIcon = await _createCircleMarker(_C.amber);
     if (mounted) setState(() {});
   }
 
@@ -157,7 +165,12 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         if (mounted) {
           try {
             ctrl.animateCamera(CameraUpdate.newCameraPosition(
-              CameraPosition(target: _driverLocation!, zoom: 16, bearing: _driverHeading),
+              CameraPosition(
+                target: _driverLocation!,
+                zoom: _is3DMode ? 18 : 16,
+                tilt: _is3DMode ? 60 : 0,
+                bearing: _driverHeading,
+              ),
             ));
           } catch (e) {
             debugPrint('animateCamera error: $e');
@@ -227,9 +240,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     _animationTicker?.start();
   }
 
-  Future<void> _fetchRoute(double oLat, double oLng, double dLat, double dLng) async {
+  Future<void> _fetchRoute(double oLat, double oLng, double dLat, double dLng, [List<LatLng>? waypoints]) async {
     final result = await DirectionsService.getRoute(
       originLat: oLat, originLng: oLng, destLat: dLat, destLng: dLng,
+      waypoints: waypoints,
       apiKey: EnvConstants.googleMapsApiKey,
     );
     if (!mounted || result == null) return;
@@ -413,9 +427,14 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
 
     return Stack(children: [
 
-      // ── [1] Map
+      // ── [1] Map (rebuilds when waypoints change)
       Positioned.fill(
-        child: _buildMap(trip, pLat, pLng, dLat, dLng, screenH - mapH),
+        child: BlocBuilder<TripRouteCubit, TripRouteState>(
+          builder: (context, routeState) {
+            final stopovers = routeState.waypoints.where((w) => w.isStopover).toList();
+            return _buildMap(trip, pLat, pLng, dLat, dLng, screenH - mapH, stopovers);
+          },
+        ),
       ),
 
       // ── [2] Header (Back button & Status pill)
@@ -432,7 +451,26 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                 Expanded(
                   child: Center(child: _statusPill(status)),
                 ),
-                const SizedBox(width: 42), // Balance the row
+                _MapCircleBtn(
+                  icon: _is3DMode ? Icons.view_in_ar : Icons.map_outlined,
+                  onTap: () async {
+                    setState(() => _is3DMode = !_is3DMode);
+                    if (_mapController.isCompleted) {
+                      final ctrl = await _mapController.future;
+                      final currentPos = _driverLocation ?? (pLat != null && pLng != null ? LatLng(pLat, pLng) : const LatLng(0, 0));
+                      await ctrl.animateCamera(
+                        CameraUpdate.newCameraPosition(
+                          CameraPosition(
+                            target: currentPos,
+                            zoom: _is3DMode ? 18 : 15,
+                            tilt: _is3DMode ? 60 : 0,
+                            bearing: _driverHeading,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -495,8 +533,35 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                       const SizedBox(height: 13),
                     ],
 
-                    // Route ticket
-                    _RouteTicket(trip: trip),
+                    // Route ticket / Waypoints Timeline (driver = read-only, no add/remove)
+                    BlocBuilder<TripRouteCubit, TripRouteState>(
+                      builder: (context, routeState) {
+                        final isActive = trip['status'] == 'in_progress' || trip['status'] == 'accepted';
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (routeState.waypoints.isNotEmpty)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: _C.card,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: _C.border, width: 1),
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                child: WaypointsTimeline(
+                                  waypoints: routeState.waypoints,
+                                  isEditable: false, // Driver cannot add/remove
+                                  onMarkArrived: isActive ? (id) => context.read<TripRouteCubit>().markArrived(id) : null,
+                                  onMarkDeparted: isActive ? (id) => context.read<TripRouteCubit>().markDeparted(id) : null,
+                                  isDriver: true,
+                                ),
+                              )
+                            else
+                              _RouteTicket(trip: trip),
+                          ],
+                        );
+                      },
+                    ),
                     const SizedBox(height: 13),
 
                     // Price + Stats
@@ -544,7 +609,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       {'searching', 'pending', 'accepted', 'in_progress'}.contains(s);
 
   // ── Map ────────────────────────────────────────────────────────────────────
-  Widget _buildMap(Map<String, dynamic> trip, double? pLat, double? pLng, double? dLat, double? dLng, double bottomPadding) {
+  Widget _buildMap(Map<String, dynamic> trip, double? pLat, double? pLng, double? dLat, double? dLng, double bottomPadding, [List<TripRouteWaypointModel> stopovers = const []]) {
     final markers   = <Marker>{};
     final polylines = <Polyline>{};
     final l = AppLocalizations.of(context)!;
@@ -565,20 +630,51 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         infoWindow: InfoWindow(title: trip['destination_address'] as String? ?? l.destination),
       ));
     }
+    // ── Waypoint / Stopover markers ──
+    for (int i = 0; i < stopovers.length; i++) {
+      final wp = stopovers[i];
+      markers.add(Marker(
+        markerId: MarkerId('wp_$i'),
+        position: LatLng(wp.lat, wp.lng),
+        icon: _waypointIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        anchor: const Offset(0.5, 0.5),
+        zIndex: 1,
+        infoWindow: InfoWindow(title: wp.address ?? 'محطة ${i + 1}'),
+      ));
+    }
 
 
-    // fetch route once
-    if (pLat != null && pLng != null && dLat != null && dLng != null && !_routeFetchRequested) {
-      _routeFetchRequested = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) =>
-          _fetchRoute(pLat, pLng, dLat, dLng));
+    // fetch route once or when waypoints change (hash covers count AND position changes)
+    if (pLat != null && pLng != null && dLat != null && dLng != null) {
+      final wpHash = stopovers.map((w) => '${w.lat.toStringAsFixed(5)},${w.lng.toStringAsFixed(5)}').join('|');
+      if (!_routeFetchRequested || _lastStopoversHash != wpHash) {
+        _routeFetchRequested = true;
+        _lastStopoversHash = wpHash;
+        final wpLatLngs = stopovers.map((w) => LatLng(w.lat, w.lng)).toList();
+        WidgetsBinding.instance.addPostFrameCallback((_) =>
+            _fetchRoute(pLat, pLng, dLat, dLng, wpLatLngs));
+      }
     }
     if (_routePoints.isNotEmpty) {
       polylines.add(Polyline(
-        polylineId: const PolylineId('route'),
+        polylineId: const PolylineId('route_bg'),
+        points: _routePoints,
+        color: _C.blue.withValues(alpha: 0.25),
+        width: 12,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 0,
+      ));
+      polylines.add(Polyline(
+        polylineId: const PolylineId('route_fg'),
         points: _routePoints,
         color: _C.blue,
-        width: 4,
+        width: 5,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 1,
       ));
     }
 
@@ -735,6 +831,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       },
     ));
   }
+
+  // Driver does NOT have add/remove stopover capability — only the user can manage waypoints.
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   Color _statusColor(String? s) => switch (s) {
@@ -1456,4 +1554,98 @@ class _NightDialog extends StatelessWidget {
             ]),
         ),
       );
+}
+
+class _AddStopoverDialog extends StatefulWidget {
+  const _AddStopoverDialog();
+
+  @override
+  State<_AddStopoverDialog> createState() => _AddStopoverDialogState();
+}
+
+class _AddStopoverDialogState extends State<_AddStopoverDialog> {
+  final _addressCtrl = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _addressCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchAndAdd() async {
+    final query = _addressCtrl.text.trim();
+    if (query.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final locations = await locationFromAddress(query);
+      if (locations.isEmpty) {
+        throw Exception('المكان غير موجود، حاول تفصيل العنوان');
+      }
+      final lat = locations.first.latitude;
+      final lng = locations.first.longitude;
+
+      await context.read<TripRouteCubit>().addStopover(
+        lat: lat,
+        lng: lng,
+        address: query,
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت إضافة المحطة بنجاح')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: _C.sheet,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text('إضافة محطة توقف', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _addressCtrl,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'ابحث عن مكان...',
+              hintStyle: const TextStyle(color: _C.t2),
+              filled: true,
+              fillColor: _C.card,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء', style: TextStyle(color: _C.t2)),
+        ),
+        if (_isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: _C.blue)),
+          )
+        else
+          TextButton(
+            onPressed: _searchAndAdd,
+            child: const Text('إضافة', style: TextStyle(color: _C.blue, fontWeight: FontWeight.bold)),
+          ),
+      ],
+    );
+  }
 }

@@ -31,9 +31,12 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     on<TripStatusChanged>(_onTripChanged);
     on<CancelSearch>(_onCancel);
     on<RebroadcastTripOffers>(_onRebroadcast);
+    on<OffersUpdated>(_onOffersUpdated);
+    on<AcceptDriverOffer>(_onAcceptDriverOffer);
   }
 
   StreamSubscription? _tripSubscription;
+  StreamSubscription? _offersSubscription;
 
   Future<void> _onStart(
     StartSearching event,
@@ -46,6 +49,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     _countdownTimer?.cancel();
     _rebroadcastTimer?.cancel();
     _tripSubscription?.cancel();
+    _offersSubscription?.cancel();
 
     
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -69,6 +73,16 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       if (rows.isNotEmpty) {
         add(TripStatusChanged(Map<String, dynamic>.from(rows.first)));
       }
+    });
+
+    _offersSubscription?.cancel();
+    _offersSubscription = SupabaseService.client
+        .from('trip_offers')
+        .stream(primaryKey: ['id'])
+        .eq('trip_id', event.tripId)
+        .listen((rows) {
+      final pendingRows = rows.where((r) => r['status'] == 'pending').toList();
+      add(OffersUpdated(pendingRows.map((e) => Map<String, dynamic>.from(e)).toList()));
     });
 
     
@@ -127,7 +141,9 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       _countdownTimer?.cancel();
       _rebroadcastTimer?.cancel();
       await _tripSubscription?.cancel();
+      await _offersSubscription?.cancel();
       _tripSubscription = null;
+      _offersSubscription = null;
       
       try {
         final tripId = (state as SearchingInProgress).tripId;
@@ -209,7 +225,30 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     } catch (e) {
       debugPrint('SearchingBloc: error cancelling trip — $e');
     }
-    emit(SearchingCancelled());
+    emit(const SearchingCancelled());
+  }
+
+  void _onOffersUpdated(
+    OffersUpdated event,
+    Emitter<SearchingState> emit,
+  ) {
+    if (state is SearchingInProgress) {
+      emit((state as SearchingInProgress).copyWith(offers: event.offers));
+    }
+  }
+
+  Future<void> _onAcceptDriverOffer(
+    AcceptDriverOffer event,
+    Emitter<SearchingState> emit,
+  ) async {
+    try {
+      final result = await SupabaseService.client.rpc('user_accept_offer', params: {
+        'p_offer_id': event.offerId,
+      });
+      debugPrint('SearchingBloc: user_accept_offer result: $result');
+    } catch (e) {
+      debugPrint('SearchingBloc: error accepting driver offer — $e');
+    }
   }
 
   @override
@@ -217,6 +256,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     _countdownTimer?.cancel();
     _rebroadcastTimer?.cancel();
     _tripSubscription?.cancel();
+    _offersSubscription?.cancel();
     return super.close();
   }
 }

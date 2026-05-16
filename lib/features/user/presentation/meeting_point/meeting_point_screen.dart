@@ -20,6 +20,8 @@ import 'package:snapix/features/user/data/repositories/meeting_point_repository.
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../trips/data/repositories/route_repository.dart';
+import '../../../../services/supabase_service.dart';
 
 class MeetingPointScreen extends StatefulWidget {
   final MeetingPointArgs? extra;
@@ -171,6 +173,35 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         geohash: tripData['geohash'] as String?,
         couponCode: args.couponCode,
       );
+
+      final waypoints = args.waypoints;
+      if (waypoints != null && waypoints.isNotEmpty) {
+        try {
+          final routeRepo = RouteRepository();
+          await Future.delayed(const Duration(milliseconds: 500)); // wait for trigger to finish
+          var planData = await SupabaseService.client.from('trip_route_plans').select('id').eq('trip_id', result['id']).maybeSingle();
+          
+          if (planData == null) {
+            await routeRepo.createRoutePlanFromLegacy(result['id']);
+            planData = await SupabaseService.client.from('trip_route_plans').select('id').eq('trip_id', result['id']).maybeSingle();
+          }
+
+          if (planData != null) {
+            final planId = planData['id'] as String;
+            for (int i = 0; i < waypoints.length; i++) {
+              await routeRepo.addStopover(
+                routePlanId: planId,
+                seqOrder: i + 1, // before the final destination
+                lat: waypoints[i].lat,
+                lng: waypoints[i].lng,
+                address: waypoints[i].address,
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Failed to add waypoints: $e');
+        }
+      }
 
       if (!mounted) return;
       final oParams = '&oLat=$finalLat&oLng=$finalLng';

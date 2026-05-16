@@ -9,43 +9,6 @@ abstract class TripEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class CreateTripRequested extends TripEvent {
-  final String pickupAddress;
-  final double pickupLat;
-  final double pickupLng;
-  final String destinationAddress;
-  final double destinationLat;
-  final double destinationLng;
-  final String vehicleType;
-  final double distanceKm;
-  final double price;
-
-  const CreateTripRequested({
-    required this.pickupAddress,
-    required this.pickupLat,
-    required this.pickupLng,
-    required this.destinationAddress,
-    required this.destinationLat,
-    required this.destinationLng,
-    required this.vehicleType,
-    required this.distanceKm,
-    required this.price,
-  });
-
-  @override
-  List<Object?> get props => [
-        pickupAddress,
-        pickupLat,
-        pickupLng,
-        destinationAddress,
-        destinationLat,
-        destinationLng,
-        vehicleType,
-        distanceKm,
-        price,
-      ];
-}
-
 class GetUserTripsRequested extends TripEvent {
   final String userId;
 

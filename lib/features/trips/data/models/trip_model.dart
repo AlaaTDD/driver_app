@@ -46,6 +46,8 @@ class TripModel extends TripEntity {
     super.paymentSource,
     super.serviceAreaId,
     super.estimatedDurationMin,
+    super.scheduledAt,
+    super.cancelReasonCategory,
     this.userData,
   });
 
@@ -87,6 +89,8 @@ class TripModel extends TripEntity {
       paymentSource: json['payment_source'] as String?,
       serviceAreaId: json['service_area_id'] as String?,
       estimatedDurationMin: json['estimated_duration_min'] != null ? (json['estimated_duration_min'] as num).toDouble() : null,
+      scheduledAt: json['scheduled_at'] != null ? DateTime.parse(json['scheduled_at'] as String) : null,
+      cancelReasonCategory: json['cancel_reason_category'] as String?,
       userData: json['user'] as Map<String, dynamic>?,
     );
   }
@@ -129,6 +133,8 @@ class TripModel extends TripEntity {
       'payment_source': paymentSource,
       'service_area_id': serviceAreaId,
       'estimated_duration_min': estimatedDurationMin,
+      'scheduled_at': scheduledAt?.toIso8601String(),
+      'cancel_reason_category': cancelReasonCategory,
       if (userData != null) 'user': userData,
     };
   }

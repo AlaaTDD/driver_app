@@ -23,14 +23,26 @@ import '../../../../core/localization/generated/app_localizations.dart';
 
 
 
-enum _ActiveField { none, origin, destination }
-enum _PickMode { none, origin, destination }
+enum _PickMode { none, origin, destination, waypoint }
 
 class _Suggestion {
   final String label;
   final String detail;
   final double lat, lng;
   const _Suggestion({required this.label, required this.detail, required this.lat, required this.lng});
+}
+
+class _WaypointModel {
+  final TextEditingController ctrl = TextEditingController();
+  final FocusNode focus = FocusNode();
+  double? lat;
+  double? lng;
+  String? address;
+
+  void dispose() {
+    ctrl.dispose();
+    focus.dispose();
+  }
 }
 
 
@@ -100,7 +112,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   double? _destLat, _destLng;
   String? _destAddress;
 
-  _ActiveField _activeField = _ActiveField.none;
+  final List<_WaypointModel> _waypoints = [];
+  int _pickWaypointIdx = -1; // which waypoint is being picked
+
+  String _activeFieldId = 'none'; // 'origin', 'destination', 'waypoint_X'
   _PickMode _pickMode = _PickMode.none;
   LatLng _mapCenter = AppConstants.defaultMapCenter;
   bool _isPickConfirming = false;
@@ -143,22 +158,21 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     } else {
       context.read<LocationBloc>().add(const SelectCurrentLocation());
     }
-    _originFocus.addListener(_onFocusChanged);
-    _destFocus.addListener(_onFocusChanged);
-    _originCtrl.addListener(() => _onTextChanged(_originCtrl.text, _ActiveField.origin));
-    _destCtrl.addListener(() => _onTextChanged(_destCtrl.text, _ActiveField.destination));
+    _originFocus.addListener(() => _onFocusChanged('origin', _originFocus));
+    _destFocus.addListener(() => _onFocusChanged('destination', _destFocus));
+    _originCtrl.addListener(() => _onTextChanged(_originCtrl.text, 'origin'));
+    _destCtrl.addListener(() => _onTextChanged(_destCtrl.text, 'destination'));
   }
 
-  void _onFocusChanged() {
+  void _onFocusChanged(String id, FocusNode node) {
     setState(() {
-      if (_originFocus.hasFocus) _activeField = _ActiveField.origin;
-      else if (_destFocus.hasFocus) _activeField = _ActiveField.destination;
-      else _activeField = _ActiveField.none;
+      if (node.hasFocus) _activeFieldId = id;
+      else if (_activeFieldId == id) _activeFieldId = 'none';
     });
   }
 
-  void _onTextChanged(String text, _ActiveField field) {
-    if (_activeField != field) return;
+  void _onTextChanged(String text, String fieldId) {
+    if (_activeFieldId != fieldId) return;
     _debounce?.cancel();
     if (text.trim().length < 2) {
       if (_suggestions.isNotEmpty || _isSearching) {
@@ -167,14 +181,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       return;
     }
     setState(() => _isSearching = true);
-    _debounce = Timer(const Duration(milliseconds: 500), () => _searchLocations(text, field));
+    _debounce = Timer(const Duration(milliseconds: 500), () => _searchLocations(text, fieldId));
   }
 
-  Future<void> _searchLocations(String query, _ActiveField field) async {
+  Future<void> _searchLocations(String query, String fieldId) async {
     if (!mounted) return;
     try {
       final locations = await locationFromAddress(query);
-      if (!mounted || _activeField != field) return;
+      if (!mounted || _activeFieldId != fieldId) return;
       final results = <_Suggestion>[];
       for (final loc in locations.take(5)) {
         String label = query;
@@ -202,17 +216,25 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     }
   }
 
-  void _onSuggestionTap(_Suggestion s) {
+   void _onSuggestionTap(_Suggestion s) {
     FocusScope.of(context).unfocus();
     setState(() {
       _suggestions = [];
       _isSearching = false;
-      if (_activeField == _ActiveField.origin) {
+      if (_activeFieldId == 'origin') {
         _originLat = s.lat; _originLng = s.lng; _originAddress = s.label;
         _originCtrl.text = s.label;
-      } else {
+      } else if (_activeFieldId == 'destination') {
         _destLat = s.lat; _destLng = s.lng; _destAddress = s.label;
         _destCtrl.text = s.label;
+      } else if (_activeFieldId.startsWith('waypoint_')) {
+        final idx = int.tryParse(_activeFieldId.split('_').last) ?? -1;
+        if (idx >= 0 && idx < _waypoints.length) {
+          _waypoints[idx].lat = s.lat;
+          _waypoints[idx].lng = s.lng;
+          _waypoints[idx].address = s.label;
+          _waypoints[idx].ctrl.text = s.label;
+        }
       }
     });
     _fitMapToBothPoints();
@@ -225,9 +247,15 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       if (_routePoints.isNotEmpty) setState(() { _routePoints = []; _visiblePoints = []; });
       return;
     }
+    final waypointsToPass = _waypoints
+        .where((w) => w.lat != null && w.lng != null)
+        .map((w) => LatLng(w.lat!, w.lng!))
+        .toList();
+
     final result = await DirectionsService.getRoute(
       originLat: _originLat!, originLng: _originLng!,
       destLat: _destLat!, destLng: _destLng!,
+      waypoints: waypointsToPass.isNotEmpty ? waypointsToPass : null,
       apiKey: EnvConstants.googleMapsApiKey,
     );
     if (!mounted) return;
@@ -245,64 +273,58 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     if (!_mapCtrl.isCompleted) return;
     final ctrl = await _mapCtrl.future;
     if (_originLat != null && _destLat != null) {
-      final minLat = math.min(_originLat!, _destLat!);
-      final maxLat = math.max(_originLat!, _destLat!);
-      final minLng = math.min(_originLng!, _destLng!);
-      final maxLng = math.max(_originLng!, _destLng!);
+      double minLat = math.min(_originLat!, _destLat!);
+      double maxLat = math.max(_originLat!, _destLat!);
+      double minLng = math.min(_originLng!, _destLng!);
+      double maxLng = math.max(_originLng!, _destLng!);
       
-      
-      final latDelta = maxLat - minLat;
-      final lngDelta = maxLng - minLng;
-      
-      
-      final latPadding = math.max(latDelta * 0.3, 0.005);
-      final lngPadding = math.max(lngDelta * 0.3, 0.005);
-      
-      final bounds = LatLngBounds(
-        southwest: LatLng(minLat - latPadding, minLng - lngPadding),
-        northeast: LatLng(maxLat + latPadding, maxLng + lngPadding),
-      );
-      
-      ctrl.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
-    } else if (_destLat != null) {
-      ctrl.animateCamera(CameraUpdate.newLatLngZoom(LatLng(_destLat!, _destLng!), 15));
-    } else if (_originLat != null) {
-      ctrl.animateCamera(CameraUpdate.newLatLngZoom(LatLng(_originLat!, _originLng!), 15));
+      for (final w in _waypoints) {
+        if (w.lat != null && w.lng != null) {
+          minLat = math.min(minLat, w.lat!);
+          maxLat = math.max(maxLat, w.lat!);
+          minLng = math.min(minLng, w.lng!);
+          maxLng = math.max(maxLng, w.lng!);
+        }
+      }
+
+      ctrl.animateCamera(CameraUpdate.newLatLngBounds(
+        LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+        80,
+      ));
     }
   }
 
-  void _enterPickMode(_PickMode mode) {
+  void _enterPickMode(_PickMode mode, {int waypointIdx = -1}) {
     FocusScope.of(context).unfocus();
     setState(() {
       _pickMode = mode;
+      _pickWaypointIdx = waypointIdx;
       _suggestions = [];
-      _livePickAddress = '';
-      _isReversing = false;
+      _isSearching = false;
     });
   }
 
   void _onCameraMove(CameraPosition pos) {
-    if (_pickMode == _PickMode.none) return;
-    _mapCenter = pos.target;
-    _reverseDebounce?.cancel();
-    _reverseDebounce = Timer(const Duration(milliseconds: 600), () async {
-      if (!mounted || _pickMode == _PickMode.none) return;
-      setState(() => _isReversing = true);
-      try {
-        final pms = await placemarkFromCoordinates(pos.target.latitude, pos.target.longitude);
-        if (!mounted) return;
-        String addr = '${pos.target.latitude.toStringAsFixed(4)}, ${pos.target.longitude.toStringAsFixed(4)}';
-        if (pms.isNotEmpty) {
-          final p = pms.first;
-          final parts = [p.street, p.subLocality, p.locality]
-              .where((e) => e != null && e.isNotEmpty).cast<String>().toList();
-          if (parts.isNotEmpty) addr = parts.join(', ');
+    if (_pickMode != _PickMode.none) {
+      _mapCenter = pos.target;
+      _reverseDebounce?.cancel();
+      if (!_isReversing) setState(() => _isReversing = true);
+      _reverseDebounce = Timer(const Duration(milliseconds: 700), () async {
+        try {
+          final pms = await placemarkFromCoordinates(_mapCenter.latitude, _mapCenter.longitude);
+          String addr = '';
+          if (pms.isNotEmpty) {
+            final p = pms.first;
+            final parts = [p.street, p.subLocality, p.locality]
+                .where((e) => e != null && e.isNotEmpty).cast<String>().toList();
+            if (parts.isNotEmpty) addr = parts.join(', ');
+          }
+          if (mounted) setState(() { _livePickAddress = addr; _isReversing = false; });
+        } catch (e) { debugPrint('❌ Error: $e');
+          if (mounted) setState(() => _isReversing = false);
         }
-        if (mounted) setState(() { _livePickAddress = addr; _isReversing = false; });
-      } catch (e) { debugPrint('❌ Error: $e');
-        if (mounted) setState(() => _isReversing = false);
-      }
-    });
+      });
+    }
   }
 
   Future<void> _confirmPickLocation() async {
@@ -327,9 +349,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         if (_pickMode == _PickMode.origin) {
           _originLat = _mapCenter.latitude; _originLng = _mapCenter.longitude;
           _originAddress = addr; _originCtrl.text = addr;
-        } else {
+        } else if (_pickMode == _PickMode.destination) {
           _destLat = _mapCenter.latitude; _destLng = _mapCenter.longitude;
           _destAddress = addr; _destCtrl.text = addr;
+        } else if (_pickMode == _PickMode.waypoint && _pickWaypointIdx >= 0 && _pickWaypointIdx < _waypoints.length) {
+          _waypoints[_pickWaypointIdx].lat = _mapCenter.latitude;
+          _waypoints[_pickWaypointIdx].lng = _mapCenter.longitude;
+          _waypoints[_pickWaypointIdx].address = addr;
+          _waypoints[_pickWaypointIdx].ctrl.text = addr;
         }
         _pickMode = _PickMode.none;
         _livePickAddress = '';
@@ -366,11 +393,18 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       AppToast.error(AppLocalizations.of(context)!.pleaseSelectOriginAndDest);
       return;
     }
+    
+    final validWaypoints = _waypoints
+        .where((w) => w.lat != null && w.lng != null)
+        .map((w) => WaypointArg(lat: w.lat!, lng: w.lng!, address: w.address ?? ''))
+        .toList();
+
     context.push(AppRoutes.userPricing, extra: PricingArgs(
       originLat: _originLat!, originLng: _originLng!,
       originAddress: _originAddress ?? '',
       destLat: _destLat!, destLng: _destLng!,
       destAddress: _destAddress ?? '',
+      waypoints: validWaypoints.isNotEmpty ? validWaypoints : null,
     ));
   }
 
@@ -382,6 +416,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     _debounce?.cancel();
     _originCtrl.dispose(); _destCtrl.dispose();
     _originFocus.dispose(); _destFocus.dispose();
+    for (var w in _waypoints) { w.dispose(); }
     super.dispose();
   }
 
@@ -409,15 +444,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            
             Positioned.fill(child: _buildMap(isDark)),
 
-            
+            // Top gradient
             Positioned(
-              top: 0, left: 0, right: 0,
-              height: 200,
+              top: 0, left: 0, right: 0, height: 200,
               child: IgnorePointer(
-                child: Container(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
@@ -431,7 +464,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               ),
             ),
 
-            
+            // Top card or pick banner
             Positioned(
               top: 0, left: 0, right: 0,
               child: Column(
@@ -446,15 +479,19 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               ),
             ),
 
-            
-            Positioned.fill(
-              child: _pickMode != _PickMode.none ? _buildCenterPin() : const SizedBox.shrink(),
-            ),
+            // Center pin in pick mode
+            if (_pickMode != _PickMode.none)
+              Positioned.fill(child: _buildCenterPin()),
 
-            
+            // Bottom actions
             Positioned(
               bottom: 24, left: 16, right: 16,
-              child: SafeArea(top: false, child: _buildBottomActions()),
+              child: SafeArea(
+                top: false,
+                child: _pickMode != _PickMode.none
+                    ? _buildPickModeDialog(isDark)
+                    : _buildConfirmButton(isDark),
+              ),
             ),
           ],
         ),
@@ -468,54 +505,189 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     return SafeArea(
       bottom: false,
       child: Padding(
-        
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            
             _PremiumBackButton(isDark: isDark, onTap: () => context.pop()),
             const SizedBox(width: 10),
-
-            
             Expanded(
               child: _PremiumCard(
                 isDark: isDark,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    
-                    _LocationField(
-                      controller: _originCtrl,
-                      focusNode: _originFocus,
-                      hint: AppLocalizations.of(context)!.startingPoint,
-                      label: AppLocalizations.of(context)!.origin,
-                      placeholder: AppLocalizations.of(context)!.searchOrPick,
-                      dotColor: AppColors.success,
-                      isActive: _activeField == _ActiveField.origin,
-                      onMapTap: () => _enterPickMode(_PickMode.origin),
-                      isDark: isDark,
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Timeline dots
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _RouteTimeline(
+                          waypointCount: _waypoints.length,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Fields column
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // ORIGIN
+                            _SlimField(
+                              controller: _originCtrl,
+                              focusNode: _originFocus,
+                              label: AppLocalizations.of(context)!.origin,
+                              placeholder: AppLocalizations.of(context)!.searchOrPick,
+                              isActive: _activeFieldId == 'origin',
+                              isDark: isDark,
+                              trailingIcon: Icons.my_location_rounded,
+                              onTrailingTap: () => _enterPickMode(_PickMode.origin),
+                            ),
 
-                    
-                    _SwapDivider(isDark: isDark, onSwap: _swapLocations),
+                            // WAYPOINTS
+                            ..._waypoints.asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final w = entry.value;
+                              return _SlimField(
+                                controller: w.ctrl,
+                                focusNode: w.focus,
+                                label: 'محطة ${idx + 1}',
+                                placeholder: 'ابحث أو اختر من الخريطة',
+                                isActive: _activeFieldId == 'waypoint_$idx',
+                                isDark: isDark,
+                                trailingIcon: Icons.location_searching_rounded,
+                                onTrailingTap: () => _enterPickMode(_PickMode.waypoint, waypointIdx: idx),
+                                showRemove: true,
+                                onRemove: () {
+                                  setState(() {
+                                    w.dispose();
+                                    _waypoints.removeAt(idx);
+                                  });
+                                  _fetchRoute();
+                                },
+                              );
+                            }),
 
-                    
-                    _LocationField(
-                      controller: _destCtrl,
-                      focusNode: _destFocus,
-                      hint: AppLocalizations.of(context)!.destination,
-                      label: AppLocalizations.of(context)!.destination,
-                      placeholder: AppLocalizations.of(context)!.whereToGoQ,
-                      dotColor: AppColors.error,
-                      isActive: _activeField == _ActiveField.destination,
-                      onMapTap: () => _enterPickMode(_PickMode.destination),
-                      isDark: isDark,
-                    ),
-                  ],
+                            // DESTINATION
+                            _SlimField(
+                              controller: _destCtrl,
+                              focusNode: _destFocus,
+                              label: AppLocalizations.of(context)!.destination,
+                              placeholder: AppLocalizations.of(context)!.whereToGoQ,
+                              isActive: _activeFieldId == 'destination',
+                              isDark: isDark,
+                              trailingIcon: Icons.location_on_rounded,
+                              onTrailingTap: () => _enterPickMode(_PickMode.destination),
+                              isLast: true,
+                            ),
+
+                            // Add waypoint + swap row
+                            if (_waypoints.length < 3)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, bottom: 2),
+                                child: Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          final w = _WaypointModel();
+                                          _waypoints.add(w);
+                                          w.ctrl.addListener(() {
+                                            final idx = _waypoints.indexOf(w);
+                                            if (idx >= 0) _onTextChanged(w.ctrl.text, 'waypoint_$idx');
+                                          });
+                                          w.focus.addListener(() {
+                                            final idx = _waypoints.indexOf(w);
+                                            if (idx >= 0) _onFocusChanged('waypoint_$idx', w.focus);
+                                          });
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.add_rounded, size: 13, color: AppColors.primary),
+                                            const SizedBox(width: 3),
+                                            Text('إضافة محطة',
+                                              style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    GestureDetector(
+                                      onTap: _swapLocations,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? Colors.white.withValues(alpha: 0.05)
+                                              : Colors.black.withValues(alpha: 0.04),
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.swap_vert_rounded, size: 13, color: context.textSecondary),
+                                            const SizedBox(width: 3),
+                                            Text('عكس',
+                                              style: TextStyle(fontSize: 11, color: context.textSecondary, fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfirmButton(bool isDark) {
+    final canConfirm = _originLat != null && _destLat != null;
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: canConfirm ? _confirm : null,
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          elevation: canConfirm ? 12 : 0,
+          shadowColor: AppColors.primary.withValues(alpha: 0.50),
+          backgroundColor: canConfirm ? AppColors.primary : (isDark ? const Color(0xFF1A2A40) : const Color(0xFFE8EEF5)),
+          foregroundColor: canConfirm ? Colors.white : (isDark ? Colors.white38 : Colors.black38),
+          disabledBackgroundColor: isDark ? const Color(0xFF1A2A40) : const Color(0xFFE8EEF5),
+          disabledForegroundColor: isDark ? Colors.white38 : Colors.black38,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              canConfirm ? AppLocalizations.of(context)!.confirmAndCalculate : AppLocalizations.of(context)!.selectOriginAndDest,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+            if (canConfirm) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 13),
+            ],
           ],
         ),
       ),
@@ -526,7 +698,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   Widget _buildPickModeBanner(bool isDark) {
     final isOrigin = _pickMode == _PickMode.origin;
-    final color = isOrigin ? AppColors.success : AppColors.error;
+    final isWaypoint = _pickMode == _PickMode.waypoint;
+    final color = isOrigin ? AppColors.success : (isWaypoint ? AppColors.warning : AppColors.error);
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -578,7 +751,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      isOrigin ? AppLocalizations.of(context)!.moveMapForOrigin : AppLocalizations.of(context)!.moveMapForDest,
+                      isOrigin
+                          ? AppLocalizations.of(context)!.moveMapForOrigin
+                          : (isWaypoint
+                              ? 'حرّك الخريطة لاختيار المحطة'
+                              : AppLocalizations.of(context)!.moveMapForDest),
                       style: TextStyle(
                         color: context.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -714,18 +891,27 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         points: _visiblePoints,
         color: AppColors.primary.withValues(alpha: 0.10),
         width: 18,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
       ));
       polylines.add(Polyline(
         polylineId: const PolylineId('route_glow'),
         points: _visiblePoints,
         color: AppColors.primary.withValues(alpha: 0.28),
         width: 10,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
       ));
       polylines.add(Polyline(
         polylineId: const PolylineId('route'),
         points: _visiblePoints,
         color: AppColors.primary,
         width: 4,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
       ));
     }
     return GoogleMap(
@@ -744,12 +930,20 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               : '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
           if (!mounted) return;
           setState(() {
-            if (_activeField == _ActiveField.origin || _originLat == null) {
+            if (_activeFieldId == 'origin' || _originLat == null) {
               _originLat = pos.latitude; _originLng = pos.longitude;
               _originAddress = addr; _originCtrl.text = addr;
-            } else {
+            } else if (_activeFieldId == 'destination') {
               _destLat = pos.latitude; _destLng = pos.longitude;
               _destAddress = addr; _destCtrl.text = addr;
+            } else if (_activeFieldId.startsWith('waypoint_')) {
+              final idx = int.tryParse(_activeFieldId.split('_').last) ?? -1;
+              if (idx >= 0 && idx < _waypoints.length) {
+                _waypoints[idx].lat = pos.latitude;
+                _waypoints[idx].lng = pos.longitude;
+                _waypoints[idx].address = addr;
+                _waypoints[idx].ctrl.text = addr;
+              }
             }
           });
           _fitMapToBothPoints();
@@ -770,7 +964,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   Widget _buildCenterPin() {
     final isOrigin = _pickMode == _PickMode.origin;
-    final color = isOrigin ? AppColors.success : AppColors.error;
+    final isWaypoint = _pickMode == _PickMode.waypoint;
+    final color = isOrigin ? AppColors.success : (isWaypoint ? AppColors.warning : AppColors.error);
     return IgnorePointer(
       child: Center(
         child: Column(
@@ -833,57 +1028,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   
 
-  Widget _buildBottomActions() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (_pickMode != _PickMode.none) {
-      return _buildPickModeDialog(isDark);
-    }
-    final canConfirm = _originLat != null && _destLat != null;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: canConfirm
-            ? ImageFilter.blur(sigmaX: 0, sigmaY: 0)
-            : ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: SizedBox(
-          width: double.infinity, height: 54,
-          child: ElevatedButton(
-            onPressed: canConfirm ? _confirm : null,
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              elevation: canConfirm ? 12 : 0,
-              shadowColor: AppColors.primary.withValues(alpha: 0.50),
-              backgroundColor: canConfirm
-                  ? AppColors.primary
-                  : (isDark ? const Color(0xFF1A2A40) : const Color(0xFFE8EEF5)),
-              foregroundColor: canConfirm
-                  ? Colors.white
-                  : (isDark ? Colors.white38 : Colors.black38),
-              disabledBackgroundColor: isDark ? const Color(0xFF1A2A40) : const Color(0xFFE8EEF5),
-              disabledForegroundColor: isDark ? Colors.white38 : Colors.black38,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  canConfirm ? AppLocalizations.of(context)!.confirmAndCalculate : AppLocalizations.of(context)!.selectOriginAndDest,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-                if (canConfirm) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildPickModeDialog(bool isDark) {
     final isOrigin = _pickMode == _PickMode.origin;
-    final color = isOrigin ? AppColors.success : AppColors.error;
+    final isWaypoint = _pickMode == _PickMode.waypoint;
+    final color = isOrigin ? AppColors.success : (isWaypoint ? AppColors.warning : AppColors.error);
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -935,7 +1084,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          isOrigin ? AppLocalizations.of(context)!.startingPoint : AppLocalizations.of(context)!.destination,
+                          isOrigin
+                              ? AppLocalizations.of(context)!.startingPoint
+                              : (isWaypoint
+                                  ? 'محطة التوقف'
+                                  : AppLocalizations.of(context)!.destination),
                           style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 3),
@@ -1006,7 +1159,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                             )
                           : Text(
-                              isOrigin ? AppLocalizations.of(context)!.confirmOrigin : AppLocalizations.of(context)!.confirmDest,
+                              isOrigin
+                                  ? AppLocalizations.of(context)!.confirmOrigin
+                                  : (isWaypoint ? 'تأكيد المحطة' : AppLocalizations.of(context)!.confirmDest),
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                             ),
                     ),
@@ -1296,6 +1451,252 @@ class _LocationField extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Route Timeline Widget ────────────────────────────────────────────────────
+// Visual vertical timeline: green dot (origin) → dashed line → orange dots
+// (waypoints) → dashed line → red dot (destination)
+class _RouteTimeline extends StatelessWidget {
+  final int waypointCount;
+  final bool isDark;
+  const _RouteTimeline({required this.waypointCount, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    // Each field row is ~52px tall
+    const rowH = 52.0;
+    const dotR = 7.0;
+    final totalRows = 2 + waypointCount; // origin + waypoints + dest
+
+    return SizedBox(
+      width: 16,
+      height: totalRows * rowH,
+      child: CustomPaint(
+        painter: _TimelinePainter(
+          waypointCount: waypointCount,
+          isDark: isDark,
+          rowH: rowH,
+          dotR: dotR,
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelinePainter extends CustomPainter {
+  final int waypointCount;
+  final bool isDark;
+  final double rowH;
+  final double dotR;
+
+  _TimelinePainter({
+    required this.waypointCount,
+    required this.isDark,
+    required this.rowH,
+    required this.dotR,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final totalRows = 2 + waypointCount;
+
+    // Colors
+    const originColor  = AppColors.success;  // green
+    const waypointColor = AppColors.warning; // orange
+    const destColor    = AppColors.error;    // red
+    final lineColor = isDark
+        ? const Color(0xFF2A3650)
+        : const Color(0xFFD4DCE8);
+
+    // Draw connecting lines between dots
+    final linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < totalRows - 1; i++) {
+      final y1 = rowH * i + rowH / 2 + dotR;
+      final y2 = rowH * (i + 1) + rowH / 2 - dotR;
+      // dashed line
+      double y = y1;
+      const dashH = 4.0;
+      const gapH = 3.0;
+      while (y < y2) {
+        final end = (y + dashH).clamp(y, y2);
+        canvas.drawLine(Offset(cx, y), Offset(cx, end), linePaint);
+        y += dashH + gapH;
+      }
+    }
+
+    // Draw dots
+    for (int i = 0; i < totalRows; i++) {
+      final cy = rowH * i + rowH / 2;
+      Color dotColor;
+      if (i == 0) {
+        dotColor = originColor;
+      } else if (i == totalRows - 1) {
+        dotColor = destColor;
+      } else {
+        dotColor = waypointColor;
+      }
+
+      // Outer glow ring
+      final glowPaint = Paint()
+        ..color = dotColor.withValues(alpha: 0.18)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(cx, cy), dotR + 3, glowPaint);
+
+      // Dot fill
+      final fillPaint = Paint()
+        ..color = dotColor
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(cx, cy), dotR, fillPaint);
+
+      // White inner dot
+      final innerPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.85)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(cx, cy), dotR * 0.38, innerPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TimelinePainter old) =>
+      old.waypointCount != waypointCount || old.isDark != isDark;
+}
+
+// ─── Slim Field Widget ────────────────────────────────────────────────────────
+// Compact field with active left-border indicator, label above text input
+class _SlimField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String label;
+  final String placeholder;
+  final bool isActive;
+  final bool isDark;
+  final IconData trailingIcon;
+  final VoidCallback onTrailingTap;
+  final bool isLast;
+  final bool showRemove;
+  final VoidCallback? onRemove;
+
+  const _SlimField({
+    required this.controller,
+    required this.focusNode,
+    required this.label,
+    required this.placeholder,
+    required this.isActive,
+    required this.isDark,
+    required this.trailingIcon,
+    required this.onTrailingTap,
+    this.isLast = false,
+    this.showRemove = false,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive
+            ? AppColors.primary.withValues(alpha: isDark ? 0.09 : 0.05)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: isActive
+            ? Border.all(color: AppColors.primary.withValues(alpha: 0.30), width: 1)
+            : Border.all(color: Colors.transparent),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Text field area
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 180),
+                  style: TextStyle(
+                    color: isActive ? AppColors.primary : context.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                  child: Text(label.toUpperCase()),
+                ),
+                const SizedBox(height: 1),
+                TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    height: 1.2,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: placeholder,
+                    hintStyle: TextStyle(
+                      color: context.textSecondary.withValues(alpha: 0.45),
+                      fontSize: 13,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Map pick button
+          GestureDetector(
+            onTap: onTrailingTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.04)),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                trailingIcon,
+                size: 14,
+                color: isActive ? AppColors.primary : context.textSecondary,
+              ),
+            ),
+          ),
+
+          // Remove button (for waypoints)
+          if (showRemove && onRemove != null) ...[
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 26, height: 26,
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Icon(Icons.close, size: 12, color: AppColors.error),
+              ),
+            ),
+          ],
         ],
       ),
     );

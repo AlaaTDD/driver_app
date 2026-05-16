@@ -37,6 +37,7 @@ import '../../features/wallet/presentation/cubit/wallet_cubit.dart';
 import '../../features/wallet/presentation/screens/driver_wallet_screen.dart';
 import '../../features/wallet/presentation/screens/user_wallet_screen.dart';
 import '../../features/driver/presentation/bonus/bonus_screen.dart';
+import '../../features/driver/presentation/request_feed/driver_request_feed_screen.dart';
 import '../constants/app_routes.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +55,7 @@ import '../../features/driver/presentation/profile/bloc/driver_profile_bloc.dart
 import '../../features/driver/presentation/home/bloc/driver_home_bloc.dart';
 import '../../features/shared/presentation/rating/bloc/rating_bloc.dart';
 import '../../core/bloc/location_permission_cubit.dart';
-
+import '../../features/trips/presentation/bloc/trip_route_cubit.dart';
 
 Page<dynamic> _buildSlideTransition({required Widget child}) {
   return CustomTransitionPage(
@@ -315,7 +316,15 @@ class AppRouter {
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
             if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
-            return MaterialPage(child: BlocProvider(create: (_) => TripsBloc(), child: UserTripDetailsScreen(tripId: tripId)));
+            return MaterialPage(
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (_) => TripsBloc()),
+                  BlocProvider(create: (_) => TripRouteCubit()..watchTripRoutes(tripId)),
+                ],
+                child: UserTripDetailsScreen(tripId: tripId),
+              ),
+            );
           },
         ),
         GoRoute(
@@ -388,7 +397,15 @@ class AppRouter {
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
             if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
-            return MaterialPage(child: BlocProvider(create: (_) => TripDetailsBloc(), child: DriverTripDetailsScreen(tripId: tripId)));
+            return MaterialPage(
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (_) => TripDetailsBloc()),
+                  BlocProvider(create: (_) => TripRouteCubit()..watchTripRoutes(tripId)),
+                ],
+                child: DriverTripDetailsScreen(tripId: tripId),
+              ),
+            );
           },
         ),
         GoRoute(
@@ -419,6 +436,13 @@ class AppRouter {
           path: AppRoutes.driverBonus,
           name: AppRoutes.driverBonus,
           pageBuilder: (context, state) => const MaterialPage(child: DriverBonusScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.driverRequestFeed,
+          name: AppRoutes.driverRequestFeed,
+          pageBuilder: (context, state) => _buildSlideTransition(
+            child: const DriverRequestFeedScreen(),
+          ),
         ),
       ],
     );

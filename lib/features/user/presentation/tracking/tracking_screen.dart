@@ -15,6 +15,7 @@ import '../../../../core/constants/app_constants.dart';
 import 'package:flutter/scheduler.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/map_styles.dart';
+import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 
 class TripTrackingScreen extends StatefulWidget {
   final String tripId;
@@ -29,6 +30,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
   BitmapDescriptor? _carIcon;
   BitmapDescriptor? _pickupIcon;
   BitmapDescriptor? _destIcon;
+  BitmapDescriptor? _waypointIcon;
+
+  late TripRouteCubit _routeCubit;
 
   // ─── Smooth interpolation (no AnimationController, no setState) ───────────
   final ValueNotifier<Marker?> _driverMarkerNotifier = ValueNotifier(null);
@@ -36,6 +40,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
   LatLng? _animatedDriverPosition;
   double _driverRotation = 0.0;
   Ticker? _animationTicker;
+  bool _is3DMode = false;
 
   static const _defaultCamera = CameraPosition(
     target: AppConstants.defaultMapCenter,
@@ -48,12 +53,14 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     _loadCarIcon();
     _loadCircleIcons();
     _startAnimationLoop();
+    _routeCubit = TripRouteCubit()..watchTripRoutes(widget.tripId);
     context.read<TrackingBloc>().add(LoadTripTracking(widget.tripId));
   }
 
   Future<void> _loadCircleIcons() async {
     _pickupIcon = await _createCircleMarker(Colors.green);
     _destIcon = await _createCircleMarker(Colors.red);
+    _waypointIcon = await _createCircleMarker(Colors.orange);
     if (mounted) setState(() {});
   }
 
@@ -128,6 +135,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     _animationTicker?.dispose();
     _driverMarkerNotifier.dispose();
     _mapController?.dispose();
+    _routeCubit.close();
     super.dispose();
   }
 
@@ -389,12 +397,27 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
         infoWindow: InfoWindow(title: AppLocalizations.of(context)!.destination),
       ));
     }
+    // ── Waypoint markers are built reactively inside BlocBuilder below ──
     if (state.routePoints.isNotEmpty) {
       polylines.add(Polyline(
-        polylineId: const PolylineId('route'),
+        polylineId: const PolylineId('route_bg'),
+        points: state.routePoints,
+        color: _blue.withValues(alpha: 0.25),
+        width: 12,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 0,
+      ));
+      polylines.add(Polyline(
+        polylineId: const PolylineId('route_fg'),
         points: state.routePoints,
         color: _blue,
         width: 5,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 1,
       ));
     }
 
@@ -404,43 +427,64 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     final l = AppLocalizations.of(context)!;
 
     return Stack(children: [
-      // Full-bleed map
+      // Full-bleed map — reactive to driver location AND route cubit waypoints
       Positioned.fill(
-        child: Stack(fit: StackFit.expand, children: [
-          ExcludeSemantics(
-            child: ValueListenableBuilder<Marker?>(
-              valueListenable: _driverMarkerNotifier,
-              builder: (context, driverMarker, _) {
-                final allMarkers = Set<Marker>.from(staticMarkers);
-                if (driverMarker != null) allMarkers.add(driverMarker);
-                return GoogleMap(
-                  initialCameraPosition: _defaultCamera,
-                  onMapCreated: (ctrl) { _mapController = ctrl; _fitBounds(ctrl, state); },
-                  myLocationEnabled: false,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: false,
-                  compassEnabled: false,
-                  mapToolbarEnabled: false,
-                  minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 70,
-                    bottom: (screenH - mapH) + 20,
-                  ),
-                  markers: allMarkers,
-                  polylines: polylines,
-                  style: kDarkMapStyle,
-                );
-              },
-            ),
-          ),
-          Positioned(bottom: 0, left: 0, right: 0, height: 80,
-            child: DecoratedBox(decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.transparent, _bg.withValues(alpha: 0.88)],
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        child: BlocBuilder<TripRouteCubit, TripRouteState>(
+          bloc: _routeCubit,
+          builder: (context, routeCubitState) {
+            // ✅ Build waypoint markers reactively so map refreshes on add/remove
+            final waypointMarkers = <Marker>{};
+            final activeStopovers = routeCubitState.waypoints.where((w) => w.isStopover).toList();
+            for (int i = 0; i < activeStopovers.length; i++) {
+              final wp = activeStopovers[i];
+              waypointMarkers.add(Marker(
+                markerId: MarkerId('wp_$i'),
+                position: LatLng(wp.lat, wp.lng),
+                icon: _waypointIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+                anchor: const Offset(0.5, 0.5),
+                zIndex: 1,
+                infoWindow: InfoWindow(title: wp.address ?? 'محطة ${i + 1}'),
+              ));
+            }
+            final combinedMarkers = {...staticMarkers, ...waypointMarkers};
+
+            return Stack(fit: StackFit.expand, children: [
+              ExcludeSemantics(
+                child: ValueListenableBuilder<Marker?>(
+                  valueListenable: _driverMarkerNotifier,
+                  builder: (context, driverMarker, _) {
+                    final allMarkers = Set<Marker>.from(combinedMarkers);
+                    if (driverMarker != null) allMarkers.add(driverMarker);
+                    return GoogleMap(
+                      initialCameraPosition: _defaultCamera,
+                      onMapCreated: (ctrl) { _mapController = ctrl; _fitBounds(ctrl, state); },
+                      myLocationEnabled: false,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      compassEnabled: false,
+                      mapToolbarEnabled: false,
+                      minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).padding.top + 70,
+                        bottom: (screenH - mapH) + 20,
+                      ),
+                      markers: allMarkers,
+                      polylines: polylines,
+                      style: kDarkMapStyle,
+                    );
+                  },
+                ),
               ),
-            ))),
-        ]),
+              Positioned(bottom: 0, left: 0, right: 0, height: 80,
+                child: DecoratedBox(decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, _bg.withValues(alpha: 0.88)],
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  ),
+                ))),
+            ]);
+          },
+        ),
       ),
 
       // Header
@@ -460,6 +504,25 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                 Expanded(
                   child: Center(child: _statusPill(tripStatus, l)),
                 ),
+                _MapBtn(
+                  icon: _is3DMode ? Icons.view_in_ar : Icons.map_outlined,
+                  onTap: () async {
+                    setState(() => _is3DMode = !_is3DMode);
+                    if (_mapController != null && state.driverLocation != null) {
+                      await _mapController!.animateCamera(
+                        CameraUpdate.newCameraPosition(
+                          CameraPosition(
+                            target: state.driverLocation!,
+                            zoom: _is3DMode ? 18 : 16,
+                            tilt: _is3DMode ? 60 : 0,
+                            bearing: _driverRotation,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
                 _MapBtn(
                   icon: Icons.refresh_rounded,
                   onTap: () => context.read<TrackingBloc>().add(LoadTripTracking(widget.tripId)),
@@ -968,6 +1031,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
       ));
     }
     if (state.routePoints.isNotEmpty) points.addAll(state.routePoints.where((p) => p.latitude != 0.0 && p.longitude != 0.0));
+    // Include waypoint stopovers in bounds
+    final wpState = _routeCubit.state;
+    for (final wp in wpState.waypoints.where((w) => w.isStopover)) {
+      points.add(LatLng(wp.lat, wp.lng));
+    }
     
     if (points.isEmpty) return;
     

@@ -2757,13 +2757,52 @@ abstract class AppLocalizations {
   /// **'العمولة'**
   String get commission;
 
+  /// No description provided for @bonusRewards.
+  ///
+  /// In ar, this message translates to:
+  /// **'المكافآت والحوافز'**
   String get bonusRewards;
+
+  /// No description provided for @todayProgress.
+  ///
+  /// In ar, this message translates to:
+  /// **'تقدم اليوم'**
   String get todayProgress;
+
+  /// No description provided for @bonusRules.
+  ///
+  /// In ar, this message translates to:
+  /// **'قواعد المكافآت'**
   String get bonusRules;
+
+  /// No description provided for @bonusHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'سجل المكافآت'**
   String get bonusHistory;
+
+  /// No description provided for @noBonusYet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يتم الحصول على مكافآت بعد'**
   String get noBonusYet;
+
+  /// No description provided for @tripsDay.
+  ///
+  /// In ar, this message translates to:
+  /// **'رحلة / يوم'**
   String get tripsDay;
+
+  /// No description provided for @tripsWeek.
+  ///
+  /// In ar, this message translates to:
+  /// **'رحلة / أسبوع'**
   String get tripsWeek;
+
+  /// No description provided for @ratingStars.
+  ///
+  /// In ar, this message translates to:
+  /// **'تقييم بالنجوم'**
   String get ratingStars;
 }
 

@@ -1,4 +1,11 @@
 
+class WaypointArg {
+  final double lat;
+  final double lng;
+  final String address;
+  WaypointArg({required this.lat, required this.lng, required this.address});
+}
+
 class PricingArgs {
   final double? originLat;
   final double? originLng;
@@ -6,6 +13,7 @@ class PricingArgs {
   final double? destLat;
   final double? destLng;
   final String? destAddress;
+  final List<WaypointArg>? waypoints;
 
   const PricingArgs({
     this.originLat,
@@ -14,5 +22,6 @@ class PricingArgs {
     this.destLat,
     this.destLng,
     this.destAddress,
+    this.waypoints,
   });
 }

@@ -60,6 +60,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     on<NewTripOfferReceived>(_onNewTripOffer);
     on<AcceptTripOffer>(_onAcceptTripOffer);
     on<RejectTripOffer>(_onRejectTripOffer);
+    on<SubmitTripOffer>(_onSubmitTripOffer);
     on<DriverLocationChanged>(_onLocationChanged);
     on<LoadHeatmapData>(_onLoadHeatmapData);
     on<HeatmapDataUpdated>(_onHeatmapDataUpdated);
@@ -343,6 +344,36 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     }
 
     _trackId(_rejectedOfferTripIds, event.tripId);
+    emit(state.copyWith(clearOffer: true));
+  }
+
+  Future<void> _onSubmitTripOffer(
+    SubmitTripOffer event,
+    Emitter<DriverHomeState> emit,
+  ) async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) {
+      debugPrint('❌ DriverHomeBloc: Cannot submit offer — not authenticated');
+      _trackId(_rejectedOfferTripIds, event.tripId);
+      emit(state.copyWith(clearOffer: true));
+      return;
+    }
+
+    debugPrint('🚦 DriverHomeBloc: Submitting offer ${event.proposedPrice} for trip ${event.tripId}');
+
+    try {
+      final result = await SupabaseService.client.rpc('driver_submit_offer', params: {
+        'p_trip_id': event.tripId,
+        'p_proposed_price': event.proposedPrice,
+        'p_driver_lat': state.driverLat ?? 0.0,
+        'p_driver_lng': state.driverLng ?? 0.0,
+      });
+      debugPrint('🚦 DriverHomeBloc: driver_submit_offer result = $result');
+    } catch (e) {
+      debugPrint('⚠️ DriverHomeBloc: RPC submit_offer failed ($e).');
+    }
+
+    _trackId(_shownOfferTripIds, event.tripId);
     emit(state.copyWith(clearOffer: true));
   }
 

@@ -22,6 +22,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     on<CancelTrip>(_onCancelTrip);
     on<DriverLocationUpdated>(_onDriverLocationUpdated);
     on<TripCompleted>(_onTripCompleted);
+    on<RecalculateRoute>(_onRecalculateRoute);
   }
 
   Future<void> _onLoadTripTracking(
@@ -170,6 +171,72 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     }
   }
 
+  Future<void> _onRecalculateRoute(
+    RecalculateRoute event,
+    Emitter<TrackingState> emit,
+  ) async {
+    if (state is! TrackingLoaded) return;
+    final current = state as TrackingLoaded;
+    final tripData = current.trip;
+
+    List<LatLng> routePoints = const [];
+    final pickupLat = tripData['pickup_lat'];
+    final pickupLng = tripData['pickup_lng'];
+    final destLat = tripData['destination_lat'];
+    final destLng = tripData['destination_lng'];
+
+    if (pickupLat != null && pickupLng != null && destLat != null && destLng != null) {
+      // ─── Fetch active waypoints from trip_route_waypoints ──────────────────
+      List<LatLng> stopovers = [];
+      try {
+        final plans = await SupabaseService.client
+            .from('trip_route_plans')
+            .select('id')
+            .eq('trip_id', event.tripId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (plans != null) {
+          final wps = await SupabaseService.client
+              .from('trip_route_waypoints')
+              .select('lat, lng, seq_order')
+              .eq('route_plan_id', plans['id'] as String)
+              .eq('role', 'stopover')
+              .order('seq_order');
+          stopovers = (wps as List).map((w) => LatLng(
+            (w['lat'] as num).toDouble(),
+            (w['lng'] as num).toDouble(),
+          )).toList();
+          debugPrint('📍 TrackingBloc: RecalculateRoute found ${stopovers.length} stopovers');
+        }
+      } catch (e) {
+        debugPrint('⚠️ TrackingBloc: Waypoints fetch failed: $e');
+      }
+      // ───────────────────────────────────────────────────────────────────────
+
+      try {
+        final result = await DirectionsService.getRoute(
+          originLat: (pickupLat as num).toDouble(),
+          originLng: (pickupLng as num).toDouble(),
+          destLat: (destLat as num).toDouble(),
+          destLng: (destLng as num).toDouble(),
+          waypoints: stopovers.isNotEmpty ? stopovers : null, // ✅ pass stopovers
+          apiKey: EnvConstants.googleMapsApiKey,
+        );
+        if (result != null) routePoints = result.points;
+      } catch (e) {
+        debugPrint('⚠️ TrackingBloc: RecalculateRoute directions fetch failed: $e');
+      }
+    }
+
+    emit(TrackingLoaded(
+      trip: current.trip,
+      driver: current.driver,
+      driverLocation: current.driverLocation,
+      routePoints: routePoints,
+    ));
+  }
+
   Future<void> _onCancelTrip(
     CancelTrip event,
     Emitter<TrackingState> emit,
@@ -229,6 +296,11 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           final current = state as TrackingLoaded;
           if (current.driver == null) {
             _subscribeToDriverLocation(row['driver_id'] as String);
+          }
+          if (row['status'] == 'in_progress' && current.trip['status'] == 'accepted') {
+            // Update local state trip status first to avoid multiple recalculations
+            current.trip['status'] = 'in_progress';
+            add(RecalculateRoute(tripId));
           }
         }
       }

@@ -1,8 +1,10 @@
 
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'supabase_service.dart';
 import '../core/utils/retry_helper.dart';
+import '../core/utils/geohash_helper.dart';
 
 
 
@@ -24,8 +26,17 @@ class UserPresenceService with WidgetsBindingObserver {
   Timer? _heartbeatTimer;
   double? _lastLat;
   double? _lastLng;
+  double? _writtenLat;
+  double? _writtenLng;
   bool _isBroadcasting = false;
   bool _isPausedByLifecycle = false;
+
+  /// Minimum distance in meters before we write a new presence row.
+  /// Prevents redundant DB writes when the driver is stationary.
+  static const double _minMovementMeters = 50.0;
+
+  /// Heartbeat interval — reduced from 20s to 60s to lower DB I/O.
+  static const Duration _heartbeatInterval = Duration(seconds: 60);
 
   
   bool get isBroadcasting => _isBroadcasting;
@@ -37,18 +48,19 @@ class UserPresenceService with WidgetsBindingObserver {
     _lastLng = lng ?? _lastLng ?? 0.0;
     _isBroadcasting = true;
 
-    await _upsertPresence(_lastLat!, _lastLng!);
+    // Always write immediately on start (force = true)
+    await _upsertPresence(_lastLat!, _lastLng!, force: true);
 
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 20),
+      _heartbeatInterval,
       (_) {
         if (!_isBroadcasting) return;
         _upsertPresence(_lastLat!, _lastLng!);
       },
     );
 
-    debugPrint('📡 UserPresence: Started broadcasting loop');
+    debugPrint('📡 UserPresence: Started broadcasting loop (${_heartbeatInterval.inSeconds}s interval)');
   }
 
   Future<void> updateLocation(double lat, double lng) async {
@@ -109,20 +121,30 @@ class UserPresenceService with WidgetsBindingObserver {
   }
 
   
-  Future<void> _upsertPresence(double lat, double lng) async {
+  Future<void> _upsertPresence(double lat, double lng, {bool force = false}) async {
     final user = SupabaseService.currentUser;
     if (user == null) return;
+
+    // Skip write if the driver hasn't moved significantly
+    if (!force && _writtenLat != null && _writtenLng != null) {
+      if (_haversineMeters(_writtenLat!, _writtenLng!, lat, lng) < _minMovementMeters) {
+        return;
+      }
+    }
 
     try {
       await withRetry(
         () async {
           if (!_isBroadcasting) return;
+          
           await SupabaseService.client.from('user_presence').upsert({
             'user_id': user.id,
             'lat': lat,
             'lng': lng,
             'last_seen': DateTime.now().toUtc().toIso8601String(),
           }, onConflict: 'user_id');
+          _writtenLat = lat;
+          _writtenLng = lng;
         },
         maxAttempts: 3,
         onRetry: (e, attempt) => debugPrint('📡 UserPresence: Upsert failed, retrying ($attempt/3)...'),
@@ -133,5 +155,17 @@ class UserPresenceService with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('❌ UserPresence: Failed to upsert presence after retries: $e');
     }
+  }
+
+  /// Approximate Haversine distance in meters between two coordinates.
+  static double _haversineMeters(double lat1, double lng1, double lat2, double lng2) {
+    const R = 6371000.0; // Earth radius in meters
+    final dLat = (lat2 - lat1) * 3.141592653589793 / 180;
+    final dLng = (lng2 - lng1) * 3.141592653589793 / 180;
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * 3.141592653589793 / 180) *
+            math.cos(lat2 * 3.141592653589793 / 180) *
+            math.sin(dLng / 2) * math.sin(dLng / 2);
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 }

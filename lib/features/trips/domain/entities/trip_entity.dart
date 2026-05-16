@@ -39,6 +39,8 @@ class TripEntity extends Equatable {
   final String? paymentSource;
   final String? serviceAreaId;
   final double? estimatedDurationMin;
+  final DateTime? scheduledAt;
+  final String? cancelReasonCategory;
 
   const TripEntity({
     required this.id,
@@ -77,6 +79,8 @@ class TripEntity extends Equatable {
     this.paymentSource,
     this.serviceAreaId,
     this.estimatedDurationMin,
+    this.scheduledAt,
+    this.cancelReasonCategory,
   });
 
   @override
@@ -117,5 +121,7 @@ class TripEntity extends Equatable {
         paymentSource,
         serviceAreaId,
         estimatedDurationMin,
+        scheduledAt,
+        cancelReasonCategory,
       ];
 }

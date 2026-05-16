@@ -13,6 +13,10 @@ import '../../../../services/directions_service.dart';
 import '../trips/bloc/trips_bloc.dart';
 import '../trips/bloc/trips_event.dart';
 import '../trips/bloc/trips_state.dart';
+import '../../../trips/presentation/bloc/trip_route_cubit.dart';
+import '../../../trips/presentation/widgets/waypoints_timeline.dart';
+import '../../../../core/models/trip_route_waypoint_model.dart';
+import 'package:geocoding/geocoding.dart';
 
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
@@ -52,6 +56,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
   // Route / polyline state
   List<LatLng> _routePoints = [];
   bool _routeFetchRequested = false;
+  String _lastStopoversHash = '';
 
   late AnimationController _sheetCtrl;
   late AnimationController _pulseCtrl;
@@ -60,6 +65,8 @@ class _ScreenState extends State<UserTripDetailsScreen>
   late Animation<double> _sheetAnim;
   late Animation<double> _fadeAnim;
   late Animation<double> _pulseAnim;
+
+  late TripRouteCubit _routeCubit;
 
   @override
   void initState() {
@@ -79,15 +86,19 @@ class _ScreenState extends State<UserTripDetailsScreen>
     _pulseAnim = Tween<double>(begin: 0.7, end: 1.0)
         .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
+    _routeCubit = TripRouteCubit()..watchTripRoutes(widget.tripId);
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
   BitmapDescriptor? _pickupIcon;
   BitmapDescriptor? _destIcon;
+  BitmapDescriptor? _waypointIcon;
 
   Future<void> _loadCircleIcons() async {
     _pickupIcon = await _createCircleMarker(Colors.green);
     _destIcon = await _createCircleMarker(Colors.red);
+    _waypointIcon = await _createCircleMarker(Colors.orange);
     if (mounted) setState(() {});
   }
 
@@ -118,12 +129,13 @@ class _ScreenState extends State<UserTripDetailsScreen>
   }
 
   Future<void> _fetchRoute(
-      double oLat, double oLng, double dLat, double dLng) async {
+      double oLat, double oLng, double dLat, double dLng, [List<LatLng>? waypoints]) async {
     final result = await DirectionsService.getRoute(
       originLat: oLat,
       originLng: oLng,
       destLat: dLat,
       destLng: dLng,
+      waypoints: waypoints,
       apiKey: EnvConstants.googleMapsApiKey,
     );
     if (!mounted || result == null) return;
@@ -136,6 +148,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
     _pulseCtrl.dispose();
     _shimCtrl.dispose();
     _mapCtrl?.dispose();
+    _routeCubit.close();
     super.dispose();
   }
 
@@ -315,14 +328,20 @@ class _ScreenState extends State<UserTripDetailsScreen>
     final mapH = screenH * 0.44;
 
     return Stack(children: [
-      // ── [1] Full-bleed map behind everything
+      // ── [1] Full-bleed map behind everything (rebuilds when waypoints change)
       Positioned.fill(
-        child: (pLat != null && pLng != null && pLat != 0.0 && pLng != 0.0)
-          ? _buildMap(pLat, pLng, dLat, dLng, screenH - mapH)
-          : Container(
-              color: _C.card,
-              child: const Center(
-                  child: Icon(Icons.map_outlined, color: _C.t3, size: 64))),
+        child: BlocBuilder<TripRouteCubit, TripRouteState>(
+          bloc: _routeCubit,
+          builder: (context, routeState) {
+            final stopovers = routeState.waypoints.where((w) => w.isStopover).toList();
+            return (pLat != null && pLng != null && pLat != 0.0 && pLng != 0.0)
+              ? _buildMap(pLat, pLng, dLat, dLng, screenH - mapH, stopovers)
+              : Container(
+                  color: _C.card,
+                  child: const Center(
+                      child: Icon(Icons.map_outlined, color: _C.t3, size: 64)));
+          },
+        ),
       ),
 
       // ── [2] Header (Back, Status, Refresh)
@@ -414,7 +433,49 @@ class _ScreenState extends State<UserTripDetailsScreen>
                         ],
 
                         // Route ticket
-                        _RouteTicket(trip: trip),
+                        BlocBuilder<TripRouteCubit, TripRouteState>(
+                          bloc: _routeCubit,
+                          builder: (context, routeState) {
+                            final isEditable = ['pending', 'searching', 'accepted', 'in_progress'].contains(trip['status']);
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (routeState.waypoints.isNotEmpty)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: _C.card,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: _C.border, width: 1),
+                                    ),
+                                    padding: const EdgeInsets.all(16),
+                                    child: WaypointsTimeline(
+                                      waypoints: routeState.waypoints,
+                                      isEditable: isEditable,
+                                      onAddStopover: () => _showAddStopoverDialog(context),
+                                      onRemoveStopover: (id) => _routeCubit.removeStopover(id),
+                                    ),
+                                  )
+                                else
+                                  _RouteTicket(trip: trip),
+                                
+                                if (routeState.waypoints.isEmpty && isEditable) ...[
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _showAddStopoverDialog(context),
+                                    icon: const Icon(Icons.add_location_alt_rounded, size: 18),
+                                    label: const Text('إضافة محطة توقف'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: _C.blue,
+                                      side: const BorderSide(color: _C.blue),
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            );
+                          },
+                        ),
                         const SizedBox(height: 13),
 
                         // Price + stats (side by side, equal height)
@@ -474,7 +535,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
   }
 
   // ── Map ────────────────────────────────────────────────────────────────────
-  Widget _buildMap(double pLat, double pLng, double? dLat, double? dLng, double bottomPadding) {
+  Widget _buildMap(double pLat, double pLng, double? dLat, double? dLng, double bottomPadding, [List<TripRouteWaypointModel> stopovers = const []]) {
     final l = AppLocalizations.of(context)!;
     final markers = <Marker>{
       Marker(
@@ -491,21 +552,52 @@ class _ScreenState extends State<UserTripDetailsScreen>
           infoWindow: InfoWindow(title: l.destination),
         ),
     };
+    // ── Waypoint / Stopover markers ──
+    for (int i = 0; i < stopovers.length; i++) {
+      final wp = stopovers[i];
+      markers.add(Marker(
+        markerId: MarkerId('wp_$i'),
+        position: LatLng(wp.lat, wp.lng),
+        icon: _waypointIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        anchor: const Offset(0.5, 0.5),
+        zIndex: 1,
+        infoWindow: InfoWindow(title: wp.address ?? 'محطة ${i + 1}'),
+      ));
+    }
 
-    // Fetch route once
-    if (dLat != null && dLng != null && !_routeFetchRequested) {
-      _routeFetchRequested = true;
-      WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _fetchRoute(pLat, pLng, dLat, dLng));
+    // Fetch route once or when waypoints change (hash covers identity changes too)
+    if (dLat != null && dLng != null) {
+      final wpHash = stopovers.map((w) => '${w.lat.toStringAsFixed(5)},${w.lng.toStringAsFixed(5)}').join('|');
+      if (!_routeFetchRequested || _lastStopoversHash != wpHash) {
+        _routeFetchRequested = true;
+        _lastStopoversHash = wpHash;
+        final wpLatLngs = stopovers.map((w) => LatLng(w.lat, w.lng)).toList();
+        WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _fetchRoute(pLat, pLng, dLat, dLng, wpLatLngs));
+      }
     }
 
     final polylines = <Polyline>{};
     if (_routePoints.isNotEmpty) {
       polylines.add(Polyline(
-        polylineId: const PolylineId('route'),
+        polylineId: const PolylineId('route_bg'),
+        points: _routePoints,
+        color: _C.blue.withValues(alpha: 0.25),
+        width: 12,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 0,
+      ));
+      polylines.add(Polyline(
+        polylineId: const PolylineId('route_fg'),
         points: _routePoints,
         color: _C.blue,
-        width: 4,
+        width: 5,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 1,
       ));
     }
 
@@ -521,25 +613,28 @@ class _ScreenState extends State<UserTripDetailsScreen>
         ),
         onMapCreated: (ctrl) {
           _mapCtrl = ctrl;
-          if (dLat != null && dLng != null && dLat != 0.0 && dLng != 0.0) {
-            final pts = [LatLng(pLat, pLng), LatLng(dLat, dLng)];
+          // Fit camera to include ALL markers (pickup + dest + waypoints)
+          final allPts = markers.map((m) => m.position)
+              .where((p) => p.latitude != 0.0 && p.longitude != 0.0)
+              .toList();
+          if (allPts.length >= 2) {
             final sw = LatLng(
-              pts.map((p) => p.latitude).reduce(math.min),
-              pts.map((p) => p.longitude).reduce(math.min),
+              allPts.map((p) => p.latitude).reduce(math.min),
+              allPts.map((p) => p.longitude).reduce(math.min),
             );
             final ne = LatLng(
-              pts.map((p) => p.latitude).reduce(math.max),
-              pts.map((p) => p.longitude).reduce(math.max),
+              allPts.map((p) => p.latitude).reduce(math.max),
+              allPts.map((p) => p.longitude).reduce(math.max),
             );
             Future.delayed(
                 const Duration(milliseconds: 500),
                 () => _mapCtrl?.animateCamera(
                     CameraUpdate.newLatLngBounds(
                         LatLngBounds(southwest: sw, northeast: ne), 80)));
-          } else {
+          } else if (allPts.length == 1) {
             Future.delayed(const Duration(milliseconds: 400),
                 () => _mapCtrl?.animateCamera(
-                    CameraUpdate.newLatLngZoom(LatLng(pLat, pLng), 15)));
+                    CameraUpdate.newLatLngZoom(allPts.first, 15)));
           }
         },
         markers: markers,
@@ -729,6 +824,30 @@ class _ScreenState extends State<UserTripDetailsScreen>
         ),
       ),
     );
+  }
+
+  void _showAddStopoverDialog(BuildContext context) {
+    final pLat = (_trip?['pickup_lat'] as num?)?.toDouble() ?? 0.0;
+    final pLng = (_trip?['pickup_lng'] as num?)?.toDouble() ?? 0.0;
+    final dLat = (_trip?['destination_lat'] as num?)?.toDouble();
+    final dLng = (_trip?['destination_lng'] as num?)?.toDouble();
+
+    if (pLat == 0.0 || pLng == 0.0) return;
+
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => MapStopoverPicker(
+        initialCenter: LatLng(pLat, pLng),
+        originPoint: LatLng(pLat, pLng),                                              // ✅ show pickup
+        destPoint: (dLat != null && dLng != null) ? LatLng(dLat, dLng) : null,       // ✅ show destination
+      ),
+    )).then((result) {
+      if (result != null && result is Map<String, dynamic>) {
+        _routeCubit.addStopover(
+          lat: result['lat'], lng: result['lng'],
+          address: result['address'],
+        );
+      }
+    });
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -1114,7 +1233,7 @@ class _PriceBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final price = (trip['price'] as num?)?.toDouble() ?? 0;
-    final discount = (trip['discount'] as num?)?.toDouble() ?? 0;
+    final discount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
     final finalPrice = price - discount;
     final isPaid = trip['is_paid'] as bool? ?? false;
 
@@ -1669,4 +1788,139 @@ class _NightField extends StatelessWidget {
         ),
         validator: validator,
       );
+}
+
+class MapStopoverPicker extends StatefulWidget {
+  final LatLng initialCenter;
+  final LatLng? originPoint;       // optional: show pickup marker for context
+  final LatLng? destPoint;         // optional: show destination marker for context
+  const MapStopoverPicker({
+    super.key,
+    required this.initialCenter,
+    this.originPoint,
+    this.destPoint,
+  });
+
+  @override
+  State<MapStopoverPicker> createState() => _MapStopoverPickerState();
+}
+
+class _MapStopoverPickerState extends State<MapStopoverPicker> {
+  LatLng? _selectedPoint;
+  String? _resolvedAddress;
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: _MapCircleBtn(
+          icon: Icons.arrow_back_ios_new_rounded,
+          onTap: () => Navigator.pop(context),
+        ),
+      ),
+      body: Stack(children: [
+        GoogleMap(
+          initialCameraPosition: CameraPosition(target: widget.initialCenter, zoom: 15),
+          onTap: (latLng) async {
+            setState(() {
+              _selectedPoint = latLng;
+              _isLoading = true;
+            });
+            try {
+              final placemarks = await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
+              if (placemarks.isNotEmpty) {
+                final p = placemarks.first;
+                setState(() => _resolvedAddress = '${p.street}, ${p.locality}');
+              }
+            } catch (e) {
+              setState(() => _resolvedAddress = '${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)}');
+            } finally {
+              setState(() => _isLoading = false);
+            }
+          },
+          markers: {
+            // Context: origin marker (green)
+            if (widget.originPoint != null)
+              Marker(
+                markerId: const MarkerId('ctx_origin'),
+                position: widget.originPoint!,
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                infoWindow: const InfoWindow(title: 'نقطة الانطلاق'),
+              ),
+            // Context: destination marker (red)
+            if (widget.destPoint != null)
+              Marker(
+                markerId: const MarkerId('ctx_dest'),
+                position: widget.destPoint!,
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                infoWindow: const InfoWindow(title: 'الوجهة'),
+              ),
+            // Selected stop marker (orange)
+            if (_selectedPoint != null)
+              Marker(
+                markerId: const MarkerId('selected'),
+                position: _selectedPoint!,
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+                infoWindow: InfoWindow(title: _resolvedAddress ?? 'المحطة المختارة'),
+              ),
+          },
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+        ),
+        if (_selectedPoint != null)
+          Positioned(
+            bottom: 40,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _C.sheet,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'تأكيد المحطة',
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_isLoading)
+                    const Center(child: CircularProgressIndicator(color: _C.blue))
+                  else
+                    Text(
+                      _resolvedAddress ?? 'جاري التحميل...',
+                      style: const TextStyle(color: _C.t2, fontSize: 14),
+                    ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _C.blue,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _isLoading ? null : () {
+                      Navigator.pop(context, {
+                        'lat': _selectedPoint!.latitude,
+                        'lng': _selectedPoint!.longitude,
+                        'address': _resolvedAddress,
+                      });
+                    },
+                    child: const Text('إضافة هذه المحطة', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
 }

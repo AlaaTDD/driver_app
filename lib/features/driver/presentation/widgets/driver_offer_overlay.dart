@@ -247,76 +247,102 @@ class DriverOfferOverlay extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
 
-                    
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                final tripId = trip.id;
-                                if (tripId.isEmpty) {
-                                  debugPrint('❌ DriverOfferOverlay: tripId is empty, cannot reject');
-                                  return;
-                                }
-                                context.read<DriverHomeBloc>().add(
-                                  RejectTripOffer(tripId),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: context.textPrimary,
-                                side: BorderSide(color: context.divColor),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: Text(AppLocalizations.of(context)!.reject),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                final tripId = trip.id;
-                                if (tripId.isEmpty) {
-                                  debugPrint('❌ DriverOfferOverlay: tripId is empty, cannot accept');
-                                  return;
-                                }
-                                
-                                
-                                
-                                
-                                context.read<DriverHomeBloc>().add(
-                                  AcceptTripOffer(tripId),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(context)!.acceptTrip,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                    // Negotiation Section
+                    StatefulBuilder(
+                      builder: (context, setState) {
+                        double currentPrice = price;
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        final tripId = trip.id;
+                                        if (tripId.isEmpty) return;
+                                        context.read<DriverHomeBloc>().add(SubmitTripOffer(tripId, price + 10));
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primary,
+                                        side: const BorderSide(color: AppColors.primary),
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      child: Text('+10 ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        final tripId = trip.id;
+                                        if (tripId.isEmpty) return;
+                                        context.read<DriverHomeBloc>().add(SubmitTripOffer(tripId, price + 20));
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primary,
+                                        side: const BorderSide(color: AppColors.primary),
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      child: Text('+20 ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 16),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        final tripId = trip.id;
+                                        if (tripId.isEmpty) return;
+                                        context.read<DriverHomeBloc>().add(RejectTripOffer(tripId));
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: context.textPrimary,
+                                        side: BorderSide(color: context.divColor),
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      child: Text(AppLocalizations.of(context)!.reject),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    flex: 2,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        final tripId = trip.id;
+                                        if (tripId.isEmpty) return;
+                                        context.read<DriverHomeBloc>().add(AcceptTripOffer(tripId));
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      child: Text(
+                                        AppLocalizations.of(context)!.acceptTrip,
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),

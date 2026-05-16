@@ -11,6 +11,7 @@ class MeetingPointArgs {
   final String? vehicleType;
   final String? paymentMethod;
   final String? couponCode;
+  final List<dynamic>? waypoints; // Using dynamic or WaypointArg (need to import it)
 
   const MeetingPointArgs({
     this.originLat,
@@ -24,5 +25,6 @@ class MeetingPointArgs {
     this.vehicleType,
     this.paymentMethod,
     this.couponCode,
+    this.waypoints,
   });
 }

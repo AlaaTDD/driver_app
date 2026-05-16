@@ -75,6 +75,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     final result = await DirectionsService.getRoute(
       originLat: a!.originLat!, originLng: a.originLng!,
       destLat: a.destLat!, destLng: a.destLng!,
+      waypoints: a.waypoints?.map((w) => LatLng(w.lat, w.lng)).toList(),
       apiKey: EnvConstants.googleMapsApiKey,
     );
     if (!mounted) return;
@@ -124,11 +125,12 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
   void _goToMeetingPoint(double price, PricingState state) {
     final a = widget.extra;
     context.push(AppRoutes.userMeetingPoint, extra: MeetingPointArgs(
-      originLat: a?.originLat, originLng: a?.originLng, originAddress: a?.originAddress,
-      destLat: a?.destLat, destLng: a?.destLng, destAddress: a?.destAddress,
+      originLat: a!.originLat, originLng: a.originLng, originAddress: a.originAddress,
+      destLat: a.destLat, destLng: a.destLng, destAddress: a.destAddress,
       distanceKm: _distanceKm, price: price, vehicleType: _selectedVehicle,
-      paymentMethod: _paymentMethod == _PaymentMethod.cash ? 'cash' : 'card',
-      couponCode: state is CouponApplied ? state.couponCode : null,
+      paymentMethod: _paymentMethod.name,
+      couponCode: _couponCtrl.text.trim(),
+      waypoints: a.waypoints,
     ));
   }
 
@@ -210,24 +212,45 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
         Marker(markerId: const MarkerId('d'), position: dest,
             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed)),
       ]);
+      // Add waypoint markers (orange) for multi-stop trips
+      if (args.waypoints != null) {
+        for (int i = 0; i < args.waypoints!.length; i++) {
+          final wp = args.waypoints![i];
+          markers.add(Marker(
+            markerId: MarkerId('wp_$i'),
+            position: LatLng(wp.lat, wp.lng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+            infoWindow: InfoWindow(title: wp.address),
+          ));
+        }
+      }
       if (_visiblePoints.length >= 2) {
         polylines.add(Polyline(
           polylineId: const PolylineId('route_halo'),
           points: _visiblePoints,
           color: AppColors.primary.withValues(alpha: 0.10),
           width: 18,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
         ));
         polylines.add(Polyline(
           polylineId: const PolylineId('route_glow'),
           points: _visiblePoints,
           color: AppColors.primary.withValues(alpha: 0.28),
           width: 10,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
         ));
         polylines.add(Polyline(
           polylineId: const PolylineId('route'),
           points: _visiblePoints,
           color: AppColors.primary,
           width: 4,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
         ));
       }
     }
@@ -477,6 +500,8 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                             }
                           },
                           style: ElevatedButton.styleFrom(
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             backgroundColor: state is CouponApplied ? AppColors.success : AppColors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

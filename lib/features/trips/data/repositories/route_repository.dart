@@ -62,14 +62,14 @@ class RouteRepository {
   }
 
   /// Create a route plan from legacy trip data using the DB RPC.
-  Future<Map<String, dynamic>?> createRoutePlanFromLegacy(
+  Future<String?> createRoutePlanFromLegacy(
       String tripId) async {
     try {
       final result = await _client.rpc(
         'fn_create_route_plan_from_legacy',
         params: {'p_trip_id': tripId},
       );
-      return result as Map<String, dynamic>?;
+      return result as String?;
     } catch (e) {
       debugPrint('❌ RouteRepository.createRoutePlanFromLegacy: $e');
       return null;
@@ -98,7 +98,7 @@ class RouteRepository {
   }
 
   /// Add a stopover to a route plan using the DB RPC.
-  Future<Map<String, dynamic>?> addStopover({
+  Future<String?> addStopover({
     required String routePlanId,
     required int seqOrder,
     required double lat,
@@ -112,15 +112,14 @@ class RouteRepository {
         'fn_add_route_stopover',
         params: {
           'p_route_plan_id': routePlanId,
-          'p_seq_order': seqOrder,
+          'p_after_seq': seqOrder,
           'p_lat': lat,
           'p_lng': lng,
           if (address != null) 'p_address': address,
-          if (placeId != null) 'p_place_id': placeId,
-          if (plannedWaitMin != null) 'p_planned_wait_min': plannedWaitMin,
+          if (plannedWaitMin != null) 'p_wait_min': plannedWaitMin,
         },
       );
-      return result as Map<String, dynamic>?;
+      return result as String?;
     } catch (e) {
       debugPrint('❌ RouteRepository.addStopover: $e');
       return null;

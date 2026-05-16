@@ -45,6 +45,15 @@ class RejectTripOffer extends DriverHomeEvent {
   List<Object?> get props => [tripId];
 }
 
+class SubmitTripOffer extends DriverHomeEvent {
+  final String tripId;
+  final double proposedPrice;
+  const SubmitTripOffer(this.tripId, this.proposedPrice);
+
+  @override
+  List<Object?> get props => [tripId, proposedPrice];
+}
+
 class DriverLocationChanged extends DriverHomeEvent {
   final double lat;
   final double lng;
