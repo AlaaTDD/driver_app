@@ -25,7 +25,8 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../services/supabase_service.dart';
 import '../../../../services/heatmap_service.dart';
 import '../../../../core/widgets/custom_animated_bottom_nav.dart';
-
+import '../../../../services/directions_service.dart';
+import '../../../../core/constants/env_constants.dart';
 import '../widgets/driver_offer_overlay.dart';
 
 class DriverHomeScreen extends StatefulWidget {
@@ -475,20 +476,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     });
   }
 
-  void _drawCorridorPolyline(LatLng origin, LatLng dest) {
+  Future<void> _drawCorridorPolyline(LatLng origin, LatLng dest) async {
     if (!mounted) return;
+    
+    // Show markers immediately
     setState(() {
-      _corridorPolylines = {
-        Polyline(
-          polylineId: const PolylineId('corridor'),
-          points: [origin, dest],
-          color: const Color(0xFF4C8BF5).withValues(alpha: 0.85),
-          width: 4,
-          patterns: [PatternItem.dash(24), PatternItem.gap(12)],
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-        ),
-      };
+      _corridorPolylines = {};
       _corridorMarkers = {
         Marker(
           markerId: const MarkerId('corr_origin'),
@@ -504,6 +497,60 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         ),
       };
     });
+
+    // Fetch real route
+    final result = await DirectionsService.getRoute(
+      originLat: origin.latitude,
+      originLng: origin.longitude,
+      destLat: dest.latitude,
+      destLng: dest.longitude,
+      apiKey: EnvConstants.googleMapsApiKey,
+    );
+
+    if (!mounted || result == null || result.points.isEmpty) return;
+
+    final points = result.points;
+
+    setState(() {
+      _corridorPolylines = {
+        // Outer glowing line
+        Polyline(
+          polylineId: const PolylineId('corridor_glow'),
+          points: points,
+          color: const Color(0xFF4C8BF5).withValues(alpha: 0.3),
+          width: 12,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ),
+        // Inner core line
+        Polyline(
+          polylineId: const PolylineId('corridor_core'),
+          points: points,
+          color: const Color(0xFF4C8BF5),
+          width: 4,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ),
+      };
+    });
+
+    // Fit camera to polyline
+    if (_mapController != null) {
+      final lats = points.map((p) => p.latitude);
+      final lngs = points.map((p) => p.longitude);
+      final sw = LatLng(lats.reduce(math.min), lngs.reduce(math.min));
+      final ne = LatLng(lats.reduce(math.max), lngs.reduce(math.max));
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(southwest: sw, northeast: ne),
+            60,
+          ),
+        );
+      });
+    }
   }
 
   Widget _buildGoButtonInner() {
@@ -655,6 +702,9 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   // Tap step: 0 = waiting for origin, 1 = waiting for dest, 2 = done
   int _step = 0;
 
+  GoogleMapController? _mapCtrl;
+  final TextEditingController _searchCtrl = TextEditingController();
+
   LatLng? _originPt;
   LatLng? _destPt;
   String? _originAddr;
@@ -663,6 +713,77 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   double _destRadiusKm   = 3.0;
   bool _isResolving = false;
   bool _isSaving    = false;
+  
+  List<LatLng> _routePoints = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingCorridor();
+  }
+
+  Future<void> _loadExistingCorridor() async {
+    setState(() => _isResolving = true);
+    try {
+      final uid = SupabaseService.currentUser?.id;
+      if (uid != null) {
+        final row = await SupabaseService.client
+            .from('drivers_profile')
+            .select('target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng, target_origin_radius_km, target_route_radius_km')
+            .eq('id', uid)
+            .maybeSingle();
+            
+        if (row != null) {
+          final oLat = (row['target_origin_lat'] as num?)?.toDouble();
+          final oLng = (row['target_origin_lng'] as num?)?.toDouble();
+          final dLat = (row['target_dest_lat']   as num?)?.toDouble();
+          final dLng = (row['target_dest_lng']   as num?)?.toDouble();
+          
+          if (oLat != null && oLng != null && dLat != null && dLng != null) {
+            _originPt = LatLng(oLat, oLng);
+            _destPt = LatLng(dLat, dLng);
+            _originRadiusKm = (row['target_origin_radius_km'] as num?)?.toDouble() ?? 2.0;
+            _destRadiusKm = (row['target_route_radius_km'] as num?)?.toDouble() ?? 3.0;
+            _step = 2; // both points set
+            
+            // try to get addresses
+            try {
+              final oMarks = await placemarkFromCoordinates(oLat, oLng);
+              if (oMarks.isNotEmpty) _originAddr = '${oMarks.first.street ?? ''}, ${oMarks.first.locality ?? ''}';
+              final dMarks = await placemarkFromCoordinates(dLat, dLng);
+              if (dMarks.isNotEmpty) _destAddr = '${dMarks.first.street ?? ''}, ${dMarks.first.locality ?? ''}';
+            } catch (_) {}
+            
+            _fetchAndDrawRoute();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading corridor: $e');
+    } finally {
+      if (mounted) setState(() => _isResolving = false);
+    }
+  }
+
+  Future<void> _searchLocation(String query) async {
+    if (query.trim().isEmpty) return;
+    setState(() => _isResolving = true);
+    try {
+      final locs = await locationFromAddress(query);
+      if (locs.isNotEmpty) {
+        final ll = LatLng(locs.first.latitude, locs.first.longitude);
+        _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 14));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لم يتم العثور على المكان'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isResolving = false);
+    }
+  }
 
   Future<void> _onMapTap(LatLng ll) async {
     if (_step > 1 || _isSaving) return;
@@ -688,12 +809,41 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         _destPt   = ll;
         _destAddr = address;
         _step = 2;
+        _fetchAndDrawRoute();
       }
       _isResolving = false;
     });
   }
 
-  void _reset() => setState(() { _step = 0; _originPt = null; _destPt = null; _originAddr = null; _destAddr = null; });
+  Future<void> _fetchAndDrawRoute() async {
+    if (_originPt == null || _destPt == null) return;
+    final result = await DirectionsService.getRoute(
+      originLat: _originPt!.latitude,
+      originLng: _originPt!.longitude,
+      destLat: _destPt!.latitude,
+      destLng: _destPt!.longitude,
+      apiKey: EnvConstants.googleMapsApiKey,
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      _routePoints = result.points;
+    });
+    
+    final lats = _routePoints.map((p) => p.latitude);
+    final lngs = _routePoints.map((p) => p.longitude);
+    final sw = LatLng(lats.reduce(math.min), lngs.reduce(math.min));
+    final ne = LatLng(lats.reduce(math.max), lngs.reduce(math.max));
+    _mapCtrl?.animateCamera(CameraUpdate.newLatLngBounds(LatLngBounds(southwest: sw, northeast: ne), 60));
+  }
+
+  void _reset() => setState(() { 
+    _step = 0; 
+    _originPt = null; 
+    _destPt = null; 
+    _originAddr = null; 
+    _destAddr = null; 
+    _routePoints = [];
+  });
 
   Future<void> _save() async {
     if (_originPt == null || _destPt == null) return;
@@ -802,6 +952,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         // ── Map ──────────────────────────────────────────────────────────────
         GoogleMap(
           initialCameraPosition: CameraPosition(target: widget.initialCenter, zoom: 13),
+          onMapCreated: (ctrl) => _mapCtrl = ctrl,
           onTap: _onMapTap,
           style: isDark ? kDarkMapStyle : kLightMapStyle,
           myLocationEnabled: true,
@@ -828,15 +979,34 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                 strokeWidth: 2,
               ),
           },
-          polylines: (_originPt != null && _destPt != null) ? {
+          polylines: _routePoints.isNotEmpty ? {
+            // Outer glowing line
             Polyline(
-              polylineId: const PolylineId('corridor_preview'),
-              points: [_originPt!, _destPt!],
-              color: const Color(0xFF4C8BF5).withValues(alpha: 0.8),
-              width: 3,
-              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+              polylineId: const PolylineId('corridor_glow'),
+              points: _routePoints,
+              color: const Color(0xFF4C8BF5).withValues(alpha: 0.3),
+              width: 12,
               startCap: Cap.roundCap,
               endCap: Cap.roundCap,
+              jointType: JointType.round,
+            ),
+            // Inner core line
+            Polyline(
+              polylineId: const PolylineId('corridor_core'),
+              points: _routePoints,
+              color: const Color(0xFF4C8BF5),
+              width: 4,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              jointType: JointType.round,
+            ),
+          } : (_originPt != null && _destPt != null) ? {
+            Polyline(
+              polylineId: const PolylineId('corridor_straight'),
+              points: [_originPt!, _destPt!],
+              color: const Color(0xFF4C8BF5).withValues(alpha: 0.5),
+              width: 3,
+              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
             ),
           } : {},
           markers: {
@@ -857,10 +1027,42 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
           },
         ),
 
+        // ── Search Bar ──────────────────────────────────────────────────────
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 60,
+          left: 16, right: 16,
+          child: Container(
+            decoration: BoxDecoration(
+              color: panelColor.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(children: [
+              const Icon(Icons.search_rounded, color: Colors.grey, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _searchCtrl,
+                  decoration: const InputDecoration(
+                    hintText: 'ابحث عن منطقة للذهاب إليها...',
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black),
+                  onSubmitted: _searchLocation,
+                ),
+              ),
+              if (_isResolving)
+                const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+            ]),
+          ),
+        ),
+
         // ── Step hint banner ────────────────────────────────────────────────
         if (!_isResolving)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 60,
+            top: MediaQuery.of(context).padding.top + 120,
             left: 16, right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -886,7 +1088,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
 
         if (_isResolving)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 60,
+            top: MediaQuery.of(context).padding.top + 120,
             left: 16, right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -898,7 +1100,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                 SizedBox(width: 16, height: 16,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
                 SizedBox(width: 10),
-                Text('جاري تحديد الموقع...', style: TextStyle(color: Colors.white, fontSize: 13)),
+                Text('جاري المعالجة...', style: TextStyle(color: Colors.white, fontSize: 13)),
               ]),
             ),
           ),

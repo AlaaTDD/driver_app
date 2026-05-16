@@ -89,9 +89,8 @@ class CustomAnimatedBottomNav extends StatelessWidget {
           // ── FAB ───────────────────────────────
           if (_hasFab)
             Positioned(
-              // FAB circle center sits at bar top (bottom = height means center at height + r)
-              // We want the FAB to float just above the bar top with a 2px gap
-              bottom: height - 2,
+              // Back to original: FAB sits inside the notch (90% depth)
+              bottom: height - notchRadius * 0.9,
               child: _buildFab(),
             ),
         ],
@@ -240,42 +239,37 @@ class _NotchPainter extends CustomPainter {
     if (notchRadius == 0) {
       path.addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     } else {
-      final cx     = size.width / 2;
-      final r      = notchRadius;       // actual FAB circle radius (e.g. 38)
-      // The notch sits 2px above the bar top — FAB protrudes by (r - 2) above the bar
-      // depth = how far the valley goes below the bar top edge
-      const depth  = 4.0;              // valley sits 4px below top edge
-      // The half-width of the gap opening — slightly wider than r for breathing room
-      final hw     = r + 10.0;
+      final cx = size.width / 2;
+      // 4px breathing room so FAB ring doesn't touch the bar edge
+      const margin = 4.0;
+      final r = notchRadius + margin;
+      // Kappa: best cubic bezier constant for circle quarter approximation
+      const k = 0.5523;
+      const corner = 20.0;
 
-      // Corner radius of the bar's top-left / top-right rounded corners
-      const barCorner = 20.0;
+      path.moveTo(0, corner);
+      path.quadraticBezierTo(0, 0, corner, 0);
 
-      path.moveTo(0, barCorner);
-      path.quadraticBezierTo(0, 0, barCorner, 0);
+      // Straight edge up to left notch entry
+      path.lineTo(cx - r, 0);
 
-      // ── Left approach line ──────────────────────────────────────────
-      path.lineTo(cx - hw, 0);
-
-      // ── Left cubic bezier — matches the circle's tangent ──────────
-      // P0 = (cx-hw, 0), P3 = (cx, depth)
-      // Control points approximate the circle tangent at entry/exit
+      // ── Left quadrant of semicircle: (cx-r, 0) → (cx, r) curving DOWN ──
       path.cubicTo(
-        cx - hw * 0.45, 0,          // CP1: gentle outward pull
-        cx - r * 0.6,  depth,       // CP2: curves in at valley level
-        cx,            depth,        // end = valley bottom center
+        cx - r,       r * k,   // CP1 – pull downward
+        cx - r * k,   r,       // CP2 – sweep toward center
+        cx,           r,       // end at semicircle bottom
       );
 
-      // ── Right cubic bezier — mirror ────────────────────────────────
+      // ── Right quadrant: (cx, r) → (cx+r, 0) curving UP ──
       path.cubicTo(
-        cx + r * 0.6,  depth,
-        cx + hw * 0.45, 0,
-        cx + hw,       0,
+        cx + r * k,   r,       // CP1 – sweep outward
+        cx + r,       r * k,   // CP2 – pull upward
+        cx + r,       0,       // end at right notch exit
       );
 
-      // ── Right approach line and bottom corners ──────────────────────
-      path.lineTo(size.width - barCorner, 0);
-      path.quadraticBezierTo(size.width, 0, size.width, barCorner);
+      // Straight edge and bar corners
+      path.lineTo(size.width - corner, 0);
+      path.quadraticBezierTo(size.width, 0, size.width, corner);
       path.lineTo(size.width, size.height - 8);
       path.quadraticBezierTo(size.width, size.height, size.width - 8, size.height);
       path.lineTo(8, size.height);
