@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import 'animated_trip_card.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class TripListView extends StatelessWidget {
   final List<Map<String, dynamic>> trips;
@@ -66,8 +67,8 @@ class TripDateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const t2 = Color(0xFF7B82A3);
-    const blue = Color(0xFF4C8BF5);
+    const t2 = AppColors.textSecondary;
+    const blue = AppColors.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,9 +110,9 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const blue = Color(0xFF4C8BF5);
-    const t1   = Color(0xFFEEF0FF);
-    const t2   = Color(0xFF7B82A3);
+    const blue = AppColors.primary;
+    const t1   = AppColors.textPrimary;
+    const t2   = AppColors.textSecondary;
     
     return Center(
       child: Column(
@@ -148,17 +149,17 @@ class EmptyState extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [blue, Color(0xFF1F5EC4)],
+                    colors: [blue, AppColors.primaryDark],
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                  const Icon(Icons.arrow_back_rounded, color: AppColors.white, size: 16),
                   const SizedBox(width: 8),
                   Text(l.backToHome,
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                 ]),
               ),
             ),

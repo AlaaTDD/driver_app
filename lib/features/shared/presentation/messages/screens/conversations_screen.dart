@@ -102,7 +102,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
       flexibleSpace: ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(color: Colors.transparent),
+          child: Container(color: AppColors.transparent),
         ),
       ),
       title: Text(
@@ -127,7 +127,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: AppColors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -346,7 +346,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
               label: Text(l.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -367,8 +367,8 @@ class _ShimmerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = isDark ? AppColors.grey[800]! : AppColors.grey[300]!;
+    final highlightColor = isDark ? AppColors.grey[700]! : AppColors.grey[100]!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -381,7 +381,7 @@ class _ShimmerTile extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.white,
                 shape: BoxShape.circle,
               ),
             ),
@@ -400,7 +400,7 @@ class _ShimmerTile extends StatelessWidget {
                         width: 120,
                         height: 14,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.white,
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -413,7 +413,7 @@ class _ShimmerTile extends StatelessWidget {
                         width: 40,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.white,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -428,7 +428,7 @@ class _ShimmerTile extends StatelessWidget {
                     width: double.infinity,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.white,
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -441,7 +441,7 @@ class _ShimmerTile extends StatelessWidget {
                     width: 180,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.white,
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -523,7 +523,7 @@ class _ConversationTile extends StatelessWidget {
               border: Border.all(color: context.divColor.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
+                  color: AppColors.black.withValues(alpha: 0.02),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -576,7 +576,7 @@ class _ConversationTile extends StatelessWidget {
                             const Icon(
                               Icons.done_all_rounded,
                               size: 16,
-                              color: Colors.blue,
+                              color: AppColors.primary,
                             ),
                             const SizedBox(width: 4),
                           ] else if (isMeSender) ...[
@@ -699,7 +699,7 @@ class _ConversationTile extends StatelessWidget {
       child: Text(
         unreadCount > 99 ? '99+' : '$unreadCount',
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),

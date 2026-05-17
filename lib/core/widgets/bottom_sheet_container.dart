@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../theme/theme_extensions.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 
 
@@ -23,13 +24,13 @@ class BottomSheetContainer extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(topRadius)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.14),
+            color: AppColors.black.withValues(alpha: 0.14),
             blurRadius: 32,
             spreadRadius: 0,
             offset: const Offset(0, -6),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: AppColors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             spreadRadius: 0,
             offset: const Offset(0, -2),

@@ -26,6 +26,7 @@ import 'services/fcm_service.dart';
 import 'services/r2_storage_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'firebase_options.dart';
+import 'core/repositories/app_config_repository.dart';
 
 
 
@@ -66,6 +67,14 @@ void main() async {
 
   
   ConnectivityService().init();
+
+  // Activate AppConfigRepository — warms cache and checks maintenance mode.
+  // Runs in background so it never blocks startup.
+  AppConfigRepository().getAll().then((config) {
+    debugPrint('✅ AppConfig loaded: ${config.keys.join(', ')}');
+  }).catchError((e) {
+    debugPrint('⚠️ AppConfig load failed: $e');
+  });
 
   final prefs = await SharedPreferences.getInstance();
   Bloc.observer = AppBlocObserver();

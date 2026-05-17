@@ -55,7 +55,7 @@ class DriverOfferOverlay extends StatelessWidget {
 
     return Positioned.fill(
       child: Material(
-        color: Colors.black.withValues(alpha: 0.65),
+        color: AppColors.black.withValues(alpha: 0.65),
         child: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -74,7 +74,7 @@ class DriverOfferOverlay extends StatelessWidget {
                   border: Border.all(color: context.divColor, width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
+                      color: AppColors.black.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 12),
                     ),
@@ -143,7 +143,7 @@ class DriverOfferOverlay extends StatelessWidget {
                             child: Text(
                               '${price.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -327,7 +327,7 @@ class DriverOfferOverlay extends StatelessWidget {
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
+                                        foregroundColor: AppColors.white,
                                         padding: const EdgeInsets.symmetric(vertical: 14),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                       ),

@@ -1,6 +1,8 @@
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'bloc/profile_bloc.dart';
 import 'bloc/profile_state.dart';
 import 'bloc/profile_event.dart';
@@ -9,6 +11,8 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../services/r2_storage_service.dart';
+import '../../../../services/supabase_service.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -23,6 +27,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _emailController = TextEditingController();
   bool _populated = false;
   Map<String, dynamic> _userData = {};
+  bool _uploadingAvatar = false;
 
   @override
   void initState() {
@@ -106,14 +111,42 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: context.primaryTint,
-            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-            child: avatarUrl == null
-                ? const Icon(Icons.person_rounded,
-                    size: 50, color: AppColors.primary)
-                : null,
+          // ── Avatar with functional edit overlay ────────────────────
+          GestureDetector(
+            onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: context.primaryTint,
+                  backgroundImage:
+                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  child: _uploadingAvatar
+                      ? const CircularProgressIndicator(
+                          color: AppColors.white, strokeWidth: 2)
+                      : avatarUrl == null
+                          ? const Icon(Icons.person_rounded,
+                              size: 50, color: AppColors.primary)
+                          : null,
+                ),
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: context.bgColor, width: 2),
+                  ),
+                  child: Icon(
+                    _uploadingAvatar
+                        ? Icons.hourglass_top_rounded
+                        : Icons.edit,
+                    size: 12,
+                    color: AppColors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
           if (rating != null) ...[
             const SizedBox(height: 8),
@@ -178,18 +211,43 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     })),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
             child: state is ProfileLoading
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const CircularProgressIndicator(color: AppColors.white)
                 : Text(l.saveChanges,
                     style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picker = ImagePicker();
+    final XFile? image =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (image == null) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      final uid = SupabaseService.currentUser?.id;
+      if (uid == null) throw Exception('Not logged in');
+      final r2 = R2StorageService();
+      final url = await r2.uploadFile(
+        file: File(image.path),
+        path: 'avatars/user_$uid.${image.path.split('.').last}',
+      );
+      if (mounted) {
+        context.read<ProfileBloc>().add(UpdateProfile({'avatar_url': url}));
+      }
+    } catch (e) {
+      if (mounted) AppToast.error('فشل رفع الصورة: $e');
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
   }
 }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme => darkTheme;
@@ -12,7 +13,7 @@ class AppTheme {
         colorScheme: const ColorScheme.dark(
           primary: AppColors.primary,
           surface: AppColors.surface,
-          onPrimary: Colors.white,
+          onPrimary: AppColors.white,
           onSurface: AppColors.textPrimary,
           error: AppColors.error,
         ),
@@ -22,7 +23,7 @@ class AppTheme {
           backgroundColor: AppColors.background,
           foregroundColor: AppColors.textPrimary,
           elevation: 0,
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: AppColors.transparent,
           iconTheme: IconThemeData(color: AppColors.textPrimary),
           titleTextStyle: TextStyle(
             color: AppColors.textPrimary,
@@ -45,7 +46,7 @@ class AppTheme {
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.white,
             minimumSize: const Size.fromHeight(54),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),

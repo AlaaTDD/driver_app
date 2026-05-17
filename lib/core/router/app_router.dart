@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -64,7 +63,8 @@ Page<dynamic> _buildSlideTransition({required Widget child}) {
       const begin = Offset(1.0, 0.0);
       const end = Offset.zero;
       const curve = Curves.easeInOutCubic;
-      final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      final tween =
+          Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
       final offsetAnimation = animation.drive(tween);
       return SlideTransition(position: offsetAnimation, child: child);
     },
@@ -91,7 +91,6 @@ class GoRouterRefreshStream extends ChangeNotifier {
 class AppRouter {
   static late GoRouter routerInstance;
 
-  
   static final _uuidRegex = RegExp(
     r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
     caseSensitive: false,
@@ -121,12 +120,10 @@ class AppRouter {
         final authState = authBloc.state;
         final loc = state.matchedLocation;
 
-        
         if (authState is AuthError || authState is AuthLoading) {
           return null;
         }
 
-        
         if (authState is AuthInitial) {
           return loc == AppRoutes.splash ? null : AppRoutes.splash;
         }
@@ -157,38 +154,45 @@ class AppRouter {
           pageBuilder: (context, state) => CustomTransitionPage(
             child: const SplashScreen(),
             transitionDuration: Duration.zero,
-            transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) => child,
           ),
         ),
         GoRoute(
           path: AppRoutes.onboarding,
           name: AppRoutes.onboarding,
-          pageBuilder: (context, state) => _buildSlideTransition(child: const OnboardingScreen()),
+          pageBuilder: (context, state) =>
+              _buildSlideTransition(child: const OnboardingScreen()),
         ),
         GoRoute(
           path: AppRoutes.login,
           name: AppRoutes.login,
-          pageBuilder: (context, state) => const MaterialPage(child: LoginScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: LoginScreen()),
         ),
         GoRoute(
           path: AppRoutes.register,
           name: AppRoutes.register,
-          pageBuilder: (context, state) => const MaterialPage(child: RegisterScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: RegisterScreen()),
         ),
         GoRoute(
           path: AppRoutes.registerUser,
           name: AppRoutes.registerUser,
-          pageBuilder: (context, state) => const MaterialPage(child: RegisterUserScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: RegisterUserScreen()),
         ),
         GoRoute(
           path: AppRoutes.registerDriver,
           name: AppRoutes.registerDriver,
-          pageBuilder: (context, state) => const MaterialPage(child: RegisterDriverScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: RegisterDriverScreen()),
         ),
         GoRoute(
           path: AppRoutes.pendingVerification,
           name: AppRoutes.pendingVerification,
-          pageBuilder: (context, state) => const MaterialPage(child: PendingVerificationScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: PendingVerificationScreen()),
         ),
         GoRoute(
           path: AppRoutes.userHome,
@@ -207,14 +211,16 @@ class AppRouter {
           path: AppRoutes.userProfile,
           name: AppRoutes.userProfile,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => ProfileBloc(), child: const UserProfileScreen()),
+            child: BlocProvider(
+                create: (_) => ProfileBloc(), child: const UserProfileScreen()),
           ),
         ),
         GoRoute(
           path: AppRoutes.userTrips,
           name: AppRoutes.userTrips,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => TripsBloc(), child: const UserTripsScreen()),
+            child: BlocProvider(
+                create: (_) => TripsBloc(), child: const UserTripsScreen()),
           ),
         ),
         GoRoute(
@@ -224,8 +230,10 @@ class AppRouter {
             final tripId = state.uri.queryParameters['tripId'];
             final otherUserId = state.uri.queryParameters['otherUserId'];
             final otherUserName = state.uri.queryParameters['otherUserName'];
-            if ((tripId != null && tripId.isNotEmpty) || (otherUserId != null && otherUserId.isNotEmpty)) {
-              return MaterialPage(child: MessagesScreen(
+            if ((tripId != null && tripId.isNotEmpty) ||
+                (otherUserId != null && otherUserId.isNotEmpty)) {
+              return MaterialPage(
+                  child: MessagesScreen(
                 tripId: tripId,
                 otherUserId: otherUserId,
                 otherUserName: otherUserName,
@@ -237,38 +245,46 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.userChatbot,
           name: AppRoutes.userChatbot,
-          pageBuilder: (context, state) => const MaterialPage(child: ChatbotScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: ChatbotScreen()),
         ),
         GoRoute(
           path: AppRoutes.userNotifications,
           name: AppRoutes.userNotifications,
-          pageBuilder: (context, state) => const MaterialPage(child: NotificationsScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: NotificationsScreen()),
         ),
         GoRoute(
           path: AppRoutes.userLocationSelect,
           name: AppRoutes.userLocationSelect,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => LocationBloc(), child: LocationSelectionScreen(
-              extra: state.extra as LocationSelectionArgs?,
-            )),
+            child: BlocProvider(
+                create: (_) => LocationBloc(),
+                child: LocationSelectionScreen(
+                  extra: state.extra as LocationSelectionArgs?,
+                )),
           ),
         ),
         GoRoute(
           path: AppRoutes.userPricing,
           name: AppRoutes.userPricing,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => PricingBloc(), child: PricingScreen(
-              extra: state.extra as PricingArgs?,
-            )),
+            child: BlocProvider(
+                create: (_) => PricingBloc(),
+                child: PricingScreen(
+                  extra: state.extra as PricingArgs?,
+                )),
           ),
         ),
         GoRoute(
           path: AppRoutes.userMeetingPoint,
           name: AppRoutes.userMeetingPoint,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => MeetingBloc(), child: MeetingPointScreen(
-              extra: state.extra as MeetingPointArgs?,
-            )),
+            child: BlocProvider(
+                create: (_) => MeetingBloc(),
+                child: MeetingPointScreen(
+                  extra: state.extra as MeetingPointArgs?,
+                )),
           ),
         ),
         GoRoute(
@@ -282,13 +298,15 @@ class AppRouter {
             final dLat = double.tryParse(q['dLat'] ?? '');
             final dLng = double.tryParse(q['dLng'] ?? '');
             return MaterialPage(
-              child: BlocProvider(create: (_) => SearchingBloc(), child: SearchingScreen(
-                tripId: tripId,
-                originLat: oLat,
-                originLng: oLng,
-                destLat: dLat,
-                destLng: dLng,
-              )),
+              child: BlocProvider(
+                  create: (_) => SearchingBloc(),
+                  child: SearchingScreen(
+                    tripId: tripId,
+                    originLat: oLat,
+                    originLng: oLng,
+                    destLat: dLat,
+                    destLng: dLng,
+                  )),
             );
           },
         ),
@@ -297,8 +315,14 @@ class AppRouter {
           name: AppRoutes.userTracking,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
-            return MaterialPage(child: BlocProvider(create: (_) => TrackingBloc(), child: TripTrackingScreen(tripId: tripId)));
+            if (tripId.isEmpty)
+              return const MaterialPage(
+                  child:
+                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            return MaterialPage(
+                child: BlocProvider(
+                    create: (_) => TrackingBloc(),
+                    child: TripTrackingScreen(tripId: tripId)));
           },
         ),
         GoRoute(
@@ -306,8 +330,14 @@ class AppRouter {
           name: AppRoutes.userRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
-            return MaterialPage(child: BlocProvider(create: (_) => RatingBloc(), child: RatingScreen(tripId: tripId)));
+            if (tripId.isEmpty)
+              return const MaterialPage(
+                  child:
+                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            return MaterialPage(
+                child: BlocProvider(
+                    create: (_) => RatingBloc(),
+                    child: RatingScreen(tripId: tripId)));
           },
         ),
         GoRoute(
@@ -315,12 +345,16 @@ class AppRouter {
           name: AppRoutes.userTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty)
+              return const MaterialPage(
+                  child:
+                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(
               child: MultiBlocProvider(
                 providers: [
                   BlocProvider(create: (_) => TripsBloc()),
-                  BlocProvider(create: (_) => TripRouteCubit()..watchTripRoutes(tripId)),
+                  BlocProvider(
+                      create: (_) => TripRouteCubit()..watchTripRoutes(tripId)),
                 ],
                 child: UserTripDetailsScreen(tripId: tripId),
               ),
@@ -330,12 +364,14 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.userComplaints,
           name: AppRoutes.userComplaints,
-          pageBuilder: (context, state) => const MaterialPage(child: ComplaintsScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: ComplaintsScreen()),
         ),
         GoRoute(
           path: AppRoutes.userWallet,
           name: AppRoutes.userWallet,
-          pageBuilder: (context, state) => const MaterialPage(child: UserWalletScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: UserWalletScreen()),
         ),
         GoRoute(
           path: AppRoutes.driverHome,
@@ -354,14 +390,18 @@ class AppRouter {
           path: AppRoutes.driverProfile,
           name: AppRoutes.driverProfile,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => DriverProfileBloc(), child: const DriverProfileScreen()),
+            child: BlocProvider(
+                create: (_) => DriverProfileBloc(),
+                child: const DriverProfileScreen()),
           ),
         ),
         GoRoute(
           path: AppRoutes.driverTrips,
           name: AppRoutes.driverTrips,
           pageBuilder: (context, state) => MaterialPage(
-            child: BlocProvider(create: (_) => DriverTripsBloc(), child: const DriverTripsScreen()),
+            child: BlocProvider(
+                create: (_) => DriverTripsBloc(),
+                child: const DriverTripsScreen()),
           ),
         ),
         GoRoute(
@@ -371,8 +411,10 @@ class AppRouter {
             final tripId = state.uri.queryParameters['tripId'];
             final otherUserId = state.uri.queryParameters['otherUserId'];
             final otherUserName = state.uri.queryParameters['otherUserName'];
-            if ((tripId != null && tripId.isNotEmpty) || (otherUserId != null && otherUserId.isNotEmpty)) {
-              return MaterialPage(child: MessagesScreen(
+            if ((tripId != null && tripId.isNotEmpty) ||
+                (otherUserId != null && otherUserId.isNotEmpty)) {
+              return MaterialPage(
+                  child: MessagesScreen(
                 tripId: tripId,
                 otherUserId: otherUserId,
                 otherUserName: otherUserName,
@@ -384,24 +426,30 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.driverChatbot,
           name: AppRoutes.driverChatbot,
-          pageBuilder: (context, state) => const MaterialPage(child: ChatbotScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: ChatbotScreen()),
         ),
         GoRoute(
           path: AppRoutes.driverNotifications,
           name: AppRoutes.driverNotifications,
-          pageBuilder: (context, state) => const MaterialPage(child: NotificationsScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: NotificationsScreen()),
         ),
         GoRoute(
           path: AppRoutes.driverTripDetails,
           name: AppRoutes.driverTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty)
+              return const MaterialPage(
+                  child:
+                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
             return MaterialPage(
               child: MultiBlocProvider(
                 providers: [
                   BlocProvider(create: (_) => TripDetailsBloc()),
-                  BlocProvider(create: (_) => TripRouteCubit()..watchTripRoutes(tripId)),
+                  BlocProvider(
+                      create: (_) => TripRouteCubit()..watchTripRoutes(tripId)),
                 ],
                 child: DriverTripDetailsScreen(tripId: tripId),
               ),
@@ -413,14 +461,21 @@ class AppRouter {
           name: AppRoutes.driverRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty) return const MaterialPage(child: Scaffold(body: Center(child: Text('Invalid trip ID'))));
-            return MaterialPage(child: BlocProvider(create: (_) => RatingBloc(), child: RatingScreen(tripId: tripId)));
+            if (tripId.isEmpty)
+              return const MaterialPage(
+                  child:
+                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            return MaterialPage(
+                child: BlocProvider(
+                    create: (_) => RatingBloc(),
+                    child: RatingScreen(tripId: tripId)));
           },
         ),
         GoRoute(
           path: AppRoutes.driverComplaints,
           name: AppRoutes.driverComplaints,
-          pageBuilder: (context, state) => const MaterialPage(child: ComplaintsScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: ComplaintsScreen()),
         ),
         GoRoute(
           path: AppRoutes.driverWallet,
@@ -435,7 +490,8 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.driverBonus,
           name: AppRoutes.driverBonus,
-          pageBuilder: (context, state) => const MaterialPage(child: DriverBonusScreen()),
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: DriverBonusScreen()),
         ),
         GoRoute(
           path: AppRoutes.driverRequestFeed,

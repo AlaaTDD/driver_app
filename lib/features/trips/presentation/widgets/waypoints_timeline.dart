@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 /// A vertical timeline widget that displays multi-route waypoints (stopovers)
 /// between the pickup and destination points.
@@ -160,14 +161,14 @@ class _WaypointRow extends StatelessWidget {
                         const SizedBox(width: 6),
                         _StatusChip(
                           label: 'وصل',
-                          color: const Color(0xFF10B981),
+                          color: AppColors.success,
                         ),
                       ],
                       if (waypoint.hasDeparted) ...[
                         const SizedBox(width: 4),
                         _StatusChip(
                           label: 'غادر',
-                          color: const Color(0xFF3B82F6),
+                          color: AppColors.primary,
                         ),
                       ],
                       if (isDriver && !waypoint.hasArrived && onMarkArrived != null) ...[
@@ -176,7 +177,7 @@ class _WaypointRow extends StatelessWidget {
                           onTap: onMarkArrived,
                           child: _StatusChip(
                             label: 'تأكيد الوصول',
-                            color: const Color(0xFFF59E0B),
+                            color: AppColors.warning,
                           ),
                         ),
                       ],
@@ -186,7 +187,7 @@ class _WaypointRow extends StatelessWidget {
                           onTap: onMarkDeparted,
                           child: _StatusChip(
                             label: 'تأكيد المغادرة',
-                            color: const Color(0xFF10B981),
+                            color: AppColors.success,
                           ),
                         ),
                       ],
@@ -197,13 +198,13 @@ class _WaypointRow extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                              color: AppColors.error.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Icon(
                               Icons.close_rounded,
                               size: 14,
-                              color: Color(0xFFEF4444),
+                              color: AppColors.error,
                             ),
                           ),
                         ),
@@ -219,8 +220,8 @@ class _WaypointRow extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFFEEF0FF)
-                          : const Color(0xFF1A1D2A),
+                          ? AppColors.textPrimary
+                          : AppColors.surface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -261,9 +262,9 @@ class _WaypointRow extends StatelessWidget {
   }
 
   Color _roleColor(RouteWaypointRole role) => switch (role) {
-        RouteWaypointRole.origin => const Color(0xFF10B981),
-        RouteWaypointRole.stopover => const Color(0xFFF59E0B),
-        RouteWaypointRole.destination => const Color(0xFF3B82F6),
+        RouteWaypointRole.origin => AppColors.success,
+        RouteWaypointRole.stopover => AppColors.warning,
+        RouteWaypointRole.destination => AppColors.primary,
       };
 
   IconData _roleIcon(RouteWaypointRole role) => switch (role) {
@@ -317,14 +318,14 @@ class _MetaChip extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF7B82A3)),
+          Icon(icon, size: 12, color: AppColors.textSecondary),
           const SizedBox(width: 3),
           Text(
             text,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF7B82A3),
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -345,10 +346,10 @@ class _AddStopoverButton extends StatelessWidget {
           margin: const EdgeInsets.only(right: 48),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+            color: AppColors.warning.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+              color: AppColors.warning.withValues(alpha: 0.2),
               width: 1.5,
               strokeAlign: BorderSide.strokeAlignCenter,
             ),
@@ -357,14 +358,14 @@ class _AddStopoverButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.add_location_alt_rounded,
-                  size: 18, color: Color(0xFFF59E0B)),
+                  size: 18, color: AppColors.warning),
               SizedBox(width: 8),
               Text(
                 'إضافة محطة توقف',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFFF59E0B),
+                  color: AppColors.warning,
                 ),
               ),
             ],

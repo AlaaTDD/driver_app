@@ -1,6 +1,4 @@
-
 import 'package:equatable/equatable.dart';
-
 
 enum TripOfferStatus {
   pending,
@@ -36,8 +34,6 @@ enum TripOfferStatus {
     }
   }
 }
-
-
 
 class TripOfferModel extends Equatable {
   final String id;
@@ -82,6 +78,12 @@ class TripOfferModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, tripId, driverId, status, createdAt, respondedAt, updatedAt,
+        id,
+        tripId,
+        driverId,
+        status,
+        createdAt,
+        respondedAt,
+        updatedAt,
       ];
 }

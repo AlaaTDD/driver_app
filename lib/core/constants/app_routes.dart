@@ -1,4 +1,3 @@
-
 class AppRoutes {
   static const String splash = '/splash';
   static const String onboarding = '/onboarding';
@@ -8,7 +7,6 @@ class AppRoutes {
   static const String registerDriver = '/register/driver';
   static const String pendingVerification = '/pending-verification';
 
-  
   static const String userHome = '/user/home';
   static const String userProfile = '/user/profile';
   static const String userTrips = '/user/trips';
@@ -25,7 +23,6 @@ class AppRoutes {
   static const String userComplaints = '/user/complaints';
   static const String userWallet = '/user/wallet';
 
-  
   static const String driverHome = '/driver/home';
   static const String driverProfile = '/driver/profile';
   static const String driverTrips = '/driver/trips';

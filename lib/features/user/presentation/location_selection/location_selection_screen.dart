@@ -456,8 +456,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: isDark
-                          ? [Colors.black.withValues(alpha: 0.55), Colors.transparent]
-                          : [Colors.white.withValues(alpha: 0.45), Colors.transparent],
+                          ? [AppColors.black.withValues(alpha: 0.55), AppColors.transparent]
+                          : [AppColors.white.withValues(alpha: 0.45), AppColors.transparent],
                     ),
                   ),
                 ),
@@ -628,8 +628,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
                                           color: isDark
-                                              ? Colors.white.withValues(alpha: 0.05)
-                                              : Colors.black.withValues(alpha: 0.04),
+                                              ? AppColors.white.withValues(alpha: 0.05)
+                                              : AppColors.black.withValues(alpha: 0.04),
                                           borderRadius: BorderRadius.circular(16),
                                         ),
                                         child: Row(
@@ -672,10 +672,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           elevation: canConfirm ? 12 : 0,
           shadowColor: AppColors.primary.withValues(alpha: 0.50),
-          backgroundColor: canConfirm ? AppColors.primary : (isDark ? const Color(0xFF1A2A40) : const Color(0xFFE8EEF5)),
-          foregroundColor: canConfirm ? Colors.white : (isDark ? Colors.white38 : Colors.black38),
-          disabledBackgroundColor: isDark ? const Color(0xFF1A2A40) : const Color(0xFFE8EEF5),
-          disabledForegroundColor: isDark ? Colors.white38 : Colors.black38,
+          backgroundColor: canConfirm ? AppColors.primary : (isDark ? AppColors.divider : AppColors.textPrimary),
+          foregroundColor: canConfirm ? AppColors.white : (isDark ? AppColors.white.withValues(alpha: 0.38) : AppColors.black.withValues(alpha: 0.38)),
+          disabledBackgroundColor: isDark ? AppColors.divider : AppColors.textPrimary,
+          disabledForegroundColor: isDark ? AppColors.white.withValues(alpha: 0.38) : AppColors.black.withValues(alpha: 0.38),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -712,12 +712,12 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               height: 52,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: (isDark ? const Color(0xFF0D1526) : Colors.white).withValues(alpha: 0.92),
+                color: (isDark ? AppColors.background : AppColors.white).withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: color.withValues(alpha: 0.35), width: 1.2),
                 boxShadow: [
                   BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 6)),
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.14), blurRadius: 12, offset: const Offset(0, 3)),
+                  BoxShadow(color: AppColors.black.withValues(alpha: 0.14), blurRadius: 12, offset: const Offset(0, 3)),
                 ],
               ),
               child: Row(
@@ -778,14 +778,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1526) : Colors.white,
+        color: isDark ? AppColors.background : AppColors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          color: isDark ? AppColors.white.withValues(alpha: 0.06) : AppColors.black.withValues(alpha: 0.05),
         ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 24, offset: const Offset(0, 8)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: ClipRRect(
@@ -1002,7 +1002,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                   BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4)),
                 ],
               ),
-              child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 22),
+              child: const Icon(Icons.location_on_rounded, color: AppColors.white, size: 22),
             ),
             
             Container(
@@ -1016,7 +1016,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
             Container(
               width: 12, height: 5,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.22),
+                color: AppColors.black.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -1040,14 +1040,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           decoration: BoxDecoration(
-            color: (isDark ? const Color(0xFF0D1526) : Colors.white).withValues(alpha: 0.94),
+            color: (isDark ? AppColors.background : AppColors.white).withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.05),
+              color: isDark ? AppColors.white.withValues(alpha: 0.07) : AppColors.black.withValues(alpha: 0.05),
             ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, 8)),
-              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+              BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, 8)),
+              BoxShadow(color: AppColors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
             ],
           ),
           child: Column(
@@ -1148,7 +1148,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       onPressed: _isPickConfirming ? null : _confirmPickLocation,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: color,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 6,
                         shadowColor: color.withValues(alpha: 0.45),
@@ -1156,7 +1156,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       child: _isPickConfirming
                           ? const SizedBox(
                               width: 20, height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5),
                             )
                           : Text(
                               isOrigin
@@ -1191,24 +1191,24 @@ class _PremiumBackButton extends StatelessWidget {
       child: Container(
         width: 42, height: 42,
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0D1526) : Colors.white,
+          color: isDark ? AppColors.background : AppColors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.20),
+              color: AppColors.black.withValues(alpha: 0.20),
               blurRadius: 14,
               offset: const Offset(0, 4),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 3,
               offset: const Offset(0, 1),
             ),
           ],
           border: Border.all(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.07)
-                : Colors.black.withValues(alpha: 0.05),
+                ? AppColors.white.withValues(alpha: 0.07)
+                : AppColors.black.withValues(alpha: 0.05),
           ),
         ),
         child: Icon(
@@ -1238,23 +1238,23 @@ class _PremiumCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [const Color(0xFF0F1828), const Color(0xFF0B1220)]
-              : [Colors.white, const Color(0xFFF8FAFD)],
+              ? [AppColors.background, AppColors.background]
+              : [AppColors.white, AppColors.textPrimary],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.06),
+              ? AppColors.white.withValues(alpha: 0.07)
+              : AppColors.black.withValues(alpha: 0.06),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.14),
+            color: AppColors.black.withValues(alpha: isDark ? 0.40 : 0.14),
             blurRadius: 24,
             offset: const Offset(0, 6),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: AppColors.black.withValues(alpha: 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1295,7 +1295,7 @@ class _SwapDivider extends StatelessWidget {
             child: Container(
               width: 24, height: 24,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A2A40) : const Color(0xFFF0F4FF),
+                color: isDark ? AppColors.divider : AppColors.textPrimary,
                 shape: BoxShape.circle,
                 border: Border.all(color: context.divColor, width: 1),
               ),
@@ -1350,7 +1350,7 @@ class _LocationField extends StatelessWidget {
             ? (isDark
                 ? AppColors.primary.withValues(alpha: 0.08)
                 : AppColors.primary.withValues(alpha: 0.04))
-            : Colors.transparent,
+            : AppColors.transparent,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -1432,15 +1432,15 @@ class _LocationField extends StatelessWidget {
                 color: isActive
                     ? AppColors.primary.withValues(alpha: 0.14)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.black.withValues(alpha: 0.04)),
+                        ? AppColors.white.withValues(alpha: 0.05)
+                        : AppColors.black.withValues(alpha: 0.04)),
                 borderRadius: BorderRadius.circular(10),
                 border: isActive
                     ? Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1)
                     : Border.all(
                         color: isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.06),
+                            ? AppColors.white.withValues(alpha: 0.06)
+                            : AppColors.black.withValues(alpha: 0.06),
                       ),
               ),
               child: Icon(
@@ -1510,8 +1510,8 @@ class _TimelinePainter extends CustomPainter {
     const waypointColor = AppColors.warning; // orange
     const destColor    = AppColors.error;    // red
     final lineColor = isDark
-        ? const Color(0xFF2A3650)
-        : const Color(0xFFD4DCE8);
+        ? AppColors.divider
+        : AppColors.divider;
 
     // Draw connecting lines between dots
     final linePaint = Paint()
@@ -1559,7 +1559,7 @@ class _TimelinePainter extends CustomPainter {
 
       // White inner dot
       final innerPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.85)
+        ..color = AppColors.white.withValues(alpha: 0.85)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(cx, cy), dotR * 0.38, innerPaint);
     }
@@ -1609,11 +1609,11 @@ class _SlimField extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive
             ? AppColors.primary.withValues(alpha: isDark ? 0.09 : 0.05)
-            : Colors.transparent,
+            : AppColors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: isActive
             ? Border.all(color: AppColors.primary.withValues(alpha: 0.30), width: 1)
-            : Border.all(color: Colors.transparent),
+            : Border.all(color: AppColors.transparent),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1670,8 +1670,8 @@ class _SlimField extends StatelessWidget {
                 color: isActive
                     ? AppColors.primary.withValues(alpha: 0.15)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.black.withValues(alpha: 0.04)),
+                        ? AppColors.white.withValues(alpha: 0.05)
+                        : AppColors.black.withValues(alpha: 0.04)),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: Icon(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 
 
@@ -7,16 +8,16 @@ extension AppThemeX on BuildContext {
 
   
   
-  Color get bgColor       => const Color(0xFF0D0F18);
-  Color get cardColor     => const Color(0xFF181C2A);
-  Color get elevatedColor => const Color(0xFF1E2336);
-  Color get divColor      => const Color(0xFF252A3D);
+  Color get bgColor       => AppColors.background;
+  Color get cardColor     => AppColors.surface;
+  Color get elevatedColor => AppColors.surfaceElevated;
+  Color get divColor      => AppColors.divider;
 
-  Color get textPrimary   => const Color(0xFFEEF0FF);
-  Color get textSecondary => const Color(0xFF7B82A3);
-  Color get textDisabled  => const Color(0xFF3A4060);
+  Color get textPrimary   => AppColors.textPrimary;
+  Color get textSecondary => AppColors.textSecondary;
+  Color get textDisabled  => AppColors.textDisabled;
 
-  Color get primaryTint   => const Color(0xFF12151F);
+  Color get primaryTint   => AppColors.primarySurface;
 
   
   Color get hBg          => bgColor;

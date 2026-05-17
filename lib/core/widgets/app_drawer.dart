@@ -12,6 +12,7 @@ import '../theme/bloc/theme_state.dart';
 import '../../features/auth/domain/entities/user_entity.dart';
 import '../../features/shared/presentation/messages/bloc/messages_cubit.dart';
 import '../../features/shared/presentation/messages/bloc/messages_state.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 
 
@@ -53,16 +54,16 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               physics: const BouncingScrollPhysics(),
               children: [
-                _NavItem(icon: Icons.person_rounded,      tint: const Color(0xFF6366F1), label: AppLocalizations.of(context)!.profile,   onTap: onProfileTap),
+                _NavItem(icon: Icons.person_rounded,      tint: AppColors.indigo, label: AppLocalizations.of(context)!.profile,   onTap: onProfileTap),
                 if (onWalletTap != null)
-                  _NavItem(icon: Icons.account_balance_wallet_rounded, tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myWallet, onTap: onWalletTap),
-                _NavItem(icon: Icons.route_rounded,       tint: const Color(0xFF10B981), label: AppLocalizations.of(context)!.myTrips,         onTap: onTripsTap),
+                  _NavItem(icon: Icons.account_balance_wallet_rounded, tint: AppColors.success, label: AppLocalizations.of(context)!.myWallet, onTap: onWalletTap),
+                _NavItem(icon: Icons.route_rounded,       tint: AppColors.success, label: AppLocalizations.of(context)!.myTrips,         onTap: onTripsTap),
                 if (user != null)
                   _MessagesNavItem(onMessagesTap: onMessagesTap)
                 else
-                  _NavItem(icon: Icons.chat_bubble_rounded, tint: const Color(0xFF3B82F6), label: AppLocalizations.of(context)!.messages, onTap: onMessagesTap),
-                _NavItem(icon: Icons.auto_awesome_rounded,tint: const Color(0xFFF59E0B), label: AppLocalizations.of(context)!.aiAssistant,  onTap: onChatbotTap),
-                _NavItem(icon: Icons.report_problem_rounded, tint: const Color(0xFFEF4444), label: AppLocalizations.of(context)!.complaints, onTap: onComplaintsTap),
+                  _NavItem(icon: Icons.chat_bubble_rounded, tint: AppColors.primary, label: AppLocalizations.of(context)!.messages, onTap: onMessagesTap),
+                _NavItem(icon: Icons.auto_awesome_rounded,tint: AppColors.warning, label: AppLocalizations.of(context)!.aiAssistant,  onTap: onChatbotTap),
+                _NavItem(icon: Icons.report_problem_rounded, tint: AppColors.error, label: AppLocalizations.of(context)!.complaints, onTap: onComplaintsTap),
                 const SizedBox(height: 4),
                 _Divider(),
                 const SizedBox(height: 10),
@@ -72,8 +73,8 @@ class AppDrawer extends StatelessWidget {
                 const SizedBox(height: 10),
                 _Divider(),
                 const SizedBox(height: 4),
-                _NavItem(icon: Icons.shield_outlined,      tint: const Color(0xFF8B5CF6), label: AppLocalizations.of(context)!.privacyPolicy, onTap: () {}, small: true),
-                _NavItem(icon: Icons.help_outline_rounded, tint: const Color(0xFF64748B), label: AppLocalizations.of(context)!.helpAndSupport, onTap: () {}, small: true),
+                _NavItem(icon: Icons.shield_outlined,      tint: AppColors.purple, label: AppLocalizations.of(context)!.privacyPolicy, onTap: () {}, small: true),
+                _NavItem(icon: Icons.help_outline_rounded, tint: AppColors.textSecondary, label: AppLocalizations.of(context)!.helpAndSupport, onTap: () {}, small: true),
               ],
             ),
           ),
@@ -110,7 +111,7 @@ class _Header extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(20, top + 22, 20, 24),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF0D2260), Color(0xFF1A3D9A), Color(0xFF2563EB)],
+          colors: [AppColors.primaryDark, AppColors.primaryDark, AppColors.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           stops: [0.0, 0.5, 1.0],
@@ -123,8 +124,8 @@ class _Header extends StatelessWidget {
             width: 60, height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.15),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1.8),
+              color: AppColors.white.withValues(alpha: 0.15),
+              border: Border.all(color: AppColors.white.withValues(alpha: 0.45), width: 1.8),
               image: avatarUrl != null && avatarUrl.isNotEmpty
                   ? DecorationImage(
                       image: NetworkImage(avatarUrl),
@@ -136,7 +137,7 @@ class _Header extends StatelessWidget {
                 ? Center(
                     child: Text(
                       _initials(name),
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                      style: const TextStyle(color: AppColors.white, fontSize: 20, fontWeight: FontWeight.w800),
                     ),
                   )
                 : null,
@@ -144,7 +145,7 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 14),
           
           Text(name,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+            style: const TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.3),
             maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 6),
           
@@ -155,30 +156,30 @@ class _Header extends StatelessWidget {
               final Color color;
               if (i < rating.floor()) {
                 icon = Icons.star_rounded;
-                color = const Color(0xFFFBBF24);
+                color = AppColors.warning;
               } else if (i == rating.floor() && rating - rating.floor() >= 0.25) {
                 icon = Icons.star_half_rounded;
-                color = const Color(0xFFFBBF24);
+                color = AppColors.warning;
               } else {
                 icon = Icons.star_outline_rounded;
-                color = Colors.white.withValues(alpha: 0.35);
+                color = AppColors.white.withValues(alpha: 0.35);
               }
               return Icon(icon, size: 13, color: color);
             }),
             const SizedBox(width: 7),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: AppColors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
               child: Text(rating.toStringAsFixed(1),
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                style: const TextStyle(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.w700)),
             ),
           ]),
           if (phone.isNotEmpty) ...[
             const SizedBox(height: 10),
             Row(children: [
-              Icon(Icons.phone_rounded, size: 12, color: Colors.white.withValues(alpha: 0.6)),
+              Icon(Icons.phone_rounded, size: 12, color: AppColors.white.withValues(alpha: 0.6)),
               const SizedBox(width: 6),
-              Text(phone, style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12.5)),
+              Text(phone, style: TextStyle(color: AppColors.white.withValues(alpha: 0.75), fontSize: 12.5)),
             ]),
           ],
         ],
@@ -203,7 +204,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final sz = small ? 32.0 : 38.0;
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -226,14 +227,14 @@ class _NavItem extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: const BoxDecoration(
-                          color: Colors.red,
+                          color: AppColors.error,
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
                         child: Center(
                           child: Text(
                             badge! > 99 ? '99+' : badge.toString(),
-                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: AppColors.white, fontSize: 9, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -290,7 +291,7 @@ class _MessagesNavItemState extends State<_MessagesNavItem> {
         }
         return _NavItem(
           icon: Icons.chat_bubble_rounded,
-          tint: const Color(0xFF3B82F6),
+          tint: AppColors.primary,
           label: AppLocalizations.of(context)!.messages,
           onTap: widget.onMessagesTap,
           badge: unreadCount,
@@ -404,14 +405,14 @@ class _Pill extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 3),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : Colors.transparent,
+          color: active ? AppColors.primary : AppColors.transparent,
           borderRadius: BorderRadius.circular(6),
           boxShadow: active
               ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))]
               : [],
         ),
         child: Text(label, style: TextStyle(
-          color: active ? Colors.white : context.textSecondary,
+          color: active ? AppColors.white : context.textSecondary,
           fontSize: 11.5,
           fontWeight: active ? FontWeight.w700 : FontWeight.w500,
         )),
@@ -437,8 +438,8 @@ class _LogoutBtn extends StatelessWidget {
           icon: const Icon(Icons.logout_rounded, size: 18),
           label: Text(AppLocalizations.of(context)!.logout),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFDC2626),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.error,
+            foregroundColor: AppColors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,
             textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),

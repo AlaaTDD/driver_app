@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class TripsHeader extends StatelessWidget {
   final int total;
@@ -21,15 +22,15 @@ class TripsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const card    = Color(0xFF181C2A);
-    const elevated= Color(0xFF1E2336);
-    const border  = Color(0xFF252A3D);
-    const blue    = Color(0xFF4C8BF5);
-    const emerald = Color(0xFF1FC87A);
-    const rose    = Color(0xFFFF4060);
-    const t1      = Color(0xFFEEF0FF);
-    const t2      = Color(0xFF7B82A3);
-    const t3      = Color(0xFF3A4060);
+    const card    = AppColors.surface;
+    const elevated= AppColors.surfaceElevated;
+    const border  = AppColors.divider;
+    const blue    = AppColors.primary;
+    const emerald = AppColors.secondary;
+    const rose    = AppColors.error;
+    const t1      = AppColors.textPrimary;
+    const t2      = AppColors.textSecondary;
+    const t3      = AppColors.textDisabled;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -40,7 +41,7 @@ class TripsHeader extends StatelessWidget {
         border: Border.all(color: blue.withValues(alpha: 0.25), width: 1),
         boxShadow: [
           BoxShadow(color: blue.withValues(alpha: 0.10), blurRadius: 20, offset: const Offset(0, 6)),
-          const BoxShadow(color: Colors.black38, blurRadius: 10),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.38), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -73,17 +74,17 @@ class TripsHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [blue, Color(0xFF1F5EC4)],
+                    colors: [blue, AppColors.primaryDark],
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 15),
+                  const Icon(Icons.add_rounded, color: AppColors.white, size: 15),
                   const SizedBox(width: 5),
                   Text(l.newTripLabel,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                 ]),
               ),
             ),
@@ -128,10 +129,10 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const elevated = Color(0xFF1E2336);
-    const border   = Color(0xFF252A3D);
-    const t1       = Color(0xFFEEF0FF);
-    const t2       = Color(0xFF7B82A3);
+    const elevated = AppColors.surfaceElevated;
+    const border   = AppColors.divider;
+    const t1       = AppColors.textPrimary;
+    const t2       = AppColors.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

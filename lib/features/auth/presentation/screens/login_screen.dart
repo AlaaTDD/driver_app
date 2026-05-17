@@ -93,8 +93,8 @@ class _LoginScreenState extends State<LoginScreen>
                     center: Alignment.topCenter,
                     radius: 0.9,
                     colors: [
-                      const Color(0xFF2563EB).withValues(alpha: 0.12),
-                      Colors.transparent,
+                      AppColors.primary.withValues(alpha: 0.12),
+                      AppColors.transparent,
                     ],
                   ),
                 ),
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen>
                             child: const Icon(
                               Icons.directions_car_rounded,
                               size: 40,
-                              color: Colors.white,
+                              color: AppColors.white,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -350,7 +350,7 @@ class _GradientButton extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: isLoading ? null : onPressed,
@@ -362,7 +362,7 @@ class _GradientButton extends StatelessWidget {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
                     ),
                   )
                 : Text(
@@ -370,7 +370,7 @@ class _GradientButton extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppColors.white,
                     ),
                   ),
           ),

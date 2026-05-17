@@ -1,6 +1,8 @@
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'bloc/driver_profile_bloc.dart';
 import 'bloc/driver_profile_state.dart';
 import 'bloc/driver_profile_event.dart';
@@ -10,7 +12,8 @@ import '../../../../core/utils/app_toast.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/widgets/stat_card.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-
+import '../../../../services/r2_storage_service.dart';
+import '../../../../services/supabase_service.dart';
 
 
 class DriverProfileScreen extends StatefulWidget {
@@ -25,6 +28,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   final _phoneController = TextEditingController();
   final _plateController = TextEditingController();
   bool _populated = false;
+  bool _uploadingAvatar = false;
 
   @override
   void initState() {
@@ -178,41 +182,53 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   child: Column(
                     children: [
                       
-                      Stack(
-                        alignment: Alignment.bottomRight,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.3),
-                                width: 3,
+                      // ── Avatar with functional edit button ────────────
+                      GestureDetector(
+                        onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  width: 3,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 52,
+                                backgroundColor: context.primaryTint,
+                                backgroundImage: avatarUrl != null
+                                    ? NetworkImage(avatarUrl)
+                                    : null,
+                                child: _uploadingAvatar
+                                    ? const CircularProgressIndicator(
+                                        color: AppColors.white, strokeWidth: 2)
+                                    : avatarUrl == null
+                                        ? const Icon(Icons.person_rounded,
+                                            size: 52, color: AppColors.primary)
+                                        : null,
                               ),
                             ),
-                            child: CircleAvatar(
-                              radius: 52,
-                              backgroundColor: context.primaryTint,
-                              backgroundImage: avatarUrl != null
-                                  ? NetworkImage(avatarUrl)
-                                  : null,
-                              child: avatarUrl == null
-                                  ? const Icon(Icons.person_rounded,
-                                      size: 52, color: AppColors.primary)
-                                  : null,
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: context.bgColor, width: 2),
+                              ),
+                              child: Icon(
+                                _uploadingAvatar
+                                    ? Icons.hourglass_top_rounded
+                                    : Icons.edit,
+                                size: 14,
+                                color: AppColors.white,
+                              ),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: context.bgColor, width: 2),
-                            ),
-                            child: Icon(Icons.edit,
-                                size: 14, color: context.textPrimary),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
 
@@ -442,13 +458,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           })),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     minimumSize: const Size.fromHeight(52),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   child: state is DriverProfileLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const CircularProgressIndicator(color: AppColors.white)
                       : Text(l.saveChanges,
                           style:
                               const TextStyle(fontWeight: FontWeight.bold)),
@@ -460,6 +476,34 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picker = ImagePicker();
+    final XFile? image =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (image == null) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      final uid = SupabaseService.currentUser?.id;
+      if (uid == null) throw Exception('Not logged in');
+      final r2 = R2StorageService();
+      final url = await r2.uploadFile(
+        file: File(image.path),
+        path: 'avatars/driver_$uid.${image.path.split('.').last}',
+      );
+      // Persist via bloc (UpdateDriverProfile allows avatar_url)
+      if (mounted) {
+        context
+            .read<DriverProfileBloc>()
+            .add(UpdateDriverProfile({'avatar_url': url}));
+      }
+    } catch (e) {
+      if (mounted) AppToast.error('فشل رفع الصورة: $e');
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
   }
 
   String _vehicleLabel(String type) {

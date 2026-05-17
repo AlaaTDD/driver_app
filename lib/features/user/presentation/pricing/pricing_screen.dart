@@ -166,9 +166,9 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                       child: Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                          color: isDark ? AppColors.background : AppColors.white,
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 8, offset: const Offset(0, 2))],
+                          boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.18), blurRadius: 8, offset: const Offset(0, 2))],
                         ),
                         child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.textPrimary),
                       ),
@@ -358,11 +358,11 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
     return Container(
       constraints: BoxConstraints(maxHeight: _sheetHeight),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1526) : Colors.white,
+        color: isDark ? AppColors.background : AppColors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
         ],
       ),
       child: Column(
@@ -503,7 +503,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                             minimumSize: Size.zero,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             backgroundColor: state is CouponApplied ? AppColors.success : AppColors.primary,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
@@ -534,7 +534,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                             _goToMeetingPoint(state.finalPrice, state);
                           }
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 6, shadowColor: AppColors.primary.withValues(alpha: 0.4)),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), elevation: 6, shadowColor: AppColors.primary.withValues(alpha: 0.4)),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           const Icon(Icons.place_rounded, size: 16),
                           const SizedBox(width: 8),
@@ -584,11 +584,11 @@ class _TripRouteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1526) : Colors.white,
+        color: isDark ? AppColors.background : AppColors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 14, offset: const Offset(0, 4)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 1)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.18), blurRadius: 14, offset: const Offset(0, 4)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 1)),
         ],
       ),
       child: Row(
@@ -675,11 +675,11 @@ class _VehicleChip extends StatelessWidget {
           boxShadow: selected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))] : null,
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: selected ? Colors.white : context.textSecondary, size: 26),
+          Icon(icon, color: selected ? AppColors.white : context.textSecondary, size: 26),
           const SizedBox(height: 5),
-          Text(label, style: TextStyle(color: selected ? Colors.white : context.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(color: selected ? AppColors.white : context.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text(basePrice, style: TextStyle(color: selected ? Colors.white.withValues(alpha: 0.8) : context.textSecondary, fontSize: 10.5), textAlign: TextAlign.center),
+          Text(basePrice, style: TextStyle(color: selected ? AppColors.white.withValues(alpha: 0.8) : context.textSecondary, fontSize: 10.5), textAlign: TextAlign.center),
         ]),
       ),
     );

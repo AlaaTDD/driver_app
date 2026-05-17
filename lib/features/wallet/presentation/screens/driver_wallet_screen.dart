@@ -148,24 +148,24 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
       expandedHeight: 400,
       pinned: true,
       stretch: true,
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E3A8A), // Slate 900 / Blue 900
+      backgroundColor: isDark ? AppColors.background : AppColors.primaryDark, // Slate 900 / Blue 900
       elevation: 0,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: AppColors.white.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.white, size: 20),
             onPressed: () => context.pop(),
           ),
         ),
       ),
       title: Text(AppLocalizations.of(context)!.driverWallet,
         style: TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontWeight: FontWeight.w800,
           fontSize: 20,
           letterSpacing: -0.5,
@@ -180,8 +180,8 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDark 
-                ? [const Color(0xFF1E293B), const Color(0xFF0F172A), const Color(0xFF020617)] // Slate
-                : [const Color(0xFF3B82F6), const Color(0xFF1D4ED8), const Color(0xFF1E3A8A)], // Blue
+                ? [AppColors.surfaceElevated, AppColors.background, AppColors.background] // Slate
+                : [AppColors.primary, AppColors.primaryDark, AppColors.primaryDark], // Blue
             ),
           ),
           child: Stack(
@@ -197,8 +197,8 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.1),
-                        Colors.white.withValues(alpha: 0.0),
+                        AppColors.white.withValues(alpha: 0.1),
+                        AppColors.white.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -214,8 +214,8 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.08),
-                        Colors.white.withValues(alpha: 0.0),
+                        AppColors.white.withValues(alpha: 0.08),
+                        AppColors.white.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -230,19 +230,19 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: AppColors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 16),
+                            Icon(Icons.account_balance_wallet_rounded, color: AppColors.white, size: 16),
                             SizedBox(width: 8),
                             Text(
                               AppLocalizations.of(context)!.availableToWithdraw,
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -263,7 +263,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                               child: Text(
                                 _getCurrencyFormat(context).format(wallet.balance).replaceAll(AppLocalizations.of(context)!.egp, ''),
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontSize: 52,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -1.5,
@@ -275,7 +275,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                           const SizedBox(width: 8),
                           Text(AppLocalizations.of(context)!.egp,
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: AppColors.white.withValues(alpha: 0.7),
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                             ),
@@ -287,18 +287,18 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                           margin: const EdgeInsets.only(top: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.2), // Amber
+                            color: AppColors.warning.withValues(alpha: 0.2), // Amber
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
+                            border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.hourglass_empty_rounded, color: Color(0xFFFCD34D), size: 14),
+                              const Icon(Icons.hourglass_empty_rounded, color: AppColors.warningLight, size: 14),
                               const SizedBox(width: 6),
                               Text(
                                 '${AppLocalizations.of(context)!.pendingPrefix}${_getCompactCurrencyFormat(context).format(wallet.pendingWithdrawal)}',
-                                style: const TextStyle(color: Color(0xFFFDE68A), fontSize: 12, fontWeight: FontWeight.w700),
+                                style: const TextStyle(color: AppColors.warningLight, fontSize: 12, fontWeight: FontWeight.w700),
                               ),
                             ],
                           ),
@@ -340,11 +340,11 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: context.cardColor,
-                            foregroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1D4ED8),
+                            foregroundColor: isDark ? AppColors.background : AppColors.primaryDark,
                             disabledBackgroundColor: context.cardColor.withValues(alpha: 0.2),
                             disabledForegroundColor: context.textSecondary.withValues(alpha: 0.6),
                             elevation: wallet.balance >= 50 ? 8 : 0,
-                            shadowColor: Colors.black.withValues(alpha: 0.3),
+                            shadowColor: AppColors.black.withValues(alpha: 0.3),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                         ),
@@ -365,12 +365,12 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: AppColors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: AppColors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -381,20 +381,20 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.white, size: 16),
+              child: Icon(icon, color: AppColors.white, size: 16),
             ),
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -0.5),
+              style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -0.5),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
+              style: TextStyle(color: AppColors.white.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -418,11 +418,11 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         indicatorPadding: const EdgeInsets.all(4),
-        labelColor: Colors.white,
+        labelColor: AppColors.white,
         unselectedLabelColor: context.textSecondary,
         labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        dividerColor: Colors.transparent,
+        dividerColor: AppColors.transparent,
         tabs: [
           Tab(text: AppLocalizations.of(context)!.transactions),
           Tab(text: AppLocalizations.of(context)!.withdrawalRequests),
@@ -451,16 +451,16 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
   Widget _buildTransactionCard(BuildContext context, WalletTransactionModel txn) {
     final isCredit = txn.isCredit;
     final (icon, iconColor, lightBg, label) = switch (txn.type) {
-      WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.tripEarning),
-      WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, const Color(0xFFF97316), const Color(0xFFFFF7ED), AppLocalizations.of(context)!.withdrawal),
-      WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.withdrawalRefund),
-      WalletTransactionType.bonus           => (Icons.star_rounded, const Color(0xFFF59E0B), const Color(0xFFFFFBEB), AppLocalizations.of(context)!.bonus),
-      WalletTransactionType.couponSubsidy   => (Icons.local_offer_rounded, const Color(0xFF8B5CF6), const Color(0xFFF5F3FF), AppLocalizations.of(context)!.couponSubsidy),
-      WalletTransactionType.penalty         => (Icons.remove_circle_rounded, const Color(0xFFEF4444), const Color(0xFFFEF2F2), AppLocalizations.of(context)!.penalty),
-      WalletTransactionType.topUp           => (Icons.add_card_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.topUp),
-      WalletTransactionType.refund          => (Icons.keyboard_return_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.refund),
-      WalletTransactionType.tripPayment     => (Icons.payment_rounded, const Color(0xFF6366F1), const Color(0xFFEEF2FF), AppLocalizations.of(context)!.tripPayment),
-      WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, Colors.grey.shade600, Colors.grey.shade100, AppLocalizations.of(context)!.adjustment),
+      WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, AppColors.success, AppColors.successLight, AppLocalizations.of(context)!.tripEarning),
+      WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, AppColors.warning, AppColors.warningLight, AppLocalizations.of(context)!.withdrawal),
+      WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, AppColors.primary, AppColors.textPrimary, AppLocalizations.of(context)!.withdrawalRefund),
+      WalletTransactionType.bonus           => (Icons.star_rounded, AppColors.warning, AppColors.warningLight, AppLocalizations.of(context)!.bonus),
+      WalletTransactionType.couponSubsidy   => (Icons.local_offer_rounded, AppColors.purple, AppColors.purpleLight, AppLocalizations.of(context)!.couponSubsidy),
+      WalletTransactionType.penalty         => (Icons.remove_circle_rounded, AppColors.error, AppColors.errorLight, AppLocalizations.of(context)!.penalty),
+      WalletTransactionType.topUp           => (Icons.add_card_rounded, AppColors.success, AppColors.successLight, AppLocalizations.of(context)!.topUp),
+      WalletTransactionType.refund          => (Icons.keyboard_return_rounded, AppColors.primary, AppColors.textPrimary, AppLocalizations.of(context)!.refund),
+      WalletTransactionType.tripPayment     => (Icons.payment_rounded, AppColors.indigo, AppColors.indigoLight, AppLocalizations.of(context)!.tripPayment),
+      WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, AppColors.grey, AppColors.grey, AppLocalizations.of(context)!.adjustment),
     };
     final bgColor = _adaptiveIconBg(iconColor, context);
 
@@ -473,7 +473,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
         border: Border.all(color: context.divColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -531,7 +531,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
-                  color: isCredit ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  color: isCredit ? AppColors.success : AppColors.error,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -567,12 +567,12 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
 
   Widget _buildWithdrawalCard(BuildContext context, WithdrawalRequestModel w) {
     final (statusLabel, statusColor, lightStatusBg) = switch (w.status) {
-      WithdrawalStatus.completed  => (AppLocalizations.of(context)!.statusCompleted, const Color(0xFF10B981), const Color(0xFFECFDF5)),
-      WithdrawalStatus.rejected   => (AppLocalizations.of(context)!.statusRejected, const Color(0xFFEF4444), const Color(0xFFFEF2F2)),
-      WithdrawalStatus.cancelled  => (AppLocalizations.of(context)!.statusCancelled, Colors.grey.shade600, Colors.grey.shade100),
-      WithdrawalStatus.processing => (AppLocalizations.of(context)!.statusProcessing, const Color(0xFF3B82F6), const Color(0xFFEFF6FF)),
-      WithdrawalStatus.approved   => (AppLocalizations.of(context)!.statusApproved, const Color(0xFF0EA5E9), const Color(0xFFE0F2FE)),
-      WithdrawalStatus.pending    => (AppLocalizations.of(context)!.statusPending, const Color(0xFFF59E0B), const Color(0xFFFFFBEB)),
+      WithdrawalStatus.completed  => (AppLocalizations.of(context)!.statusCompleted, AppColors.success, AppColors.successLight),
+      WithdrawalStatus.rejected   => (AppLocalizations.of(context)!.statusRejected, AppColors.error, AppColors.errorLight),
+      WithdrawalStatus.cancelled  => (AppLocalizations.of(context)!.statusCancelled, AppColors.grey, AppColors.grey),
+      WithdrawalStatus.processing => (AppLocalizations.of(context)!.statusProcessing, AppColors.primary, AppColors.textPrimary),
+      WithdrawalStatus.approved   => (AppLocalizations.of(context)!.statusApproved, AppColors.info, AppColors.infoLight),
+      WithdrawalStatus.pending    => (AppLocalizations.of(context)!.statusPending, AppColors.warning, AppColors.warningLight),
     };
     final statusBg = context.isDark
         ? statusColor.withValues(alpha: 0.15)
@@ -594,7 +594,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
         border: Border.all(color: context.divColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -719,7 +719,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                 height: 90,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: AppColors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
@@ -758,7 +758,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
             label: Text(AppLocalizations.of(context)!.retryButton),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
@@ -775,7 +775,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (_) => BlocProvider.value(
         value: context.read<WalletCubit>(),
         child: _WithdrawalSheet(wallet: wallet),
@@ -867,7 +867,7 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: AppColors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -885,7 +885,7 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
                   width: 48, height: 6,
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.3),
+                    color: AppColors.grey.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -911,7 +911,7 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
                         const SizedBox(height: 4),
                         Text(
                           '${AppLocalizations.of(context)!.balancePrefix}${_getCurrencyFormat(context).format(widget.wallet.balance)}',
-                          style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.w700, fontSize: 13),
+                          style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w700, fontSize: 13),
                         ),
                       ],
                     ),
@@ -948,18 +948,18 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
                   final selected = _selectedMethod == value;
                   return ChoiceChip(
                     avatar: Icon(icon, size: 18,
-                        color: selected ? Colors.white : AppColors.primary),
+                        color: selected ? AppColors.white : AppColors.primary),
                     label: Text(label),
                     selected: selected,
                     onSelected: (_) => setState(() => _selectedMethod = value),
                     selectedColor: AppColors.primary,
                     backgroundColor: context.bgColor,
                     side: BorderSide(
-                      color: selected ? Colors.transparent : context.divColor,
+                      color: selected ? AppColors.transparent : context.divColor,
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                     labelStyle: TextStyle(
-                      color: selected ? Colors.white : context.textPrimary,
+                      color: selected ? AppColors.white : context.textPrimary,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),
                   );
@@ -1007,7 +1007,7 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
                   label: Text(AppLocalizations.of(context)!.confirmWithdrawalRequest, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),

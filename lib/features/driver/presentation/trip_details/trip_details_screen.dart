@@ -22,25 +22,26 @@ import '../../../../services/location_service.dart';
 import '../../../../core/constants/env_constants.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:ui' as ui;
+import 'package:snapix/core/theme/app_colors.dart';
 
 // ─── Design Tokens (shared palette) ──────────────────────────────────────────
 class _C {
-  static const bg       = Color(0xFF0D0F18);
-  static const sheet    = Color(0xFF12151F);
-  static const card     = Color(0xFF181C2A);
-  static const elevated = Color(0xFF1E2336);
-  static const border   = Color(0xFF252A3D);
+  static const bg       = AppColors.background;
+  static const sheet    = AppColors.primarySurface;
+  static const card     = AppColors.surface;
+  static const elevated = AppColors.surfaceElevated;
+  static const border   = AppColors.divider;
 
-  static const blue     = Color(0xFF4C8BF5);
-  static const blueGlow = Color(0x404C8BF5);
-  static const emerald  = Color(0xFF1FC87A);
-  static const rose     = Color(0xFFFF4060);
-  static const amber    = Color(0xFFF5A524);
-  static const violet   = Color(0xFF8B5CF6);
+  static const blue     = AppColors.primary;
+  static final blueGlow = AppColors.primary.withValues(alpha: 0.25);
+  static const emerald  = AppColors.secondary;
+  static const rose     = AppColors.error;
+  static const amber    = AppColors.warning;
+  static const violet   = AppColors.purple;
 
-  static const t1       = Color(0xFFEEF0FF);
-  static const t2       = Color(0xFF7B82A3);
-  static const t3       = Color(0xFF3A4060);
+  static const t1       = AppColors.textPrimary;
+  static const t2       = AppColors.textSecondary;
+  static const t3       = AppColors.textDisabled;
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -124,7 +125,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     canvas.drawCircle(const Offset(20, 20), 18, outerPaint);
     canvas.drawCircle(const Offset(20, 20), 10, paint);
     
-    final whitePaint = Paint()..color = Colors.white;
+    final whitePaint = Paint()..color = AppColors.white;
     canvas.drawCircle(const Offset(20, 20), 5, whitePaint);
     
     final picture = pictureRecorder.endRecording();
@@ -328,9 +329,9 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
       content: Row(children: [
         Icon(ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-            color: Colors.white, size: 18),
+            color: AppColors.white, size: 18),
         const SizedBox(width: 10),
-        Expanded(child: Text(msg, style: const TextStyle(fontSize: 13, color: Colors.white))),
+        Expanded(child: Text(msg, style: const TextStyle(fontSize: 13, color: AppColors.white))),
       ]),
       backgroundColor: ok ? _C.emerald : _C.rose,
       behavior: SnackBarBehavior.floating,
@@ -723,7 +724,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         bottom: 0, left: 0, right: 0, height: 80,
         child: DecoratedBox(decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.transparent, _C.bg.withValues(alpha: 0.88)],
+            colors: [AppColors.transparent, _C.bg.withValues(alpha: 0.88)],
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
           ),
         )),
@@ -769,7 +770,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
             boxShadow: [
               BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 22, spreadRadius: 2),
-              const BoxShadow(color: Colors.black54, blurRadius: 10),
+              BoxShadow(color: AppColors.black.withValues(alpha: 0.54), blurRadius: 10),
             ],
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -884,7 +885,7 @@ class _MapCircleBtn extends StatelessWidget {
             color: _C.sheet.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             border: Border.all(color: _C.border, width: 1),
-            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 10)],
+            boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.38), blurRadius: 10)],
           ),
           child: Icon(icon, color: _C.t1, size: 18),
         ),
@@ -919,7 +920,7 @@ class _UserStrip extends StatelessWidget {
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [_C.violet, Color(0xFF5B21B6)],
+                colors: [_C.violet, AppColors.purpleDark],
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
               ),
             ),
@@ -1060,7 +1061,7 @@ class _RouteTicket extends StatelessWidget {
                 ...List.generate(5, (i) => Container(
                     width: 3, height: 3, margin: const EdgeInsets.symmetric(vertical: 2),
                     decoration: BoxDecoration(
-                      color: i.isEven ? _C.border : Colors.transparent,
+                      color: i.isEven ? _C.border : AppColors.transparent,
                       shape: BoxShape.circle,
                     ))),
                 const SizedBox(height: 4),
@@ -1379,7 +1380,7 @@ class _HTimeline extends StatelessWidget {
                         : null,
                   ),
                   child: done
-                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 11)
+                      ? const Icon(Icons.check_rounded, color: AppColors.white, size: 11)
                       : null,
                 ),
                 const SizedBox(height: 7),
@@ -1453,7 +1454,7 @@ class _ActionBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: _C.sheet,
         border: const Border(top: BorderSide(color: _C.border, width: 1)),
-        boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 20, offset: Offset(0, -4))],
+        boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.45), blurRadius: 20, offset: Offset(0, -4))],
       ),
       child: content,
     );
@@ -1491,11 +1492,11 @@ class _Btn extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, color: outlined ? color : Colors.white, size: 17),
+            Icon(icon, color: outlined ? color : AppColors.white, size: 17),
             const SizedBox(width: 7),
             Text(label, overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: outlined ? color : Colors.white,
+                  color: outlined ? color : AppColors.white,
                   fontSize: 12, fontWeight: FontWeight.w700,
                 )),
           ]),
@@ -1613,13 +1614,13 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
     return AlertDialog(
       backgroundColor: _C.sheet,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('إضافة محطة توقف', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+      title: const Text('إضافة محطة توقف', style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.bold)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _addressCtrl,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: AppColors.white),
             decoration: InputDecoration(
               hintText: 'ابحث عن مكان...',
               hintStyle: const TextStyle(color: _C.t2),

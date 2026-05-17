@@ -50,7 +50,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F18), // Dark background matching trip_details
+      backgroundColor: AppColors.background, // Dark background matching trip_details
       body: SafeArea(
         top: true,
         child: BlocConsumer<TripsBloc, TripsState>(
@@ -224,7 +224,7 @@ class _ToastWidget extends StatelessWidget {
       left: 16,
       right: 16,
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: 1),
           duration: const Duration(milliseconds: 300),
@@ -247,13 +247,13 @@ class _ToastWidget extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const Icon(Icons.check_circle, color: AppColors.white, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         message,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -300,7 +300,7 @@ class _GradientButton extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(12),
@@ -309,12 +309,12 @@ class _GradientButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: Colors.white, size: 18),
+                Icon(icon, color: AppColors.white, size: 18),
                 const SizedBox(width: 6),
                 Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),

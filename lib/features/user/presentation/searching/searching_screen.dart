@@ -18,6 +18,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import '../trip_details/trip_details_screen.dart';
+import '../../../../services/supabase_service.dart';
 
 class SearchingScreen extends StatefulWidget {
   final String tripId;
@@ -75,7 +76,26 @@ class _SearchingScreenState extends State<SearchingScreen>
     super.dispose();
   }
 
-  
+  /// Fetches driver name from users table given a driver_id.
+  /// Cached per session via a simple map to avoid repeated DB calls.
+  final Map<String, String> _driverNameCache = {};
+  Future<String> _fetchDriverName(String? driverId) async {
+    if (driverId == null) return 'سائق متاح';
+    if (_driverNameCache.containsKey(driverId)) return _driverNameCache[driverId]!;
+    try {
+      final row = await SupabaseService.client
+          .from('users')
+          .select('name')
+          .eq('id', driverId)
+          .maybeSingle();
+      final name = (row?['name'] as String?)?.trim();
+      final result = (name != null && name.isNotEmpty) ? name : 'سائق متاح';
+      _driverNameCache[driverId] = result;
+      return result;
+    } catch (_) {
+      return 'سائق متاح';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -175,11 +195,11 @@ class _SearchingScreenState extends State<SearchingScreen>
   Widget _buildBottomSheet(BuildContext context, SearchingState state, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1526) : Colors.white,
+        color: isDark ? AppColors.background : AppColors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
-          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
         ],
       ),
       child: Column(
@@ -214,7 +234,7 @@ class _SearchingScreenState extends State<SearchingScreen>
         children: [
           Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 7, height: 7, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.success)),
-            Container(width: 1, height: 10, color: const Color(0xFF64748B)),
+            Container(width: 1, height: 10, color: AppColors.textSecondary),
             Container(width: 7, height: 7, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.error)),
           ]),
           const SizedBox(width: 8),
@@ -308,10 +328,10 @@ class _SearchingScreenState extends State<SearchingScreen>
                 child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text(
                     '$minutes:${seconds.toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800, height: 1),
+                    style: const TextStyle(color: AppColors.white, fontSize: 19, fontWeight: FontWeight.w800, height: 1),
                   ),
                   const SizedBox(height: 2),
-                  Text(AppLocalizations.of(context)!.minute, style: const TextStyle(color: Colors.white60, fontSize: 9, fontWeight: FontWeight.w500)),
+                  Text(AppLocalizations.of(context)!.minute, style: TextStyle(color: AppColors.white.withValues(alpha: 0.6), fontSize: 9, fontWeight: FontWeight.w500)),
                 ]),
               ),
             ],
@@ -404,7 +424,16 @@ class _SearchingScreenState extends State<SearchingScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('سائق متاح', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.bold)),
+                            // Fetch driver name from users table
+                            FutureBuilder<String>(
+                              future: _fetchDriverName(offer['driver_id'] as String?),
+                              builder: (ctx, snap) => Text(
+                                snap.data ?? 'سائق متاح',
+                                style: TextStyle(
+                                    color: context.textPrimary,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
                             Text('$price ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -414,7 +443,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(0, 36),
                           backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
@@ -459,7 +488,7 @@ class _SearchingScreenState extends State<SearchingScreen>
         const SizedBox(height: 4),
         Text(AppLocalizations.of(context)!.loadingDriverDetails, style: TextStyle(color: context.textSecondary, fontSize: 13)),
         const SizedBox(height: 16),
-        const LinearProgressIndicator(color: AppColors.success, backgroundColor: Colors.transparent),
+        const LinearProgressIndicator(color: AppColors.success, backgroundColor: AppColors.transparent),
       ],
     );
   }
@@ -492,7 +521,7 @@ class _SearchingScreenState extends State<SearchingScreen>
               onPressed: () {
                 context.read<SearchingBloc>().add(StartSearching(widget.tripId));
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
               child: Text(AppLocalizations.of(context)!.retry),
             ),
           ),
@@ -519,7 +548,7 @@ class _SearchingScreenState extends State<SearchingScreen>
           width: double.infinity, height: 48,
           child: ElevatedButton(
             onPressed: () => context.go(AppRoutes.userHome),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
             child: Text(AppLocalizations.of(context)!.backToHome, style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ),
@@ -553,7 +582,7 @@ class _SearchingScreenState extends State<SearchingScreen>
           Expanded(
             child: ElevatedButton(
               onPressed: () => context.read<SearchingBloc>().add(StartSearching(widget.tripId)),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
               child: Text(AppLocalizations.of(context)!.retry),
             ),
           ),

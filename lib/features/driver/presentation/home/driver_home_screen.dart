@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'dart:math' as math;
@@ -38,9 +37,6 @@ class DriverHomeScreen extends StatefulWidget {
 
 class _DriverHomeScreenState extends State<DriverHomeScreen>
     with WidgetsBindingObserver {
-  
-  
-  
   GoogleMapController? _mapController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _bottomNavIndex = -1;
@@ -56,13 +52,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   // ── Corridor polyline drawn on home map ─────────────────────────────────────
   Set<Polyline> _corridorPolylines = {};
-  Set<Marker>  _corridorMarkers   = {};
+  Set<Marker> _corridorMarkers = {};
 
-  static const double _bottomSheetHeight        = 236.0;
-  static const double _mapButtonSize            = 48.0;
-  static const double _mapButtonRadius          = 14.0;
-  static const double _topBarHorizontalPadding  = 18.0;
-  static const double _topBarVerticalPadding    = 14.0;
+  static const double _bottomSheetHeight = 236.0;
+  static const double _mapButtonSize = 48.0;
+  static const double _mapButtonRadius = 14.0;
+  static const double _topBarHorizontalPadding = 18.0;
+  static const double _topBarVerticalPadding = 14.0;
 
   @override
   void initState() {
@@ -79,14 +75,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       if (uid == null) return;
       final row = await SupabaseService.client
           .from('drivers_profile')
-          .select('target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng')
+          .select(
+              'target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng')
           .eq('id', uid)
           .maybeSingle();
       if (row == null) return;
       final oLat = (row['target_origin_lat'] as num?)?.toDouble();
       final oLng = (row['target_origin_lng'] as num?)?.toDouble();
-      final dLat = (row['target_dest_lat']   as num?)?.toDouble();
-      final dLng = (row['target_dest_lng']   as num?)?.toDouble();
+      final dLat = (row['target_dest_lat'] as num?)?.toDouble();
+      final dLng = (row['target_dest_lng'] as num?)?.toDouble();
       if (oLat != null && oLng != null && dLat != null && dLng != null) {
         _drawCorridorPolyline(LatLng(oLat, oLng), LatLng(dLat, dLng));
       }
@@ -98,7 +95,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     if (!_initialized) {
       _initialized = true;
       context.read<DriverHomeBloc>().add(LoadDriverStatus());
@@ -108,7 +105,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    
+
     _mapController?.dispose();
     _mapController = null;
     super.dispose();
@@ -116,7 +113,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    
     if (state == AppLifecycleState.resumed) {
       // Re-check location permission when returning from Settings
       context.read<LocationPermissionCubit>().recheck();
@@ -128,12 +124,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     }
   }
 
-  
-
-  
   Future<void> _animateTo(double lat, double lng) async {
     if (_mapController == null) return;
-    
+
     if (_lastAnimatedLat == lat && _lastAnimatedLng == lng) return;
     _lastAnimatedLat = lat;
     _lastAnimatedLng = lng;
@@ -165,7 +158,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         listeners: [
           BlocListener<DriverHomeBloc, DriverHomeState>(
             listenWhen: (prev, curr) =>
-                prev.acceptedTripId != curr.acceptedTripId && curr.acceptedTripId != null,
+                prev.acceptedTripId != curr.acceptedTripId &&
+                curr.acceptedTripId != null,
             listener: (context, state) {
               if (state.acceptedTripId != null) {
                 context.push(
@@ -176,12 +170,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           ),
           BlocListener<DriverHomeBloc, DriverHomeState>(
             listenWhen: (prev, curr) =>
-                prev.errorMessage != curr.errorMessage && curr.errorMessage != null,
+                prev.errorMessage != curr.errorMessage &&
+                curr.errorMessage != null,
             listener: (context, state) {
-              if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+              if (state.errorMessage != null &&
+                  state.errorMessage!.isNotEmpty) {
                 final l = AppLocalizations.of(context)!;
                 final msg = switch (state.errorMessage) {
-                  'errorCannotGoOnlineDuringTrip' => l.errorCannotGoOnlineDuringTrip,
+                  'errorCannotGoOnlineDuringTrip' =>
+                    l.errorCannotGoOnlineDuringTrip,
                   'errorUnexpected' => l.errorUnexpected,
                   _ => state.errorMessage!,
                 };
@@ -215,8 +212,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  
-
   Widget _buildMap() {
     return BlocBuilder<DriverHomeBloc, DriverHomeState>(
       buildWhen: (prev, curr) =>
@@ -226,9 +221,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       builder: (context, state) {
         final markers = <Marker>{..._corridorMarkers};
         final hexagons = _buildHeatmapHexagons(state.heatmapCells);
-        final initialCamera = (state.driverLat != null && state.driverLng != null)
-            ? CameraPosition(target: LatLng(state.driverLat!, state.driverLng!), zoom: 15)
-            : _defaultCamera;
+        final initialCamera =
+            (state.driverLat != null && state.driverLng != null)
+                ? CameraPosition(
+                    target: LatLng(state.driverLat!, state.driverLng!),
+                    zoom: 15)
+                : _defaultCamera;
 
         return GoogleMap(
           initialCameraPosition: initialCamera,
@@ -246,7 +244,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           zoomControlsEnabled: false,
           markers: markers,
           polygons: hexagons,
-          polylines: _corridorPolylines,          // ✅ corridor drawn here
+          polylines: _corridorPolylines, // ✅ corridor drawn here
           padding: const EdgeInsets.only(bottom: 24, top: 100),
           style: Theme.of(context).brightness == Brightness.dark
               ? kDarkMapStyle
@@ -265,16 +263,16 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
       switch (cell.level) {
         case HeatmapLevel.high:
-          fillColor = const Color(0xFFE53935).withValues(alpha: 0.35);
-          strokeColor = const Color(0xFFE53935).withValues(alpha: 0.60);
+          fillColor = AppColors.error.withValues(alpha: 0.35);
+          strokeColor = AppColors.error.withValues(alpha: 0.60);
           break;
         case HeatmapLevel.medium:
-          fillColor = const Color(0xFFF57C00).withValues(alpha: 0.25);
-          strokeColor = const Color(0xFFF57C00).withValues(alpha: 0.50);
+          fillColor = AppColors.warning.withValues(alpha: 0.25);
+          strokeColor = AppColors.warning.withValues(alpha: 0.50);
           break;
         case HeatmapLevel.low:
-          fillColor = const Color(0xFFFFF176).withValues(alpha: 0.16);
-          strokeColor = const Color(0xFFFFF176).withValues(alpha: 0.35);
+          fillColor = AppColors.warningLight.withValues(alpha: 0.16);
+          strokeColor = AppColors.warningLight.withValues(alpha: 0.35);
           break;
       }
 
@@ -294,8 +292,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     }).toSet();
   }
 
-  
-  
   static final List<double> _hexSin = [
     math.sin(0 * math.pi / 180.0),
     math.sin(60 * math.pi / 180.0),
@@ -313,11 +309,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     math.cos(300 * math.pi / 180.0),
   ];
 
-  List<LatLng> _hexagonVertices(
-      double lat, double lng, double radiusMeters) {
+  List<LatLng> _hexagonVertices(double lat, double lng, double radiusMeters) {
     final latPerMeter = 1.0 / 111320.0;
-    final lngPerMeter =
-        1.0 / (111320.0 * math.cos(lat * math.pi / 180.0));
+    final lngPerMeter = 1.0 / (111320.0 * math.cos(lat * math.pi / 180.0));
 
     final vertices = <LatLng>[];
     for (int i = 0; i < 6; i++) {
@@ -327,8 +321,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     }
     return vertices;
   }
-
-  
 
   Widget _buildTopBar() {
     return SafeArea(
@@ -351,15 +343,16 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                 return GestureDetector(
                   onTap: () => context.push(AppRoutes.driverWallet),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: context.elevatedColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
                           color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.1),
+                              ? AppColors.white.withValues(alpha: 0.08)
+                              : AppColors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -367,10 +360,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                        const Icon(Icons.account_balance_wallet_rounded,
+                            color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          AppLocalizations.of(context)!.priceWithCurrency(state.availableBalance.toStringAsFixed(0), AppLocalizations.of(context)!.egp),
+                          AppLocalizations.of(context)!.priceWithCurrency(
+                              state.availableBalance.toStringAsFixed(0),
+                              AppLocalizations.of(context)!.egp),
                           style: TextStyle(
                             color: context.textPrimary,
                             fontWeight: FontWeight.bold,
@@ -378,7 +374,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Icon(Icons.chevron_right_rounded, color: context.textSecondary, size: 16),
+                        Icon(Icons.chevron_right_rounded,
+                            color: context.textSecondary, size: 16),
                       ],
                     ),
                   ),
@@ -398,8 +395,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     );
   }
 
-  
-
   Widget _buildLocationButton() {
     return Positioned(
       bottom: 20,
@@ -411,7 +406,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         onTap: () {
           final s = context.read<DriverHomeBloc>().state;
           if (s.driverLat != null && s.driverLng != null) {
-            
             _lastAnimatedLat = null;
             _lastAnimatedLng = null;
             _animateTo(s.driverLat!, s.driverLng!);
@@ -422,17 +416,18 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   }
 
   Widget _buildBottomNav() {
+    final l = AppLocalizations.of(context)!;
     return CustomAnimatedBottomNav(
-      items: const [
+      items: [
         BottomNavItem(
           icon: Icons.list_alt_outlined,
           activeIcon: Icons.list_alt_rounded,
-          label: 'الرحلات',
+          label: l.trips,
         ),
         BottomNavItem(
           icon: Icons.alt_route_outlined,
           activeIcon: Icons.alt_route_rounded,
-          label: 'الوجهة',
+          label: l.destination,
         ),
       ],
       onTap: (index) {
@@ -444,7 +439,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       },
       itemColor: context.textSecondary,
       backgroundColor: context.cardColor,
-      notchColor: Colors.transparent,
+      notchColor: AppColors.transparent,
       notchRadius: 42,
       gapWidth: 90,
       floatingActionButton: _buildGoButtonInner(),
@@ -453,8 +448,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   void _showCorridorPicker(BuildContext context) {
     final bloc = context.read<DriverHomeBloc>();
-    final lat  = bloc.state.driverLat ?? AppConstants.defaultMapCenter.latitude;
-    final lng  = bloc.state.driverLng ?? AppConstants.defaultMapCenter.longitude;
+    final lat = bloc.state.driverLat ?? AppConstants.defaultMapCenter.latitude;
+    final lng = bloc.state.driverLng ?? AppConstants.defaultMapCenter.longitude;
     Navigator.push<Map<String, LatLng>>(
       context,
       MaterialPageRoute(
@@ -467,18 +462,22 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       if (result == null) return;
       if (result.containsKey('cleared')) {
         // User cleared the corridor
-        if (mounted) setState(() { _corridorPolylines = {}; _corridorMarkers = {}; });
+        if (mounted)
+          setState(() {
+            _corridorPolylines = {};
+            _corridorMarkers = {};
+          });
         return;
       }
       final origin = result['origin']!;
-      final dest   = result['dest']!;
+      final dest = result['dest']!;
       _drawCorridorPolyline(origin, dest);
     });
   }
 
   Future<void> _drawCorridorPolyline(LatLng origin, LatLng dest) async {
     if (!mounted) return;
-    
+
     // Show markers immediately
     setState(() {
       _corridorPolylines = {};
@@ -486,7 +485,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         Marker(
           markerId: const MarkerId('corr_origin'),
           position: origin,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
           infoWindow: const InfoWindow(title: 'بداية الممر'),
         ),
         Marker(
@@ -517,7 +517,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         Polyline(
           polylineId: const PolylineId('corridor_glow'),
           points: points,
-          color: const Color(0xFF4C8BF5).withValues(alpha: 0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 12,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
@@ -527,7 +527,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         Polyline(
           polylineId: const PolylineId('corridor_core'),
           points: points,
-          color: const Color(0xFF4C8BF5),
+          color: AppColors.primary,
           width: 4,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
@@ -555,98 +555,101 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   Widget _buildGoButtonInner() {
     return BlocBuilder<LocationPermissionCubit, LocationPermissionState>(
-          builder: (context, permState) {
-            // ── Location blocked → show CTA button instead of GO ──
-            if (permState.isBlocked) {
-              return LocationPermissionCta(
-                variant: LocationCtaVariant.button,
-                onGranted: () {
-                  // Re-load driver status when permission is granted
-                  context.read<DriverHomeBloc>().add(LoadDriverStatus());
-                },
-              );
-            }
+      builder: (context, permState) {
+        // ── Location blocked → show CTA button instead of GO ──
+        if (permState.isBlocked) {
+          return LocationPermissionCta(
+            variant: LocationCtaVariant.button,
+            onGranted: () {
+              // Re-load driver status when permission is granted
+              context.read<DriverHomeBloc>().add(LoadDriverStatus());
+            },
+          );
+        }
 
-            // ── Normal GO button ──
-            return BlocBuilder<DriverHomeBloc, DriverHomeState>(
-              builder: (context, state) {
-                final isOnline = state.isAvailable;
-                final isLoading = state.isLoading;
-                
-                return GestureDetector(
-                  onTap: isLoading
-                      ? null
-                      : () {
-                          context
-                              .read<DriverHomeBloc>()
-                              .add(ToggleAvailability(!isOnline));
-                        },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 350),
-                    curve: Curves.fastOutSlowIn,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: isOnline
-                            ? [
-                                const Color(0xFF10B981), 
-                                const Color(0xFF047857), 
-                              ]
-                            : [
-                                const Color(0xFFEF4444), 
-                                const Color(0xFFB91C1C), 
-                              ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 3,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isOnline ? const Color(0xFF10B981) : const Color(0xFFEF4444))
-                              .withValues(alpha: 0.5),
-                          blurRadius: isOnline ? 25 : 15,
-                          spreadRadius: isOnline ? 8 : 2,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  isOnline ? Icons.sensors_rounded : Icons.power_settings_new_rounded,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  isOnline ? AppLocalizations.of(context)!.onlineStatus : AppLocalizations.of(context)!.offlineStatus,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 12.5,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
+        // ── Normal GO button ──
+        return BlocBuilder<DriverHomeBloc, DriverHomeState>(
+          builder: (context, state) {
+            final isOnline = state.isAvailable;
+            final isLoading = state.isLoading;
+
+            return GestureDetector(
+              onTap: isLoading
+                  ? null
+                  : () {
+                      context
+                          .read<DriverHomeBloc>()
+                          .add(ToggleAvailability(!isOnline));
+                    },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.fastOutSlowIn,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: isOnline
+                        ? [
+                            AppColors.success,
+                            AppColors.success,
+                          ]
+                        : [
+                            AppColors.error,
+                            AppColors.error,
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                );
-              },
+                  border: Border.all(
+                    color: AppColors.white.withValues(alpha: 0.25),
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isOnline ? AppColors.success : AppColors.error)
+                          .withValues(alpha: 0.5),
+                      blurRadius: isOnline ? 25 : 15,
+                      spreadRadius: isOnline ? 8 : 2,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                          color: AppColors.white, strokeWidth: 3)
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isOnline
+                                  ? Icons.sensors_rounded
+                                  : Icons.power_settings_new_rounded,
+                              color: AppColors.white,
+                              size: 26,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isOnline
+                                  ? AppLocalizations.of(context)!.onlineStatus
+                                  : AppLocalizations.of(context)!.offlineStatus,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12.5,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
             );
           },
         );
+      },
+    );
   }
-
-  
 
   Widget _buildDrawer(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -710,10 +713,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   String? _originAddr;
   String? _destAddr;
   double _originRadiusKm = 2.0;
-  double _destRadiusKm   = 3.0;
+  double _destRadiusKm = 3.0;
   bool _isResolving = false;
-  bool _isSaving    = false;
-  
+  bool _isSaving = false;
+
   List<LatLng> _routePoints = [];
 
   @override
@@ -729,31 +732,38 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
       if (uid != null) {
         final row = await SupabaseService.client
             .from('drivers_profile')
-            .select('target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng, target_origin_radius_km, target_route_radius_km')
+            .select(
+                'target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng, target_origin_radius_km, target_route_radius_km')
             .eq('id', uid)
             .maybeSingle();
-            
+
         if (row != null) {
           final oLat = (row['target_origin_lat'] as num?)?.toDouble();
           final oLng = (row['target_origin_lng'] as num?)?.toDouble();
-          final dLat = (row['target_dest_lat']   as num?)?.toDouble();
-          final dLng = (row['target_dest_lng']   as num?)?.toDouble();
-          
+          final dLat = (row['target_dest_lat'] as num?)?.toDouble();
+          final dLng = (row['target_dest_lng'] as num?)?.toDouble();
+
           if (oLat != null && oLng != null && dLat != null && dLng != null) {
             _originPt = LatLng(oLat, oLng);
             _destPt = LatLng(dLat, dLng);
-            _originRadiusKm = (row['target_origin_radius_km'] as num?)?.toDouble() ?? 2.0;
-            _destRadiusKm = (row['target_route_radius_km'] as num?)?.toDouble() ?? 3.0;
+            _originRadiusKm =
+                (row['target_origin_radius_km'] as num?)?.toDouble() ?? 2.0;
+            _destRadiusKm =
+                (row['target_route_radius_km'] as num?)?.toDouble() ?? 3.0;
             _step = 2; // both points set
-            
+
             // try to get addresses
             try {
               final oMarks = await placemarkFromCoordinates(oLat, oLng);
-              if (oMarks.isNotEmpty) _originAddr = '${oMarks.first.street ?? ''}, ${oMarks.first.locality ?? ''}';
+              if (oMarks.isNotEmpty)
+                _originAddr =
+                    '${oMarks.first.street ?? ''}, ${oMarks.first.locality ?? ''}';
               final dMarks = await placemarkFromCoordinates(dLat, dLng);
-              if (dMarks.isNotEmpty) _destAddr = '${dMarks.first.street ?? ''}, ${dMarks.first.locality ?? ''}';
+              if (dMarks.isNotEmpty)
+                _destAddr =
+                    '${dMarks.first.street ?? ''}, ${dMarks.first.locality ?? ''}';
             } catch (_) {}
-            
+
             _fetchAndDrawRoute();
           }
         }
@@ -777,7 +787,9 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لم يتم العثور على المكان'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('لم يتم العثور على المكان'),
+              backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -791,22 +803,24 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
 
     String? address;
     try {
-      final placemarks = await placemarkFromCoordinates(ll.latitude, ll.longitude);
+      final placemarks =
+          await placemarkFromCoordinates(ll.latitude, ll.longitude);
       if (placemarks.isNotEmpty) {
         final p = placemarks.first;
         address = '${p.street ?? ''}, ${p.locality ?? ''}';
       }
     } catch (_) {
-      address = '${ll.latitude.toStringAsFixed(4)}, ${ll.longitude.toStringAsFixed(4)}';
+      address =
+          '${ll.latitude.toStringAsFixed(4)}, ${ll.longitude.toStringAsFixed(4)}';
     }
 
     setState(() {
       if (_step == 0) {
-        _originPt   = ll;
+        _originPt = ll;
         _originAddr = address;
         _step = 1;
       } else {
-        _destPt   = ll;
+        _destPt = ll;
         _destAddr = address;
         _step = 2;
         _fetchAndDrawRoute();
@@ -828,47 +842,70 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
     setState(() {
       _routePoints = result.points;
     });
-    
+
     final lats = _routePoints.map((p) => p.latitude);
     final lngs = _routePoints.map((p) => p.longitude);
     final sw = LatLng(lats.reduce(math.min), lngs.reduce(math.min));
     final ne = LatLng(lats.reduce(math.max), lngs.reduce(math.max));
-    _mapCtrl?.animateCamera(CameraUpdate.newLatLngBounds(LatLngBounds(southwest: sw, northeast: ne), 60));
+    _mapCtrl?.animateCamera(CameraUpdate.newLatLngBounds(
+        LatLngBounds(southwest: sw, northeast: ne), 60));
   }
 
-  void _reset() => setState(() { 
-    _step = 0; 
-    _originPt = null; 
-    _destPt = null; 
-    _originAddr = null; 
-    _destAddr = null; 
-    _routePoints = [];
-  });
+  void _reset() => setState(() {
+        _step = 0;
+        _originPt = null;
+        _destPt = null;
+        _originAddr = null;
+        _destAddr = null;
+        _routePoints = [];
+      });
 
   Future<void> _save() async {
     if (_originPt == null || _destPt == null) return;
     setState(() => _isSaving = true);
     try {
-      await SupabaseService.client.from('drivers_profile').update({
-        'target_origin_lat'      : _originPt!.latitude,
-        'target_origin_lng'      : _originPt!.longitude,
-        'target_dest_lat'        : _destPt!.latitude,
-        'target_dest_lng'        : _destPt!.longitude,
-        'target_origin_radius_km': _originRadiusKm,
-        'target_route_radius_km' : _destRadiusKm,
-      }).eq('id', SupabaseService.currentUser!.id);
+      // Use the dedicated RPC so server-side validation runs correctly
+      await SupabaseService.client.rpc('set_driver_target_route', params: {
+        'p_driver_id': SupabaseService.currentUser!.id,
+        'p_origin_lat': _originPt!.latitude,
+        'p_origin_lng': _originPt!.longitude,
+        'p_dest_lat': _destPt!.latitude,
+        'p_dest_lng': _destPt!.longitude,
+        'p_origin_radius_km': _originRadiusKm,
+        'p_dest_radius_km': _destRadiusKm,
+      });
 
       if (mounted) {
         Navigator.pop<Map<String, LatLng>>(context, {
           'origin': _originPt!,
-          'dest'  : _destPt!,
+          'dest': _destPt!,
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
-        );
+      // Fallback: direct write if RPC not found / signature changed
+      try {
+        await SupabaseService.client.from('drivers_profile').update({
+          'target_origin_lat': _originPt!.latitude,
+          'target_origin_lng': _originPt!.longitude,
+          'target_dest_lat': _destPt!.latitude,
+          'target_dest_lng': _destPt!.longitude,
+          'target_origin_radius_km': _originRadiusKm,
+          'target_route_radius_km': _destRadiusKm,
+        }).eq('id', SupabaseService.currentUser!.id);
+        if (mounted) {
+          Navigator.pop<Map<String, LatLng>>(context, {
+            'origin': _originPt!,
+            'dest': _destPt!,
+          });
+        }
+      } catch (e2) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('خطأ: $e2'),
+                backgroundColor: AppColors.error),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -878,8 +915,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   Future<void> _clear() async {
     try {
       await SupabaseService.client.from('drivers_profile').update({
-        'target_origin_lat': null, 'target_origin_lng': null,
-        'target_dest_lat'  : null, 'target_dest_lng'  : null,
+        'target_origin_lat': null,
+        'target_origin_lng': null,
+        'target_dest_lat': null,
+        'target_dest_lng': null,
       }).eq('id', SupabaseService.currentUser!.id);
 
       if (mounted) {
@@ -893,7 +932,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final panelColor = isDark ? const Color(0xFF0D1526) : Colors.white;
+    final panelColor = isDark ? AppColors.background : AppColors.white;
 
     // Step instruction text
     final String hintText = _step == 0
@@ -905,7 +944,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
@@ -914,10 +953,17 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
             decoration: BoxDecoration(
               color: panelColor.withValues(alpha: 0.9),
               shape: BoxShape.circle,
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.26),
+                    blurRadius: 8)
+              ],
             ),
-            child: Icon(Icons.arrow_back_ios_new_rounded, size: 17,
-                color: isDark ? Colors.white70 : Colors.black87),
+            child: Icon(Icons.arrow_back_ios_new_rounded,
+                size: 17,
+                color: isDark
+                    ? AppColors.white.withValues(alpha: 0.7)
+                    : AppColors.black.withValues(alpha: 0.87)),
           ),
         ),
         actions: [
@@ -926,12 +972,17 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
               onTap: _reset,
               child: Container(
                 margin: const EdgeInsets.only(right: 8, top: 10, bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade800.withValues(alpha: 0.9),
+                  color: AppColors.warning.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('إعادة', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                child: const Text('إعادة',
+                    style: TextStyle(
+                        color: AppColors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
               ),
             ),
           GestureDetector(
@@ -940,10 +991,14 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
               margin: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.red.shade900.withValues(alpha: 0.9),
+                color: AppColors.error.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('مسح', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              child: const Text('مسح',
+                  style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -951,7 +1006,8 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
       body: Stack(children: [
         // ── Map ──────────────────────────────────────────────────────────────
         GoogleMap(
-          initialCameraPosition: CameraPosition(target: widget.initialCenter, zoom: 13),
+          initialCameraPosition:
+              CameraPosition(target: widget.initialCenter, zoom: 13),
           onMapCreated: (ctrl) => _mapCtrl = ctrl,
           onTap: _onMapTap,
           style: isDark ? kDarkMapStyle : kLightMapStyle,
@@ -965,8 +1021,8 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                 circleId: const CircleId('origin_zone'),
                 center: _originPt!,
                 radius: _originRadiusKm * 1000,
-                fillColor: Colors.green.withValues(alpha: 0.12),
-                strokeColor: Colors.green.withValues(alpha: 0.8),
+                fillColor: AppColors.success.withValues(alpha: 0.12),
+                strokeColor: AppColors.success.withValues(alpha: 0.8),
                 strokeWidth: 2,
               ),
             if (_destPt != null)
@@ -974,55 +1030,63 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                 circleId: const CircleId('dest_zone'),
                 center: _destPt!,
                 radius: _destRadiusKm * 1000,
-                fillColor: Colors.blue.withValues(alpha: 0.12),
-                strokeColor: Colors.blue.withValues(alpha: 0.8),
+                fillColor: AppColors.primary.withValues(alpha: 0.12),
+                strokeColor: AppColors.primary.withValues(alpha: 0.8),
                 strokeWidth: 2,
               ),
           },
-          polylines: _routePoints.isNotEmpty ? {
-            // Outer glowing line
-            Polyline(
-              polylineId: const PolylineId('corridor_glow'),
-              points: _routePoints,
-              color: const Color(0xFF4C8BF5).withValues(alpha: 0.3),
-              width: 12,
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-              jointType: JointType.round,
-            ),
-            // Inner core line
-            Polyline(
-              polylineId: const PolylineId('corridor_core'),
-              points: _routePoints,
-              color: const Color(0xFF4C8BF5),
-              width: 4,
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-              jointType: JointType.round,
-            ),
-          } : (_originPt != null && _destPt != null) ? {
-            Polyline(
-              polylineId: const PolylineId('corridor_straight'),
-              points: [_originPt!, _destPt!],
-              color: const Color(0xFF4C8BF5).withValues(alpha: 0.5),
-              width: 3,
-              patterns: [PatternItem.dash(20), PatternItem.gap(10)],
-            ),
-          } : {},
+          polylines: _routePoints.isNotEmpty
+              ? {
+                  // Outer glowing line
+                  Polyline(
+                    polylineId: const PolylineId('corridor_glow'),
+                    points: _routePoints,
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    width: 12,
+                    startCap: Cap.roundCap,
+                    endCap: Cap.roundCap,
+                    jointType: JointType.round,
+                  ),
+                  // Inner core line
+                  Polyline(
+                    polylineId: const PolylineId('corridor_core'),
+                    points: _routePoints,
+                    color: AppColors.primary,
+                    width: 4,
+                    startCap: Cap.roundCap,
+                    endCap: Cap.roundCap,
+                    jointType: JointType.round,
+                  ),
+                }
+              : (_originPt != null && _destPt != null)
+                  ? {
+                      Polyline(
+                        polylineId: const PolylineId('corridor_straight'),
+                        points: [_originPt!, _destPt!],
+                        color: AppColors.primary.withValues(alpha: 0.5),
+                        width: 3,
+                        patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+                      ),
+                    }
+                  : {},
           markers: {
             if (_originPt != null)
               Marker(
                 markerId: const MarkerId('origin'),
                 position: _originPt!,
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-                infoWindow: InfoWindow(title: 'بداية الممر', snippet: _originAddr),
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueGreen),
+                infoWindow:
+                    InfoWindow(title: 'بداية الممر', snippet: _originAddr),
               ),
             if (_destPt != null)
               Marker(
                 markerId: const MarkerId('dest'),
                 position: _destPt!,
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-                infoWindow: InfoWindow(title: 'نهاية الممر', snippet: _destAddr),
+                icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueBlue),
+                infoWindow:
+                    InfoWindow(title: 'نهاية الممر', snippet: _destAddr),
               ),
           },
         ),
@@ -1030,31 +1094,41 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         // ── Search Bar ──────────────────────────────────────────────────────
         Positioned(
           top: MediaQuery.of(context).padding.top + 60,
-          left: 16, right: 16,
+          left: 16,
+          right: 16,
           child: Container(
             decoration: BoxDecoration(
               color: panelColor.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.26),
+                    blurRadius: 10)
+              ],
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(children: [
-              const Icon(Icons.search_rounded, color: Colors.grey, size: 20),
+              const Icon(Icons.search_rounded, color: AppColors.grey, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: _searchCtrl,
                   decoration: const InputDecoration(
                     hintText: 'ابحث عن منطقة للذهاب إليها...',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                    hintStyle: TextStyle(fontSize: 13, color: AppColors.grey),
                     border: InputBorder.none,
                   ),
-                  style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.white : AppColors.black),
                   onSubmitted: _searchLocation,
                 ),
               ),
               if (_isResolving)
-                const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
             ]),
           ),
         ),
@@ -1063,25 +1137,36 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         if (!_isResolving)
           Positioned(
             top: MediaQuery.of(context).padding.top + 120,
-            left: 16, right: 16,
+            left: 16,
+            right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: _step == 2
-                    ? Colors.green.shade800.withValues(alpha: 0.92)
-                    : Colors.black.withValues(alpha: 0.72),
+                    ? AppColors.success.withValues(alpha: 0.92)
+                    : AppColors.black.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                boxShadow: [
+                  BoxShadow(
+                      color: AppColors.black.withValues(alpha: 0.26),
+                      blurRadius: 10)
+                ],
               ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              child:
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(
-                  _step == 2 ? Icons.check_circle_rounded : Icons.touch_app_rounded,
-                  color: Colors.white70, size: 18,
+                  _step == 2
+                      ? Icons.check_circle_rounded
+                      : Icons.touch_app_rounded,
+                  color: AppColors.white.withValues(alpha: 0.7),
+                  size: 18,
                 ),
                 const SizedBox(width: 8),
-                Flexible(child: Text(hintText,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    textAlign: TextAlign.center)),
+                Flexible(
+                    child: Text(hintText,
+                        style: const TextStyle(
+                            color: AppColors.white, fontSize: 13),
+                        textAlign: TextAlign.center)),
               ]),
             ),
           ),
@@ -1089,107 +1174,143 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         if (_isResolving)
           Positioned(
             top: MediaQuery.of(context).padding.top + 120,
-            left: 16, right: 16,
+            left: 16,
+            right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.75),
+                color: AppColors.black.withValues(alpha: 0.75),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                SizedBox(width: 16, height: 16,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                SizedBox(width: 10),
-                Text('جاري المعالجة...', style: TextStyle(color: Colors.white, fontSize: 13)),
-              ]),
+              child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            color: AppColors.white, strokeWidth: 2)),
+                    SizedBox(width: 10),
+                    Text('جاري المعالجة...',
+                        style: TextStyle(color: AppColors.white, fontSize: 13)),
+                  ]),
             ),
           ),
 
         // ── Bottom panel ────────────────────────────────────────────────────
         Positioned(
-          bottom: 0, left: 0, right: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
           child: Container(
             decoration: BoxDecoration(
               color: panelColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(0, -4))],
-            ),
-            padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 20),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Center(child: Container(width: 36, height: 4,
-                  decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(100)))),
-              const SizedBox(height: 14),
-
-              // Origin + Dest chips
-              Row(children: [
-                _PointChip(
-                  step: 1,
-                  currentStep: _step,
-                  color: Colors.green,
-                  icon: Icons.trip_origin_rounded,
-                  label: 'نقطة الانطلاق',
-                  address: _originAddr,
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6),
-                  child: Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.grey),
-                ),
-                _PointChip(
-                  step: 2,
-                  currentStep: _step,
-                  color: Colors.blue,
-                  icon: Icons.flag_rounded,
-                  label: 'نقطة الوصول',
-                  address: _destAddr,
-                ),
-              ]),
-
-              // Sliders — only visible when both points are set
-              if (_step == 2) ...[
-                const SizedBox(height: 16),
-                _RadiusSlider(
-                  label: 'نطاق الانطلاق',
-                  color: Colors.green,
-                  value: _originRadiusKm,
-                  min: 0.5, max: 10.0,
-                  onChanged: (v) => setState(() => _originRadiusKm = v),
-                ),
-                const SizedBox(height: 8),
-                _RadiusSlider(
-                  label: 'نطاق الوجهة',
-                  color: Colors.blue,
-                  value: _destRadiusKm,
-                  min: 0.5, max: 15.0,
-                  onChanged: (v) => setState(() => _destRadiusKm = v),
-                ),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.black.withValues(alpha: 0.38),
+                    blurRadius: 20,
+                    offset: Offset(0, -4))
               ],
+            ),
+            padding: EdgeInsets.fromLTRB(
+                20, 14, 20, MediaQuery.of(context).padding.bottom + 20),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                      child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                              color: AppColors.grey.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(100)))),
+                  const SizedBox(height: 14),
 
-              const SizedBox(height: 16),
+                  // Origin + Dest chips
+                  Row(children: [
+                    _PointChip(
+                      step: 1,
+                      currentStep: _step,
+                      color: AppColors.success,
+                      icon: Icons.trip_origin_rounded,
+                      label: 'نقطة الانطلاق',
+                      address: _originAddr,
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(Icons.arrow_forward_rounded,
+                          size: 16, color: AppColors.grey),
+                    ),
+                    _PointChip(
+                      step: 2,
+                      currentStep: _step,
+                      color: AppColors.primary,
+                      icon: Icons.flag_rounded,
+                      label: 'نقطة الوصول',
+                      address: _destAddr,
+                    ),
+                  ]),
 
-              SizedBox(
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: (_step == 2 && !_isSaving && !_isResolving) ? _save : null,
-                  icon: _isSaving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save_rounded),
-                  label: Text(
-                    _step == 0 ? 'حدد نقطة الانطلاق أولاً'
-                        : _step == 1 ? 'حدد نقطة الوصول'
-                        : 'حفظ الممر المفضل',
+                  // Sliders — only visible when both points are set
+                  if (_step == 2) ...[
+                    const SizedBox(height: 16),
+                    _RadiusSlider(
+                      label: 'نطاق الانطلاق',
+                      color: AppColors.success,
+                      value: _originRadiusKm,
+                      min: 0.5,
+                      max: 10.0,
+                      onChanged: (v) => setState(() => _originRadiusKm = v),
+                    ),
+                    const SizedBox(height: 8),
+                    _RadiusSlider(
+                      label: 'نطاق الوجهة',
+                      color: AppColors.primary,
+                      value: _destRadiusKm,
+                      min: 0.5,
+                      max: 15.0,
+                      onChanged: (v) => setState(() => _destRadiusKm = v),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: (_step == 2 && !_isSaving && !_isResolving)
+                          ? _save
+                          : null,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppColors.white))
+                          : const Icon(Icons.save_rounded),
+                      label: Text(
+                        _step == 0
+                            ? 'حدد نقطة الانطلاق أولاً'
+                            : _step == 1
+                                ? 'حدد نقطة الوصول'
+                                : 'حفظ الممر المفضل',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        disabledBackgroundColor: AppColors.grey,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                        textStyle: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                    ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade800,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 0,
-                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ]),
+                ]),
           ),
         ),
       ]),
@@ -1204,36 +1325,52 @@ class _PointChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? address;
-  const _PointChip({required this.step, required this.currentStep, required this.color,
-      required this.icon, required this.label, this.address});
+  const _PointChip(
+      {required this.step,
+      required this.currentStep,
+      required this.color,
+      required this.icon,
+      required this.label,
+      this.address});
 
   @override
   Widget build(BuildContext context) {
     final bool isDone = currentStep >= step;
     final bool isActive = currentStep == step - 1;
-    return Expanded(child: Container(
+    return Expanded(
+        child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: isDone
             ? color.withValues(alpha: 0.12)
             : isActive
                 ? color.withValues(alpha: 0.06)
-                : Colors.grey.withValues(alpha: 0.05),
+                : AppColors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isDone ? color.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(
+            color: isDone
+                ? color.withValues(alpha: 0.5)
+                : AppColors.grey.withValues(alpha: 0.2)),
       ),
       child: Row(children: [
-        Icon(icon, color: isDone ? color : Colors.grey, size: 16),
+        Icon(icon, color: isDone ? color : AppColors.grey, size: 16),
         const SizedBox(width: 6),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-              color: isDone ? color : Colors.grey)),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isDone ? color : AppColors.grey)),
           if (address != null)
-            Text(address!, style: const TextStyle(fontSize: 9, color: Colors.grey),
-                maxLines: 1, overflow: TextOverflow.ellipsis)
+            Text(address!,
+                style: const TextStyle(fontSize: 9, color: AppColors.grey),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis)
           else
             Text(isActive ? 'اضغط على الخريطة' : '---',
-                style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                style: const TextStyle(fontSize: 9, color: AppColors.grey)),
         ])),
       ]),
     ));
@@ -1250,8 +1387,13 @@ class _RadiusSlider extends StatelessWidget {
   final ValueChanged<double> onChanged;
 
   const _RadiusSlider({
-    required this.label, required this.color, required this.value,
-    required this.min, required this.max, this.enabled = true, required this.onChanged,
+    required this.label,
+    required this.color,
+    required this.value,
+    required this.min,
+    required this.max,
+    this.enabled = true,
+    required this.onChanged,
   });
 
   @override
@@ -1259,22 +1401,26 @@ class _RadiusSlider extends StatelessWidget {
     return Row(children: [
       SizedBox(
         width: 110,
-        child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-            color: enabled ? null : Colors.grey)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: enabled ? null : AppColors.grey)),
       ),
       Expanded(
         child: SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: enabled ? color : Colors.grey.shade700,
-            inactiveTrackColor: Colors.grey.withValues(alpha: 0.2),
-            thumbColor: enabled ? color : Colors.grey,
+            activeTrackColor: enabled ? color : AppColors.grey,
+            inactiveTrackColor: AppColors.grey.withValues(alpha: 0.2),
+            thumbColor: enabled ? color : AppColors.grey,
             overlayColor: color.withValues(alpha: 0.1),
             trackHeight: 3,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
           ),
           child: Slider(
             value: value.clamp(min, max),
-            min: min, max: max,
+            min: min,
+            max: max,
             divisions: ((max - min) / 0.5).round(),
             onChanged: enabled ? onChanged : null,
           ),
@@ -1283,7 +1429,9 @@ class _RadiusSlider extends StatelessWidget {
       SizedBox(
         width: 44,
         child: Text('${value.toStringAsFixed(1)} كم',
-            style: TextStyle(fontSize: 10, color: enabled ? color : Colors.grey,
+            style: TextStyle(
+                fontSize: 10,
+                color: enabled ? color : AppColors.grey,
                 fontWeight: FontWeight.w700),
             textAlign: TextAlign.end),
       ),
@@ -1297,11 +1445,18 @@ class _LegendChip extends StatelessWidget {
   const _LegendChip({required this.color, required this.label});
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 12, height: 12,
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.3), shape: BoxShape.circle,
-            border: Border.all(color: color, width: 1.5))),
-    const SizedBox(width: 6),
-    Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
-  ]);
+  Widget build(BuildContext context) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 1.5))),
+        const SizedBox(width: 6),
+        Text(label,
+            style: TextStyle(
+                fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      ]);
 }

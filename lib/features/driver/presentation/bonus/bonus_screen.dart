@@ -49,7 +49,7 @@ class DriverBonusScreen extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () => context.read<BonusCubit>().load(),
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      child: Text(l.retry, style: const TextStyle(color: Colors.white)),
+                      child: Text(l.retry, style: const TextStyle(color: AppColors.white)),
                     ),
                   ],
                 ),
@@ -88,14 +88,14 @@ class DriverBonusScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          colors: [AppColors.indigo, AppColors.purple],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+            color: AppColors.indigo.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -108,10 +108,10 @@ class DriverBonusScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 28),
+                child: const Icon(Icons.emoji_events_rounded, color: AppColors.white, size: 28),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -121,7 +121,7 @@ class DriverBonusScreen extends StatelessWidget {
                     Text(
                       l.todayProgress,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: AppColors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -130,7 +130,7 @@ class DriverBonusScreen extends StatelessWidget {
                     Text(
                       '$tripsToday / $target ${l.trips}',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -142,13 +142,13 @@ class DriverBonusScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppColors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '+${bonusAmount.toStringAsFixed(0)} ${l.currencySar}',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -162,8 +162,8 @@ class DriverBonusScreen extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progressPct,
               minHeight: 10,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              backgroundColor: AppColors.white.withValues(alpha: 0.2),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.white),
             ),
           ),
           const SizedBox(height: 8),
@@ -172,7 +172,7 @@ class DriverBonusScreen extends StatelessWidget {
             child: Text(
               '${(progressPct * 100).toStringAsFixed(0)}%',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: AppColors.white.withValues(alpha: 0.8),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),

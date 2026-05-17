@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_extensions.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -44,7 +45,7 @@ class AppButton extends StatelessWidget {
               ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           onTap: inactive ? null : onPressed,
           borderRadius: BorderRadius.circular(14),
@@ -56,7 +57,7 @@ class AppButton extends StatelessWidget {
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
                       valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white),
+                          AlwaysStoppedAnimation<Color>(AppColors.white),
                     ),
                   )
                 : Text(
@@ -66,7 +67,7 @@ class AppButton extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: inactive
                           ? context.textDisabled
-                          : Colors.white,
+                          : AppColors.white,
                     ),
                   ),
           ),

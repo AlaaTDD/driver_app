@@ -237,7 +237,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
@@ -296,7 +296,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   child: Container(
                     width: 44, height: 44,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0D1526) : context.cardColor,
+                      color: isDark ? AppColors.background : context.cardColor,
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(color: context.textPrimary.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 4)),
@@ -320,7 +320,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0D1526) : context.cardColor,
+                      color: isDark ? AppColors.background : context.cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [BoxShadow(color: context.textPrimary.withValues(alpha: 0.16), blurRadius: 10, offset: const Offset(0, 3))],
                     ),
@@ -342,13 +342,13 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.black.withValues(alpha: 0.55) : context.textPrimary.withValues(alpha: 0.5),
+                  color: isDark ? AppColors.black.withValues(alpha: 0.55) : context.textPrimary.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.touch_app_rounded, color: Colors.white, size: 14),
+                  const Icon(Icons.touch_app_rounded, color: AppColors.white, size: 14),
                   const SizedBox(width: 6),
-                  Text(AppLocalizations.of(context)!.tapMapToSelect, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text(AppLocalizations.of(context)!.tapMapToSelect, style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w500)),
                 ]),
               ),
             ),
@@ -395,7 +395,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     return Container(
       constraints: const BoxConstraints(maxHeight: _sheetHeight),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1526) : context.cardColor,
+        color: isDark ? AppColors.background : context.cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(color: context.textPrimary.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
@@ -479,12 +479,12 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                           onPressed: _isCreatingTrip ? null : _startSearch,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             elevation: 6, shadowColor: AppColors.primary.withValues(alpha: 0.4),
                           ),
                           child: _isCreatingTrip
-                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5))
                               : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                                   const Icon(Icons.search_rounded, size: 18),
                                   const SizedBox(width: 6),

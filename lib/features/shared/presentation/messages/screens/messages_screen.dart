@@ -340,7 +340,7 @@ class _MessagesViewState extends State<_MessagesView> {
                 label: Text(l.retry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -453,7 +453,7 @@ class _ChatUIState extends State<_ChatUI> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       flexibleSpace: ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
@@ -463,7 +463,7 @@ class _ChatUIState extends State<_ChatUI> {
         ),
       ),
       systemOverlayStyle: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
+        statusBarColor: AppColors.transparent,
         statusBarIconBrightness:
             context.isDark ? Brightness.light : Brightness.dark,
       ),
@@ -726,7 +726,7 @@ class _ChatUIState extends State<_ChatUI> {
               child: FloatingActionButton.small(
                 onPressed: widget.onScrollToBottom,
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 4,
                 child: const Icon(Icons.keyboard_arrow_down_rounded, size: 24),
               ),
@@ -836,7 +836,7 @@ class _ChatUIState extends State<_ChatUI> {
                 // The user specifically wanted the icon NOT to point in "the other direction".
                 // We'll use the standard send icon which faces right towards the screen.
                 icon: const Icon(Icons.send_rounded, size: 22),
-                color: Colors.white,
+                color: AppColors.white,
                 onPressed: widget.onSendMessage,
               ),
             ),
@@ -871,7 +871,7 @@ class _InputIconButton extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1084,7 +1084,7 @@ class _ChatBubble extends StatelessWidget {
                       BoxShadow(
                         color: isMe
                             ? AppColors.primary.withValues(alpha: 0.25)
-                            : Colors.black.withValues(alpha: 0.08),
+                            : AppColors.black.withValues(alpha: 0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -1136,7 +1136,7 @@ class _ChatBubble extends StatelessWidget {
     return Text(
       message.content,
       style: TextStyle(
-        color: isMe ? Colors.white : context.textPrimary,
+        color: isMe ? AppColors.white : context.textPrimary,
         fontSize: 15,
         height: 1.4,
       ),
@@ -1152,7 +1152,7 @@ class _ChatBubble extends StatelessWidget {
           '${message.createdAt.minute.toString().padLeft(2, '0')}',
           style: TextStyle(
             fontSize: 10,
-            color: isMe ? Colors.white70 : context.textSecondary,
+            color: isMe ? AppColors.white.withValues(alpha: 0.7) : context.textSecondary,
           ),
         ),
         if (isMe) ...[
@@ -1161,8 +1161,8 @@ class _ChatBubble extends StatelessWidget {
             message.isRead ? Icons.done_all_rounded : Icons.done_rounded,
             size: 16,
             color: message.isRead
-                ? Colors.blue[300]
-                : Colors.white.withValues(alpha: 0.7),
+                ? AppColors.white
+                : AppColors.white.withValues(alpha: 0.7),
           ),
         ],
       ],
@@ -1190,8 +1190,8 @@ class _ChatShimmerList extends StatelessWidget {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = isDark ? AppColors.grey[800]! : AppColors.grey[300]!;
+    final highlightColor = isDark ? AppColors.grey[700]! : AppColors.grey[100]!;
 
     return ListView.builder(
       physics: const NeverScrollableScrollPhysics(),
@@ -1228,7 +1228,7 @@ class _ChatShimmerList extends StatelessWidget {
                       highlightColor: highlightColor,
                       child: const CircleAvatar(
                         radius: 14,
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppColors.white,
                       ),
                     ),
                   ),
@@ -1241,7 +1241,7 @@ class _ChatShimmerList extends StatelessWidget {
                       width: MediaQuery.of(context).size.width * widthRatio,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.white,
                         borderRadius: BorderRadius.only(
                           topLeft: const Radius.circular(20),
                           topRight: const Radius.circular(20),
@@ -1260,7 +1260,7 @@ class _ChatShimmerList extends StatelessWidget {
                               right: lineIndex == lines - 1 && lines > 1 ? 40 : 0,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black,
+                              color: AppColors.black,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),

@@ -5,6 +5,7 @@ import '../services/location_permission_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_extensions.dart';
 import '../localization/generated/app_localizations.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 /// A reusable CTA widget that replaces normal UI when location is blocked.
 ///
@@ -135,14 +136,14 @@ class LocationPermissionCta extends StatelessWidget {
                 children: [
                   Icon(
                     config.actionIcon,
-                    color: Colors.white,
+                    color: AppColors.white,
                     size: 14,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     config.actionText,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.2,
@@ -174,19 +175,19 @@ class LocationPermissionCta extends StatelessWidget {
           shape: BoxShape.circle,
           gradient: LinearGradient(
             colors: [
-              const Color(0xFFF59E0B), // amber
-              const Color(0xFFD97706), // amber dark
+              AppColors.warning, // amber
+              AppColors.warning, // amber dark
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.25),
+            color: AppColors.white.withValues(alpha: 0.25),
             width: 3,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+              color: AppColors.warning.withValues(alpha: 0.5),
               blurRadius: 20,
               spreadRadius: 4,
               offset: const Offset(0, 8),
@@ -199,7 +200,7 @@ class LocationPermissionCta extends StatelessWidget {
             children: [
               Icon(
                 Icons.location_off_rounded,
-                color: Colors.white,
+                color: AppColors.white,
                 size: 24,
               ),
               const SizedBox(height: 2),
@@ -207,7 +208,7 @@ class LocationPermissionCta extends StatelessWidget {
                 config.buttonLabel,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontWeight: FontWeight.w900,
                   fontSize: 9,
                   letterSpacing: 0.3,

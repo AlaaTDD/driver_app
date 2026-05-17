@@ -206,24 +206,24 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       expandedHeight: 380,
       pinned: true,
       stretch: true,
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E3A8A), // Slate 900 / Blue 900
+      backgroundColor: isDark ? AppColors.background : AppColors.primaryDark, // Slate 900 / Blue 900
       elevation: 0,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: AppColors.white.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.white, size: 20),
             onPressed: () => context.pop(),
           ),
         ),
       ),
       title: Text(AppLocalizations.of(context)!.myWallet,
         style: TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontWeight: FontWeight.w800,
           fontSize: 20,
           letterSpacing: -0.5,
@@ -238,8 +238,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDark 
-                ? [const Color(0xFF1E293B), const Color(0xFF0F172A), const Color(0xFF020617)] // Slate
-                : [const Color(0xFF3B82F6), const Color(0xFF1D4ED8), const Color(0xFF1E3A8A)], // Blue
+                ? [AppColors.surfaceElevated, AppColors.background, AppColors.background] // Slate
+                : [AppColors.primary, AppColors.primaryDark, AppColors.primaryDark], // Blue
             ),
           ),
           child: Stack(
@@ -255,8 +255,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.1),
-                        Colors.white.withValues(alpha: 0.0),
+                        AppColors.white.withValues(alpha: 0.1),
+                        AppColors.white.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -272,8 +272,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.08),
-                        Colors.white.withValues(alpha: 0.0),
+                        AppColors.white.withValues(alpha: 0.08),
+                        AppColors.white.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
@@ -288,19 +288,19 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                          color: AppColors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 16),
+                            Icon(Icons.account_balance_wallet_rounded, color: AppColors.white, size: 16),
                             SizedBox(width: 8),
                             Text(
                               AppLocalizations.of(context)!.availableBalanceLabel,
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -321,7 +321,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                               child: Text(
                                 _getCurrencyFormat(context).format(wallet.balance).replaceAll(AppLocalizations.of(context)!.egp, ''),
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                   fontSize: 52,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -1.5,
@@ -333,7 +333,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                           const SizedBox(width: 8),
                           Text(AppLocalizations.of(context)!.egp,
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: AppColors.white.withValues(alpha: 0.7),
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                             ),
@@ -372,12 +372,12 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: AppColors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: AppColors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -388,10 +388,10 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: AppColors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: Colors.white, size: 20),
+              child: Icon(icon, color: AppColors.white, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -400,12 +400,12 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: AppColors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     value,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.5),
+                    style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.5),
                   ),
                 ],
               ),
@@ -425,16 +425,16 @@ class _UserWalletScreenState extends State<UserWalletScreen>
   Widget _buildTransactionCard(BuildContext context, WalletTransactionModel txn) {
     final isCredit = txn.isCredit;
     final (icon, iconColor, lightBg, label) = switch (txn.type) {
-      WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.tripEarning),
-      WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, const Color(0xFFF97316), const Color(0xFFFFF7ED), AppLocalizations.of(context)!.withdrawal),
-      WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.withdrawalRefund),
-      WalletTransactionType.bonus           => (Icons.star_rounded, const Color(0xFFF59E0B), const Color(0xFFFFFBEB), AppLocalizations.of(context)!.bonus),
-      WalletTransactionType.couponSubsidy   => (Icons.local_offer_rounded, const Color(0xFF8B5CF6), const Color(0xFFF5F3FF), AppLocalizations.of(context)!.couponSubsidy),
-      WalletTransactionType.penalty         => (Icons.remove_circle_rounded, const Color(0xFFEF4444), const Color(0xFFFEF2F2), AppLocalizations.of(context)!.penalty),
-      WalletTransactionType.topUp           => (Icons.add_card_rounded, const Color(0xFF10B981), const Color(0xFFECFDF5), AppLocalizations.of(context)!.topUp),
-      WalletTransactionType.refund          => (Icons.keyboard_return_rounded, const Color(0xFF3B82F6), const Color(0xFFEFF6FF), AppLocalizations.of(context)!.refund),
-      WalletTransactionType.tripPayment     => (Icons.payment_rounded, const Color(0xFF6366F1), const Color(0xFFEEF2FF), AppLocalizations.of(context)!.tripPayment),
-      WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, Colors.grey.shade600, Colors.grey.shade100, AppLocalizations.of(context)!.adjustment),
+      WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, AppColors.success, AppColors.successLight, AppLocalizations.of(context)!.tripEarning),
+      WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, AppColors.warning, AppColors.warningLight, AppLocalizations.of(context)!.withdrawal),
+      WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, AppColors.primary, AppColors.textPrimary, AppLocalizations.of(context)!.withdrawalRefund),
+      WalletTransactionType.bonus           => (Icons.star_rounded, AppColors.warning, AppColors.warningLight, AppLocalizations.of(context)!.bonus),
+      WalletTransactionType.couponSubsidy   => (Icons.local_offer_rounded, AppColors.purple, AppColors.purpleLight, AppLocalizations.of(context)!.couponSubsidy),
+      WalletTransactionType.penalty         => (Icons.remove_circle_rounded, AppColors.error, AppColors.errorLight, AppLocalizations.of(context)!.penalty),
+      WalletTransactionType.topUp           => (Icons.add_card_rounded, AppColors.success, AppColors.successLight, AppLocalizations.of(context)!.topUp),
+      WalletTransactionType.refund          => (Icons.keyboard_return_rounded, AppColors.primary, AppColors.textPrimary, AppLocalizations.of(context)!.refund),
+      WalletTransactionType.tripPayment     => (Icons.payment_rounded, AppColors.indigo, AppColors.indigoLight, AppLocalizations.of(context)!.tripPayment),
+      WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, AppColors.grey, AppColors.grey, AppLocalizations.of(context)!.adjustment),
     };
     final bgColor = _adaptiveIconBg(iconColor, context);
 
@@ -447,7 +447,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
         border: Border.all(color: context.divColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -505,7 +505,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
-                  color: isCredit ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  color: isCredit ? AppColors.success : AppColors.error,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -586,7 +586,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 height: 90,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: AppColors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
@@ -625,7 +625,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             label: Text(AppLocalizations.of(context)!.retryButton),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,

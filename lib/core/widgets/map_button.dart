@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../theme/theme_extensions.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 
 
@@ -31,13 +32,13 @@ class MapButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
+              color: AppColors.black.withValues(alpha: 0.18),
               blurRadius: 12,
               spreadRadius: 0,
               offset: const Offset(0, 4),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: AppColors.black.withValues(alpha: 0.06),
               blurRadius: 3,
               spreadRadius: 0,
               offset: const Offset(0, 1),

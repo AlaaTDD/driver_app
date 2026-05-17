@@ -138,8 +138,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     center: Alignment.topCenter,
                     radius: 0.85,
                     colors: [
-                      const Color(0xFF2563EB).withValues(alpha: 0.13),
-                      Colors.transparent,
+                      AppColors.primary.withValues(alpha: 0.13),
+                      AppColors.transparent,
                     ],
                   ),
                 ),
@@ -368,7 +368,7 @@ class _CircleButton extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         shape: const CircleBorder(),
         child: InkWell(
           onTap: onPressed,
@@ -379,7 +379,7 @@ class _CircleButton extends StatelessWidget {
               child: Icon(
                 isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
                 key: ValueKey(isLast),
-                color: Colors.white,
+                color: AppColors.white,
                 size: 22,
               ),
             ),

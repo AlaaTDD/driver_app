@@ -3,20 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/constants/app_routes.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 // Shared color tokens — mirrors trip_details_screen._C
-const _bg      = Color(0xFF0D0F18);
-const _card    = Color(0xFF181C2A);
-const _elevated= Color(0xFF1E2336);
-const _border  = Color(0xFF252A3D);
-const _blue    = Color(0xFF4C8BF5);
-const _emerald = Color(0xFF1FC87A);
-const _rose    = Color(0xFFFF4060);
-const _amber   = Color(0xFFF5A524);
-const _violet  = Color(0xFF8B5CF6);
-const _t1      = Color(0xFFEEF0FF);
-const _t2      = Color(0xFF7B82A3);
-const _t3      = Color(0xFF3A4060);
+const _bg      = AppColors.background;
+const _card    = AppColors.surface;
+const _elevated= AppColors.surfaceElevated;
+const _border  = AppColors.divider;
+const _blue    = AppColors.primary;
+const _emerald = AppColors.secondary;
+const _rose    = AppColors.error;
+const _amber   = AppColors.warning;
+const _violet  = AppColors.purple;
+const _t1      = AppColors.textPrimary;
+const _t2      = AppColors.textSecondary;
+const _t3      = AppColors.textDisabled;
 
 class TripCard extends StatelessWidget {
   final Map<String, dynamic> trip;
@@ -59,12 +60,12 @@ class TripCard extends StatelessWidget {
             : Border.all(color: _border, width: 1),
         boxShadow: isActive
             ? [BoxShadow(color: _blue.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))]
-            : [const BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))],
+            : [BoxShadow(color: AppColors.black.withValues(alpha: 0.26), blurRadius: 8, offset: Offset(0, 2))],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             onTap: () => context.push('${AppRoutes.userTripDetails}?tripId=${trip['id']}'),
             splashColor: _blue.withValues(alpha: 0.08),
@@ -193,14 +194,14 @@ class TripCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [_blue, Color(0xFF1F5EC4)],
+                          colors: [_blue, AppColors.primaryDark],
                           begin: Alignment.topLeft, end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))],
                       ),
                       child: Text('${displayPrice.toStringAsFixed(0)} ${l.currencySar}',
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                        style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w800)),
                     ),
                   ]),
                 ],

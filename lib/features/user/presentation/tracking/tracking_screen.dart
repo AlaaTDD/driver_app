@@ -16,6 +16,7 @@ import 'package:flutter/scheduler.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/map_styles.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class TripTrackingScreen extends StatefulWidget {
   final String tripId;
@@ -58,9 +59,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
   }
 
   Future<void> _loadCircleIcons() async {
-    _pickupIcon = await _createCircleMarker(Colors.green);
-    _destIcon = await _createCircleMarker(Colors.red);
-    _waypointIcon = await _createCircleMarker(Colors.orange);
+    _pickupIcon = await _createCircleMarker(AppColors.success);
+    _destIcon = await _createCircleMarker(AppColors.error);
+    _waypointIcon = await _createCircleMarker(AppColors.warning);
     if (mounted) setState(() {});
   }
 
@@ -77,7 +78,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
     canvas.drawCircle(const Offset(20, 20), 10, paint);
     
     // Draw tiny white center
-    final whitePaint = Paint()..color = Colors.white;
+    final whitePaint = Paint()..color = AppColors.white;
     canvas.drawCircle(const Offset(20, 20), 5, whitePaint);
     
     final picture = pictureRecorder.endRecording();
@@ -234,18 +235,18 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
   }
 
   // ── color tokens (matches trip_details) ─────────────────────────────────
-  static const _bg      = Color(0xFF0D0F18);
-  static const _sheet   = Color(0xFF12151F);
-  static const _card    = Color(0xFF181C2A);
-  static const _elevated= Color(0xFF1E2336);
-  static const _border  = Color(0xFF252A3D);
-  static const _blue    = Color(0xFF4C8BF5);
-  static const _emerald = Color(0xFF1FC87A);
-  static const _rose    = Color(0xFFFF4060);
-  static const _amber   = Color(0xFFF5A524);
-  static const _t1      = Color(0xFFEEF0FF);
-  static const _t2      = Color(0xFF7B82A3);
-  static const _t3      = Color(0xFF3A4060);
+  static const _bg      = AppColors.background;
+  static const _sheet   = AppColors.primarySurface;
+  static const _card    = AppColors.surface;
+  static const _elevated= AppColors.surfaceElevated;
+  static const _border  = AppColors.divider;
+  static const _blue    = AppColors.primary;
+  static const _emerald = AppColors.secondary;
+  static const _rose    = AppColors.error;
+  static const _amber   = AppColors.warning;
+  static const _t1      = AppColors.textPrimary;
+  static const _t2      = AppColors.textSecondary;
+  static const _t3      = AppColors.textDisabled;
 
   @override
   Widget build(BuildContext context) {
@@ -337,13 +338,13 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
           onTap: () => context.read<TrackingBloc>().add(LoadTripTracking(widget.tripId)),
           child: Container(height: 50,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [_blue, Color(0xFF1F5EC4)]),
+              gradient: const LinearGradient(colors: [_blue, AppColors.primaryDark]),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]),
             child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.refresh_rounded, color: Colors.white, size: 17),
+              Icon(Icons.refresh_rounded, color: AppColors.white, size: 17),
               SizedBox(width: 7),
-              Text('Retry', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+              Text('Retry', style: TextStyle(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w700)),
             ])),
         ),
       ]),
@@ -478,7 +479,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
               Positioned(bottom: 0, left: 0, right: 0, height: 80,
                 child: DecoratedBox(decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.transparent, _bg.withValues(alpha: 0.88)],
+                    colors: [AppColors.transparent, _bg.withValues(alpha: 0.88)],
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
                   ),
                 ))),
@@ -620,7 +621,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
         border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
         boxShadow: [
           BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 20),
-          const BoxShadow(color: Colors.black54, blurRadius: 10),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.54), blurRadius: 10),
         ],
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -727,7 +728,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [_blue, Color(0xFF1F5EC4)],
+                colors: [_blue, AppColors.primaryDark],
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
               ),
             ),
@@ -822,9 +823,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                       ],
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.check_rounded, color: Colors.white, size: 17),
+                      const Icon(Icons.check_rounded, color: AppColors.white, size: 17),
                       const SizedBox(width: 7),
-                      Text(l.yesCancel, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                      Text(l.yesCancel, style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                     ]),
                   ),
                 ),
@@ -912,17 +913,17 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                      color: AppColors.purple.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.25)),
+                      border: Border.all(color: AppColors.purple.withValues(alpha: 0.25)),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.local_offer_rounded, color: Color(0xFF8B5CF6), size: 11),
+                      const Icon(Icons.local_offer_rounded, color: AppColors.purple, size: 11),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           '-${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
-                          style: const TextStyle(color: Color(0xFF8B5CF6), fontSize: 10, fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: AppColors.purple, fontSize: 10, fontWeight: FontWeight.w700),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -982,7 +983,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> with SingleTick
                 const SizedBox(height: 12),
                 _buildStatItem(Icons.straighten_rounded, _blue, '$dist ${l.km}'),
                 const SizedBox(height: 8),
-                _buildStatItem(Icons.directions_car_rounded, const Color(0xFF8B5CF6), vName),
+                _buildStatItem(Icons.directions_car_rounded, AppColors.purple, vName),
                 const SizedBox(height: 8),
                 _buildStatItem(
                   pay == 'cash' ? Icons.payments_rounded : Icons.credit_card_rounded,
@@ -1074,12 +1075,12 @@ class _MapBtn extends StatelessWidget {
     child: Container(
       width: 42, height: 42,
       decoration: BoxDecoration(
-        color: const Color(0xFF12151F).withValues(alpha: 0.9),
+        color: AppColors.primarySurface.withValues(alpha: 0.9),
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF252A3D), width: 1),
-        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 10)],
+        border: Border.all(color: AppColors.divider, width: 1),
+        boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.38), blurRadius: 10)],
       ),
-      child: Icon(icon, color: const Color(0xFFEEF0FF), size: 18),
+      child: Icon(icon, color: AppColors.textPrimary, size: 18),
     ),
   );
 }

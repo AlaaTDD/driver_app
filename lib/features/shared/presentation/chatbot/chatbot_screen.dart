@@ -212,7 +212,7 @@ class ChatMessage extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: isUser ? Colors.white : context.textPrimary,
+            color: isUser ? AppColors.white : context.textPrimary,
           ),
         ),
       ),

@@ -972,7 +972,7 @@ class _PromoBannerState extends State<_PromoBanner> {
                                   backgroundColor: _isValid == true
                                       ? AppColors.success
                                       : AppColors.primary,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: AppColors.white,
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10)),
                                   elevation: 0,
@@ -984,7 +984,7 @@ class _PromoBannerState extends State<_PromoBanner> {
                                         width: 18,
                                         height: 18,
                                         child: CircularProgressIndicator(
-                                          color: Colors.white,
+                                          color: AppColors.white,
                                           strokeWidth: 2,
                                         ),
                                       )
@@ -1047,7 +1047,7 @@ class _PromoBannerState extends State<_PromoBanner> {
                                           child: Text(
                                             AppLocalizations.of(context)!.bookNow,
                                             style: const TextStyle(
-                                              color: Colors.white,
+                                              color: AppColors.white,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
                                             ),

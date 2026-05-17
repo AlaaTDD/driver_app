@@ -4,21 +4,22 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../services/supabase_service.dart';
 import '../../../../core/constants/app_routes.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 // ─── Design tokens (match driver palette) ────────────────────────────────────
 class _C {
-  static const bg       = Color(0xFF0D0F18);
-  static const sheet    = Color(0xFF12151F);
-  static const card     = Color(0xFF181C2A);
-  static const elevated = Color(0xFF1E2336);
-  static const border   = Color(0xFF252A3D);
-  static const blue     = Color(0xFF4C8BF5);
-  static const emerald  = Color(0xFF1FC87A);
-  static const rose     = Color(0xFFFF4060);
-  static const amber    = Color(0xFFF5A524);
-  static const t1       = Color(0xFFEEF0FF);
-  static const t2       = Color(0xFF7B82A3);
-  static const t3       = Color(0xFF3A4060);
+  static const bg       = AppColors.background;
+  static const sheet    = AppColors.primarySurface;
+  static const card     = AppColors.surface;
+  static const elevated = AppColors.surfaceElevated;
+  static const border   = AppColors.divider;
+  static const blue     = AppColors.primary;
+  static const emerald  = AppColors.secondary;
+  static const rose     = AppColors.error;
+  static const amber    = AppColors.warning;
+  static const t1       = AppColors.textPrimary;
+  static const t2       = AppColors.textSecondary;
+  static const t3       = AppColors.textDisabled;
 }
 
 class DriverRequestFeedScreen extends StatefulWidget {
@@ -84,7 +85,7 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
     try {
       await SupabaseService.client
           .from('trip_offers')
-          .update({'status': 'declined'})
+          .update({'status': 'rejected'})
           .eq('id', offerId);
       // Realtime stream will remove the card automatically
     } catch (e) {
@@ -273,7 +274,7 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
           color: _C.card,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: _C.border),
-          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(0, 4))],
+          boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.26), blurRadius: 16, offset: Offset(0, 4))],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           // ── Timer bar ────────────────────────────────────────────────────
@@ -388,7 +389,7 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
                         gradient: _acting ? null : const LinearGradient(
-                          colors: [_C.emerald, Color(0xFF16A05E)],
+                          colors: [_C.emerald, AppColors.success],
                           begin: Alignment.topLeft, end: Alignment.bottomRight,
                         ),
                         color: _acting ? _C.elevated : null,
@@ -398,12 +399,12 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
                       ),
                       child: _acting
                           ? const Center(child: SizedBox(width: 18, height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+                              child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2)))
                           : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                              Icon(Icons.check_rounded, color: AppColors.white, size: 18),
                               SizedBox(width: 6),
                               Text('قبول الرحلة', style: TextStyle(
-                                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                  color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w700)),
                             ]),
                     ),
                   ),

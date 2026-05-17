@@ -1,4 +1,4 @@
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/models/notification_model.dart';
@@ -7,6 +7,7 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_routes.dart';
 import 'package:snapix/features/shared/data/repositories/notifications_repository.dart';
+import 'package:snapix/services/supabase_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -20,41 +21,54 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
   String? _error;
   final _repository = NotificationsRepository();
+  StreamSubscription? _sub;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
+    _subscribeToStream();
+    // Mark all as read when the screen opens
+    _repository.markAllAsRead().catchError((_) {});
   }
 
-  Future<void> _loadNotifications() async {
+  void _subscribeToStream() {
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    try {
-      final data = await _repository.loadNotifications();
-      setState(() {
-        _notifications = data;
-        _isLoading = false;
-      });
-    } catch (e) { debugPrint('❌ NotificationsScreen loadNotifications: $e');
-      setState(() {
-        _error = AppLocalizations.of(context)!.failedLoadNotifications;
-        _isLoading = false;
-      });
-    }
+
+    _sub = _repository.watchNotifications().listen(
+      (data) {
+        if (!mounted) return;
+        setState(() {
+          _notifications = data;
+          _isLoading = false;
+        });
+      },
+      onError: (e) {
+        debugPrint('❌ NotificationsScreen stream error: $e');
+        if (!mounted) return;
+        setState(() {
+          _error = AppLocalizations.of(context)!.failedLoadNotifications;
+          _isLoading = false;
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
 
   Future<void> _markAsRead(String notificationId) async {
     try {
       await _repository.markAsRead(notificationId);
-      // Local state update without full reload from server
+      if (!mounted) return;
       setState(() {
         _notifications = _notifications.map((n) {
-          if (n.id == notificationId) {
-            return n.copyWith(isRead: true);
-          }
+          if (n.id == notificationId) return n.copyWith(isRead: true);
           return n;
         }).toList();
       });
@@ -67,9 +81,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final now = DateTime.now();
     final diff = now.difference(createdAt);
     if (diff.inMinutes < 1) return AppLocalizations.of(context)!.justNow;
-    if (diff.inMinutes < 60) return AppLocalizations.of(context)!.minutesAgo(diff.inMinutes);
-    if (diff.inHours < 24) return AppLocalizations.of(context)!.hoursAgo(diff.inHours);
-    if (diff.inDays < 7) return AppLocalizations.of(context)!.daysAgo(diff.inDays);
+    if (diff.inMinutes < 60)
+      return AppLocalizations.of(context)!.minutesAgo(diff.inMinutes);
+    if (diff.inHours < 24)
+      return AppLocalizations.of(context)!.hoursAgo(diff.inHours);
+    if (diff.inDays < 7)
+      return AppLocalizations.of(context)!.daysAgo(diff.inDays);
     return '${createdAt.day}/${createdAt.month}/${createdAt.year}';
   }
 
@@ -88,20 +105,45 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  void _onNotificationTap(NotificationModel notif) {
+  Future<bool> _isDriver() async {
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) return false;
+      final row = await SupabaseService.client
+          .from('users')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+      return row != null && row['role'] == 'driver';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _onNotificationTap(NotificationModel notif) async {
     if (!notif.isRead) {
       _markAsRead(notif.id);
     }
-    if (notif.type == 'new_message' && notif.referenceId != null && notif.referenceId!.isNotEmpty) {
-      context.go('${AppRoutes.userMessages}?otherUserId=${notif.referenceId}');
-    } else if (notif.type == 'trip' && notif.referenceId != null && notif.referenceId!.isNotEmpty) {
-      context.go('${AppRoutes.userTripDetails}?tripId=${notif.referenceId}');
+    if (notif.type == 'new_message' &&
+        notif.referenceId != null &&
+        notif.referenceId!.isNotEmpty) {
+      final isDriver = await _isDriver();
+      final route = isDriver ? AppRoutes.driverMessages : AppRoutes.userMessages;
+      if (mounted) context.go('$route?otherUserId=${notif.referenceId}');
+    } else if (notif.type == 'trip' &&
+        notif.referenceId != null &&
+        notif.referenceId!.isNotEmpty) {
+      final isDriver = await _isDriver();
+      final route = isDriver ? AppRoutes.driverTripDetails : AppRoutes.userTripDetails;
+      if (mounted) context.go('$route?tripId=${notif.referenceId}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final lang = Localizations.localeOf(context).languageCode;
+
     return Scaffold(
       backgroundColor: context.bgColor,
       appBar: AppBar(
@@ -120,7 +162,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           style: TextStyle(color: context.textPrimary)),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: _loadNotifications,
+                        onPressed: () {
+                          _sub?.cancel();
+                          _subscribeToStream();
+                        },
                         style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary),
                         child: Text(l.retry),
@@ -151,8 +196,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         final notif = _notifications[index];
                         return _NotificationCard(
                           icon: _getNotificationIcon(notif.type),
-                          title: notif.title,
-                          message: notif.message,
+                          // Fix #9: use localizedTitle/localizedBody helpers
+                          title: notif.localizedTitle(lang),
+                          message: notif.localizedBody(lang),
                           time: _formatTime(notif.createdAt),
                           isRead: notif.isRead,
                           onTap: () => _onNotificationTap(notif),

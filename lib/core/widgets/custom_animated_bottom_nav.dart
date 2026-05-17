@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 // ─────────────────────────────────────────────
 //  DATA MODEL
@@ -41,9 +42,9 @@ class CustomAnimatedBottomNav extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.floatingActionButton,
-    this.backgroundColor = Colors.white,
-    this.itemColor = const Color(0xFF9E9E9E),
-    this.notchColor = const Color(0xFF6C63FF),
+    this.backgroundColor = AppColors.white,
+    this.itemColor = AppColors.textSecondary,
+    this.notchColor = AppColors.purple,
     this.height = 72,
     this.iconSize = 26,
     this.notchRadius = 38,
@@ -73,8 +74,8 @@ class CustomAnimatedBottomNav extends StatelessWidget {
             height: height,
             child: Material(
               elevation: elevation,
-              shadowColor: Colors.black.withOpacity(0.1),
-              color: Colors.transparent,
+              shadowColor: AppColors.black.withOpacity(0.1),
+              color: AppColors.transparent,
               child: CustomPaint(
                 painter: _NotchPainter(
                   color: backgroundColor,
@@ -178,7 +179,7 @@ class _NavItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),

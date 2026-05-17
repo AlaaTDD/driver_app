@@ -12,6 +12,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/trip_status.dart';
 import '../../../trips/data/models/trip_model.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class DriverTripsScreen extends StatefulWidget {
   const DriverTripsScreen({super.key});
@@ -48,13 +49,13 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F18),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         top: true,
         child: BlocConsumer<DriverTripsBloc, DriverTripsState>(
           listener: (context, state) {
             if (state is DriverTripsError) {
-              _showToast(state.message, const Color(0xFFFF4060));
+              _showToast(state.message, AppColors.error);
             }
           },
           builder: (context, state) {
@@ -138,8 +139,8 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
   }
 
   Widget _buildLoadingState() {
-    const card     = Color(0xFF181C2A);
-    const elevated = Color(0xFF1E2336);
+    const card     = AppColors.surface;
+    const elevated = AppColors.surfaceElevated;
     return Shimmer.fromColors(
       baseColor: card,
       highlightColor: elevated,
@@ -174,10 +175,10 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
   }
 
   Widget _buildErrorState(String message, AppLocalizations l) {
-    const rose = Color(0xFFFF4060);
-    const blue = Color(0xFF4C8BF5);
-    const t1   = Color(0xFFEEF0FF);
-    const t2   = Color(0xFF7B82A3);
+    const rose = AppColors.error;
+    const blue = AppColors.primary;
+    const t1   = AppColors.textPrimary;
+    const t2   = AppColors.textSecondary;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -205,16 +206,16 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [blue, Color(0xFF1F5EC4)],
+                  colors: [blue, AppColors.primaryDark],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.refresh_rounded, color: Colors.white, size: 17),
+                const Icon(Icons.refresh_rounded, color: AppColors.white, size: 17),
                 const SizedBox(width: 8),
-                Text(l.retry, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                Text(l.retry, style: const TextStyle(color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w700)),
               ]),
             ),
           ),
@@ -238,7 +239,7 @@ class _ToastWidget extends StatelessWidget {
       left: 16,
       right: 16,
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: 1),
           duration: const Duration(milliseconds: 300),
@@ -261,13 +262,13 @@ class _ToastWidget extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const Icon(Icons.check_circle, color: AppColors.white, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         message,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -304,14 +305,14 @@ class _TripsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const card    = Color(0xFF181C2A);
-    const elevated= Color(0xFF1E2336);
-    const border  = Color(0xFF252A3D);
-    const blue    = Color(0xFF4C8BF5);
-    const emerald = Color(0xFF1FC87A);
-    const rose    = Color(0xFFFF4060);
-    const t1      = Color(0xFFEEF0FF);
-    const t2      = Color(0xFF7B82A3);
+    const card    = AppColors.surface;
+    const elevated= AppColors.surfaceElevated;
+    const border  = AppColors.divider;
+    const blue    = AppColors.primary;
+    const emerald = AppColors.secondary;
+    const rose    = AppColors.error;
+    const t1      = AppColors.textPrimary;
+    const t2      = AppColors.textSecondary;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -322,7 +323,7 @@ class _TripsHeader extends StatelessWidget {
         border: Border.all(color: blue.withValues(alpha: 0.25), width: 1),
         boxShadow: [
           BoxShadow(color: blue.withValues(alpha: 0.10), blurRadius: 20, offset: const Offset(0, 6)),
-          const BoxShadow(color: Colors.black38, blurRadius: 10),
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.38), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -354,17 +355,17 @@ class _TripsHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [blue, Color(0xFF1F5EC4)],
+                    colors: [blue, AppColors.primaryDark],
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.28), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.local_taxi_rounded, color: Colors.white, size: 15),
+                  const Icon(Icons.local_taxi_rounded, color: AppColors.white, size: 15),
                   const SizedBox(width: 5),
                   Text(l.startWorking,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                 ]),
               ),
             ),
@@ -408,9 +409,9 @@ class _CompactStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const elevated = Color(0xFF1E2336);
-    const t1       = Color(0xFFEEF0FF);
-    const t2       = Color(0xFF7B82A3);
+    const elevated = AppColors.surfaceElevated;
+    const t1       = AppColors.textPrimary;
+    const t2       = AppColors.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -458,7 +459,7 @@ class _SegmentedControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const elevated = Color(0xFF1E2336);
+    const elevated = AppColors.surfaceElevated;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -515,9 +516,9 @@ class _SegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF4C8BF5);
-    const card = Color(0xFF181C2A);
-    const t2   = Color(0xFF7B82A3);
+    const blue = AppColors.primary;
+    const card = AppColors.surface;
+    const t2   = AppColors.textSecondary;
 
     return Expanded(
       child: GestureDetector(
@@ -529,11 +530,11 @@ class _SegmentButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isSelected
                 ? const LinearGradient(
-                    colors: [blue, Color(0xFF1F5EC4)],
+                    colors: [blue, AppColors.primaryDark],
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
                   )
                 : null,
-            color: isSelected ? null : Colors.transparent,
+            color: isSelected ? null : AppColors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))]
@@ -543,13 +544,13 @@ class _SegmentButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: isSelected ? Colors.white : t2),
+              Icon(icon, size: 16, color: isSelected ? AppColors.white : t2),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : t2,
+                    color: isSelected ? AppColors.white : t2,
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -561,13 +562,13 @@ class _SegmentButton extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white.withValues(alpha: 0.2) : card,
+                    color: isSelected ? AppColors.white.withValues(alpha: 0.2) : card,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     count.toString(),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : t2,
+                      color: isSelected ? AppColors.white : t2,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),
@@ -601,8 +602,8 @@ class _TripListView extends StatelessWidget {
       onRefresh: () async {
         context.read<DriverTripsBloc>().add(const LoadDriverTrips());
       },
-      color: const Color(0xFF4C8BF5),
-      backgroundColor: const Color(0xFF181C2A),
+      color: AppColors.primary,
+      backgroundColor: AppColors.surface,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: grouped.length,
@@ -657,9 +658,9 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const blue = Color(0xFF4C8BF5);
-    const t1   = Color(0xFFEEF0FF);
-    const t2   = Color(0xFF7B82A3);
+    const blue = AppColors.primary;
+    const t1   = AppColors.textPrimary;
+    const t2   = AppColors.textSecondary;
     
     return Center(
       child: Column(
@@ -696,17 +697,17 @@ class _EmptyState extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [blue, Color(0xFF1F5EC4)],
+                    colors: [blue, AppColors.primaryDark],
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                  const Icon(Icons.arrow_back_rounded, color: AppColors.white, size: 16),
                   const SizedBox(width: 8),
                   Text(AppLocalizations.of(context)!.backToHome,
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                 ]),
               ),
             ),
@@ -730,8 +731,8 @@ class _TripDateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const t2   = Color(0xFF7B82A3);
-    const blue = Color(0xFF4C8BF5);
+    const t2   = AppColors.textSecondary;
+    const blue = AppColors.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -848,14 +849,14 @@ class _TripCard extends StatelessWidget {
     final statusColor = _getStatusColor(status);
     final statusLabel = _getStatusText(status, l);
 
-    const card     = Color(0xFF181C2A);
-    const elevated = Color(0xFF1E2336);
-    const border   = Color(0xFF252A3D);
-    const blue     = Color(0xFF4C8BF5);
-    const emerald  = Color(0xFF1FC87A);
-    const t1       = Color(0xFFEEF0FF);
-    const t2       = Color(0xFF7B82A3);
-    const t3       = Color(0xFF3A4060);
+    const card     = AppColors.surface;
+    const elevated = AppColors.surfaceElevated;
+    const border   = AppColors.divider;
+    const blue     = AppColors.primary;
+    const emerald  = AppColors.secondary;
+    const t1       = AppColors.textPrimary;
+    const t2       = AppColors.textSecondary;
+    const t3       = AppColors.textDisabled;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -867,12 +868,12 @@ class _TripCard extends StatelessWidget {
             : Border.all(color: border, width: 1),
         boxShadow: isActive
             ? [BoxShadow(color: blue.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))]
-            : [const BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2))],
+            : [BoxShadow(color: AppColors.black.withValues(alpha: 0.26), blurRadius: 8, offset: Offset(0, 2))],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             onTap: () => context.push('${AppRoutes.driverTripDetails}?tripId=${trip.id}'),
             splashColor: blue.withValues(alpha: 0.08),
@@ -983,14 +984,14 @@ class _TripCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [blue, Color(0xFF1F5EC4)],
+                          colors: [blue, AppColors.primaryDark],
                           begin: Alignment.topLeft, end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 2))],
                       ),
                       child: Text('$price ${l.currencySar}',
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                        style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w800)),
                     ),
                   ]),
                 ],
@@ -1003,11 +1004,11 @@ class _TripCard extends StatelessWidget {
   }
 
   Color _getStatusColor(TripStatus? status) {
-    const blue    = Color(0xFF4C8BF5);
-    const emerald = Color(0xFF1FC87A);
-    const rose    = Color(0xFFFF4060);
-    const amber   = Color(0xFFF5A524);
-    const t2      = Color(0xFF7B82A3);
+    const blue    = AppColors.primary;
+    const emerald = AppColors.secondary;
+    const rose    = AppColors.error;
+    const amber   = AppColors.warning;
+    const t2      = AppColors.textSecondary;
     
     return switch (status) {
       TripStatus.completed => emerald,

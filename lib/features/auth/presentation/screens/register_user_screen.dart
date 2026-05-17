@@ -11,6 +11,7 @@ import '../../../../core/utils/app_toast.dart';
 import '../../../../core/error/error_mapper.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class RegisterUserScreen extends StatefulWidget {
   const RegisterUserScreen({super.key});
@@ -95,11 +96,11 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                             gradient: const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                              colors: [AppColors.primary, AppColors.primaryDark],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+                                color: AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
@@ -108,7 +109,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                           child: const Icon(
                             Icons.person_rounded,
                             size: 36,
-                            color: Colors.white,
+                            color: AppColors.white,
                           ),
                         ),
                         const SizedBox(height: 16),

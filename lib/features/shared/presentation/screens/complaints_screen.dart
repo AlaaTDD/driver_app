@@ -20,7 +20,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.transparent,
       builder: (context) => const _NewComplaintSheet(),
     );
   }
@@ -76,10 +76,10 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showNewComplaintSheet,
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.add, color: AppColors.white),
         label: Text(
           l.submitComplaint,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -148,7 +148,7 @@ class _ComplaintCard extends StatelessWidget {
     }
 
     final isPending = status == 'pending';
-    final statusColor = isPending ? Colors.orange : AppColors.success;
+    final statusColor = isPending ? AppColors.warning : AppColors.success;
     final statusText = isPending ? l.pending : l.completed;
 
     return Container(
@@ -157,7 +157,7 @@ class _ComplaintCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -440,12 +440,12 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
                         )
                       : Text(
                           l.send,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

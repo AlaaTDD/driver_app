@@ -163,16 +163,48 @@ class FCMService {
       case 'new_message':
         final senderId = message.data['senderId'];
         final tripId = message.data['tripId'];
+        // Determine role to route to the correct messages screen
+        final messagesRoute = await _getMessagesRouteForCurrentUser();
         if (tripId != null && tripId.toString().isNotEmpty) {
-          router.go('${AppRoutes.userMessages}?tripId=$tripId');
+          router.go('$messagesRoute?tripId=$tripId');
         } else if (senderId != null && senderId.toString().isNotEmpty) {
-          router.go('${AppRoutes.userMessages}?otherUserId=$senderId');
+          router.go('$messagesRoute?otherUserId=$senderId');
+        }
+        break;
+      case 'trip':
+        final referenceId = message.data['referenceId'] ?? message.data['tripId'];
+        if (referenceId != null && referenceId.toString().isNotEmpty) {
+          final isDriver = await _isDriver();
+          final route = isDriver ? AppRoutes.driverTripDetails : AppRoutes.userTripDetails;
+          router.go('$route?tripId=$referenceId');
         }
         break;
       case 'ride_offer':
         developer.log('🔥 FCM OPENED APP: User tapped ride_offer notification!');
         // Typically you'd navigate to the trip details page here.
         break;
+    }
+  }
+
+  /// Returns the correct messages route based on the current user's role.
+  Future<String> _getMessagesRouteForCurrentUser() async {
+    final isDriver = await _isDriver();
+    return isDriver ? AppRoutes.driverMessages : AppRoutes.userMessages;
+  }
+
+  /// Checks if the current authenticated user has role='driver'.
+  Future<bool> _isDriver() async {
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) return false;
+      final row = await SupabaseService.client
+          .from('users')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+      return row != null && row['role'] == 'driver';
+    } catch (_) {
+      return false;
     }
   }
 

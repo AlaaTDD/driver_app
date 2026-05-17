@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 class SegmentedControl extends StatelessWidget {
   final int selectedIndex;
@@ -21,7 +22,7 @@ class SegmentedControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const elevated = Color(0xFF1E2336);
+    const elevated = AppColors.surfaceElevated;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -78,9 +79,9 @@ class _SegmentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF4C8BF5);
-    const card = Color(0xFF181C2A);
-    const t2   = Color(0xFF7B82A3);
+    const blue = AppColors.primary;
+    const card = AppColors.surface;
+    const t2   = AppColors.textSecondary;
 
     return Expanded(
       child: GestureDetector(
@@ -92,11 +93,11 @@ class _SegmentButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isSelected
                 ? const LinearGradient(
-                    colors: [blue, Color(0xFF1F5EC4)],
+                    colors: [blue, AppColors.primaryDark],
                     begin: Alignment.topLeft, end: Alignment.bottomRight,
                   )
                 : null,
-            color: isSelected ? null : Colors.transparent,
+            color: isSelected ? null : AppColors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))]
@@ -106,13 +107,13 @@ class _SegmentButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: isSelected ? Colors.white : t2),
+              Icon(icon, size: 16, color: isSelected ? AppColors.white : t2),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : t2,
+                    color: isSelected ? AppColors.white : t2,
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -124,13 +125,13 @@ class _SegmentButton extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white.withValues(alpha: 0.2) : card,
+                    color: isSelected ? AppColors.white.withValues(alpha: 0.2) : card,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     count.toString(),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : t2,
+                      color: isSelected ? AppColors.white : t2,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),

@@ -17,26 +17,27 @@ import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import '../../../trips/presentation/widgets/waypoints_timeline.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:snapix/core/theme/app_colors.dart';
 
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 class _C {
-  static const bg = Color(0xFF0D0F18);
-  static const sheet = Color(0xFF12151F);
-  static const card = Color(0xFF181C2A);
-  static const elevated = Color(0xFF1E2336);
-  static const border = Color(0xFF252A3D);
+  static const bg = AppColors.background;
+  static const sheet = AppColors.primarySurface;
+  static const card = AppColors.surface;
+  static const elevated = AppColors.surfaceElevated;
+  static const border = AppColors.divider;
 
-  static const blue = Color(0xFF4C8BF5);
-  static const blueGlow = Color(0x404C8BF5);
-  static const emerald = Color(0xFF1FC87A);
-  static const rose = Color(0xFFFF4060);
-  static const amber = Color(0xFFF5A524);
-  static const violet = Color(0xFF8B5CF6);
+  static const blue = AppColors.primary;
+  static final blueGlow = AppColors.primary.withValues(alpha: 0.25);
+  static const emerald = AppColors.secondary;
+  static const rose = AppColors.error;
+  static const amber = AppColors.warning;
+  static const violet = AppColors.purple;
 
-  static const t1 = Color(0xFFEEF0FF);
-  static const t2 = Color(0xFF7B82A3);
-  static const t3 = Color(0xFF3A4060);
+  static const t1 = AppColors.textPrimary;
+  static const t2 = AppColors.textSecondary;
+  static const t3 = AppColors.textDisabled;
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -96,9 +97,9 @@ class _ScreenState extends State<UserTripDetailsScreen>
   BitmapDescriptor? _waypointIcon;
 
   Future<void> _loadCircleIcons() async {
-    _pickupIcon = await _createCircleMarker(Colors.green);
-    _destIcon = await _createCircleMarker(Colors.red);
-    _waypointIcon = await _createCircleMarker(Colors.orange);
+    _pickupIcon = await _createCircleMarker(AppColors.success);
+    _destIcon = await _createCircleMarker(AppColors.error);
+    _waypointIcon = await _createCircleMarker(AppColors.warning);
     if (mounted) setState(() {});
   }
 
@@ -111,7 +112,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
     canvas.drawCircle(const Offset(20, 20), 18, outerPaint);
     canvas.drawCircle(const Offset(20, 20), 10, paint);
     
-    final whitePaint = Paint()..color = Colors.white;
+    final whitePaint = Paint()..color = AppColors.white;
     canvas.drawCircle(const Offset(20, 20), 5, whitePaint);
     
     final picture = pictureRecorder.endRecording();
@@ -228,11 +229,11 @@ class _ScreenState extends State<UserTripDetailsScreen>
     ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
       content: Row(children: [
         Icon(ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-            color: Colors.white, size: 18),
+            color: AppColors.white, size: 18),
         const SizedBox(width: 10),
         Expanded(
             child: Text(msg,
-                style: const TextStyle(fontSize: 13, color: Colors.white))),
+                style: const TextStyle(fontSize: 13, color: AppColors.white))),
       ]),
       backgroundColor: ok ? _C.emerald : _C.rose,
       behavior: SnackBarBehavior.floating,
@@ -653,7 +654,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
         child: DecoratedBox(
             decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.transparent, _C.bg.withValues(alpha: 0.88)],
+            colors: [AppColors.transparent, _C.bg.withValues(alpha: 0.88)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -689,7 +690,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
                 color: color.withValues(alpha: 0.22),
                 blurRadius: 22,
                 spreadRadius: 2),
-            const BoxShadow(color: Colors.black54, blurRadius: 10),
+            BoxShadow(color: AppColors.black.withValues(alpha: 0.54), blurRadius: 10),
           ],
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -901,7 +902,7 @@ class _MapCircleBtn extends StatelessWidget {
             color: _C.sheet.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             border: Border.all(color: _C.border, width: 1),
-            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 10)],
+            boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.38), blurRadius: 10)],
           ),
           child: Icon(icon, color: _C.t1, size: 18),
         ),
@@ -946,7 +947,7 @@ class _DriverStrip extends StatelessWidget {
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [_C.blue, Color(0xFF1F5EC4)],
+                colors: [_C.blue, AppColors.primaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1197,7 +1198,7 @@ class _StopoverCard extends StatelessWidget {
               child: Divider(color: _C.border, height: 1),
             ),
             Material(
-              color: Colors.transparent,
+              color: AppColors.transparent,
               child: InkWell(
                 onTap: onAddStop,
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
@@ -1410,7 +1411,7 @@ class _RouteTicket extends StatelessWidget {
                         height: 3,
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         decoration: BoxDecoration(
-                          color: i.isEven ? _C.border : Colors.transparent,
+                          color: i.isEven ? _C.border : AppColors.transparent,
                           shape: BoxShape.circle,
                         ))),
                 const SizedBox(height: 4),
@@ -1706,7 +1707,7 @@ class _HTimeline extends StatelessWidget {
                   ),
                   child: done
                       ? const Icon(Icons.check_rounded,
-                          color: Colors.white, size: 11)
+                          color: AppColors.white, size: 11)
                       : null,
                 ),
                 const SizedBox(height: 7),
@@ -1808,9 +1809,9 @@ class _ActionBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: _C.sheet,
         border: const Border(top: BorderSide(color: _C.border, width: 1)),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Colors.black45, blurRadius: 20, offset: Offset(0, -4))
+              color: AppColors.black.withValues(alpha: 0.45), blurRadius: 20, offset: Offset(0, -4))
         ],
       ),
       child: Row(children: [
@@ -1896,12 +1897,12 @@ class _Btn extends StatelessWidget {
             mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: outlined ? color : Colors.white, size: 17),
+              Icon(icon, color: outlined ? color : AppColors.white, size: 17),
               const SizedBox(width: 7),
               Text(label,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: outlined ? color : Colors.white,
+                    color: outlined ? color : AppColors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   )),
@@ -2051,7 +2052,7 @@ class _MapStopoverPickerState extends State<MapStopoverPicker> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: _MapCircleBtn(
           icon: Icons.arrow_back_ios_new_rounded,
@@ -2118,7 +2119,7 @@ class _MapStopoverPickerState extends State<MapStopoverPicker> {
               decoration: BoxDecoration(
                 color: _C.sheet,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.26), blurRadius: 10)],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -2126,7 +2127,7 @@ class _MapStopoverPickerState extends State<MapStopoverPicker> {
                 children: [
                   Text(
                     'تأكيد المحطة',
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   if (_isLoading)

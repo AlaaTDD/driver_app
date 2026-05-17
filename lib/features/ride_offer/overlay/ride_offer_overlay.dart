@@ -218,7 +218,7 @@ class RideOfferInAppOverlay extends StatelessWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withAlpha(180),
+      barrierColor: AppColors.black.withAlpha(180),
       builder: (_) => BlocProvider.value(
         value: bloc,
         child: _RideOfferDialog(
@@ -344,7 +344,7 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -410,7 +410,7 @@ class _AddressRow extends StatelessWidget {
         Expanded(
           child: Text(
             '$label: $address',
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: AppColors.white.withValues(alpha: 0.7), fontSize: 14),
           ),
         ),
       ],
