@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/errors/error_mapper.dart';
 import 'bloc/bonus_cubit.dart';
 
 class DriverBonusScreen extends StatelessWidget {
@@ -42,14 +43,18 @@ class DriverBonusScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: context.textSecondary),
+                    Icon(Icons.error_outline,
+                        size: 48, color: context.textSecondary),
                     const SizedBox(height: 12),
-                    Text(l.errorUnexpected, style: TextStyle(color: context.textSecondary)),
+                    Text(ErrorMapper.getErrorMessage(context, state.error!),
+                        style: TextStyle(color: context.textSecondary)),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => context.read<BonusCubit>().load(),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      child: Text(l.retry, style: const TextStyle(color: AppColors.white)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary),
+                      child: Text(l.retry,
+                          style: const TextStyle(color: AppColors.white)),
                     ),
                   ],
                 ),
@@ -77,12 +82,14 @@ class DriverBonusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressCard(BuildContext context, BonusState state, AppLocalizations l) {
+  Widget _buildProgressCard(
+      BuildContext context, BonusState state, AppLocalizations l) {
     final progress = state.progress;
     final tripsToday = progress['trips_today'] as int? ?? 0;
     final target = progress['target'] as int? ?? 0;
     final bonusAmount = (progress['bonus_amount'] as num?)?.toDouble() ?? 0;
-    final progressPct = target > 0 ? (tripsToday / target).clamp(0.0, 1.0) : 0.0;
+    final progressPct =
+        target > 0 ? (tripsToday / target).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -111,7 +118,8 @@ class DriverBonusScreen extends StatelessWidget {
                   color: AppColors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.emoji_events_rounded, color: AppColors.white, size: 28),
+                child: const Icon(Icons.emoji_events_rounded,
+                    color: AppColors.white, size: 28),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -140,7 +148,8 @@ class DriverBonusScreen extends StatelessWidget {
               ),
               if (bonusAmount > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -183,7 +192,8 @@ class DriverBonusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRulesSection(BuildContext context, BonusState state, AppLocalizations l) {
+  Widget _buildRulesSection(
+      BuildContext context, BonusState state, AppLocalizations l) {
     if (state.rules.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -231,7 +241,8 @@ class DriverBonusScreen extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.star_rounded, color: AppColors.primary, size: 20),
+                  child: const Icon(Icons.star_rounded,
+                      color: AppColors.primary, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -258,7 +269,8 @@ class DriverBonusScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -280,13 +292,15 @@ class DriverBonusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistorySection(BuildContext context, BonusState state, AppLocalizations l) {
+  Widget _buildHistorySection(
+      BuildContext context, BonusState state, AppLocalizations l) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.history_rounded, color: AppColors.primary, size: 20),
+            const Icon(Icons.history_rounded,
+                color: AppColors.primary, size: 20),
             const SizedBox(width: 8),
             Text(
               l.bonusHistory,
@@ -309,7 +323,9 @@ class DriverBonusScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Icon(Icons.emoji_events_outlined, size: 48, color: context.textSecondary.withValues(alpha: 0.4)),
+                Icon(Icons.emoji_events_outlined,
+                    size: 48,
+                    color: context.textSecondary.withValues(alpha: 0.4)),
                 const SizedBox(height: 12),
                 Text(
                   l.noBonusYet,
@@ -331,8 +347,12 @@ class DriverBonusScreen extends StatelessWidget {
             String formatted = '';
             if (dateStr != null) {
               try {
-                formatted = DateFormat('yyyy/MM/dd HH:mm').format(DateTime.parse(dateStr).toLocal());
-              } catch (_) {}
+                formatted = DateFormat('yyyy/MM/dd HH:mm')
+                    .format(DateTime.parse(dateStr).toLocal());
+              } catch (e, st) {
+                debugPrint(
+                    '⚠️ DriverBonusScreen: invalid awarded_at "$dateStr": $e\n$st');
+              }
             }
 
             return Container(
@@ -350,7 +370,8 @@ class DriverBonusScreen extends StatelessWidget {
                       color: AppColors.success.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
+                    child: const Icon(Icons.check_circle_rounded,
+                        color: AppColors.success, size: 18),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

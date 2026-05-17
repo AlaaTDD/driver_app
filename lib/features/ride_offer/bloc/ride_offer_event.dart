@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../data/models/ride_offer_model.dart';
 
@@ -9,7 +8,6 @@ abstract class RideOfferEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-
 class RideOfferReceived extends RideOfferEvent {
   final RideOfferModel offer;
   const RideOfferReceived(this.offer);
@@ -17,7 +15,6 @@ class RideOfferReceived extends RideOfferEvent {
   @override
   List<Object?> get props => [offer];
 }
-
 
 class RideOfferAccepted extends RideOfferEvent {
   final String offerId;
@@ -27,7 +24,6 @@ class RideOfferAccepted extends RideOfferEvent {
   List<Object?> get props => [offerId];
 }
 
-
 class RideOfferDeclined extends RideOfferEvent {
   final String offerId;
   const RideOfferDeclined(this.offerId);
@@ -36,7 +32,6 @@ class RideOfferDeclined extends RideOfferEvent {
   List<Object?> get props => [offerId];
 }
 
-
 class RideOfferTimerTick extends RideOfferEvent {
   final int remainingSeconds;
   const RideOfferTimerTick(this.remainingSeconds);
@@ -44,7 +39,6 @@ class RideOfferTimerTick extends RideOfferEvent {
   @override
   List<Object?> get props => [remainingSeconds];
 }
-
 
 class RideOfferDismissed extends RideOfferEvent {
   const RideOfferDismissed();

@@ -1,6 +1,4 @@
-
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,8 +20,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-
-
+import '../../../../core/utils/map_camera_utils.dart';
 
 enum _PickMode { none, origin, destination, waypoint }
 
@@ -31,7 +28,11 @@ class _Suggestion {
   final String label;
   final String detail;
   final double lat, lng;
-  const _Suggestion({required this.label, required this.detail, required this.lat, required this.lng});
+  const _Suggestion(
+      {required this.label,
+      required this.detail,
+      required this.lat,
+      required this.lng});
 }
 
 class _WaypointModel {
@@ -46,8 +47,6 @@ class _WaypointModel {
     focus.dispose();
   }
 }
-
-
 
 const String kDarkMapStyle = '''
 [
@@ -98,7 +97,8 @@ class LocationSelectionScreen extends StatefulWidget {
   const LocationSelectionScreen({super.key, this.extra});
 
   @override
-  State<LocationSelectionScreen> createState() => _LocationSelectionScreenState();
+  State<LocationSelectionScreen> createState() =>
+      _LocationSelectionScreenState();
 }
 
 class _LocationSelectionScreenState extends State<LocationSelectionScreen>
@@ -133,7 +133,6 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   List<LatLng> _visiblePoints = [];
   AnimationController? _drawCtrl;
 
-  
   AnimationController? _cardPulseCtrl;
   Animation<double>? _cardPulseAnim;
 
@@ -146,7 +145,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   double? _appliedCouponDiscount;
   String? _couponError;
 
-  static const _defaultCamera = CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
+  static CameraPosition get _defaultCamera =>
+      CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
 
   @override
   void initState() {
@@ -159,7 +159,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     _cardPulseAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _cardPulseCtrl!, curve: Curves.easeInOut),
     );
-    _drawCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+    _drawCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200))
       ..addListener(_onDrawFrame);
     if (widget.extra?.originLat != null) {
       _originLat = widget.extra!.originLat;
@@ -171,14 +172,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     }
 
     // Pre-apply coupon passed from the home screen CouponBanner
-    final preCode     = widget.extra?.initialCouponCode;
+    final preCode = widget.extra?.initialCouponCode;
     final preDiscount = widget.extra?.initialCouponDiscount;
     if (preCode != null && preCode.isNotEmpty) {
-      _couponCtrl.text       = preCode;
-      _appliedCouponCode     = preCode;
+      _couponCtrl.text = preCode;
+      _appliedCouponCode = preCode;
       _appliedCouponDiscount = preDiscount;
-      _couponValid           = true;
-      _couponExpanded        = true; // show section so user sees it's applied
+      _couponValid = true;
+      _couponExpanded = true; // show section so user sees it's applied
     }
 
     _originFocus.addListener(() => _onFocusChanged('origin', _originFocus));
@@ -189,7 +190,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   void _onFocusChanged(String id, FocusNode node) {
     setState(() {
-      if (node.hasFocus) _activeFieldId = id;
+      if (node.hasFocus)
+        _activeFieldId = id;
       else if (_activeFieldId == id) _activeFieldId = 'none';
     });
   }
@@ -199,12 +201,16 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     _debounce?.cancel();
     if (text.trim().length < 2) {
       if (_suggestions.isNotEmpty || _isSearching) {
-        setState(() { _suggestions = []; _isSearching = false; });
+        setState(() {
+          _suggestions = [];
+          _isSearching = false;
+        });
       }
       return;
     }
     setState(() => _isSearching = true);
-    _debounce = Timer(const Duration(milliseconds: 500), () => _searchLocations(text, fieldId));
+    _debounce = Timer(const Duration(milliseconds: 500),
+        () => _searchLocations(text, fieldId));
   }
 
   Future<void> _searchLocations(String query, String fieldId) async {
@@ -217,38 +223,61 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         String label = query;
         String detail = '';
         try {
-          final pms = await placemarkFromCoordinates(loc.latitude, loc.longitude);
+          final pms =
+              await placemarkFromCoordinates(loc.latitude, loc.longitude);
           if (pms.isNotEmpty) {
             final p = pms.first;
-            final parts = [p.name, p.subLocality, p.locality, p.administrativeArea]
-                .where((e) => e != null && e.isNotEmpty)
-                .cast<String>()
-                .toList();
+            final parts = [
+              p.name,
+              p.subLocality,
+              p.locality,
+              p.administrativeArea
+            ].where((e) => e != null && e.isNotEmpty).cast<String>().toList();
             if (parts.isNotEmpty) label = parts.first;
             if (parts.length > 1) detail = parts.skip(1).take(2).join(', ');
           }
-        } catch (e) { debugPrint('❌ Error: $e'); }
-        if (detail.isEmpty) {
-          detail = '${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)}';
+        } catch (e) {
+          debugPrint('❌ Error: $e');
         }
-        results.add(_Suggestion(label: label, detail: detail, lat: loc.latitude, lng: loc.longitude));
+        if (detail.isEmpty) {
+          detail =
+              '${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)}';
+        }
+        results.add(_Suggestion(
+            label: label,
+            detail: detail,
+            lat: loc.latitude,
+            lng: loc.longitude));
       }
-      if (mounted) setState(() { _suggestions = results; _isSearching = false; });
-    } catch (e) { debugPrint('❌ Error: $e');
-      if (mounted) setState(() { _suggestions = []; _isSearching = false; });
+      if (mounted)
+        setState(() {
+          _suggestions = results;
+          _isSearching = false;
+        });
+    } catch (e) {
+      debugPrint('❌ Error: $e');
+      if (mounted)
+        setState(() {
+          _suggestions = [];
+          _isSearching = false;
+        });
     }
   }
 
-   void _onSuggestionTap(_Suggestion s) {
+  void _onSuggestionTap(_Suggestion s) {
     FocusScope.of(context).unfocus();
     setState(() {
       _suggestions = [];
       _isSearching = false;
       if (_activeFieldId == 'origin') {
-        _originLat = s.lat; _originLng = s.lng; _originAddress = s.label;
+        _originLat = s.lat;
+        _originLng = s.lng;
+        _originAddress = s.label;
         _originCtrl.text = s.label;
       } else if (_activeFieldId == 'destination') {
-        _destLat = s.lat; _destLng = s.lng; _destAddress = s.label;
+        _destLat = s.lat;
+        _destLng = s.lng;
+        _destAddress = s.label;
         _destCtrl.text = s.label;
       } else if (_activeFieldId.startsWith('waypoint_')) {
         final idx = int.tryParse(_activeFieldId.split('_').last) ?? -1;
@@ -267,7 +296,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   Future<void> _fetchRoute() async {
     if (_originLat == null || _destLat == null) {
       _drawCtrl?.stop();
-      if (_routePoints.isNotEmpty) setState(() { _routePoints = []; _visiblePoints = []; });
+      if (_routePoints.isNotEmpty)
+        setState(() {
+          _routePoints = [];
+          _visiblePoints = [];
+        });
       return;
     }
     final waypointsToPass = _waypoints
@@ -276,19 +309,27 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         .toList();
 
     final result = await DirectionsService.getRoute(
-      originLat: _originLat!, originLng: _originLng!,
-      destLat: _destLat!, destLng: _destLng!,
+      originLat: _originLat!,
+      originLng: _originLng!,
+      destLat: _destLat!,
+      destLng: _destLng!,
       waypoints: waypointsToPass.isNotEmpty ? waypointsToPass : null,
       apiKey: EnvConstants.googleMapsApiKey,
     );
     if (!mounted) return;
-    setState(() { _routePoints = result?.points ?? []; _visiblePoints = []; });
+    setState(() {
+      _routePoints = result?.points ?? [];
+      _visiblePoints = [];
+    });
+    await _fitMapToBothPoints();
     if (_routePoints.isNotEmpty) _drawCtrl?.forward(from: 0.0);
   }
 
   void _onDrawFrame() {
     if (_routePoints.isEmpty || _drawCtrl == null) return;
-    final count = (_drawCtrl!.value * _routePoints.length).ceil().clamp(2, _routePoints.length);
+    final count = (_drawCtrl!.value * _routePoints.length)
+        .ceil()
+        .clamp(2, _routePoints.length);
     setState(() => _visiblePoints = _routePoints.sublist(0, count));
   }
 
@@ -296,24 +337,21 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     if (!_mapCtrl.isCompleted) return;
     final ctrl = await _mapCtrl.future;
     if (_originLat != null && _destLat != null) {
-      double minLat = math.min(_originLat!, _destLat!);
-      double maxLat = math.max(_originLat!, _destLat!);
-      double minLng = math.min(_originLng!, _destLng!);
-      double maxLng = math.max(_originLng!, _destLng!);
-      
-      for (final w in _waypoints) {
-        if (w.lat != null && w.lng != null) {
-          minLat = math.min(minLat, w.lat!);
-          maxLat = math.max(maxLat, w.lat!);
-          minLng = math.min(minLng, w.lng!);
-          maxLng = math.max(maxLng, w.lng!);
-        }
-      }
+      final points = <LatLng>[
+        LatLng(_originLat!, _originLng!),
+        LatLng(_destLat!, _destLng!),
+        ..._waypoints
+            .where((w) => w.lat != null && w.lng != null)
+            .map((w) => LatLng(w.lat!, w.lng!)),
+        ..._routePoints,
+      ];
 
-      ctrl.animateCamera(CameraUpdate.newLatLngBounds(
-        LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
-        80,
-      ));
+      await MapCameraUtils.fitCameraToPoints(
+        ctrl,
+        points,
+        padding: 96,
+        delay: const Duration(milliseconds: 120),
+      );
     }
   }
 
@@ -334,16 +372,24 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       if (!_isReversing) setState(() => _isReversing = true);
       _reverseDebounce = Timer(const Duration(milliseconds: 700), () async {
         try {
-          final pms = await placemarkFromCoordinates(_mapCenter.latitude, _mapCenter.longitude);
+          final pms = await placemarkFromCoordinates(
+              _mapCenter.latitude, _mapCenter.longitude);
           String addr = '';
           if (pms.isNotEmpty) {
             final p = pms.first;
             final parts = [p.street, p.subLocality, p.locality]
-                .where((e) => e != null && e.isNotEmpty).cast<String>().toList();
+                .where((e) => e != null && e.isNotEmpty)
+                .cast<String>()
+                .toList();
             if (parts.isNotEmpty) addr = parts.join(', ');
           }
-          if (mounted) setState(() { _livePickAddress = addr; _isReversing = false; });
-        } catch (e) { debugPrint('❌ Error: $e');
+          if (mounted)
+            setState(() {
+              _livePickAddress = addr;
+              _isReversing = false;
+            });
+        } catch (e) {
+          debugPrint('❌ Error: $e');
           if (mounted) setState(() => _isReversing = false);
         }
       });
@@ -358,24 +404,35 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
           : '${_mapCenter.latitude.toStringAsFixed(4)}, ${_mapCenter.longitude.toStringAsFixed(4)}';
       if (_livePickAddress.isEmpty) {
         try {
-          final pms = await placemarkFromCoordinates(_mapCenter.latitude, _mapCenter.longitude);
+          final pms = await placemarkFromCoordinates(
+              _mapCenter.latitude, _mapCenter.longitude);
           if (pms.isNotEmpty) {
             final p = pms.first;
             final parts = [p.street, p.subLocality, p.locality]
-                .where((e) => e != null && e.isNotEmpty).cast<String>().toList();
+                .where((e) => e != null && e.isNotEmpty)
+                .cast<String>()
+                .toList();
             if (parts.isNotEmpty) addr = parts.join(', ');
           }
-        } catch (e) { debugPrint('❌ Error: $e'); }
+        } catch (e) {
+          debugPrint('❌ Error: $e');
+        }
       }
       if (!mounted) return;
       setState(() {
         if (_pickMode == _PickMode.origin) {
-          _originLat = _mapCenter.latitude; _originLng = _mapCenter.longitude;
-          _originAddress = addr; _originCtrl.text = addr;
+          _originLat = _mapCenter.latitude;
+          _originLng = _mapCenter.longitude;
+          _originAddress = addr;
+          _originCtrl.text = addr;
         } else if (_pickMode == _PickMode.destination) {
-          _destLat = _mapCenter.latitude; _destLng = _mapCenter.longitude;
-          _destAddress = addr; _destCtrl.text = addr;
-        } else if (_pickMode == _PickMode.waypoint && _pickWaypointIdx >= 0 && _pickWaypointIdx < _waypoints.length) {
+          _destLat = _mapCenter.latitude;
+          _destLng = _mapCenter.longitude;
+          _destAddress = addr;
+          _destCtrl.text = addr;
+        } else if (_pickMode == _PickMode.waypoint &&
+            _pickWaypointIdx >= 0 &&
+            _pickWaypointIdx < _waypoints.length) {
           _waypoints[_pickWaypointIdx].lat = _mapCenter.latitude;
           _waypoints[_pickWaypointIdx].lng = _mapCenter.longitude;
           _waypoints[_pickWaypointIdx].address = addr;
@@ -387,7 +444,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       });
       _fitMapToBothPoints();
       _fetchRoute();
-    } catch (e) { debugPrint('❌ Error: $e');
+    } catch (e) {
+      debugPrint('❌ Error: $e');
       if (mounted) {
         setState(() {
           _pickMode = _PickMode.none;
@@ -401,13 +459,29 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   void _swapLocations() {
     if (_originLat == null && _destLat == null) return;
     setState(() {
-      final tmpLat = _originLat; final tmpLng = _originLng; final tmpAddr = _originAddress;
-      _originLat = _destLat; _originLng = _destLng; _originAddress = _destAddress;
-      _destLat = tmpLat; _destLng = tmpLng; _destAddress = tmpAddr;
+      final tmpLat = _originLat;
+      final tmpLng = _originLng;
+      final tmpAddr = _originAddress;
+      _originLat = _destLat;
+      _originLng = _destLng;
+      _originAddress = _destAddress;
+      _destLat = tmpLat;
+      _destLng = tmpLng;
+      _destAddress = tmpAddr;
       _originCtrl.text = _originAddress ?? '';
       _destCtrl.text = _destAddress ?? '';
     });
     _fitMapToBothPoints();
+    _fetchRoute();
+  }
+
+  void _reorderWaypoint(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    setState(() {
+      final item = _waypoints.removeAt(oldIndex);
+      _waypoints.insert(newIndex, item);
+      _activeFieldId = 'none';
+    });
     _fetchRoute();
   }
 
@@ -418,17 +492,21 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     }
     final validWaypoints = _waypoints
         .where((w) => w.lat != null && w.lng != null)
-        .map((w) => WaypointArg(lat: w.lat!, lng: w.lng!, address: w.address ?? ''))
+        .map((w) =>
+            WaypointArg(lat: w.lat!, lng: w.lng!, address: w.address ?? ''))
         .toList();
-    context.push(AppRoutes.userPricing, extra: PricingArgs(
-      originLat: _originLat!, originLng: _originLng!,
-      originAddress: _originAddress ?? '',
-      destLat: _destLat!, destLng: _destLng!,
-      destAddress: _destAddress ?? '',
-      waypoints: validWaypoints.isNotEmpty ? validWaypoints : null,
-      couponCode: _appliedCouponCode,
-      couponDiscount: _appliedCouponDiscount,
-    ));
+    context.push(AppRoutes.userPricing,
+        extra: PricingArgs(
+          originLat: _originLat!,
+          originLng: _originLng!,
+          originAddress: _originAddress ?? '',
+          destLat: _destLat!,
+          destLng: _destLng!,
+          destAddress: _destAddress ?? '',
+          waypoints: validWaypoints.isNotEmpty ? validWaypoints : null,
+          couponCode: _appliedCouponCode,
+          couponDiscount: _appliedCouponDiscount,
+        ));
   }
 
   // ── Coupon helpers ─────────────────────────────────────────────────────
@@ -438,28 +516,39 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     if (code.isEmpty) return;
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
-    setState(() { _couponValidating = true; _couponValid = null; _couponError = null; });
+    setState(() {
+      _couponValidating = true;
+      _couponValid = null;
+      _couponError = null;
+    });
     try {
       final result = await CouponRepository().validateCoupon(
-        couponCode: code, originalPrice: 100, userId: userId,
+        couponCode: code,
+        originalPrice: 100,
+        userId: userId,
       );
       if (!mounted) return;
       if (result.isSuccess) {
         setState(() {
-          _couponValidating = false; _couponValid = true;
+          _couponValidating = false;
+          _couponValid = true;
           _appliedCouponCode = result.couponCode;
           _appliedCouponDiscount = result.discount;
         });
       } else {
         setState(() {
-          _couponValidating = false; _couponValid = false;
+          _couponValidating = false;
+          _couponValid = false;
           _couponError = _mapCouponError(result.errorKey);
         });
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint(
+          '⚠️ LocationSelectionScreen: coupon validation failed: $e\n$st');
       if (!mounted) return;
       setState(() {
-        _couponValidating = false; _couponValid = false;
+        _couponValidating = false;
+        _couponValid = false;
         _couponError = AppLocalizations.of(context)!.errorApplyCoupon;
       });
     }
@@ -477,12 +566,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   void _removeCoupon() {
     setState(() {
-      _couponValid = null; _appliedCouponCode = null;
-      _appliedCouponDiscount = null; _couponError = null;
+      _couponValid = null;
+      _appliedCouponCode = null;
+      _appliedCouponDiscount = null;
+      _couponError = null;
       _couponCtrl.clear();
     });
   }
-
 
   @override
   void dispose() {
@@ -490,17 +580,19 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     _drawCtrl?.dispose();
     _reverseDebounce?.cancel();
     _debounce?.cancel();
-    _originCtrl.dispose(); _destCtrl.dispose();
-    _originFocus.dispose(); _destFocus.dispose();
+    _originCtrl.dispose();
+    _destCtrl.dispose();
+    _originFocus.dispose();
+    _destFocus.dispose();
     _couponCtrl.dispose();
-    for (var w in _waypoints) { w.dispose(); }
+    for (var w in _waypoints) {
+      w.dispose();
+    }
     super.dispose();
   }
 
   bool get _showSuggestions =>
       (_isSearching || _suggestions.isNotEmpty) && _pickMode == _PickMode.none;
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -509,7 +601,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       listener: (context, state) {
         if (state is LocationSelected && _originLat == null) {
           setState(() {
-            _originLat = state.lat; _originLng = state.lng;
+            _originLat = state.lat;
+            _originLng = state.lng;
             _originAddress = state.address;
             _originCtrl.text = state.address;
           });
@@ -525,7 +618,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
             // Top gradient
             Positioned(
-              top: 0, left: 0, right: 0, height: 200,
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 200,
               child: IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -533,8 +629,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: isDark
-                          ? [AppColors.black.withValues(alpha: 0.55), AppColors.transparent]
-                          : [AppColors.white.withValues(alpha: 0.45), AppColors.transparent],
+                          ? [
+                              AppColors.black.withValues(alpha: 0.55),
+                              AppColors.transparent
+                            ]
+                          : [
+                              AppColors.white.withValues(alpha: 0.45),
+                              AppColors.transparent
+                            ],
                     ),
                   ),
                 ),
@@ -543,7 +645,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
             // Top card or pick banner
             Positioned(
-              top: 0, left: 0, right: 0,
+              top: 0,
+              left: 0,
+              right: 0,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -562,7 +666,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
             // Bottom actions
             Positioned(
-              bottom: 24, left: 16, right: 16,
+              bottom: 24,
+              left: 16,
+              right: 16,
               child: SafeArea(
                 top: false,
                 child: _pickMode != _PickMode.none
@@ -583,9 +689,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  
-
   Widget _buildTopCard(bool isDark) {
+    final l = AppLocalizations.of(context)!;
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -621,55 +726,100 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                             _SlimField(
                               controller: _originCtrl,
                               focusNode: _originFocus,
-                              label: AppLocalizations.of(context)!.origin,
-                              placeholder: AppLocalizations.of(context)!.searchOrPick,
+                              label: l.origin,
+                              placeholder: l.searchOrPick,
                               isActive: _activeFieldId == 'origin',
                               isDark: isDark,
                               trailingIcon: Icons.my_location_rounded,
-                              onTrailingTap: () => _enterPickMode(_PickMode.origin),
+                              onTrailingTap: () =>
+                                  _enterPickMode(_PickMode.origin),
                             ),
 
                             // WAYPOINTS
-                            ..._waypoints.asMap().entries.map((entry) {
-                              final idx = entry.key;
-                              final w = entry.value;
-                              return _SlimField(
-                                controller: w.ctrl,
-                                focusNode: w.focus,
-                                label: 'محطة ${idx + 1}',
-                                placeholder: 'ابحث أو اختر من الخريطة',
-                                isActive: _activeFieldId == 'waypoint_$idx',
-                                isDark: isDark,
-                                trailingIcon: Icons.location_searching_rounded,
-                                onTrailingTap: () => _enterPickMode(_PickMode.waypoint, waypointIdx: idx),
-                                showRemove: true,
-                                onRemove: () {
-                                  setState(() {
-                                    w.dispose();
-                                    _waypoints.removeAt(idx);
-                                  });
-                                  _fetchRoute();
+                            if (_waypoints.isNotEmpty)
+                              ReorderableListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                buildDefaultDragHandles: false,
+                                proxyDecorator: (child, index, animation) =>
+                                    Material(
+                                  color: AppColors.transparent,
+                                  child: ScaleTransition(
+                                    scale: Tween<double>(begin: 1, end: 1.02)
+                                        .animate(animation),
+                                    child: child,
+                                  ),
+                                ),
+                                itemCount: _waypoints.length,
+                                onReorder: _reorderWaypoint,
+                                itemBuilder: (context, idx) {
+                                  final w = _waypoints[idx];
+                                  return Row(
+                                    key: ValueKey(w),
+                                    children: [
+                                      ReorderableDragStartListener(
+                                        index: idx,
+                                        child: Container(
+                                          width: 28,
+                                          height: 52,
+                                          alignment: Alignment.center,
+                                          child: Icon(
+                                            Icons.drag_indicator_rounded,
+                                            color: context.textSecondary
+                                                .withValues(alpha: 0.55),
+                                            size: 18,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: _SlimField(
+                                          controller: w.ctrl,
+                                          focusNode: w.focus,
+                                          label: l.stopoverNumber(idx + 1),
+                                          placeholder: l.searchOrPick,
+                                          isActive:
+                                              _activeFieldId == 'waypoint_$idx',
+                                          isDark: isDark,
+                                          trailingIcon:
+                                              Icons.location_searching_rounded,
+                                          onTrailingTap: () => _enterPickMode(
+                                            _PickMode.waypoint,
+                                            waypointIdx: idx,
+                                          ),
+                                          showRemove: true,
+                                          onRemove: () {
+                                            setState(() {
+                                              w.dispose();
+                                              _waypoints.removeAt(idx);
+                                            });
+                                            _fetchRoute();
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  );
                                 },
-                              );
-                            }),
+                              ),
 
                             // DESTINATION
                             _SlimField(
                               controller: _destCtrl,
                               focusNode: _destFocus,
-                              label: AppLocalizations.of(context)!.destination,
-                              placeholder: AppLocalizations.of(context)!.whereToGoQ,
+                              label: l.destination,
+                              placeholder: l.whereToGoQ,
                               isActive: _activeFieldId == 'destination',
                               isDark: isDark,
                               trailingIcon: Icons.location_on_rounded,
-                              onTrailingTap: () => _enterPickMode(_PickMode.destination),
+                              onTrailingTap: () =>
+                                  _enterPickMode(_PickMode.destination),
                               isLast: true,
                             ),
 
                             // Add waypoint + swap row
                             if (_waypoints.length < 3)
                               Padding(
-                                padding: const EdgeInsets.only(top: 4, bottom: 2),
+                                padding:
+                                    const EdgeInsets.only(top: 4, bottom: 2),
                                 child: Row(
                                   children: [
                                     GestureDetector(
@@ -679,27 +829,40 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                           _waypoints.add(w);
                                           w.ctrl.addListener(() {
                                             final idx = _waypoints.indexOf(w);
-                                            if (idx >= 0) _onTextChanged(w.ctrl.text, 'waypoint_$idx');
+                                            if (idx >= 0)
+                                              _onTextChanged(
+                                                  w.ctrl.text, 'waypoint_$idx');
                                           });
                                           w.focus.addListener(() {
                                             final idx = _waypoints.indexOf(w);
-                                            if (idx >= 0) _onFocusChanged('waypoint_$idx', w.focus);
+                                            if (idx >= 0)
+                                              _onFocusChanged(
+                                                  'waypoint_$idx', w.focus);
                                           });
                                         });
                                       },
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(16),
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.08),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.add_rounded, size: 13, color: AppColors.primary),
+                                            Icon(Icons.add_rounded,
+                                                size: 13,
+                                                color: AppColors.primary),
                                             const SizedBox(width: 3),
-                                            Text('إضافة محطة',
-                                              style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                                            Text(
+                                              l.addStopover,
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.w600),
                                             ),
                                           ],
                                         ),
@@ -709,20 +872,30 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                     GestureDetector(
                                       onTap: _swapLocations,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
                                           color: isDark
-                                              ? AppColors.white.withValues(alpha: 0.05)
-                                              : AppColors.black.withValues(alpha: 0.04),
-                                          borderRadius: BorderRadius.circular(16),
+                                              ? AppColors.white
+                                                  .withValues(alpha: 0.05)
+                                              : AppColors.black
+                                                  .withValues(alpha: 0.04),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.swap_vert_rounded, size: 13, color: context.textSecondary),
+                                            Icon(Icons.swap_vert_rounded,
+                                                size: 13,
+                                                color: context.textSecondary),
                                             const SizedBox(width: 3),
-                                            Text('عكس',
-                                              style: TextStyle(fontSize: 11, color: context.textSecondary, fontWeight: FontWeight.w500),
+                                            Text(
+                                              l.swapLocations,
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: context.textSecondary,
+                                                  fontWeight: FontWeight.w500),
                                             ),
                                           ],
                                         ),
@@ -753,19 +926,31 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       child: ElevatedButton(
         onPressed: canConfirm ? _confirm : null,
         style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           elevation: canConfirm ? 12 : 0,
           shadowColor: AppColors.primary.withValues(alpha: 0.50),
-          backgroundColor: canConfirm ? AppColors.primary : (isDark ? AppColors.divider : AppColors.textPrimary),
-          foregroundColor: canConfirm ? AppColors.white : (isDark ? AppColors.white.withValues(alpha: 0.38) : AppColors.black.withValues(alpha: 0.38)),
-          disabledBackgroundColor: isDark ? AppColors.divider : AppColors.textPrimary,
-          disabledForegroundColor: isDark ? AppColors.white.withValues(alpha: 0.38) : AppColors.black.withValues(alpha: 0.38),
+          backgroundColor: canConfirm
+              ? AppColors.primary
+              : (isDark ? AppColors.divider : AppColors.textPrimary),
+          foregroundColor: canConfirm
+              ? AppColors.white
+              : (isDark
+                  ? AppColors.white.withValues(alpha: 0.38)
+                  : AppColors.black.withValues(alpha: 0.38)),
+          disabledBackgroundColor:
+              isDark ? AppColors.divider : AppColors.textPrimary,
+          disabledForegroundColor: isDark
+              ? AppColors.white.withValues(alpha: 0.38)
+              : AppColors.black.withValues(alpha: 0.38),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              canConfirm ? AppLocalizations.of(context)!.confirmAndCalculate : AppLocalizations.of(context)!.selectOriginAndDest,
+              canConfirm
+                  ? AppLocalizations.of(context)!.confirmAndCalculate
+                  : AppLocalizations.of(context)!.selectOriginAndDest,
               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
             ),
             if (canConfirm) ...[
@@ -778,8 +963,6 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  
-
   // ── Coupon Section ──────────────────────────────────────────────────────
   Widget _buildCouponSection(bool isDark) {
     if (_couponValid == true && _appliedCouponCode != null) {
@@ -789,14 +972,23 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
           color: AppColors.success.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
-          boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.14), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.black.withValues(alpha: 0.14),
+                blurRadius: 16,
+                offset: const Offset(0, 4))
+          ],
         ),
         child: Row(
           children: [
             Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 17),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.check_circle_rounded,
+                  color: AppColors.success, size: 17),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -804,9 +996,16 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(AppLocalizations.of(context)!.couponApplied,
-                      style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(
+                          color: AppColors.success,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700)),
                   Text(_appliedCouponCode!,
-                      style: TextStyle(color: AppColors.success.withValues(alpha: 0.8), fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          color: AppColors.success.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -814,8 +1013,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               onTap: _removeCoupon,
               child: Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.close_rounded, size: 14, color: AppColors.success),
+                decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.close_rounded,
+                    size: 14, color: AppColors.success),
               ),
             ),
           ],
@@ -829,35 +1031,53 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         GestureDetector(
           onTap: () => setState(() {
             _couponExpanded = !_couponExpanded;
-            if (!_couponExpanded) { _couponValid = null; _couponError = null; }
+            if (!_couponExpanded) {
+              _couponValid = null;
+              _couponError = null;
+            }
           }),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                 decoration: BoxDecoration(
                   color: _couponExpanded
                       ? AppColors.primary.withValues(alpha: 0.09)
-                      : (isDark ? AppColors.background.withValues(alpha: 0.90) : AppColors.white.withValues(alpha: 0.90)),
+                      : (isDark
+                          ? AppColors.background.withValues(alpha: 0.90)
+                          : AppColors.white.withValues(alpha: 0.90)),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _couponExpanded
                         ? AppColors.primary.withValues(alpha: 0.30)
-                        : (isDark ? AppColors.white.withValues(alpha: 0.08) : AppColors.black.withValues(alpha: 0.07)),
+                        : (isDark
+                            ? AppColors.white.withValues(alpha: 0.08)
+                            : AppColors.black.withValues(alpha: 0.07)),
                   ),
-                  boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 18, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.black
+                            .withValues(alpha: isDark ? 0.35 : 0.10),
+                        blurRadius: 18,
+                        offset: const Offset(0, 4))
+                  ],
                 ),
                 child: Row(
                   children: [
                     Container(
-                      width: 32, height: 32,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
-                        color: _couponExpanded ? AppColors.primary.withValues(alpha: 0.14) : context.primaryTint,
+                        color: _couponExpanded
+                            ? AppColors.primary.withValues(alpha: 0.14)
+                            : context.primaryTint,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.confirmation_number_outlined, color: AppColors.primary, size: 16),
+                      child: const Icon(Icons.confirmation_number_outlined,
+                          color: AppColors.primary, size: 16),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -865,13 +1085,17 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                         _couponExpanded
                             ? AppLocalizations.of(context)!.haveDiscountCoupon
                             : AppLocalizations.of(context)!.haveCoupon,
-                        style: TextStyle(color: context.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            color: context.textPrimary,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                     AnimatedRotation(
                       turns: _couponExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 220),
-                      child: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary, size: 20),
+                      child: Icon(Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.primary, size: 20),
                     ),
                   ],
                 ),
@@ -896,10 +1120,22 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.background.withValues(alpha: 0.90) : AppColors.white.withValues(alpha: 0.90),
+                              color: isDark
+                                  ? AppColors.background.withValues(alpha: 0.90)
+                                  : AppColors.white.withValues(alpha: 0.90),
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: isDark ? AppColors.white.withValues(alpha: 0.07) : AppColors.black.withValues(alpha: 0.06)),
-                              boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.14), blurRadius: 16, offset: const Offset(0, 4))],
+                              border: Border.all(
+                                  color: isDark
+                                      ? AppColors.white.withValues(alpha: 0.07)
+                                      : AppColors.black
+                                          .withValues(alpha: 0.06)),
+                              boxShadow: [
+                                BoxShadow(
+                                    color:
+                                        AppColors.black.withValues(alpha: 0.14),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4))
+                              ],
                             ),
                             child: Row(
                               children: [
@@ -908,36 +1144,80 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                     height: 42,
                                     child: TextField(
                                       controller: _couponCtrl,
-                                      textCapitalization: TextCapitalization.characters,
+                                      textCapitalization:
+                                          TextCapitalization.characters,
                                       onChanged: (_) {
-                                        if (_couponValid != null) setState(() { _couponValid = null; _couponError = null; });
+                                        if (_couponValid != null)
+                                          setState(() {
+                                            _couponValid = null;
+                                            _couponError = null;
+                                          });
                                       },
-                                      style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1.8),
+                                      style: TextStyle(
+                                          color: context.textPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1.8),
                                       decoration: InputDecoration(
                                         hintText: 'PROMO20',
-                                        hintStyle: TextStyle(color: context.textSecondary.withValues(alpha: 0.35), fontSize: 13, letterSpacing: 1.5),
+                                        hintStyle: TextStyle(
+                                            color: context.textSecondary
+                                                .withValues(alpha: 0.35),
+                                            fontSize: 13,
+                                            letterSpacing: 1.5),
                                         filled: true,
-                                        fillColor: isDark ? AppColors.white.withValues(alpha: 0.04) : AppColors.black.withValues(alpha: 0.03),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                        fillColor: isDark
+                                            ? AppColors.white
+                                                .withValues(alpha: 0.04)
+                                            : AppColors.black
+                                                .withValues(alpha: 0.03),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 14, vertical: 10),
+                                        border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            borderSide: BorderSide.none),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                           borderSide: BorderSide(
                                             color: _couponValid == true
-                                                ? AppColors.success.withValues(alpha: 0.5)
+                                                ? AppColors.success
+                                                    .withValues(alpha: 0.5)
                                                 : _couponValid == false
-                                                    ? AppColors.error.withValues(alpha: 0.5)
+                                                    ? AppColors.error
+                                                        .withValues(alpha: 0.5)
                                                     : context.divColor,
-                                            width: _couponValid != null ? 1.5 : 0.8,
+                                            width: _couponValid != null
+                                                ? 1.5
+                                                : 0.8,
                                           ),
                                         ),
-                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.2)),
-                                        prefixIcon: Icon(Icons.local_offer_rounded, size: 16,
-                                            color: _couponValid == true ? AppColors.success : _couponValid == false ? AppColors.error : context.textSecondary),
+                                        focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            borderSide: const BorderSide(
+                                                color: AppColors.primary,
+                                                width: 1.2)),
+                                        prefixIcon: Icon(
+                                            Icons.local_offer_rounded,
+                                            size: 16,
+                                            color: _couponValid == true
+                                                ? AppColors.success
+                                                : _couponValid == false
+                                                    ? AppColors.error
+                                                    : context.textSecondary),
                                         suffixIcon: _couponValid == true
-                                            ? const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18)
+                                            ? const Icon(
+                                                Icons.check_circle_rounded,
+                                                color: AppColors.success,
+                                                size: 18)
                                             : _couponValid == false
-                                                ? const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18)
+                                                ? const Icon(
+                                                    Icons.error_outline_rounded,
+                                                    color: AppColors.error,
+                                                    size: 18)
                                                 : null,
                                       ),
                                     ),
@@ -947,16 +1227,32 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                 SizedBox(
                                   height: 42,
                                   child: ElevatedButton(
-                                    onPressed: _couponValidating ? null : _validateCoupon,
+                                    onPressed: _couponValidating
+                                        ? null
+                                        : _validateCoupon,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary, foregroundColor: AppColors.white,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                      elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: AppColors.white,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16),
                                       minimumSize: Size.zero,
                                     ),
                                     child: _couponValidating
-                                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
-                                        : Text(AppLocalizations.of(context)!.apply, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                                color: AppColors.white,
+                                                strokeWidth: 2))
+                                        : Text(
+                                            AppLocalizations.of(context)!.apply,
+                                            style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700)),
                                   ),
                                 ),
                               ],
@@ -971,18 +1267,27 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                             ? Padding(
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 9),
                                   decoration: BoxDecoration(
-                                    color: AppColors.error.withValues(alpha: 0.08),
+                                    color:
+                                        AppColors.error.withValues(alpha: 0.08),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+                                    border: Border.all(
+                                        color: AppColors.error
+                                            .withValues(alpha: 0.25)),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 15),
+                                      const Icon(Icons.error_outline_rounded,
+                                          color: AppColors.error, size: 15),
                                       const SizedBox(width: 8),
                                       Expanded(
-                                        child: Text(_couponError!, style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w500)),
+                                        child: Text(_couponError!,
+                                            style: const TextStyle(
+                                                color: AppColors.error,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500)),
                                       ),
                                     ],
                                   ),
@@ -1002,7 +1307,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   Widget _buildPickModeBanner(bool isDark) {
     final isOrigin = _pickMode == _PickMode.origin;
     final isWaypoint = _pickMode == _PickMode.waypoint;
-    final color = isOrigin ? AppColors.success : (isWaypoint ? AppColors.warning : AppColors.error);
+    final color = isOrigin
+        ? AppColors.success
+        : (isWaypoint ? AppColors.warning : AppColors.error);
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -1015,28 +1322,41 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               height: 52,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.background : AppColors.white).withValues(alpha: 0.92),
+                color: (isDark ? AppColors.background : AppColors.white)
+                    .withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: color.withValues(alpha: 0.35), width: 1.2),
+                border: Border.all(
+                    color: color.withValues(alpha: 0.35), width: 1.2),
                 boxShadow: [
-                  BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, 6)),
-                  BoxShadow(color: AppColors.black.withValues(alpha: 0.14), blurRadius: 12, offset: const Offset(0, 3)),
+                  BoxShadow(
+                      color: color.withValues(alpha: 0.12),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6)),
+                  BoxShadow(
+                      color: AppColors.black.withValues(alpha: 0.14),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3)),
                 ],
               ),
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => setState(() { _pickMode = _PickMode.none; _livePickAddress = ''; }),
-                    child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: context.textPrimary),
+                    onTap: () => setState(() {
+                      _pickMode = _PickMode.none;
+                      _livePickAddress = '';
+                    }),
+                    child: Icon(Icons.arrow_back_ios_new_rounded,
+                        size: 16, color: context.textPrimary),
                   ),
                   const SizedBox(width: 12),
-                  
                   AnimatedBuilder(
-                    animation: _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
+                    animation:
+                        _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
                     builder: (_, __) {
                       final v = _cardPulseAnim?.value ?? 0.0;
                       return Container(
-                        width: 8, height: 8,
+                        width: 8,
+                        height: 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: color,
@@ -1057,7 +1377,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       isOrigin
                           ? AppLocalizations.of(context)!.moveMapForOrigin
                           : (isWaypoint
-                              ? 'حرّك الخريطة لاختيار المحطة'
+                              ? AppLocalizations.of(context)!
+                                  .moveMapToPickStopover
                               : AppLocalizations.of(context)!.moveMapForDest),
                       style: TextStyle(
                         color: context.textPrimary,
@@ -1075,8 +1396,6 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  
-
   Widget _buildSuggestions(bool isDark) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
@@ -1084,11 +1403,19 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         color: isDark ? AppColors.background : AppColors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? AppColors.white.withValues(alpha: 0.06) : AppColors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? AppColors.white.withValues(alpha: 0.06)
+              : AppColors.black.withValues(alpha: 0.05),
         ),
         boxShadow: [
-          BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 24, offset: const Offset(0, 8)),
-          BoxShadow(color: AppColors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.22),
+              blurRadius: 24,
+              offset: const Offset(0, 8)),
+          BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: ClipRRect(
@@ -1096,10 +1423,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 260),
           child: _isSearching && _suggestions.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
-                )
+              ? _buildSuggestionSkeleton()
               : ListView.separated(
                   shrinkWrap: true,
                   physics: const ClampingScrollPhysics(),
@@ -1117,16 +1441,19 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       splashColor: AppColors.primary.withValues(alpha: 0.06),
                       highlightColor: AppColors.primary.withValues(alpha: 0.04),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 11),
                         child: Row(
                           children: [
                             Container(
-                              width: 34, height: 34,
+                              width: 34,
+                              height: 34,
                               decoration: BoxDecoration(
                                 color: context.primaryTint,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 17),
+                              child: Icon(_suggestionIcon(s),
+                                  color: AppColors.primary, size: 17),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -1147,7 +1474,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                     const SizedBox(height: 2),
                                     Text(
                                       s.detail,
-                                      style: TextStyle(color: context.textSecondary, fontSize: 11.5),
+                                      style: TextStyle(
+                                          color: context.textSecondary,
+                                          fontSize: 11.5),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -1155,7 +1484,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                 ],
                               ),
                             ),
-                            Icon(Icons.north_west_rounded, size: 13, color: context.textSecondary),
+                            Icon(Icons.north_west_rounded,
+                                size: 13, color: context.textSecondary),
                           ],
                         ),
                       ),
@@ -1167,7 +1497,82 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  
+  Widget _buildSuggestionSkeleton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 3,
+        separatorBuilder: (_, __) => Divider(
+          height: 1,
+          color: context.divColor,
+          indent: 56,
+          endIndent: 16,
+        ),
+        itemBuilder: (_, __) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: context.primaryTint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 12,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: context.divColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FractionallySizedBox(
+                      widthFactor: 0.58,
+                      child: Container(
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: context.divColor.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _suggestionIcon(_Suggestion suggestion) {
+    final text = '${suggestion.label} ${suggestion.detail}'.toLowerCase();
+    if (text.contains('شارع') || text.contains('street')) {
+      return Icons.signpost_rounded;
+    }
+    if (text.contains('حي') ||
+        text.contains('district') ||
+        text.contains('neighborhood')) {
+      return Icons.apartment_rounded;
+    }
+    if (text.contains('محافظة') ||
+        text.contains('governorate') ||
+        text.contains('province')) {
+      return Icons.map_rounded;
+    }
+    return Icons.location_on_rounded;
+  }
 
   Widget _buildMap(bool isDark) {
     final markers = <Marker>{};
@@ -1177,7 +1582,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         markerId: const MarkerId('origin'),
         position: LatLng(_originLat!, _originLng!),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(title: _originAddress ?? AppLocalizations.of(context)!.startingPoint),
+        infoWindow: InfoWindow(
+            title:
+                _originAddress ?? AppLocalizations.of(context)!.startingPoint),
       ));
     }
     if (_destLat != null) {
@@ -1185,7 +1592,8 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         markerId: const MarkerId('dest'),
         position: LatLng(_destLat!, _destLng!),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(title: _destAddress ?? AppLocalizations.of(context)!.destination),
+        infoWindow: InfoWindow(
+            title: _destAddress ?? AppLocalizations.of(context)!.destination),
       ));
     }
     if (_originLat != null && _destLat != null && _visiblePoints.length >= 2) {
@@ -1219,40 +1627,58 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     }
     return GoogleMap(
       initialCameraPosition: _defaultCamera,
-      onMapCreated: (ctrl) { if (!_mapCtrl.isCompleted) _mapCtrl.complete(ctrl); },
+      onMapCreated: (ctrl) {
+        if (!_mapCtrl.isCompleted) _mapCtrl.complete(ctrl);
+      },
       onCameraMove: _onCameraMove,
-      onTap: _pickMode == _PickMode.none ? (pos) async {
-        try {
-          final pms = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-          final parts = pms.isNotEmpty
-              ? [pms.first.street, pms.first.subLocality, pms.first.locality]
-                  .where((e) => e != null && e.isNotEmpty).cast<String>().toList()
-              : <String>[];
-          final addr = parts.isNotEmpty
-              ? parts.join(', ')
-              : '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
-          if (!mounted) return;
-          setState(() {
-            if (_activeFieldId == 'origin' || _originLat == null) {
-              _originLat = pos.latitude; _originLng = pos.longitude;
-              _originAddress = addr; _originCtrl.text = addr;
-            } else if (_activeFieldId == 'destination') {
-              _destLat = pos.latitude; _destLng = pos.longitude;
-              _destAddress = addr; _destCtrl.text = addr;
-            } else if (_activeFieldId.startsWith('waypoint_')) {
-              final idx = int.tryParse(_activeFieldId.split('_').last) ?? -1;
-              if (idx >= 0 && idx < _waypoints.length) {
-                _waypoints[idx].lat = pos.latitude;
-                _waypoints[idx].lng = pos.longitude;
-                _waypoints[idx].address = addr;
-                _waypoints[idx].ctrl.text = addr;
+      onTap: _pickMode == _PickMode.none
+          ? (pos) async {
+              try {
+                final pms =
+                    await placemarkFromCoordinates(pos.latitude, pos.longitude);
+                final parts = pms.isNotEmpty
+                    ? [
+                        pms.first.street,
+                        pms.first.subLocality,
+                        pms.first.locality
+                      ]
+                        .where((e) => e != null && e.isNotEmpty)
+                        .cast<String>()
+                        .toList()
+                    : <String>[];
+                final addr = parts.isNotEmpty
+                    ? parts.join(', ')
+                    : '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
+                if (!mounted) return;
+                setState(() {
+                  if (_activeFieldId == 'origin' || _originLat == null) {
+                    _originLat = pos.latitude;
+                    _originLng = pos.longitude;
+                    _originAddress = addr;
+                    _originCtrl.text = addr;
+                  } else if (_activeFieldId == 'destination') {
+                    _destLat = pos.latitude;
+                    _destLng = pos.longitude;
+                    _destAddress = addr;
+                    _destCtrl.text = addr;
+                  } else if (_activeFieldId.startsWith('waypoint_')) {
+                    final idx =
+                        int.tryParse(_activeFieldId.split('_').last) ?? -1;
+                    if (idx >= 0 && idx < _waypoints.length) {
+                      _waypoints[idx].lat = pos.latitude;
+                      _waypoints[idx].lng = pos.longitude;
+                      _waypoints[idx].address = addr;
+                      _waypoints[idx].ctrl.text = addr;
+                    }
+                  }
+                });
+                _fitMapToBothPoints();
+                _fetchRoute();
+              } catch (e) {
+                debugPrint('❌ Error: $e');
               }
             }
-          });
-          _fitMapToBothPoints();
-          _fetchRoute();
-        } catch (e) { debugPrint('❌ Error: $e'); }
-      } : null,
+          : null,
       myLocationEnabled: true,
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,
@@ -1263,19 +1689,18 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  
-
   Widget _buildCenterPin() {
     final isOrigin = _pickMode == _PickMode.origin;
     final isWaypoint = _pickMode == _PickMode.waypoint;
-    final color = isOrigin ? AppColors.success : (isWaypoint ? AppColors.warning : AppColors.error);
+    final color = isOrigin
+        ? AppColors.success
+        : (isWaypoint ? AppColors.warning : AppColors.error);
     return IgnorePointer(
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            
             AnimatedBuilder(
               animation: _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
               builder: (_, child) {
@@ -1295,29 +1720,33 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               },
             ),
             const SizedBox(height: 0),
-            
             Container(
-              width: 42, height: 42,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4)),
+                  BoxShadow(
+                      color: color.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4)),
                 ],
               ),
-              child: const Icon(Icons.location_on_rounded, color: AppColors.white, size: 22),
+              child: const Icon(Icons.location_on_rounded,
+                  color: AppColors.white, size: 22),
             ),
-            
             Container(
-              width: 2.5, height: 18,
+              width: 2.5,
+              height: 18,
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
             Container(
-              width: 12, height: 5,
+              width: 12,
+              height: 5,
               decoration: BoxDecoration(
                 color: AppColors.black.withValues(alpha: 0.22),
                 borderRadius: BorderRadius.circular(8),
@@ -1329,13 +1758,12 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
   }
 
-  
-
-
   Widget _buildPickModeDialog(bool isDark) {
     final isOrigin = _pickMode == _PickMode.origin;
     final isWaypoint = _pickMode == _PickMode.waypoint;
-    final color = isOrigin ? AppColors.success : (isWaypoint ? AppColors.warning : AppColors.error);
+    final color = isOrigin
+        ? AppColors.success
+        : (isWaypoint ? AppColors.warning : AppColors.error);
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -1343,14 +1771,23 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           decoration: BoxDecoration(
-            color: (isDark ? AppColors.background : AppColors.white).withValues(alpha: 0.94),
+            color: (isDark ? AppColors.background : AppColors.white)
+                .withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDark ? AppColors.white.withValues(alpha: 0.07) : AppColors.black.withValues(alpha: 0.05),
+              color: isDark
+                  ? AppColors.white.withValues(alpha: 0.07)
+                  : AppColors.black.withValues(alpha: 0.05),
             ),
             boxShadow: [
-              BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, 8)),
-              BoxShadow(color: AppColors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+              BoxShadow(
+                  color: AppColors.black.withValues(alpha: 0.22),
+                  blurRadius: 28,
+                  offset: const Offset(0, 8)),
+              BoxShadow(
+                  color: AppColors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2)),
             ],
           ),
           child: Column(
@@ -1360,11 +1797,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AnimatedBuilder(
-                    animation: _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
+                    animation:
+                        _cardPulseAnim ?? const AlwaysStoppedAnimation(0.0),
                     builder: (_, __) {
                       final v = _cardPulseAnim?.value ?? 0.0;
                       return Container(
-                        width: 10, height: 10,
+                        width: 10,
+                        height: 10,
                         margin: const EdgeInsets.only(top: 5),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
@@ -1390,28 +1829,38 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                           isOrigin
                               ? AppLocalizations.of(context)!.startingPoint
                               : (isWaypoint
-                                  ? 'محطة التوقف'
+                                  ? AppLocalizations.of(context)!.stopover
                                   : AppLocalizations.of(context)!.destination),
-                          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                              color: color,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 3),
                         if (_isReversing)
                           Row(children: [
                             SizedBox(
-                              width: 12, height: 12,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: color),
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: color),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               AppLocalizations.of(context)!.locatingPosition,
-                              style: TextStyle(color: context.textSecondary, fontSize: 12.5),
+                              style: TextStyle(
+                                  color: context.textSecondary, fontSize: 12.5),
                             ),
                           ])
                         else
                           Text(
-                            _livePickAddress.isNotEmpty ? _livePickAddress : AppLocalizations.of(context)!.moveMapToSelect,
+                            _livePickAddress.isNotEmpty
+                                ? _livePickAddress
+                                : AppLocalizations.of(context)!.moveMapToSelect,
                             style: TextStyle(
-                              color: _livePickAddress.isNotEmpty ? context.textPrimary : context.textSecondary,
+                              color: _livePickAddress.isNotEmpty
+                                  ? context.textPrimary
+                                  : context.textSecondary,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1427,9 +1876,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               Row(children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => setState(() { _pickMode = _PickMode.none; _livePickAddress = ''; }),
+                    onTap: () => setState(() {
+                      _pickMode = _PickMode.none;
+                      _livePickAddress = '';
+                    }),
                     child: Container(
-                      height: 48, alignment: Alignment.center,
+                      height: 48,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: context.elevatedColor,
                         borderRadius: BorderRadius.circular(14),
@@ -1437,7 +1890,10 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.cancel,
-                        style: TextStyle(color: context.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -1448,24 +1904,33 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                   child: SizedBox(
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: _isPickConfirming ? null : _confirmPickLocation,
+                      onPressed:
+                          _isPickConfirming ? null : _confirmPickLocation,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: color,
                         foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                         elevation: 6,
                         shadowColor: color.withValues(alpha: 0.45),
                       ),
                       child: _isPickConfirming
                           ? const SizedBox(
-                              width: 20, height: 20,
-                              child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2.5),
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  color: AppColors.white, strokeWidth: 2.5),
                             )
                           : Text(
                               isOrigin
                                   ? AppLocalizations.of(context)!.confirmOrigin
-                                  : (isWaypoint ? 'تأكيد المحطة' : AppLocalizations.of(context)!.confirmDest),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                  : (isWaypoint
+                                      ? AppLocalizations.of(context)!
+                                          .confirmStopover
+                                      : AppLocalizations.of(context)!
+                                          .confirmDest),
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
@@ -1479,8 +1944,6 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   }
 }
 
-
-
 class _PremiumBackButton extends StatelessWidget {
   final bool isDark;
   final VoidCallback onTap;
@@ -1492,7 +1955,8 @@ class _PremiumBackButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 42, height: 42,
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
           color: isDark ? AppColors.background : AppColors.white,
           borderRadius: BorderRadius.circular(14),
@@ -1524,8 +1988,6 @@ class _PremiumBackButton extends StatelessWidget {
   }
 }
 
-
-
 class _PremiumCard extends StatelessWidget {
   final bool isDark;
   final Widget child;
@@ -1536,7 +1998,6 @@ class _PremiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1561,7 +2022,6 @@ class _PremiumCard extends StatelessWidget {
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
-          
           BoxShadow(
             color: AppColors.primary.withValues(alpha: isDark ? 0.07 : 0.04),
             blurRadius: 16,
@@ -1573,8 +2033,6 @@ class _PremiumCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class _SwapDivider extends StatelessWidget {
   final bool isDark;
@@ -1596,7 +2054,8 @@ class _SwapDivider extends StatelessWidget {
           GestureDetector(
             onTap: onSwap,
             child: Container(
-              width: 24, height: 24,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.divider : AppColors.textPrimary,
                 shape: BoxShape.circle,
@@ -1615,8 +2074,6 @@ class _SwapDivider extends StatelessWidget {
     );
   }
 }
-
-
 
 class _LocationField extends StatelessWidget {
   final TextEditingController controller;
@@ -1646,7 +2103,6 @@ class _LocationField extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
-      
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: isActive
@@ -1659,7 +2115,6 @@ class _LocationField extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          
           AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             width: isActive ? 10 : 8,
@@ -1668,24 +2123,25 @@ class _LocationField extends StatelessWidget {
               shape: BoxShape.circle,
               color: isActive ? dotColor : dotColor.withValues(alpha: 0.4),
               boxShadow: isActive
-                  ? [BoxShadow(color: dotColor.withValues(alpha: 0.5), blurRadius: 8, spreadRadius: 1)]
+                  ? [
+                      BoxShadow(
+                          color: dotColor.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                          spreadRadius: 1)
+                    ]
                   : null,
             ),
           ),
           const SizedBox(width: 12),
-
-          
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: TextStyle(
                     color: isActive ? dotColor : context.textSecondary,
-                    
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -1693,7 +2149,6 @@ class _LocationField extends StatelessWidget {
                   ),
                   child: Text(label),
                 ),
-                
                 const SizedBox(height: 2),
                 TextField(
                   controller: controller,
@@ -1701,7 +2156,6 @@ class _LocationField extends StatelessWidget {
                   textDirection: TextDirection.rtl,
                   style: TextStyle(
                     color: context.textPrimary,
-                    
                     fontSize: 14,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     height: 1.2,
@@ -1715,7 +2169,6 @@ class _LocationField extends StatelessWidget {
                     ),
                     border: InputBorder.none,
                     isDense: true,
-                    
                     contentPadding: const EdgeInsets.symmetric(vertical: 3),
                   ),
                 ),
@@ -1723,14 +2176,12 @@ class _LocationField extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-
-          
           GestureDetector(
             onTap: onMapTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              
-              width: 32, height: 32,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: isActive
                     ? AppColors.primary.withValues(alpha: 0.14)
@@ -1739,7 +2190,9 @@ class _LocationField extends StatelessWidget {
                         : AppColors.black.withValues(alpha: 0.04)),
                 borderRadius: BorderRadius.circular(10),
                 border: isActive
-                    ? Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1)
+                    ? Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        width: 1)
                     : Border.all(
                         color: isDark
                             ? AppColors.white.withValues(alpha: 0.06)
@@ -1748,7 +2201,6 @@ class _LocationField extends StatelessWidget {
               ),
               child: Icon(
                 Icons.location_searching_rounded,
-                
                 size: 15,
                 color: isActive ? AppColors.primary : context.textSecondary,
               ),
@@ -1809,12 +2261,10 @@ class _TimelinePainter extends CustomPainter {
     final totalRows = 2 + waypointCount;
 
     // Colors
-    const originColor  = AppColors.success;  // green
+    const originColor = AppColors.success; // green
     const waypointColor = AppColors.warning; // orange
-    const destColor    = AppColors.error;    // red
-    final lineColor = isDark
-        ? AppColors.divider
-        : AppColors.divider;
+    const destColor = AppColors.error; // red
+    final lineColor = isDark ? AppColors.divider : AppColors.divider;
 
     // Draw connecting lines between dots
     final linePaint = Paint()
@@ -1915,7 +2365,8 @@ class _SlimField extends StatelessWidget {
             : AppColors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: isActive
-            ? Border.all(color: AppColors.primary.withValues(alpha: 0.30), width: 1)
+            ? Border.all(
+                color: AppColors.primary.withValues(alpha: 0.30), width: 1)
             : Border.all(color: AppColors.transparent),
       ),
       child: Row(
@@ -1933,7 +2384,7 @@ class _SlimField extends StatelessWidget {
                     color: isActive ? AppColors.primary : context.textSecondary,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0,
                   ),
                   child: Text(label.toUpperCase()),
                 ),
@@ -1968,7 +2419,8 @@ class _SlimField extends StatelessWidget {
             onTap: onTrailingTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 30, height: 30,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 color: isActive
                     ? AppColors.primary.withValues(alpha: 0.15)
@@ -1991,7 +2443,8 @@ class _SlimField extends StatelessWidget {
             GestureDetector(
               onTap: onRemove,
               child: Container(
-                width: 26, height: 26,
+                width: 26,
+                height: 26,
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(7),

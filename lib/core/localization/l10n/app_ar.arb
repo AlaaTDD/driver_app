@@ -385,6 +385,14 @@
   "errorFileTooLarge": "حجم الملف كبير جداً",
   "errorFileEmpty": "الملف فارغ",
   "errorFileUnsupported": "نوع الملف غير مدعوم",
+  "errorUploadFailed": "فشل رفع الملف، حاول مرة أخرى.",
+  "errorDeleteFailed": "فشل حذف الملف، حاول مرة أخرى.",
+  "errorReceiverEmpty": "المستقبِل غير صالح.",
+  "errorTripIdEmpty": "معرّف الرحلة غير صالح.",
+  "errorReceiverNotFound": "لم يُعثر على المشارك في المحادثة.",
+  "errorNullPrice": "تعذّر حساب السعر، حاول مرة أخرى.",
+  "errorAcceptOfferFailed": "فشل قبول العرض، حاول مرة أخرى.",
+  "unexpectedError": "حدث خطأ غير متوقع.",
   "pleaseFillAllFields": "يرجى ملء جميع الحقول",
   "describeIssueDetail": "يرجى وصف مشكلتك بالتفصيل.",
   "titleLabel": "العنوان",
@@ -392,6 +400,28 @@
   "editProfileComingSoon": "تعديل الملف الشخصي قريباً",
   "myWallet": "محفظتي",
   "driverWallet": "محفظة السائق",
+  "driverRevisionRequests": "طلبات مراجعة البيانات",
+  "noRevisionRequests": "لا توجد طلبات مراجعة",
+  "noRevisionRequestsDesc": "بيانات التحقق لا تحتاج تعديلات حالياً.",
+  "revisionNeedsAction": "مطلوب تعديل",
+  "revisionResolved": "تمت معالجة الطلب",
+  "fieldsRequested": "الحقول المطلوبة",
+  "revisionCreatedAt": "تاريخ الطلب: {date}",
+  "@revisionCreatedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "revisionResolvedAt": "تاريخ المعالجة: {date}",
+  "@revisionResolvedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "availableBalanceLabel": "الرصيد المتاح",
   "availableToWithdraw": "الرصيد المتاح للسحب",
   "transactionHistory": "سجل المعاملات",
@@ -627,5 +657,114 @@
   "totalTripsCompleted": "رحلات مكتملة",
   "avgTripRating": "متوسط التقييم",
   "totalKmTravelled": "إجمالي الكيلومترات",
-  "cancelledTrips": "رحلات ملغاة"
+  "cancelledTrips": "رحلات ملغاة",
+  "errorLoadVehicleTypes": "فشل تحميل أنواع المركبات، حاول مرة أخرى.",
+  "errorUserBlocked": "تم حظر حسابك. تواصل مع الدعم الفني.",
+  "errorInvalidTripId": "معرّف الرحلة غير صالح.",
+  "addStopover": "إضافة محطة توقف",
+  "addStopoverMultiRoute": "إضافة محطة توقف (مسار متعدد)",
+  "addThisStopover": "إضافة هذه المحطة",
+  "confirmStopover": "تأكيد المحطة",
+  "selectedStopover": "المحطة المختارة",
+  "swapLocations": "عكس",
+  "tripRoute": "مسار الرحلة",
+  "delete": "حذف",
+  "driverOffersCount": "عروض السائقين ({count}):",
+  "@driverOffersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stopCount": "{count} محطة",
+  "@stopCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickupPoint": "نقطة الانطلاق",
+  "stopoverNumber": "محطة {number}",
+  "@stopoverNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "loading": "جاري التحميل...",
+  "availableRequestsCount": "{count} طلب متاح",
+  "@availableRequestsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noRideRequestsAvailableNow": "لا توجد طلبات متاحة حالياً",
+  "noRideRequestsAvailable": "لا توجد طلبات متاحة",
+  "rideRequestsWillAppearHere": "ستظهر هنا طلبات الرحلات عند ورودها",
+  "acceptRide": "قبول الرحلة",
+  "placeNotFoundDetailed": "المكان غير موجود، حاول تفصيل العنوان",
+  "stopoverAddedSuccessfully": "تمت إضافة المحطة بنجاح",
+  "errorWithDetails": "خطأ: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchPlaceHint": "ابحث عن مكان...",
+  "discountLimited": "خصم محدود",
+  "discountOnYourRide": "خصم على رحلتك",
+  "useCodeForInstantDiscount": "استخدم الكود واحصل على خصم فوري",
+  "discountOnAllTrips": "على جميع الرحلات",
+  "copyCouponCode": "نسخ كود الخصم",
+  "couponCodeCopied": "تم نسخ كود الخصم",
+  "couponExpiresAt": "ينتهي في {date}",
+  "@couponExpiresAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "resetButton": "إعادة",
+  "clearButton": "مسح",
+  "processing": "جاري المعالجة...",
+  "corridorStepOrigin": "اختيار البداية",
+  "corridorStepDestination": "اختيار النهاية",
+  "corridorStepReview": "مراجعة وحفظ",
+  "corridorPickOriginHint": "اضغط على نقطة بداية الممر (الانطلاق)",
+  "corridorPickDestinationHint": "اضغط على نقطة نهاية الممر (الوجهة)",
+  "corridorReviewHint": "تم تحديد الممر. راجع التفاصيل واحفظه.",
+  "corridorStart": "بداية الممر",
+  "corridorEnd": "نهاية الممر",
+  "corridorSearchHint": "ابحث عن منطقة للذهاب إليها...",
+  "corridorOriginRadius": "نطاق الانطلاق",
+  "corridorDestinationRadius": "نطاق الوجهة",
+  "selectOriginFirst": "حدد نقطة الانطلاق أولاً",
+  "selectDestination": "حدد نقطة الوصول",
+  "savePreferredCorridor": "حفظ الممر المفضل",
+  "tapMap": "اضغط على الخريطة",
+  "kmValue": "{value} كم",
+  "@kmValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "moveMapToPickStopover": "حرّك الخريطة لاختيار المحطة",
+  "stopover": "محطة توقف",
+  "arrivalConfirmed": "وصل",
+  "departureConfirmed": "غادر",
+  "confirmArrival": "تأكيد الوصول",
+  "confirmDeparture": "تأكيد المغادرة",
+  "failedCreateLegacyRoutePlan": "فشل إنشاء مسار الرحلة القديم",
+  "errorAddStopover": "فشل إضافة المحطة",
+  "errorRemoveStopover": "فشل حذف المحطة"
 }

@@ -1,17 +1,19 @@
-
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../services/supabase_service.dart';
-
-
 
 class DriverProfileRepository {
   final _client = SupabaseService.client;
 
-  
   Future<Map<String, dynamic>?> loadDriverProfile(String driverId) async {
     final results = await Future.wait([
-      _client.from('users').select('id,name,phone,avatar_url,rating,total_trips,language,is_active').eq('id', driverId).single(),
+      _client
+          .from('users')
+          .select(
+              'id,name,phone,avatar_url,rating,total_trips,language,is_active')
+          .eq('id', driverId)
+          .single(),
       _client.from('drivers_profile').select('*').eq('id', driverId).single(),
       _client
           .from('driver_earnings_summary')
@@ -49,7 +51,9 @@ class DriverProfileRepository {
       try {
         final data = await loadDriverProfile(driverId);
         if (!controller.isClosed) controller.add(data);
-      } catch (_) {}
+      } catch (e, st) {
+        debugPrint('⚠️ DriverProfileRepository: reload failed: $e\n$st');
+      }
     }
 
     reload();
@@ -76,12 +80,10 @@ class DriverProfileRepository {
     return controller.stream;
   }
 
-  
   Future<Map<String, dynamic>?> updateDriverProfile(
     String driverId,
     Map<String, dynamic> data,
   ) async {
-    
     final userFields = {'name', 'phone', 'avatar_url'};
     final usersUpdate = <String, dynamic>{};
     final driversUpdate = <String, dynamic>{};
@@ -94,14 +96,11 @@ class DriverProfileRepository {
       }
     });
 
-    
     final updateFutures = <Future>[];
     if (usersUpdate.isNotEmpty) {
       usersUpdate['updated_at'] = DateTime.now().toIso8601String();
-      updateFutures.add(_client
-          .from('users')
-          .update(usersUpdate)
-          .eq('id', driverId));
+      updateFutures
+          .add(_client.from('users').update(usersUpdate).eq('id', driverId));
     }
     if (driversUpdate.isNotEmpty) {
       driversUpdate['updated_at'] = DateTime.now().toIso8601String();
@@ -113,8 +112,6 @@ class DriverProfileRepository {
 
     if (updateFutures.isNotEmpty) await Future.wait(updateFutures);
 
-    
     return await loadDriverProfile(driverId);
   }
 }
-

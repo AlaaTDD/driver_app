@@ -4,8 +4,13 @@ class AppConstants {
   // Storage buckets
   static const String chatMediaBucket = 'chat_media';
 
-  // Default map center (can be overridden by user location)
-  static const LatLng defaultMapCenter = LatLng(24.7136, 46.6753); // Riyadh, Saudi Arabia
+  // Default map center, overridden at startup from app_config when available.
+  static const LatLng fallbackMapCenter = LatLng(24.7136, 46.6753);
+  static LatLng defaultMapCenter = fallbackMapCenter;
+
+  static void setDefaultMapCenter(LatLng center) {
+    defaultMapCenter = center;
+  }
 
   // Table names
   static const String tableMessages = 'messages';

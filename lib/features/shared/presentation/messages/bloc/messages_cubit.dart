@@ -61,20 +61,25 @@ class MessagesCubit extends Cubit<MessagesState> {
     });
   }
 
-
-
   // ─── Chat ────────────────────────────────────────────────────────
 
-  Future<void> initDirectChat(String otherUserId, {String? otherUserName, String? tripId}) async {
+  Future<void> initDirectChat(String otherUserId,
+      {String? otherUserName, String? tripId}) async {
     // Validate UUID format
     if (!_isValidUuid(otherUserId)) {
       emit(MessagesError('invalidUserId'));
       return;
     }
     if (isClosed) return;
-    emit(MessagesChatLoaded(messages: [], otherName: otherUserName ?? '', otherUserId: otherUserId, tripId: tripId));
+    emit(MessagesChatLoaded(
+      messages: const [],
+      otherName: otherUserName ?? '',
+      otherUserId: otherUserId,
+      tripId: tripId,
+      canSend: false,
+    ));
     try {
-      final canSend = true; // Always allow sending in direct chat if conversation exists
+      final canSend = await _repo.hasActiveTripWith(otherUserId);
       if (isClosed) return;
       final info = await _repo.fetchUserInfo(otherUserId);
       if (isClosed) return;
@@ -100,7 +105,8 @@ class MessagesCubit extends Cubit<MessagesState> {
       }
       // Subscribe to global presence for online/offline status
       _globalPresenceSub?.cancel();
-      _globalPresenceSub = _repo.subscribeToUserGlobalPresence(otherUserId).listen((isOnline) {
+      _globalPresenceSub =
+          _repo.subscribeToUserGlobalPresence(otherUserId).listen((isOnline) {
         if (!isClosed && state is MessagesChatLoaded) {
           final current = state as MessagesChatLoaded;
           emit(MessagesChatLoaded(
@@ -169,10 +175,11 @@ class MessagesCubit extends Cubit<MessagesState> {
       if (currentUserId != null && otherId != null) {
         final ids = [currentUserId, otherId]..sort();
         startPresence('presence-${ids.join('-')}');
-        
+
         // Subscribe to global presence for online/offline status
         _globalPresenceSub?.cancel();
-        _globalPresenceSub = _repo.subscribeToUserGlobalPresence(otherId).listen((isOnline) {
+        _globalPresenceSub =
+            _repo.subscribeToUserGlobalPresence(otherId).listen((isOnline) {
           if (!isClosed && state is MessagesChatLoaded) {
             final current = state as MessagesChatLoaded;
             emit(MessagesChatLoaded(
@@ -202,9 +209,8 @@ class MessagesCubit extends Cubit<MessagesState> {
       // Reload messages to refresh the list
       if (state is MessagesChatLoaded) {
         final current = state as MessagesChatLoaded;
-        final messages = current.messages
-            .where((m) => m.id != messageId)
-            .toList();
+        final messages =
+            current.messages.where((m) => m.id != messageId).toList();
         emit(MessagesChatLoaded(
           messages: messages,
           otherName: current.otherName,
@@ -287,8 +293,6 @@ class MessagesCubit extends Cubit<MessagesState> {
     }
   }
 
-
-
   Future<void> loadMoreMessages() async {
     if (state is! MessagesChatLoaded) return;
     final current = state as MessagesChatLoaded;
@@ -296,8 +300,10 @@ class MessagesCubit extends Cubit<MessagesState> {
     try {
       final messages = (current.hasMore && current.otherUserId != null)
           ? current.tripId != null
-              ? await _repo.loadTripMessages(current.tripId!, offset: currentCount)
-              : await _repo.loadDirectMessages(current.otherUserId!, offset: currentCount)
+              ? await _repo.loadTripMessages(current.tripId!,
+                  offset: currentCount)
+              : await _repo.loadDirectMessages(current.otherUserId!,
+                  offset: currentCount)
           : <MessageModel>[];
       if (isClosed) return;
       if (messages.isNotEmpty) {
@@ -334,10 +340,11 @@ class MessagesCubit extends Cubit<MessagesState> {
           if (idx != -1) {
             updated[idx] = msg;
           } else {
-            final optIdx = updated.indexWhere((m) => 
-               m.senderId == msg.senderId && 
-               m.content == msg.content && 
-               m.id.length < 20); // Optimistic IDs are milliseconds (~13 chars)
+            final optIdx = updated.indexWhere((m) =>
+                m.senderId == msg.senderId &&
+                m.content == msg.content &&
+                m.id.length <
+                    20); // Optimistic IDs are milliseconds (~13 chars)
             if (optIdx != -1) {
               updated[optIdx] = msg;
             } else {
@@ -345,12 +352,12 @@ class MessagesCubit extends Cubit<MessagesState> {
             }
           }
         }
-        
+
         if (hasUnread) {
           _repo.markAsRead(otherUserId);
         }
         updated.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        
+
         emit(MessagesChatLoaded(
           messages: updated,
           otherName: current.otherName,
@@ -382,10 +389,10 @@ class MessagesCubit extends Cubit<MessagesState> {
           if (idx != -1) {
             updated[idx] = msg;
           } else {
-            final optIdx = updated.indexWhere((m) => 
-               m.senderId == msg.senderId && 
-               m.content == msg.content && 
-               m.id.length < 20);
+            final optIdx = updated.indexWhere((m) =>
+                m.senderId == msg.senderId &&
+                m.content == msg.content &&
+                m.id.length < 20);
             if (optIdx != -1) {
               updated[optIdx] = msg;
             } else {

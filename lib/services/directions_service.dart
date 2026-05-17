@@ -19,17 +19,20 @@ class DirectionsResult {
 }
 
 class DirectionsService {
-  static const _baseUrl = 'https://maps.googleapis.com/maps/api/directions/json';
+  static const _baseUrl =
+      'https://maps.googleapis.com/maps/api/directions/json';
 
-  
-  
-  
   static final Map<String, _CachedResult> _cache = {};
   static const _cacheTtl = Duration(minutes: 5);
   static const int _maxCacheSize = 50;
 
-  static String _cacheKey(double oLat, double oLng, double dLat, double dLng, List<LatLng>? waypoints) {
-    final wpStr = waypoints?.map((e) => '${e.latitude.toStringAsFixed(4)},${e.longitude.toStringAsFixed(4)}').join('|') ?? '';
+  static String _cacheKey(double oLat, double oLng, double dLat, double dLng,
+      List<LatLng>? waypoints) {
+    final wpStr = waypoints
+            ?.map((e) =>
+                '${e.latitude.toStringAsFixed(4)},${e.longitude.toStringAsFixed(4)}')
+            .join('|') ??
+        '';
     return '${oLat.toStringAsFixed(4)},${oLng.toStringAsFixed(4)}'
         '→${dLat.toStringAsFixed(4)},${dLng.toStringAsFixed(4)}|$wpStr';
   }
@@ -42,10 +45,10 @@ class DirectionsService {
     List<LatLng>? waypoints,
     required String apiKey,
   }) async {
-    
     final key = _cacheKey(originLat, originLng, destLat, destLng, waypoints);
     final cached = _cache[key];
-    if (cached != null && DateTime.now().difference(cached.timestamp) < _cacheTtl) {
+    if (cached != null &&
+        DateTime.now().difference(cached.timestamp) < _cacheTtl) {
       debugPrint('📍 DirectionsService: Cache HIT for $key');
       return cached.result;
     }
@@ -53,7 +56,8 @@ class DirectionsService {
     try {
       String waypointsQuery = '';
       if (waypoints != null && waypoints.isNotEmpty) {
-        final wpStr = waypoints.map((w) => '${w.latitude},${w.longitude}').join('|');
+        final wpStr =
+            waypoints.map((w) => '${w.latitude},${w.longitude}').join('|');
         waypointsQuery = '&waypoints=$wpStr';
       }
 
@@ -72,7 +76,7 @@ class DirectionsService {
       final route = (data['routes'] as List).first as Map<String, dynamic>;
       final legs = route['legs'] as List;
       final encodedPolyline = route['overview_polyline']['points'] as String;
-      
+
       int distanceMeters = 0;
       int durationSeconds = 0;
       for (final leg in legs) {
@@ -86,7 +90,6 @@ class DirectionsService {
         durationSeconds: durationSeconds,
       );
 
-      
       if (_cache.length >= _maxCacheSize) {
         _cache.remove(_cache.keys.first);
       }
@@ -100,7 +103,6 @@ class DirectionsService {
     }
   }
 
-  
   static void clearCache() => _cache.clear();
 
   static List<LatLng> _decodePolyline(String encoded) {
@@ -129,7 +131,6 @@ class DirectionsService {
     return points;
   }
 }
-
 
 class _CachedResult {
   final DirectionsResult result;

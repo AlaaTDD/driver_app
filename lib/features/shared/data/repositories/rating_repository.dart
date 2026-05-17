@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 
@@ -10,7 +9,8 @@ class RatingRepository {
     try {
       return await _client
           .from('trips')
-          .select('user_id, driver_id, user_rating_to_driver, driver_rating_to_user')
+          .select(
+              'user_id, driver_id, user_rating_to_driver, driver_rating_to_user')
           .eq('id', tripId)
           .single();
     } catch (e) {
@@ -20,7 +20,8 @@ class RatingRepository {
   }
 
   /// Check if the current user has already rated this trip
-  Future<bool> hasExistingRating(String tripId, String currentUserId, String tripUserId, String tripDriverId) async {
+  Future<bool> hasExistingRating(String tripId, String currentUserId,
+      String tripUserId, String tripDriverId) async {
     final isDriver = currentUserId == tripDriverId;
     try {
       if (isDriver) {
@@ -41,7 +42,8 @@ class RatingRepository {
         return existing != null;
       }
     } catch (e) {
-      debugPrint('⚠️ RatingRepository: Failed to check existing rating table: $e');
+      debugPrint(
+          '⚠️ RatingRepository: Failed to check existing rating table: $e');
       // Fallback to checking the trips table directly if the ratings tables fail or don't exist
       try {
         final trip = await getTripData(tripId);
@@ -83,8 +85,7 @@ class RatingRepository {
 
       await _client
           .from('trips')
-          .update({'driver_rating_to_user': rating})
-          .eq('id', tripId);
+          .update({'driver_rating_to_user': rating}).eq('id', tripId);
     } else {
       // User is rating the driver
       await _client.from('ratings').insert({
@@ -98,10 +99,10 @@ class RatingRepository {
       try {
         await _client
             .from('trips')
-            .update({'user_rating_to_driver': rating})
-            .eq('id', tripId);
+            .update({'user_rating_to_driver': rating}).eq('id', tripId);
       } catch (e) {
-        debugPrint('⚠️ RatingRepository: Could not mark trip user_rating_to_driver field: $e');
+        debugPrint(
+            '⚠️ RatingRepository: Could not mark trip user_rating_to_driver field: $e');
       }
     }
   }

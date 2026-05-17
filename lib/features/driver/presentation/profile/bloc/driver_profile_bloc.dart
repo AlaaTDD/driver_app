@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -25,7 +24,7 @@ class DriverProfileBloc extends Bloc<DriverProfileEvent, DriverProfileState> {
         emit(const DriverProfileError('errorNotLoggedIn'));
         return;
       }
-      
+
       final profile = await _repository.loadDriverProfile(driverId);
       if (profile == null) {
         emit(const DriverProfileError('errorLoadProfile'));
@@ -47,8 +46,8 @@ class DriverProfileBloc extends Bloc<DriverProfileEvent, DriverProfileState> {
       final driverId = SupabaseService.currentUser?.id;
       if (driverId == null) return;
 
-      
-      final profile = await _repository.updateDriverProfile(driverId, event.data);
+      final profile =
+          await _repository.updateDriverProfile(driverId, event.data);
       if (profile != null) {
         emit(DriverProfileLoaded(profile));
       }

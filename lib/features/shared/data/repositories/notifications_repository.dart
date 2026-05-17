@@ -1,13 +1,10 @@
-
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../core/models/notification_model.dart';
 import '../../../../../services/supabase_service.dart';
 
-
-
 class NotificationsRepository {
-  
   Future<List<NotificationModel>> loadNotifications() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
@@ -23,15 +20,12 @@ class NotificationsRepository {
         .toList();
   }
 
-  
   Future<void> markAsRead(String notificationId) async {
     await SupabaseService.client
         .from('notifications')
-        .update({'is_read': true})
-        .eq('id', notificationId);
+        .update({'is_read': true}).eq('id', notificationId);
   }
 
-  
   Future<void> markAllAsRead() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
@@ -43,7 +37,6 @@ class NotificationsRepository {
         .eq('is_read', false);
   }
 
-  
   Future<void> deleteNotification(String notificationId) async {
     await SupabaseService.client
         .from('notifications')
@@ -51,8 +44,6 @@ class NotificationsRepository {
         .eq('id', notificationId);
   }
 
-  
-  
   Stream<int> getUnreadCountStream(String userId) {
     // Use RPC with realtime trigger for efficiency instead of loading all rows
     final controller = StreamController<int>.broadcast();
@@ -98,7 +89,9 @@ class NotificationsRepository {
       try {
         final list = await loadNotifications();
         if (!controller.isClosed) controller.add(list);
-      } catch (_) {}
+      } catch (e, st) {
+        debugPrint('⚠️ NotificationsRepository: fetchAll failed: $e\n$st');
+      }
     }
 
     fetchAll();

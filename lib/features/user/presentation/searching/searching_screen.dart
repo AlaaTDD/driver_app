@@ -1,6 +1,4 @@
-
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +14,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/map_camera_utils.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import '../trip_details/trip_details_screen.dart';
 import '../../../../services/supabase_service.dart';
@@ -53,20 +52,42 @@ class _SearchingScreenState extends State<SearchingScreen>
     super.initState();
     context.read<SearchingBloc>().add(StartSearching(widget.tripId));
     _routeCubit = TripRouteCubit()..watchTripRoutes(widget.tripId);
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
-    _pulseAnim = Tween<double>(begin: 0.85, end: 1.15).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat();
+    _pulseAnim = Tween<double>(begin: 0.85, end: 1.15)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
     _fetchRoute();
   }
 
   Future<void> _fetchRoute() async {
     if (widget.originLat == null || widget.destLat == null) return;
     final result = await DirectionsService.getRoute(
-      originLat: widget.originLat!, originLng: widget.originLng!,
-      destLat: widget.destLat!, destLng: widget.destLng!,
+      originLat: widget.originLat!,
+      originLng: widget.originLng!,
+      destLat: widget.destLat!,
+      destLng: widget.destLng!,
       apiKey: EnvConstants.googleMapsApiKey,
     );
     if (!mounted || result == null) return;
     setState(() => _routePoints = result.points);
+    await _fitMapToPoints([
+      ...result.points,
+      LatLng(widget.originLat!, widget.originLng!),
+      LatLng(widget.destLat!, widget.destLng!),
+    ]);
+  }
+
+  Future<void> _fitMapToPoints(List<LatLng> points) async {
+    if (!_mapCtrl.isCompleted || points.isEmpty) return;
+    final ctrl = await _mapCtrl.future;
+    if (!mounted) return;
+    await MapCameraUtils.fitCameraToPoints(
+      ctrl,
+      points,
+      padding: 108,
+      delay: const Duration(milliseconds: 120),
+    );
   }
 
   @override
@@ -79,9 +100,10 @@ class _SearchingScreenState extends State<SearchingScreen>
   /// Fetches driver name from users table given a driver_id.
   /// Cached per session via a simple map to avoid repeated DB calls.
   final Map<String, String> _driverNameCache = {};
-  Future<String> _fetchDriverName(String? driverId) async {
-    if (driverId == null) return 'سائق متاح';
-    if (_driverNameCache.containsKey(driverId)) return _driverNameCache[driverId]!;
+  Future<String> _fetchDriverName(String? driverId, String fallback) async {
+    if (driverId == null) return fallback;
+    if (_driverNameCache.containsKey(driverId))
+      return _driverNameCache[driverId]!;
     try {
       final row = await SupabaseService.client
           .from('users')
@@ -89,11 +111,13 @@ class _SearchingScreenState extends State<SearchingScreen>
           .eq('id', driverId)
           .maybeSingle();
       final name = (row?['name'] as String?)?.trim();
-      final result = (name != null && name.isNotEmpty) ? name : 'سائق متاح';
+      final result = (name != null && name.isNotEmpty) ? name : fallback;
       _driverNameCache[driverId] = result;
       return result;
-    } catch (_) {
-      return 'سائق متاح';
+    } catch (e, st) {
+      debugPrint(
+          '⚠️ SearchingScreen: failed to fetch driver name for $driverId: $e\n$st');
+      return fallback;
     }
   }
 
@@ -109,12 +133,11 @@ class _SearchingScreenState extends State<SearchingScreen>
       child: Scaffold(
         body: Stack(
           children: [
-            
             Positioned.fill(child: _buildMap(isDark)),
-
-            
             Positioned(
-              bottom: 0, left: 0, right: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: BlocBuilder<SearchingBloc, SearchingState>(
                 builder: (ctx, state) => _buildBottomSheet(ctx, state, isDark),
               ),
@@ -134,10 +157,16 @@ class _SearchingScreenState extends State<SearchingScreen>
       final origin = LatLng(widget.originLat!, widget.originLng!);
       final dest = LatLng(widget.destLat!, widget.destLng!);
       markers.addAll([
-        Marker(markerId: const MarkerId('o'), position: origin,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)),
-        Marker(markerId: const MarkerId('d'), position: dest,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed)),
+        Marker(
+            markerId: const MarkerId('o'),
+            position: origin,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueGreen)),
+        Marker(
+            markerId: const MarkerId('d'),
+            position: dest,
+            icon:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed)),
       ]);
       final pts = _routePoints.isNotEmpty ? _routePoints : [origin, dest];
       polylines.add(Polyline(
@@ -158,14 +187,17 @@ class _SearchingScreenState extends State<SearchingScreen>
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
-        patterns: _routePoints.isNotEmpty ? [] : [PatternItem.dash(24), PatternItem.gap(10)],
+        patterns: _routePoints.isNotEmpty
+            ? []
+            : [PatternItem.dash(24), PatternItem.gap(10)],
         zIndex: 1,
       ));
     }
 
     final initPos = hasRoute
-        ? CameraPosition(target: LatLng(widget.originLat!, widget.originLng!), zoom: 13)
-        : const CameraPosition(target: AppConstants.defaultMapCenter, zoom: 13);
+        ? CameraPosition(
+            target: LatLng(widget.originLat!, widget.originLng!), zoom: 13)
+        : CameraPosition(target: AppConstants.defaultMapCenter, zoom: 13);
 
     return GoogleMap(
       initialCameraPosition: initPos,
@@ -174,11 +206,11 @@ class _SearchingScreenState extends State<SearchingScreen>
           _mapCtrl.complete(ctrl);
           if (hasRoute) {
             Future.delayed(const Duration(milliseconds: 400), () {
-              final bounds = LatLngBounds(
-                southwest: LatLng(math.min(widget.originLat!, widget.destLat!), math.min(widget.originLng!, widget.destLng!)),
-                northeast: LatLng(math.max(widget.originLat!, widget.destLat!), math.max(widget.originLng!, widget.destLng!)),
-              );
-              ctrl.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
+              _fitMapToPoints([
+                ..._routePoints,
+                LatLng(widget.originLat!, widget.originLng!),
+                LatLng(widget.destLat!, widget.destLng!),
+              ]);
             });
           }
         }
@@ -192,25 +224,34 @@ class _SearchingScreenState extends State<SearchingScreen>
     );
   }
 
-  Widget _buildBottomSheet(BuildContext context, SearchingState state, bool isDark) {
+  Widget _buildBottomSheet(
+      BuildContext context, SearchingState state, bool isDark) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.background : AppColors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
-          BoxShadow(color: AppColors.black.withValues(alpha: 0.22), blurRadius: 28, offset: const Offset(0, -4)),
-          BoxShadow(color: AppColors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -1)),
+          BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.22),
+              blurRadius: 28,
+              offset: const Offset(0, -4)),
+          BoxShadow(
+              color: AppColors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, -1)),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             margin: const EdgeInsets.only(top: 12, bottom: 4),
-            decoration: BoxDecoration(color: context.divColor, borderRadius: BorderRadius.circular(100)),
+            decoration: BoxDecoration(
+                color: context.divColor,
+                borderRadius: BorderRadius.circular(100)),
           ),
-          
           if (widget.originLat != null && widget.destLat != null)
             _buildRouteStrip(context, isDark),
           Padding(
@@ -233,25 +274,51 @@ class _SearchingScreenState extends State<SearchingScreen>
       child: Row(
         children: [
           Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 7, height: 7, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.success)),
+            Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: AppColors.success)),
             Container(width: 1, height: 10, color: AppColors.textSecondary),
-            Container(width: 7, height: 7, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.error)),
+            Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: AppColors.error)),
           ]),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text(AppLocalizations.of(context)!.startingPoint, style: TextStyle(color: context.textSecondary, fontSize: 10, fontWeight: FontWeight.w400)),
-              Divider(color: context.divColor, height: 6),
-              Text(AppLocalizations.of(context)!.destination, style: TextStyle(color: context.textSecondary, fontSize: 10, fontWeight: FontWeight.w400)),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(AppLocalizations.of(context)!.startingPoint,
+                      style: TextStyle(
+                          color: context.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400)),
+                  Divider(color: context.divColor, height: 6),
+                  Text(AppLocalizations.of(context)!.destination,
+                      style: TextStyle(
+                          color: context.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400)),
+                ]),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: context.primaryTint, borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(
+                color: context.primaryTint,
+                borderRadius: BorderRadius.circular(6)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.directions_car_rounded, color: AppColors.primary, size: 12),
+              const Icon(Icons.directions_car_rounded,
+                  color: AppColors.primary, size: 12),
               const SizedBox(width: 4),
-              Text(AppLocalizations.of(context)!.yourTrip, style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w700)),
+              Text(AppLocalizations.of(context)!.yourTrip,
+                  style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700)),
             ]),
           ),
         ],
@@ -259,16 +326,25 @@ class _SearchingScreenState extends State<SearchingScreen>
     );
   }
 
-  Widget _buildSheetContent(BuildContext context, SearchingState state, bool isDark) {
-    if (state is SearchingInProgress) return _buildSearchingContent(context, state, isDark);
+  Widget _buildSheetContent(
+      BuildContext context, SearchingState state, bool isDark) {
+    if (state is SearchingInProgress)
+      return _buildSearchingContent(context, state, isDark);
     if (state is SearchingSuccess) return _buildSuccessContent(context);
     if (state is SearchingNoDrivers) return _buildNoDriversContent(context);
     if (state is SearchingCancelled) return _buildCancelledContent(context);
-    if (state is SearchingError) return _buildErrorContent(context, state.message);
-    return const SizedBox(height: 60, child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)));
+    if (state is SearchingError)
+      return _buildErrorContent(context, state.message);
+    return const SizedBox(
+        height: 60,
+        child: Center(
+            child: CircularProgressIndicator(
+                color: AppColors.primary, strokeWidth: 2)));
   }
 
-  Widget _buildSearchingContent(BuildContext context, SearchingInProgress state, bool isDark) {
+  Widget _buildSearchingContent(
+      BuildContext context, SearchingInProgress state, bool isDark) {
+    final l = AppLocalizations.of(context)!;
     final minutes = state.remainingSeconds ~/ 60;
     final seconds = state.remainingSeconds % 60;
     final progress = 1.0 - (state.remainingSeconds / 180.0);
@@ -276,73 +352,96 @@ class _SearchingScreenState extends State<SearchingScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        
         SizedBox(
           height: 130,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              
               ExcludeSemantics(
                 child: AnimatedBuilder(
                   animation: _pulseAnim,
                   builder: (_, __) => Transform.scale(
                     scale: _pulseAnim.value,
                     child: Container(
-                      width: 110, height: 110,
+                      width: 110,
+                      height: 110,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12), width: 2),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            width: 2),
                       ),
                     ),
                   ),
                 ),
               ),
-              
               ExcludeSemantics(
                 child: AnimatedBuilder(
                   animation: _pulseAnim,
                   builder: (_, __) => Transform.scale(
                     scale: 2 - _pulseAnim.value,
                     child: Container(
-                      width: 85, height: 85,
+                      width: 85,
+                      height: 85,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.22), width: 2),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.22),
+                            width: 2),
                       ),
                     ),
                   ),
                 ),
               ),
-              
               Container(
-                width: 68, height: 68,
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                     colors: [AppColors.primary, AppColors.primaryDark],
                   ),
-                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 16, spreadRadius: 2)],
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                        blurRadius: 16,
+                        spreadRadius: 2)
+                  ],
                 ),
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(
-                    '$minutes:${seconds.toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: AppColors.white, fontSize: 19, fontWeight: FontWeight.w800, height: 1),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(AppLocalizations.of(context)!.minute, style: TextStyle(color: AppColors.white.withValues(alpha: 0.6), fontSize: 9, fontWeight: FontWeight.w500)),
-                ]),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$minutes:${seconds.toString().padLeft(2, '0')}',
+                        style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            height: 1),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(l.minute,
+                          style: TextStyle(
+                              color: AppColors.white.withValues(alpha: 0.6),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w500)),
+                    ]),
               ),
             ],
           ),
         ),
         const SizedBox(height: 6),
-        Text(AppLocalizations.of(context)!.searchingForDriver, style: TextStyle(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+        Text(l.searchingForDriver,
+            style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
-        Text(AppLocalizations.of(context)!.willContactOnFind, style: TextStyle(color: context.textSecondary, fontSize: 12.5)),
+        Text(l.willContactOnFind,
+            style: TextStyle(color: context.textSecondary, fontSize: 12.5)),
         const SizedBox(height: 14),
-        
         ClipRRect(
           borderRadius: BorderRadius.circular(100),
           child: LinearProgressIndicator(
@@ -352,48 +451,56 @@ class _SearchingScreenState extends State<SearchingScreen>
             minHeight: 4,
           ),
         ),
-        
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
               if (widget.originLat == null || widget.originLng == null) return;
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => MapStopoverPicker(
-                  initialCenter: LatLng(widget.originLat!, widget.originLng!),
-                  originPoint: LatLng(widget.originLat!, widget.originLng!),                             // ✅ show pickup
-                  destPoint: (widget.destLat != null && widget.destLng != null)                          // ✅ show destination
-                      ? LatLng(widget.destLat!, widget.destLng!)
-                      : null,
-                ),
-              )).then((result) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MapStopoverPicker(
+                      initialCenter:
+                          LatLng(widget.originLat!, widget.originLng!),
+                      originPoint: LatLng(widget.originLat!,
+                          widget.originLng!), // ✅ show pickup
+                      destPoint: (widget.destLat != null &&
+                              widget.destLng != null) // ✅ show destination
+                          ? LatLng(widget.destLat!, widget.destLng!)
+                          : null,
+                    ),
+                  )).then((result) {
                 if (result != null && result is Map<String, dynamic>) {
                   _routeCubit.addStopover(
-                    lat: result['lat'], lng: result['lng'],
+                    lat: result['lat'],
+                    lng: result['lng'],
                     address: result['address'],
                   );
                 }
               });
             },
             icon: const Icon(Icons.add_location_alt_rounded, size: 18),
-            label: const Text('إضافة محطة توقف (مسار متعدد)'),
+            label: Text(l.addStopoverMultiRoute),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),
               padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ),
-        
         if (state.offers.isNotEmpty) ...[
           const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              'عروض السائقين (${state.offers.length}):',
-              style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+              l.driverOffersCount(state.offers.length),
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 8),
@@ -417,7 +524,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                     children: [
                       CircleAvatar(
                         backgroundColor: context.primaryTint,
-                        child: const Icon(Icons.person, color: AppColors.primary),
+                        child:
+                            const Icon(Icons.person, color: AppColors.primary),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -426,28 +534,39 @@ class _SearchingScreenState extends State<SearchingScreen>
                           children: [
                             // Fetch driver name from users table
                             FutureBuilder<String>(
-                              future: _fetchDriverName(offer['driver_id'] as String?),
+                              future: _fetchDriverName(
+                                offer['driver_id'] as String?,
+                                l.availableDriver,
+                              ),
                               builder: (ctx, snap) => Text(
-                                snap.data ?? 'سائق متاح',
+                                snap.data ?? l.availableDriver,
                                 style: TextStyle(
                                     color: context.textPrimary,
                                     fontWeight: FontWeight.bold),
                               ),
                             ),
-                            Text('$price ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                            Text(
+                                '$price ${AppLocalizations.of(context)!.currencySar}',
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
                       ElevatedButton(
-                        onPressed: () => context.read<SearchingBloc>().add(AcceptDriverOffer(offer['id'])),
+                        onPressed: () => context
+                            .read<SearchingBloc>()
+                            .add(AcceptDriverOffer(offer['id'])),
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(0, 36),
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                         ),
-                        child: const Text('قبول'),
+                        child: Text(l.acceptBtn),
                       ),
                     ],
                   ),
@@ -456,18 +575,24 @@ class _SearchingScreenState extends State<SearchingScreen>
             ),
           ),
         ],
-
         const SizedBox(height: 16),
         SizedBox(
-          width: double.infinity, height: 48,
+          width: double.infinity,
+          height: 48,
           child: OutlinedButton(
-            onPressed: () => context.read<SearchingBloc>().add(CancelSearch(widget.tripId)),
+            onPressed: () =>
+                context.read<SearchingBloc>().add(CancelSearch(widget.tripId)),
             style: OutlinedButton.styleFrom(
               foregroundColor: context.textSecondary,
               side: BorderSide(color: context.divColor),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
-            child: Text(AppLocalizations.of(context)!.cancelSearch, style: TextStyle(color: context.textSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(AppLocalizations.of(context)!.cancelSearch,
+                style: TextStyle(
+                    color: context.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -479,16 +604,26 @@ class _SearchingScreenState extends State<SearchingScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 64, height: 64,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.success.withValues(alpha: 0.1)),
-          child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 36),
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.success.withValues(alpha: 0.1)),
+          child: const Icon(Icons.check_circle_rounded,
+              color: AppColors.success, size: 36),
         ),
         const SizedBox(height: 12),
-        Text(AppLocalizations.of(context)!.tripAccepted, style: TextStyle(color: context.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.of(context)!.tripAccepted,
+            style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text(AppLocalizations.of(context)!.loadingDriverDetails, style: TextStyle(color: context.textSecondary, fontSize: 13)),
+        Text(AppLocalizations.of(context)!.loadingDriverDetails,
+            style: TextStyle(color: context.textSecondary, fontSize: 13)),
         const SizedBox(height: 16),
-        const LinearProgressIndicator(color: AppColors.success, backgroundColor: AppColors.transparent),
+        const LinearProgressIndicator(
+            color: AppColors.success, backgroundColor: AppColors.transparent),
       ],
     );
   }
@@ -498,20 +633,34 @@ class _SearchingScreenState extends State<SearchingScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 64, height: 64,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.warning.withValues(alpha: 0.1)),
-          child: const Icon(Icons.search_off_rounded, color: AppColors.warning, size: 32),
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.warning.withValues(alpha: 0.1)),
+          child: const Icon(Icons.search_off_rounded,
+              color: AppColors.warning, size: 32),
         ),
         const SizedBox(height: 12),
-        Text(AppLocalizations.of(context)!.noDriversFound, style: TextStyle(color: context.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.of(context)!.noDriversFound,
+            style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text(AppLocalizations.of(context)!.tryAgainOrDifferentTime, style: TextStyle(color: context.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+        Text(AppLocalizations.of(context)!.tryAgainOrDifferentTime,
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+            textAlign: TextAlign.center),
         const SizedBox(height: 16),
         Row(children: [
           Expanded(
             child: OutlinedButton(
               onPressed: () => context.go(AppRoutes.userHome),
-              style: OutlinedButton.styleFrom(foregroundColor: context.textSecondary, side: BorderSide(color: context.divColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: context.textSecondary,
+                  side: BorderSide(color: context.divColor),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14))),
               child: Text(AppLocalizations.of(context)!.backToHome),
             ),
           ),
@@ -519,9 +668,16 @@ class _SearchingScreenState extends State<SearchingScreen>
           Expanded(
             child: ElevatedButton(
               onPressed: () {
-                context.read<SearchingBloc>().add(StartSearching(widget.tripId));
+                context
+                    .read<SearchingBloc>()
+                    .add(StartSearching(widget.tripId));
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0),
               child: Text(AppLocalizations.of(context)!.retry),
             ),
           ),
@@ -535,21 +691,37 @@ class _SearchingScreenState extends State<SearchingScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 64, height: 64,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: context.divColor),
-          child: Icon(Icons.cancel_rounded, color: context.textSecondary, size: 32),
+          width: 64,
+          height: 64,
+          decoration:
+              BoxDecoration(shape: BoxShape.circle, color: context.divColor),
+          child: Icon(Icons.cancel_rounded,
+              color: context.textSecondary, size: 32),
         ),
         const SizedBox(height: 12),
-        Text(AppLocalizations.of(context)!.searchCancelled, style: TextStyle(color: context.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.of(context)!.searchCancelled,
+            style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text(AppLocalizations.of(context)!.canSearchAnytime, style: TextStyle(color: context.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+        Text(AppLocalizations.of(context)!.canSearchAnytime,
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+            textAlign: TextAlign.center),
         const SizedBox(height: 16),
         SizedBox(
-          width: double.infinity, height: 48,
+          width: double.infinity,
+          height: 48,
           child: ElevatedButton(
             onPressed: () => context.go(AppRoutes.userHome),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
-            child: Text(AppLocalizations.of(context)!.backToHome, style: const TextStyle(fontWeight: FontWeight.w700)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                elevation: 0),
+            child: Text(AppLocalizations.of(context)!.backToHome,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ),
       ],
@@ -561,28 +733,49 @@ class _SearchingScreenState extends State<SearchingScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 64, height: 64,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.warning.withValues(alpha: 0.1)),
-          child: const Icon(Icons.person_off_rounded, color: AppColors.warning, size: 32),
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.warning.withValues(alpha: 0.1)),
+          child: const Icon(Icons.person_off_rounded,
+              color: AppColors.warning, size: 32),
         ),
         const SizedBox(height: 12),
-        Text(AppLocalizations.of(context)!.noDriverAvailable, style: TextStyle(color: context.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+        Text(AppLocalizations.of(context)!.noDriverAvailable,
+            style: TextStyle(
+                color: context.textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text(AppLocalizations.of(context)!.tryAgainLater, style: TextStyle(color: context.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+        Text(AppLocalizations.of(context)!.tryAgainLater,
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+            textAlign: TextAlign.center),
         const SizedBox(height: 16),
         Row(children: [
           Expanded(
             child: OutlinedButton(
               onPressed: () => context.go(AppRoutes.userHome),
-              style: OutlinedButton.styleFrom(foregroundColor: context.textSecondary, side: BorderSide(color: context.divColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: context.textSecondary,
+                  side: BorderSide(color: context.divColor),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14))),
               child: Text(AppLocalizations.of(context)!.backToHome),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: ElevatedButton(
-              onPressed: () => context.read<SearchingBloc>().add(StartSearching(widget.tripId)),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+              onPressed: () => context
+                  .read<SearchingBloc>()
+                  .add(StartSearching(widget.tripId)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0),
               child: Text(AppLocalizations.of(context)!.retry),
             ),
           ),
@@ -591,5 +784,3 @@ class _SearchingScreenState extends State<SearchingScreen>
     );
   }
 }
-
-

@@ -1,6 +1,6 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../core/errors/exceptions.dart';
 import '../../../../../services/supabase_service.dart';
 import 'package:snapix/features/user/data/repositories/coupon_repository.dart';
 import 'pricing_event.dart';
@@ -9,7 +9,6 @@ import 'pricing_state.dart';
 class PricingBloc extends Bloc<PricingEvent, PricingState> {
   final CouponRepository _couponRepository;
 
-  
   DateTime? _lastCouponAttempt;
   static const _minCouponInterval = Duration(seconds: 2);
 
@@ -21,7 +20,6 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     on<ApplyCoupon>(_onApplyCoupon);
   }
 
-  
   List<VehicleTypeModel> _currentTypes() {
     final s = state;
     if (s is VehicleTypesLoaded) return s.vehicleTypes;
@@ -31,7 +29,6 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     return [];
   }
 
-  
   Future<void> _onLoadVehicleTypes(
     LoadVehicleTypes event,
     Emitter<PricingState> emit,
@@ -45,22 +42,28 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
       try {
         final pcRows = await SupabaseService.client
             .from('pricing_config')
-            .select('vehicle_type, display_name, icon, base_fare, price_per_km, is_active, sort_order')
+            .select(
+                'vehicle_type, display_name, icon, base_fare, price_per_km, is_active, sort_order')
             .eq('is_active', true)
             .order('sort_order', ascending: true);
 
         if ((pcRows as List).isNotEmpty) {
           // Map pricing_config columns → VehicleTypeModel field names
-          rows = pcRows.map((r) => <String, dynamic>{
-            'name': r['vehicle_type'],
-            'display_name': r['display_name'] ?? r['vehicle_type'],
-            'icon': r['icon'] ?? 'directions_car',
-            'base_fare': r['base_fare'],
-            'price_per_km': r['price_per_km'],
-          }).toList();
-          debugPrint('✅ PricingBloc: Loaded ${rows.length} types from pricing_config');
+          rows = pcRows
+              .map((r) => <String, dynamic>{
+                    'name': r['vehicle_type'],
+                    'display_name': r['display_name'] ?? r['vehicle_type'],
+                    'icon': r['icon'] ?? 'directions_car',
+                    'base_fare': r['base_fare'],
+                    'price_per_km': r['price_per_km'],
+                  })
+              .toList();
+          debugPrint(
+              '✅ PricingBloc: Loaded ${rows.length} types from pricing_config');
         }
-      } catch (_) {
+      } catch (e, st) {
+        debugPrint(
+            '⚠️ PricingBloc: pricing_config load failed, using vehicle_types fallback: $e\n$st');
         // pricing_config may not have all columns yet — fall through
       }
 
@@ -72,12 +75,11 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
             .eq('is_active', true)
             .order('sort_order', ascending: true);
         rows = (vtRows as List).cast<Map<String, dynamic>>();
-        debugPrint('✅ PricingBloc: Loaded ${rows.length} types from vehicle_types (fallback)');
+        debugPrint(
+            '✅ PricingBloc: Loaded ${rows.length} types from vehicle_types (fallback)');
       }
 
-      final types = rows
-          .map((r) => VehicleTypeModel.fromJson(r))
-          .toList();
+      final types = rows.map((r) => VehicleTypeModel.fromJson(r)).toList();
 
       emit(VehicleTypesLoaded(vehicleTypes: types));
     } catch (e) {
@@ -86,16 +88,12 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     }
   }
 
-  
-  
-  
   Future<void> _onCalculatePrice(
     CalculatePrice event,
     Emitter<PricingState> emit,
   ) async {
     final types = _currentTypes();
     try {
-      
       final vehicle = types.firstWhere(
         (v) => v.name == event.vehicleType,
         orElse: () => types.isNotEmpty
@@ -109,7 +107,6 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
               ),
       );
 
-      
       final result = await SupabaseService.client.rpc(
         'calculate_trip_price',
         params: {
@@ -119,7 +116,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
       );
 
       if (result == null) {
-        throw Exception('Server returned null price');
+        throw ServerException('errorNullPrice');
       }
       final finalPrice = (result as num).toDouble();
 
@@ -136,14 +133,12 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     }
   }
 
-  
   Future<void> _onApplyCoupon(
     ApplyCoupon event,
     Emitter<PricingState> emit,
   ) async {
     final types = _currentTypes();
 
-    
     if (_lastCouponAttempt != null &&
         DateTime.now().difference(_lastCouponAttempt!) < _minCouponInterval) {
       emit(PricingError('errorWaitBeforeRetry', vehicleTypes: types));

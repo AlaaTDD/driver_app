@@ -33,16 +33,11 @@ class BonusRepository {
     String? serviceAreaId,
   }) async {
     try {
-      var query = _client
-          .from('bonus_rules')
-          .select('*')
-          .eq('is_active', true);
+      var query = _client.from('bonus_rules').select('*').eq('is_active', true);
 
       final data = await query.order('threshold', ascending: true);
-      
-      return (data as List)
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+
+      return (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       debugPrint('❌ BonusRepository.getActiveBonusRules: $e');
       return [];
@@ -61,9 +56,7 @@ class BonusRepository {
           .eq('driver_id', driverId)
           .order('awarded_at', ascending: false)
           .limit(limit);
-      return (data as List)
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
       debugPrint('❌ BonusRepository.getBonusHistory: $e');
       return [];

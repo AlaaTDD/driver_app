@@ -79,7 +79,8 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
       '${offer.pickupAddress} → ${offer.destinationAddress}\n💰 ${offer.estimatedPrice.toStringAsFixed(0)} EGP  ·  📍 ${offer.distance.toStringAsFixed(1)} km',
       details,
     );
-    developer.log('showRideOfferOverlay: ✅ Notification shown (id=$notificationId)');
+    developer
+        .log('showRideOfferOverlay: ✅ Notification shown (id=$notificationId)');
   } catch (e) {
     developer.log('showRideOfferOverlay: ❌ Notification failed: $e');
   }
@@ -90,19 +91,22 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
   try {
     final type = data['type'] ?? data['notification_type'];
     if (type != 'ride_offer') {
-      developer.log('handleRideOfferNotification: type=$type, not ride_offer, skipping');
+      developer.log(
+          'handleRideOfferNotification: type=$type, not ride_offer, skipping');
       return;
     }
 
     // Extract trip_id from FCM data payload
-    final tripId = data['trip_id'] as String? ?? 
-                   (data['data'] is Map ? data['data']['trip_id'] as String? : null) ??
-                   data['id'] as String?;
+    final tripId = data['trip_id'] as String? ??
+        (data['data'] is Map ? data['data']['trip_id'] as String? : null) ??
+        data['id'] as String?;
 
-    developer.log('handleRideOfferNotification: tripId=$tripId, raw data keys=${data.keys.toList()}');
+    developer.log(
+        'handleRideOfferNotification: tripId=$tripId, raw data keys=${data.keys.toList()}');
 
     if (tripId == null || tripId.isEmpty) {
-      developer.log('handleRideOfferNotification: NO trip_id found in payload!');
+      developer
+          .log('handleRideOfferNotification: NO trip_id found in payload!');
       return;
     }
 
@@ -113,7 +117,8 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
 
     if (pickupAddress.isNotEmpty || destinationAddress.isNotEmpty) {
       // We have enriched data from the Edge Function — use it directly
-      developer.log('handleRideOfferNotification: Using enriched FCM payload (no DB query needed)');
+      developer.log(
+          'handleRideOfferNotification: Using enriched FCM payload (no DB query needed)');
       offer = RideOfferModel(
         id: tripId,
         passengerName: data['passenger_name'] as String? ?? '',
@@ -124,13 +129,17 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
         vehicleType: data['vehicle_type'] as String? ?? 'car',
         pickupLat: double.tryParse(data['pickup_lat']?.toString() ?? ''),
         pickupLng: double.tryParse(data['pickup_lng']?.toString() ?? ''),
-        destinationLat: double.tryParse(data['destination_lat']?.toString() ?? ''),
-        destinationLng: double.tryParse(data['destination_lng']?.toString() ?? ''),
-        createdAt: DateTime.tryParse(data['created_at']?.toString() ?? '') ?? DateTime.now(),
+        destinationLat:
+            double.tryParse(data['destination_lat']?.toString() ?? ''),
+        destinationLng:
+            double.tryParse(data['destination_lng']?.toString() ?? ''),
+        createdAt: DateTime.tryParse(data['created_at']?.toString() ?? '') ??
+            DateTime.now(),
       );
     } else {
       // Fallback: fetch from Supabase (only works if auth session is available)
-      developer.log('handleRideOfferNotification: No enriched data, falling back to Supabase query...');
+      developer.log(
+          'handleRideOfferNotification: No enriched data, falling back to Supabase query...');
       try {
         final tripRow = await SupabaseService.client
             .from('trips')
@@ -139,11 +148,13 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
             .maybeSingle();
 
         if (tripRow == null) {
-          developer.log('handleRideOfferNotification: Trip $tripId not found in DB!');
+          developer.log(
+              'handleRideOfferNotification: Trip $tripId not found in DB!');
           return;
         }
 
-        developer.log('handleRideOfferNotification: Trip fetched from DB: ${tripRow['pickup_address']}');
+        developer.log(
+            'handleRideOfferNotification: Trip fetched from DB: ${tripRow['pickup_address']}');
         final passengerName = tripRow['user']?['name'] as String? ?? '';
         offer = RideOfferModel(
           id: tripId,
@@ -157,10 +168,13 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
           pickupLng: (tripRow['pickup_lng'] as num?)?.toDouble(),
           destinationLat: (tripRow['destination_lat'] as num?)?.toDouble(),
           destinationLng: (tripRow['destination_lng'] as num?)?.toDouble(),
-          createdAt: DateTime.tryParse(tripRow['created_at'] as String? ?? '') ?? DateTime.now(),
+          createdAt:
+              DateTime.tryParse(tripRow['created_at'] as String? ?? '') ??
+                  DateTime.now(),
         );
       } catch (dbError) {
-        developer.log('handleRideOfferNotification: Supabase fallback failed: $dbError');
+        developer.log(
+            'handleRideOfferNotification: Supabase fallback failed: $dbError');
         offer = RideOfferModel(
           id: tripId,
           passengerName: '',
@@ -174,7 +188,8 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
       }
     }
 
-    developer.log('handleRideOfferNotification: RideOfferModel built — id=${offer.id}, pickup=${offer.pickupAddress}, price=${offer.estimatedPrice}');
+    developer.log(
+        'handleRideOfferNotification: RideOfferModel built — id=${offer.id}, pickup=${offer.pickupAddress}, price=${offer.estimatedPrice}');
 
     // Fire the high priority local notification
     await _fireRideNotification(offer);
@@ -325,8 +340,8 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                 ),
                 _InfoChip(
                   icon: Icons.route,
-                  value: AppLocalizations.of(context)!.distanceWithKm(
-                      widget.offer.distance.toStringAsFixed(1)),
+                  value: AppLocalizations.of(context)!
+                      .distanceWithKm(widget.offer.distance.toStringAsFixed(1)),
                   color: AppColors.primary,
                 ),
               ],
@@ -350,7 +365,8 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(AppLocalizations.of(context)!.rejectBtn, style: TextStyle(fontSize: 16)),
+                    child: Text(AppLocalizations.of(context)!.rejectBtn,
+                        style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -364,13 +380,15 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
-                      foregroundColor: isDark ? context.cardColor : context.bgColor,
+                      foregroundColor:
+                          isDark ? context.cardColor : context.bgColor,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(AppLocalizations.of(context)!.acceptBtn,
+                    child: Text(
+                      AppLocalizations.of(context)!.acceptBtn,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -410,7 +428,8 @@ class _AddressRow extends StatelessWidget {
         Expanded(
           child: Text(
             '$label: $address',
-            style: TextStyle(color: AppColors.white.withValues(alpha: 0.7), fontSize: 14),
+            style: TextStyle(
+                color: AppColors.white.withValues(alpha: 0.7), fontSize: 14),
           ),
         ),
       ],

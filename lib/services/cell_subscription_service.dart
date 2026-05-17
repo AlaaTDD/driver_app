@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -100,7 +99,11 @@ class CellSubscriptionService {
         if (updatedAtStr != null) {
           try {
             lastUpdated = DateTime.parse(updatedAtStr).toUtc();
-          } catch (_) {}
+          } catch (e, st) {
+            debugPrint(
+              '⚠️ CellSubscriptionService: invalid driver updated_at "$updatedAtStr": $e\n$st',
+            );
+          }
         }
 
         if (now.difference(lastUpdated).inMinutes > 2) continue;
@@ -157,7 +160,8 @@ class CellSubscriptionService {
   void _startStaleCleanup() {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      final cutoff = DateTime.now().toUtc().subtract(const Duration(minutes: 2));
+      final cutoff =
+          DateTime.now().toUtc().subtract(const Duration(minutes: 2));
       final stale = _driversMap.entries
           .where((e) => e.value.lastUpdatedAt.isBefore(cutoff))
           .map((e) => e.key)

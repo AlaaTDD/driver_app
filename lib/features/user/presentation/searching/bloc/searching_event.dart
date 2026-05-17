@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 
 abstract class SearchingEvent extends Equatable {
@@ -44,7 +43,6 @@ class CancelSearch extends SearchingEvent {
   @override
   List<Object?> get props => [tripId, cancelReason];
 }
-
 
 class RebroadcastTripOffers extends SearchingEvent {
   final String tripId;

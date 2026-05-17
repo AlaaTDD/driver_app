@@ -1,4 +1,3 @@
-
 class WaypointArg {
   final double lat;
   final double lng;

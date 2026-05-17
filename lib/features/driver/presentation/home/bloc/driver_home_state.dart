@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../../../../../services/heatmap_service.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
@@ -66,9 +65,8 @@ class DriverHomeState extends Equatable {
       rating: rating ?? this.rating,
       pendingTripOffer:
           clearOffer ? null : (pendingTripOffer ?? this.pendingTripOffer),
-      acceptedTripId: clearAcceptedTripId
-          ? null
-          : (acceptedTripId ?? this.acceptedTripId),
+      acceptedTripId:
+          clearAcceptedTripId ? null : (acceptedTripId ?? this.acceptedTripId),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       heatmapCells: heatmapCells ?? this.heatmapCells,
     );

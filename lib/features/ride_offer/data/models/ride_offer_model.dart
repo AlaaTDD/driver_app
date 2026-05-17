@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 
 class RideOfferModel extends Equatable {
@@ -33,7 +32,9 @@ class RideOfferModel extends Equatable {
   factory RideOfferModel.fromJson(Map<String, dynamic> json) {
     return RideOfferModel(
       id: json['id'] as String? ?? '',
-      passengerName: json['passenger_name'] as String? ?? json['user']?['name'] as String? ?? '',
+      passengerName: json['passenger_name'] as String? ??
+          json['user']?['name'] as String? ??
+          '',
       pickupAddress: json['pickup_address'] as String? ?? '',
       destinationAddress: json['destination_address'] as String? ?? '',
       distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
@@ -43,7 +44,8 @@ class RideOfferModel extends Equatable {
       pickupLng: (json['pickup_lng'] as num?)?.toDouble(),
       destinationLat: (json['destination_lat'] as num?)?.toDouble(),
       destinationLng: (json['destination_lng'] as num?)?.toDouble(),
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 

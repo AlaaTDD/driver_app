@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../../../../../services/cell_subscription_service.dart';
 
@@ -9,7 +8,6 @@ abstract class UserHomeEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-
 class InitUserHome extends UserHomeEvent {
   final String userId;
   const InitUserHome(this.userId);
@@ -17,7 +15,6 @@ class InitUserHome extends UserHomeEvent {
   @override
   List<Object?> get props => [userId];
 }
-
 
 class UserLocationObtained extends UserHomeEvent {
   final double lat;
@@ -28,7 +25,6 @@ class UserLocationObtained extends UserHomeEvent {
   List<Object?> get props => [lat, lng];
 }
 
-
 class DriversRealtimeUpdate extends UserHomeEvent {
   final Map<String, DriverLocation> drivers;
   const DriversRealtimeUpdate(this.drivers);
@@ -36,7 +32,6 @@ class DriversRealtimeUpdate extends UserHomeEvent {
   @override
   List<Object?> get props => [drivers];
 }
-
 
 class LoadUserCoupons extends UserHomeEvent {
   final String userId;

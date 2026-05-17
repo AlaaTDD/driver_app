@@ -4,7 +4,6 @@ import '../../../../../services/supabase_service.dart';
 import '../../../../../core/constants/env_constants.dart';
 
 class ChatbotRepository {
-
   Future<List<Map<String, dynamic>>> loadMessages() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
@@ -17,14 +16,14 @@ class ChatbotRepository {
           .order('created_at', ascending: true)
           .limit(100);
 
-      final messages = (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      final messages =
+          (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
 
       for (final msg in messages) {
         if (msg.containsKey('sender_role') && msg['sender_role'] != null) {
           msg['_isUser'] = msg['sender_role'] == 'user';
         } else {
-          msg['_isUser'] =
-              msg['sender_id'] == userId ||
+          msg['_isUser'] = msg['sender_id'] == userId ||
               (msg['sender_id'] == null && msg['sender_role'] == 'user');
         }
       }
@@ -70,7 +69,8 @@ class ChatbotRepository {
         },
       ];
 
-      final historyList = (history as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      final historyList =
+          (history as List).map((e) => Map<String, dynamic>.from(e)).toList();
       if (historyList.isNotEmpty) {
         for (final msg in historyList.reversed) {
           final role =
@@ -91,7 +91,9 @@ class ChatbotRepository {
         },
       ).timeout(const Duration(seconds: 15));
 
-      if (response.status == 200 && response.data != null && response.data is Map) {
+      if (response.status == 200 &&
+          response.data != null &&
+          response.data is Map) {
         final data = Map<String, dynamic>.from(response.data as Map);
         final choices = data['choices'] as List?;
         if (choices != null && choices.isNotEmpty) {

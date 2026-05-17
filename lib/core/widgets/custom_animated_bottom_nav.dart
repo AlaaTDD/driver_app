@@ -101,7 +101,8 @@ class CustomAnimatedBottomNav extends StatelessWidget {
 
   Widget _buildFab() {
     return Container(
-      width: notchRadius * 2 - 12,   // slightly smaller than notch opening for a visible rim
+      width: notchRadius * 2 -
+          12, // slightly smaller than notch opening for a visible rim
       height: notchRadius * 2 - 12,
       margin: EdgeInsets.zero,
       decoration: BoxDecoration(
@@ -256,23 +257,24 @@ class _NotchPainter extends CustomPainter {
 
       // ── Left quadrant of semicircle: (cx-r, 0) → (cx, r) curving DOWN ──
       path.cubicTo(
-        cx - r,       r * k,   // CP1 – pull downward
-        cx - r * k,   r,       // CP2 – sweep toward center
-        cx,           r,       // end at semicircle bottom
+        cx - r, r * k, // CP1 – pull downward
+        cx - r * k, r, // CP2 – sweep toward center
+        cx, r, // end at semicircle bottom
       );
 
       // ── Right quadrant: (cx, r) → (cx+r, 0) curving UP ──
       path.cubicTo(
-        cx + r * k,   r,       // CP1 – sweep outward
-        cx + r,       r * k,   // CP2 – pull upward
-        cx + r,       0,       // end at right notch exit
+        cx + r * k, r, // CP1 – sweep outward
+        cx + r, r * k, // CP2 – pull upward
+        cx + r, 0, // end at right notch exit
       );
 
       // Straight edge and bar corners
       path.lineTo(size.width - corner, 0);
       path.quadraticBezierTo(size.width, 0, size.width, corner);
       path.lineTo(size.width, size.height - 8);
-      path.quadraticBezierTo(size.width, size.height, size.width - 8, size.height);
+      path.quadraticBezierTo(
+          size.width, size.height, size.width - 8, size.height);
       path.lineTo(8, size.height);
       path.quadraticBezierTo(0, size.height, 0, size.height - 8);
       path.close();
@@ -287,5 +289,3 @@ class _NotchPainter extends CustomPainter {
       oldDelegate.notchRadius != notchRadius ||
       oldDelegate.gapWidth != gapWidth;
 }
-
-

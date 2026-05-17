@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../localization/generated/app_localizations.dart';
 
 class ErrorMapper {
-  
-  
-  
-  
   static String getErrorMessage(BuildContext context, String errorKey) {
     final l = AppLocalizations.of(context);
     if (l == null) return errorKey;
 
     final resolver = <String, String Function()>{
-      
       'errorInvalidCredentials': () => l.errorInvalidCredentials,
       'errorEmailRegistered': () => l.errorEmailRegistered,
       'errorConfirmEmail': () => l.errorConfirmEmail,
@@ -22,8 +18,6 @@ class ErrorMapper {
       'errorUnexpected': () => l.errorUnexpected,
       'errorLoginFailed': () => l.errorLoginFailed,
       'errorCreateAccountFailed': () => l.errorCreateAccountFailed,
-
-      
       'failedCreateTrip': () => l.failedCreateTrip,
       'failedFetchTrips': () => l.failedFetchTrips,
       'failedCancelTrip': () => l.failedCancelTrip,
@@ -36,6 +30,8 @@ class ErrorMapper {
       'errorStartTrip': () => l.errorStartTrip,
       'errorCompleteTrip': () => l.errorCompleteTrip,
       'errorNotLoggedIn': () => l.errorNotLoggedIn,
+      'errorLoadVehicleTypes': () => l.errorLoadVehicleTypes,
+      'errorUserBlocked': () => l.errorUserBlocked,
       'errorLoadTrips': () => l.errorLoadTrips,
       'errorNotYourTrip': () => l.errorNotYourTrip,
       'errorCancelStatus': () => l.errorCancelStatus,
@@ -45,16 +41,12 @@ class ErrorMapper {
       'errorSendComplaint': () => l.errorSendComplaint,
       'errorCalculatePrice': () => l.errorCalculatePrice,
       'errorWaitBeforeRetry': () => l.errorWaitBeforeRetry,
-
-      
       'errorInvalidCoupon': () => l.errorInvalidCoupon,
       'errorCouponDepleted': () => l.errorCouponDepleted,
       'errorCouponUsed': () => l.errorCouponUsed,
       'errorApplyCoupon': () => l.errorApplyCoupon,
       'errorLoadCoupons': () => l.errorLoadCoupons,
       'errorVerifyCoupon': () => l.errorVerifyCoupon,
-
-      
       'errorNoDriverForTrip': () => l.errorNoDriverForTrip,
       'errorTripAlreadyRated': () => l.errorTripAlreadyRated,
       'errorAlreadyRated': () => l.errorAlreadyRated,
@@ -69,6 +61,20 @@ class ErrorMapper {
       'errorFileTooLarge': () => l.errorFileTooLarge,
       'errorFileEmpty': () => l.errorFileEmpty,
       'errorFileUnsupported': () => l.errorFileUnsupported,
+      'errorUploadFailed': () => l.errorUploadFailed,
+      'errorDeleteFailed': () => l.errorDeleteFailed,
+      'errorReceiverEmpty': () => l.errorReceiverEmpty,
+      'errorTripIdEmpty': () => l.errorTripIdEmpty,
+      'errorInvalidTripId': () => l.errorInvalidTripId,
+      'errorReceiverNotFound': () => l.errorReceiverNotFound,
+      'errorNullPrice': () => l.errorNullPrice,
+      'errorAcceptOfferFailed': () => l.errorAcceptOfferFailed,
+      'failedCreateLegacyRoutePlan': () => l.failedCreateLegacyRoutePlan,
+      'errorAddStopover': () => l.errorAddStopover,
+      'errorRemoveStopover': () => l.errorRemoveStopover,
+      'unexpectedError': () => l.unexpectedError,
+      'failedLoadWallet': () => l.failedLoadWallet(l.errorUnexpected),
+      'errorWalletNotFound': () => l.errorWalletNotFound,
     };
 
     return resolver[errorKey]?.call() ?? errorKey;

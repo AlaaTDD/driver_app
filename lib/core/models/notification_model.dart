@@ -1,7 +1,4 @@
-
 import 'package:equatable/equatable.dart';
-
-
 
 class NotificationModel extends Equatable {
   final String id;
@@ -45,7 +42,6 @@ class NotificationModel extends Equatable {
     );
   }
 
-  
   String localizedTitle(String language) {
     if (language == 'ar' && titleAr != null && titleAr!.isNotEmpty) {
       return titleAr!;
@@ -53,7 +49,6 @@ class NotificationModel extends Equatable {
     return title;
   }
 
-  
   String localizedBody(String language) {
     if (language == 'ar' && bodyAr != null && bodyAr!.isNotEmpty) {
       return bodyAr!;
@@ -78,7 +73,15 @@ class NotificationModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, userId, title, message, type, referenceId, isRead, createdAt,
-        titleAr, bodyAr,
+        id,
+        userId,
+        title,
+        message,
+        type,
+        referenceId,
+        isRead,
+        createdAt,
+        titleAr,
+        bodyAr,
       ];
 }

@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,10 +30,10 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   ) async {
     emit(TrackingLoading());
     try {
-      
       final tripData = await SupabaseService.client
           .from('trips')
-          .select('*, driver:users!trips_driver_id_fkey(id, name, phone, rating, avatar_url)')
+          .select(
+              '*, driver:users!trips_driver_id_fkey(id, name, phone, rating, avatar_url)')
           .eq('id', event.tripId)
           .single();
 
@@ -44,10 +43,11 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           driverProfile = Map<String, dynamic>.from(tripData['driver'] ?? {});
           final driverProfileData = await SupabaseService.client
               .from('driver_public_profile')
-              .select('id, vehicle_brand, vehicle_model, vehicle_color, vehicle_plate, is_verified')
+              .select(
+                  'id, vehicle_brand, vehicle_model, vehicle_color, vehicle_plate, is_verified')
               .eq('id', tripData['driver_id'])
               .maybeSingle();
-          
+
           if (driverProfileData != null) {
             driverProfile.addAll(driverProfileData);
           }
@@ -72,10 +72,12 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
               (driverPos['current_lat'] as num).toDouble(),
               (driverPos['current_lng'] as num).toDouble(),
             );
-            debugPrint('📡 TrackingBloc: Got initial driver position $initialDriverLocation');
+            debugPrint(
+                '📡 TrackingBloc: Got initial driver position $initialDriverLocation');
           }
         } catch (e) {
-          debugPrint('⚠️ TrackingBloc: Failed to get initial driver position: $e');
+          debugPrint(
+              '⚠️ TrackingBloc: Failed to get initial driver position: $e');
         }
       }
 
@@ -85,9 +87,12 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       final pickupLng = tripData['pickup_lng'];
       final destLat = tripData['destination_lat'];
       final destLng = tripData['destination_lng'];
-      
+
       try {
-        if (tripData['status'] == 'accepted' && initialDriverLocation != null && pickupLat != null && pickupLng != null) {
+        if (tripData['status'] == 'accepted' &&
+            initialDriverLocation != null &&
+            pickupLat != null &&
+            pickupLng != null) {
           // Driver is heading to pickup, so show route from driver to pickup
           final result = await DirectionsService.getRoute(
             originLat: initialDriverLocation.latitude,
@@ -97,7 +102,10 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
             apiKey: EnvConstants.googleMapsApiKey,
           );
           if (result != null) routePoints = result.points;
-        } else if (pickupLat != null && pickupLng != null && destLat != null && destLng != null) {
+        } else if (pickupLat != null &&
+            pickupLng != null &&
+            destLat != null &&
+            destLng != null) {
           // Trip is in progress or searching, show route from pickup to destination
           final result = await DirectionsService.getRoute(
             originLat: (pickupLat as num).toDouble(),
@@ -144,7 +152,6 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       emit(TrackingLoaded(
         trip: current.trip,
         driver: current.driver,
-        
         driverLocation: LatLng(event.lat, event.lng),
         routePoints: current.routePoints,
       ));
@@ -163,10 +170,11 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           trip: updatedTrip,
           driver: current.driver,
           driverLocation: current.driverLocation));
-          
+
       // Start broadcasting again once trip is over
       LocationService.instance.getCurrentLocation().then((loc) {
-        UserPresenceService.instance.startBroadcasting(lat: loc.latitude, lng: loc.longitude);
+        UserPresenceService.instance
+            .startBroadcasting(lat: loc.latitude, lng: loc.longitude);
       });
     }
   }
@@ -185,7 +193,10 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     final destLat = tripData['destination_lat'];
     final destLng = tripData['destination_lng'];
 
-    if (pickupLat != null && pickupLng != null && destLat != null && destLng != null) {
+    if (pickupLat != null &&
+        pickupLng != null &&
+        destLat != null &&
+        destLng != null) {
       // ─── Fetch active waypoints from trip_route_waypoints ──────────────────
       List<LatLng> stopovers = [];
       try {
@@ -203,11 +214,14 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
               .eq('route_plan_id', plans['id'] as String)
               .eq('role', 'stopover')
               .order('seq_order');
-          stopovers = (wps as List).map((w) => LatLng(
-            (w['lat'] as num).toDouble(),
-            (w['lng'] as num).toDouble(),
-          )).toList();
-          debugPrint('📍 TrackingBloc: RecalculateRoute found ${stopovers.length} stopovers');
+          stopovers = (wps as List)
+              .map((w) => LatLng(
+                    (w['lat'] as num).toDouble(),
+                    (w['lng'] as num).toDouble(),
+                  ))
+              .toList();
+          debugPrint(
+              '📍 TrackingBloc: RecalculateRoute found ${stopovers.length} stopovers');
         }
       } catch (e) {
         debugPrint('⚠️ TrackingBloc: Waypoints fetch failed: $e');
@@ -220,12 +234,14 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
           originLng: (pickupLng as num).toDouble(),
           destLat: (destLat as num).toDouble(),
           destLng: (destLng as num).toDouble(),
-          waypoints: stopovers.isNotEmpty ? stopovers : null, // ✅ pass stopovers
+          waypoints:
+              stopovers.isNotEmpty ? stopovers : null, // ✅ pass stopovers
           apiKey: EnvConstants.googleMapsApiKey,
         );
         if (result != null) routePoints = result.points;
       } catch (e) {
-        debugPrint('⚠️ TrackingBloc: RecalculateRoute directions fetch failed: $e');
+        debugPrint(
+            '⚠️ TrackingBloc: RecalculateRoute directions fetch failed: $e');
       }
     }
 
@@ -255,8 +271,8 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       if (event.cancelReasonCategory != null) {
         await SupabaseService.client
             .from('trips')
-            .update({'cancel_reason_category': event.cancelReasonCategory})
-            .eq('id', event.tripId);
+            .update({'cancel_reason_category': event.cancelReasonCategory}).eq(
+                'id', event.tripId);
       }
       await _tripSubscription?.cancel();
       await _driverLocationSubscription?.cancel();
@@ -270,12 +286,12 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
             driverLocation: current.driverLocation,
             routePoints: current.routePoints));
       }
-      
+
       // Resume broadcasting if they cancel
       final loc = await LocationService.instance.getCurrentLocation();
-      await UserPresenceService.instance.startBroadcasting(lat: loc.latitude, lng: loc.longitude);
+      await UserPresenceService.instance
+          .startBroadcasting(lat: loc.latitude, lng: loc.longitude);
     } catch (e) {
-      
       debugPrint('TrackingBloc: trip cancellation failed — $e');
     }
   }
@@ -287,24 +303,25 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         .stream(primaryKey: ['id'])
         .eq('id', tripId)
         .listen((rows) {
-      if (rows.isNotEmpty) {
-        final row = rows.first;
-        if (row['status'] == 'completed') {
-          add(const TripCompleted());
-        }
-        if (row['driver_id'] != null && state is TrackingLoaded) {
-          final current = state as TrackingLoaded;
-          if (current.driver == null) {
-            _subscribeToDriverLocation(row['driver_id'] as String);
+          if (rows.isNotEmpty) {
+            final row = rows.first;
+            if (row['status'] == 'completed') {
+              add(const TripCompleted());
+            }
+            if (row['driver_id'] != null && state is TrackingLoaded) {
+              final current = state as TrackingLoaded;
+              if (current.driver == null) {
+                _subscribeToDriverLocation(row['driver_id'] as String);
+              }
+              if (row['status'] == 'in_progress' &&
+                  current.trip['status'] == 'accepted') {
+                // Update local state trip status first to avoid multiple recalculations
+                current.trip['status'] = 'in_progress';
+                add(RecalculateRoute(tripId));
+              }
+            }
           }
-          if (row['status'] == 'in_progress' && current.trip['status'] == 'accepted') {
-            // Update local state trip status first to avoid multiple recalculations
-            current.trip['status'] = 'in_progress';
-            add(RecalculateRoute(tripId));
-          }
-        }
-      }
-    });
+        });
   }
 
   void _subscribeToDriverLocation(String driverId) {
@@ -312,28 +329,30 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     _driverLocationSubscription?.cancel();
     _driverLocationChannel?.unsubscribe();
 
-    debugPrint('📡 TrackingBloc: Subscribing to driver $driverId location (broadcast)');
+    debugPrint(
+        '📡 TrackingBloc: Subscribing to driver $driverId location (broadcast)');
 
     // ── PRIMARY: Broadcast channel (instant, works even when driver is offline in DB) ──
-    _driverLocationChannel = SupabaseService.client.channel('trip-tracking-$driverId');
+    _driverLocationChannel =
+        SupabaseService.client.channel('trip-tracking-$driverId');
     _driverLocationChannel!
         .onBroadcast(
-          event: 'location_update',
-          callback: (payload) {
-            final lat = payload['lat'];
-            final lng = payload['lng'];
-            debugPrint('📡 TrackingBloc: Broadcast received lat=$lat lng=$lng');
-            if (lat != null && lng != null) {
-              add(DriverLocationUpdated(
-                lat: (lat as num).toDouble(),
-                lng: (lng as num).toDouble(),
-              ));
-            }
-          },
-        )
+      event: 'location_update',
+      callback: (payload) {
+        final lat = payload['lat'];
+        final lng = payload['lng'];
+        debugPrint('📡 TrackingBloc: Broadcast received lat=$lat lng=$lng');
+        if (lat != null && lng != null) {
+          add(DriverLocationUpdated(
+            lat: (lat as num).toDouble(),
+            lng: (lng as num).toDouble(),
+          ));
+        }
+      },
+    )
         .subscribe((status, [error]) {
-          debugPrint('📡 TrackingBloc: Channel status=$status error=$error');
-        });
+      debugPrint('📡 TrackingBloc: Channel status=$status error=$error');
+    });
   }
 
   @override

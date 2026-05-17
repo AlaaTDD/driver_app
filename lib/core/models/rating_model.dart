@@ -1,7 +1,4 @@
-
 import 'package:equatable/equatable.dart';
-
-
 
 class RatingModel extends Equatable {
   final String id;
@@ -36,7 +33,6 @@ class RatingModel extends Equatable {
     );
   }
 
-  
   Map<String, dynamic> toInsertJson() {
     return {
       'trip_id': tripId,
@@ -49,6 +45,12 @@ class RatingModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, tripId, userId, driverId, rating, comment, createdAt,
+        id,
+        tripId,
+        userId,
+        driverId,
+        rating,
+        comment,
+        createdAt,
       ];
 }

@@ -2012,6 +2012,54 @@ abstract class AppLocalizations {
   /// **'نوع الملف غير مدعوم'**
   String get errorFileUnsupported;
 
+  /// No description provided for @errorUploadFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل رفع الملف، حاول مرة أخرى.'**
+  String get errorUploadFailed;
+
+  /// No description provided for @errorDeleteFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل حذف الملف، حاول مرة أخرى.'**
+  String get errorDeleteFailed;
+
+  /// No description provided for @errorReceiverEmpty.
+  ///
+  /// In ar, this message translates to:
+  /// **'المستقبِل غير صالح.'**
+  String get errorReceiverEmpty;
+
+  /// No description provided for @errorTripIdEmpty.
+  ///
+  /// In ar, this message translates to:
+  /// **'معرّف الرحلة غير صالح.'**
+  String get errorTripIdEmpty;
+
+  /// No description provided for @errorReceiverNotFound.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يُعثر على المشارك في المحادثة.'**
+  String get errorReceiverNotFound;
+
+  /// No description provided for @errorNullPrice.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر حساب السعر، حاول مرة أخرى.'**
+  String get errorNullPrice;
+
+  /// No description provided for @errorAcceptOfferFailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل قبول العرض، حاول مرة أخرى.'**
+  String get errorAcceptOfferFailed;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ غير متوقع.'**
+  String get unexpectedError;
+
   /// No description provided for @pleaseFillAllFields.
   ///
   /// In ar, this message translates to:
@@ -2053,6 +2101,54 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'محفظة السائق'**
   String get driverWallet;
+
+  /// No description provided for @driverRevisionRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلبات مراجعة البيانات'**
+  String get driverRevisionRequests;
+
+  /// No description provided for @noRevisionRequests.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد طلبات مراجعة'**
+  String get noRevisionRequests;
+
+  /// No description provided for @noRevisionRequestsDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'بيانات التحقق لا تحتاج تعديلات حالياً.'**
+  String get noRevisionRequestsDesc;
+
+  /// No description provided for @revisionNeedsAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'مطلوب تعديل'**
+  String get revisionNeedsAction;
+
+  /// No description provided for @revisionResolved.
+  ///
+  /// In ar, this message translates to:
+  /// **'تمت معالجة الطلب'**
+  String get revisionResolved;
+
+  /// No description provided for @fieldsRequested.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحقول المطلوبة'**
+  String get fieldsRequested;
+
+  /// No description provided for @revisionCreatedAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'تاريخ الطلب: {date}'**
+  String revisionCreatedAt(String date);
+
+  /// No description provided for @revisionResolvedAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'تاريخ المعالجة: {date}'**
+  String revisionResolvedAt(String date);
 
   /// No description provided for @availableBalanceLabel.
   ///
@@ -2852,6 +2948,366 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'رحلات ملغاة'**
   String get cancelledTrips;
+
+  /// No description provided for @errorLoadVehicleTypes.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل تحميل أنواع المركبات، حاول مرة أخرى.'**
+  String get errorLoadVehicleTypes;
+
+  /// No description provided for @errorUserBlocked.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حظر حسابك. تواصل مع الدعم الفني.'**
+  String get errorUserBlocked;
+
+  /// No description provided for @errorInvalidTripId.
+  ///
+  /// In ar, this message translates to:
+  /// **'معرّف الرحلة غير صالح.'**
+  String get errorInvalidTripId;
+
+  /// No description provided for @addStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة محطة توقف'**
+  String get addStopover;
+
+  /// No description provided for @addStopoverMultiRoute.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة محطة توقف (مسار متعدد)'**
+  String get addStopoverMultiRoute;
+
+  /// No description provided for @addThisStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة هذه المحطة'**
+  String get addThisStopover;
+
+  /// No description provided for @confirmStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد المحطة'**
+  String get confirmStopover;
+
+  /// No description provided for @selectedStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'المحطة المختارة'**
+  String get selectedStopover;
+
+  /// No description provided for @swapLocations.
+  ///
+  /// In ar, this message translates to:
+  /// **'عكس'**
+  String get swapLocations;
+
+  /// No description provided for @tripRoute.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسار الرحلة'**
+  String get tripRoute;
+
+  /// No description provided for @delete.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف'**
+  String get delete;
+
+  /// No description provided for @driverOffersCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'عروض السائقين ({count}):'**
+  String driverOffersCount(int count);
+
+  /// No description provided for @stopCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} محطة'**
+  String stopCount(int count);
+
+  /// No description provided for @pickupPoint.
+  ///
+  /// In ar, this message translates to:
+  /// **'نقطة الانطلاق'**
+  String get pickupPoint;
+
+  /// No description provided for @stopoverNumber.
+  ///
+  /// In ar, this message translates to:
+  /// **'محطة {number}'**
+  String stopoverNumber(int number);
+
+  /// No description provided for @loading.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري التحميل...'**
+  String get loading;
+
+  /// No description provided for @availableRequestsCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} طلب متاح'**
+  String availableRequestsCount(int count);
+
+  /// No description provided for @noRideRequestsAvailableNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد طلبات متاحة حالياً'**
+  String get noRideRequestsAvailableNow;
+
+  /// No description provided for @noRideRequestsAvailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد طلبات متاحة'**
+  String get noRideRequestsAvailable;
+
+  /// No description provided for @rideRequestsWillAppearHere.
+  ///
+  /// In ar, this message translates to:
+  /// **'ستظهر هنا طلبات الرحلات عند ورودها'**
+  String get rideRequestsWillAppearHere;
+
+  /// No description provided for @acceptRide.
+  ///
+  /// In ar, this message translates to:
+  /// **'قبول الرحلة'**
+  String get acceptRide;
+
+  /// No description provided for @placeNotFoundDetailed.
+  ///
+  /// In ar, this message translates to:
+  /// **'المكان غير موجود، حاول تفصيل العنوان'**
+  String get placeNotFoundDetailed;
+
+  /// No description provided for @stopoverAddedSuccessfully.
+  ///
+  /// In ar, this message translates to:
+  /// **'تمت إضافة المحطة بنجاح'**
+  String get stopoverAddedSuccessfully;
+
+  /// No description provided for @errorWithDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'خطأ: {error}'**
+  String errorWithDetails(String error);
+
+  /// No description provided for @searchPlaceHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابحث عن مكان...'**
+  String get searchPlaceHint;
+
+  /// No description provided for @discountLimited.
+  ///
+  /// In ar, this message translates to:
+  /// **'خصم محدود'**
+  String get discountLimited;
+
+  /// No description provided for @discountOnYourRide.
+  ///
+  /// In ar, this message translates to:
+  /// **'خصم على رحلتك'**
+  String get discountOnYourRide;
+
+  /// No description provided for @useCodeForInstantDiscount.
+  ///
+  /// In ar, this message translates to:
+  /// **'استخدم الكود واحصل على خصم فوري'**
+  String get useCodeForInstantDiscount;
+
+  /// No description provided for @discountOnAllTrips.
+  ///
+  /// In ar, this message translates to:
+  /// **'على جميع الرحلات'**
+  String get discountOnAllTrips;
+
+  /// No description provided for @copyCouponCode.
+  ///
+  /// In ar, this message translates to:
+  /// **'نسخ كود الخصم'**
+  String get copyCouponCode;
+
+  /// No description provided for @couponCodeCopied.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم نسخ كود الخصم'**
+  String get couponCodeCopied;
+
+  /// No description provided for @couponExpiresAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'ينتهي في {date}'**
+  String couponExpiresAt(String date);
+
+  /// No description provided for @resetButton.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة'**
+  String get resetButton;
+
+  /// No description provided for @clearButton.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح'**
+  String get clearButton;
+
+  /// No description provided for @processing.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري المعالجة...'**
+  String get processing;
+
+  /// No description provided for @corridorStepOrigin.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختيار البداية'**
+  String get corridorStepOrigin;
+
+  /// No description provided for @corridorStepDestination.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختيار النهاية'**
+  String get corridorStepDestination;
+
+  /// No description provided for @corridorStepReview.
+  ///
+  /// In ar, this message translates to:
+  /// **'مراجعة وحفظ'**
+  String get corridorStepReview;
+
+  /// No description provided for @corridorPickOriginHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اضغط على نقطة بداية الممر (الانطلاق)'**
+  String get corridorPickOriginHint;
+
+  /// No description provided for @corridorPickDestinationHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اضغط على نقطة نهاية الممر (الوجهة)'**
+  String get corridorPickDestinationHint;
+
+  /// No description provided for @corridorReviewHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تحديد الممر. راجع التفاصيل واحفظه.'**
+  String get corridorReviewHint;
+
+  /// No description provided for @corridorStart.
+  ///
+  /// In ar, this message translates to:
+  /// **'بداية الممر'**
+  String get corridorStart;
+
+  /// No description provided for @corridorEnd.
+  ///
+  /// In ar, this message translates to:
+  /// **'نهاية الممر'**
+  String get corridorEnd;
+
+  /// No description provided for @corridorSearchHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابحث عن منطقة للذهاب إليها...'**
+  String get corridorSearchHint;
+
+  /// No description provided for @corridorOriginRadius.
+  ///
+  /// In ar, this message translates to:
+  /// **'نطاق الانطلاق'**
+  String get corridorOriginRadius;
+
+  /// No description provided for @corridorDestinationRadius.
+  ///
+  /// In ar, this message translates to:
+  /// **'نطاق الوجهة'**
+  String get corridorDestinationRadius;
+
+  /// No description provided for @selectOriginFirst.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدد نقطة الانطلاق أولاً'**
+  String get selectOriginFirst;
+
+  /// No description provided for @selectDestination.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدد نقطة الوصول'**
+  String get selectDestination;
+
+  /// No description provided for @savePreferredCorridor.
+  ///
+  /// In ar, this message translates to:
+  /// **'حفظ الممر المفضل'**
+  String get savePreferredCorridor;
+
+  /// No description provided for @tapMap.
+  ///
+  /// In ar, this message translates to:
+  /// **'اضغط على الخريطة'**
+  String get tapMap;
+
+  /// No description provided for @kmValue.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value} كم'**
+  String kmValue(String value);
+
+  /// No description provided for @moveMapToPickStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'حرّك الخريطة لاختيار المحطة'**
+  String get moveMapToPickStopover;
+
+  /// No description provided for @stopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'محطة توقف'**
+  String get stopover;
+
+  /// No description provided for @arrivalConfirmed.
+  ///
+  /// In ar, this message translates to:
+  /// **'وصل'**
+  String get arrivalConfirmed;
+
+  /// No description provided for @departureConfirmed.
+  ///
+  /// In ar, this message translates to:
+  /// **'غادر'**
+  String get departureConfirmed;
+
+  /// No description provided for @confirmArrival.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد الوصول'**
+  String get confirmArrival;
+
+  /// No description provided for @confirmDeparture.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد المغادرة'**
+  String get confirmDeparture;
+
+  /// No description provided for @failedCreateLegacyRoutePlan.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل إنشاء مسار الرحلة القديم'**
+  String get failedCreateLegacyRoutePlan;
+
+  /// No description provided for @errorAddStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل إضافة المحطة'**
+  String get errorAddStopover;
+
+  /// No description provided for @errorRemoveStopover.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل حذف المحطة'**
+  String get errorRemoveStopover;
 }
 
 class _AppLocalizationsDelegate

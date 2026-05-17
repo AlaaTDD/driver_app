@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,10 +25,12 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
   void _manageLocationTracking(String? status) {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
-    
+
     if (status == 'accepted' || status == 'in_progress') {
       LocationService.instance.startTripTracking(userId);
-    } else if (status == 'completed' || status == 'cancelled' || status == 'rejected') {
+    } else if (status == 'completed' ||
+        status == 'cancelled' ||
+        status == 'rejected') {
       LocationService.instance.stopTripTracking();
     }
   }
@@ -64,7 +65,8 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
         _manageLocationTracking(updated['status'] as String?);
         emit(TripDetailsLoaded(updated));
       } else {
-        emit(TripDetailsError(result?['error']?.toString() ?? 'errorAcceptTrip'));
+        emit(TripDetailsError(
+            result?['error']?.toString() ?? 'errorAcceptTrip'));
       }
     } catch (e) {
       emit(TripDetailsError('errorAcceptTrip'));
@@ -87,7 +89,6 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
         driverId: userId,
       );
 
-      
       final updated = await _repository.loadTripDetails(event.tripId);
       _manageLocationTracking(updated['status'] as String?);
       emit(TripDetailsLoaded(updated));
@@ -117,7 +118,8 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
         _manageLocationTracking(updated['status'] as String?);
         emit(TripDetailsLoaded(updated));
       } else {
-        emit(TripDetailsError(result?['error']?.toString() ?? 'errorStartTrip'));
+        emit(
+            TripDetailsError(result?['error']?.toString() ?? 'errorStartTrip'));
       }
     } catch (e) {
       emit(TripDetailsError('errorStartTrip'));
@@ -145,7 +147,8 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
         _manageLocationTracking(updated['status'] as String?);
         emit(TripDetailsLoaded(updated));
       } else {
-        emit(TripDetailsError(result?['error']?.toString() ?? 'errorCompleteTrip'));
+        emit(TripDetailsError(
+            result?['error']?.toString() ?? 'errorCompleteTrip'));
       }
     } catch (e, stackTrace) {
       debugPrint('❌ CompleteTrip failed: $e');

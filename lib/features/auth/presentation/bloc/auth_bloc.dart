@@ -1,14 +1,10 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../services/user_presence_service.dart';
 import '../../../../services/fcm_service.dart';
-import '../../../../services/cell_subscription_service.dart';
-import '../../../../services/heatmap_service.dart';
 import '../../../../services/supabase_service.dart';
+import '../../../../core/services/logout_coordinator.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../../../../services/directions_service.dart';
-import '../../../../services/location_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -37,11 +33,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user == null) {
           emit(AuthUnauthenticated());
         } else if (user.isBlocked) {
-          
           await _authRepository.signOut();
           emit(const AuthError('errorUserBlocked'));
         } else if (user.role == 'driver') {
-          final verifiedResult = await _authRepository.getDriverIsVerified(user.id);
+          final verifiedResult =
+              await _authRepository.getDriverIsVerified(user.id);
           final isVerified = verifiedResult.getOrElse(() => false);
           if (isVerified) {
             await UserPresenceService.instance.startBroadcasting();
@@ -72,7 +68,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (user) async {
         await _storeFcmToken(user.id);
         if (user.role == 'driver') {
-          final verifiedResult = await _authRepository.getDriverIsVerified(user.id);
+          final verifiedResult =
+              await _authRepository.getDriverIsVerified(user.id);
           final isVerified = verifiedResult.getOrElse(() => false);
           if (isVerified) {
             await UserPresenceService.instance.startBroadcasting();
@@ -94,8 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (token != null) {
         await SupabaseService.client
             .from('users')
-            .update({'fcm_token': token})
-            .eq('id', userId);
+            .update({'fcm_token': token}).eq('id', userId);
       }
     } catch (e) {
       debugPrint('AuthBloc: FCM token store failed — $e');
@@ -162,12 +158,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    
-    await UserPresenceService.instance.stopBroadcasting();
-    await CellSubscriptionService.instance.dispose();
-    HeatmapService.instance.dispose();
-    LocationService.instance.stopAllTracking(); // Fix: Stop GPS tracking completely on logout
-    DirectionsService.clearCache();
+    await LogoutCoordinator.instance.performLogout();
     final result = await _authRepository.signOut();
     result.fold(
       (error) => emit(AuthError(error)),

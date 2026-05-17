@@ -26,8 +26,6 @@ class VehicleTypesState {
 }
 
 class VehicleTypesCubit extends Cubit<VehicleTypesState> {
-  
-  
   VehicleTypesCubit() : super(const VehicleTypesState());
 
   Future<void> fetchVehicleTypes() async {
@@ -38,7 +36,7 @@ class VehicleTypesCubit extends Cubit<VehicleTypesState> {
           .select('name, display_name')
           .eq('is_active', true)
           .order('sort_order', ascending: true);
-      
+
       emit(state.copyWith(
         isLoading: false,
         vehicleTypes: List<Map<String, dynamic>>.from(rows),

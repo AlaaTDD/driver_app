@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
 import 'package:shimmer/shimmer.dart';
 import 'widgets/trips_header.dart';
 import 'widgets/segmented_control.dart';
@@ -50,85 +49,85 @@ class _UserTripsScreenState extends State<UserTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.background, // Dark background matching trip_details
+      backgroundColor:
+          AppColors.background, // Dark background matching trip_details
       body: SafeArea(
         top: true,
         child: BlocConsumer<TripsBloc, TripsState>(
-        listener: (context, state) {
-          if (state is TripActionSuccess) {
-            _showToast(ErrorMapper.getErrorMessage(context, state.message), AppColors.success);
-            context.read<TripsBloc>().add(const LoadUserTrips());
-          } else if (state is TripsError) {
-            _showToast(ErrorMapper.getErrorMessage(context, state.message), AppColors.error);
-          }
-        },
-        builder: (context, state) {
-          if (state is TripsLoading) {
-            return _buildLoadingState();
-          }
+          listener: (context, state) {
+            if (state is TripActionSuccess) {
+              _showToast(ErrorMapper.getErrorMessage(context, state.message),
+                  AppColors.success);
+              context.read<TripsBloc>().add(const LoadUserTrips());
+            } else if (state is TripsError) {
+              _showToast(ErrorMapper.getErrorMessage(context, state.message),
+                  AppColors.error);
+            }
+          },
+          builder: (context, state) {
+            if (state is TripsLoading) {
+              return _buildLoadingState();
+            }
 
-          if (state is TripsLoaded) {
-            final allTrips = state.trips;
-            final inProgress = allTrips
-                .where((t) =>
-                    t['status'] == 'searching' ||
-                    t['status'] == 'accepted' ||
-                    t['status'] == 'in_progress')
-                .toList();
-            final completed =
-                allTrips.where((t) => t['status'] == 'completed').toList();
-            final cancelled =
-                allTrips.where((t) => t['status'] == 'cancelled').toList();
+            if (state is TripsLoaded) {
+              final allTrips = state.trips;
+              final inProgress = allTrips
+                  .where((t) =>
+                      t['status'] == 'searching' ||
+                      t['status'] == 'accepted' ||
+                      t['status'] == 'in_progress')
+                  .toList();
+              final completed =
+                  allTrips.where((t) => t['status'] == 'completed').toList();
+              final cancelled =
+                  allTrips.where((t) => t['status'] == 'cancelled').toList();
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                
-                SliverToBoxAdapter(
-                  child: TripsHeader(
-                    total: allTrips.length,
-                    completed: completed.length,
-                    cancelled: cancelled.length,
-                    onBack: () => context.pop(),
-                    onNewTrip: () => context.push(AppRoutes.userHome),
+              return CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: TripsHeader(
+                      total: allTrips.length,
+                      completed: completed.length,
+                      cancelled: cancelled.length,
+                      onBack: () => context.pop(),
+                      onNewTrip: () => context.push(AppRoutes.userHome),
+                    ),
                   ),
-                ),
-                
-                SliverToBoxAdapter(
-                  child: SegmentedControl(
-                    selectedIndex: _selectedIndex,
-                    onIndexChanged: (index) {
-                      _tabController.animateTo(index);
-                    },
-                    inProgressCount: inProgress.length,
-                    completedCount: completed.length,
-                    cancelledCount: cancelled.length,
+                  SliverToBoxAdapter(
+                    child: SegmentedControl(
+                      selectedIndex: _selectedIndex,
+                      onIndexChanged: (index) {
+                        _tabController.animateTo(index);
+                      },
+                      inProgressCount: inProgress.length,
+                      completedCount: completed.length,
+                      cancelledCount: cancelled.length,
+                    ),
                   ),
-                ),
-                
-                SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: TabBarView(
-                    controller: _tabController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      TripListView(trips: inProgress, isActive: true),
-                      TripListView(trips: completed),
-                      TripListView(trips: cancelled),
-                    ],
+                  SliverFillRemaining(
+                    hasScrollBody: true,
+                    child: TabBarView(
+                      controller: _tabController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        TripListView(trips: inProgress, isActive: true),
+                        TripListView(trips: completed),
+                        TripListView(trips: cancelled),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          }
+                ],
+              );
+            }
 
-          if (state is TripsError) {
-            return _buildErrorState(state.message, l);
-          }
+            if (state is TripsError) {
+              return _buildErrorState(state.message, l);
+            }
 
-          return const SizedBox.shrink();
-        },
-      ),
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
@@ -209,8 +208,6 @@ class _UserTripsScreenState extends State<UserTripsScreen>
   }
 }
 
-
-
 class _ToastWidget extends StatelessWidget {
   final String message;
   final Color color;
@@ -233,7 +230,8 @@ class _ToastWidget extends StatelessWidget {
             child: Opacity(
               opacity: value,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(12),
@@ -247,7 +245,8 @@ class _ToastWidget extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: AppColors.white, size: 20),
+                    const Icon(Icons.check_circle,
+                        color: AppColors.white, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(

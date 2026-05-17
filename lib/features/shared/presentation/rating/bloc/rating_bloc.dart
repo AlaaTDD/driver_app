@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -25,7 +24,6 @@ class RatingBloc extends Bloc<RatingEvent, RatingState> {
         return;
       }
 
-      
       final tripData = await _repository.getTripData(event.tripId);
       if (tripData == null) {
         emit(const RatingError('errorNoDriverForTrip'));
@@ -34,7 +32,7 @@ class RatingBloc extends Bloc<RatingEvent, RatingState> {
 
       final tripUserId = tripData['user_id'] as String?;
       final tripDriverId = tripData['driver_id'] as String?;
-      
+
       if (tripUserId == null || tripDriverId == null) {
         emit(const RatingError('errorNoDriverForTrip'));
         return;
@@ -54,7 +52,8 @@ class RatingBloc extends Bloc<RatingEvent, RatingState> {
         }
       }
 
-      final hasExisting = await _repository.hasExistingRating(event.tripId, userId, tripUserId, tripDriverId);
+      final hasExisting = await _repository.hasExistingRating(
+          event.tripId, userId, tripUserId, tripDriverId);
       if (hasExisting) {
         emit(const RatingError('errorAlreadyRated'));
         return;

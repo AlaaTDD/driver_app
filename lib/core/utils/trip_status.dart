@@ -1,9 +1,3 @@
-
-
-
-
-
-
 enum TripStatus {
   searching,
   accepted,
@@ -11,7 +5,6 @@ enum TripStatus {
   completed,
   cancelled;
 
-  
   static TripStatus? fromString(String? status) {
     switch (status) {
       case 'searching':
@@ -29,7 +22,6 @@ enum TripStatus {
     }
   }
 
-  
   String toDbString() {
     switch (this) {
       case TripStatus.searching:
@@ -45,7 +37,6 @@ enum TripStatus {
     }
   }
 
-  
   bool canTransitionTo(TripStatus next) {
     switch (this) {
       case TripStatus.searching:
@@ -55,19 +46,17 @@ enum TripStatus {
       case TripStatus.inProgress:
         return next == TripStatus.completed || next == TripStatus.cancelled;
       case TripStatus.completed:
-        return false; 
+        return false;
       case TripStatus.cancelled:
-        return false; 
+        return false;
     }
   }
 
-  
-  bool get isTerminal => this == TripStatus.completed || this == TripStatus.cancelled;
+  bool get isTerminal =>
+      this == TripStatus.completed || this == TripStatus.cancelled;
 
-  
   bool get isActive => !isTerminal;
 
-  
-  bool get isCancellable => this == TripStatus.searching || this == TripStatus.accepted;
-
+  bool get isCancellable =>
+      this == TripStatus.searching || this == TripStatus.accepted;
 }

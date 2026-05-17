@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../../../../../services/cell_subscription_service.dart';
 
@@ -44,7 +43,7 @@ class UserHomeLoaded extends UserHomeState {
     double? userLng,
     String? currentCellId,
     Map<String, DriverLocation>? nearbyDrivers,
-    bool bumpDrivers = false,   // set true when nearbyDrivers changes
+    bool bumpDrivers = false, // set true when nearbyDrivers changes
     List<Map<String, dynamic>>? coupons,
   }) {
     return UserHomeLoaded(
@@ -52,9 +51,8 @@ class UserHomeLoaded extends UserHomeState {
       userLng: userLng ?? this.userLng,
       currentCellId: currentCellId ?? this.currentCellId,
       nearbyDrivers: nearbyDrivers ?? this.nearbyDrivers,
-      driversVersion: bumpDrivers
-          ? DateTime.now().millisecondsSinceEpoch
-          : driversVersion,
+      driversVersion:
+          bumpDrivers ? DateTime.now().millisecondsSinceEpoch : driversVersion,
       coupons: coupons ?? this.coupons,
     );
   }

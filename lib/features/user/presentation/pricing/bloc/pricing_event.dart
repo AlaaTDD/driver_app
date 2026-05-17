@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 
 abstract class PricingEvent extends Equatable {
@@ -7,7 +6,6 @@ abstract class PricingEvent extends Equatable {
   @override
   List<Object?> get props => [];
 }
-
 
 class LoadVehicleTypes extends PricingEvent {
   const LoadVehicleTypes();

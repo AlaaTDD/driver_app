@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,35 +9,24 @@ import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../data/models/user_wallet_model.dart';
 import '../../data/models/wallet_transaction_model.dart';
-import '../../data/repositories/wallet_repository.dart';
-
-// ─── State ────────────────────────────────────────────────────────────────────
-
-abstract class _UserWalletState {}
-
-class _Loading extends _UserWalletState {}
-
-class _Loaded extends _UserWalletState {
-  final UserWalletModel wallet;
-  final List<WalletTransactionModel> transactions;
-  _Loaded({required this.wallet, required this.transactions});
-}
-
-class _Error extends _UserWalletState {
-  final String message;
-  _Error(this.message);
-}
+import '../cubit/user_wallet_cubit.dart';
 
 // ─── Number Formatter ─────────────────────────────────────────────────────────
 
 NumberFormat _getCurrencyFormat(BuildContext context) {
   final l = AppLocalizations.of(context)!;
-  return NumberFormat.currency(locale: Localizations.localeOf(context).languageCode, symbol: l.egp, decimalDigits: 2);
+  return NumberFormat.currency(
+      locale: Localizations.localeOf(context).languageCode,
+      symbol: l.egp,
+      decimalDigits: 2);
 }
 
 NumberFormat _getCompactCurrencyFormat(BuildContext context) {
   final l = AppLocalizations.of(context)!;
-  return NumberFormat.currency(locale: Localizations.localeOf(context).languageCode, symbol: l.egp, decimalDigits: 0);
+  return NumberFormat.currency(
+      locale: Localizations.localeOf(context).languageCode,
+      symbol: l.egp,
+      decimalDigits: 0);
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -52,9 +40,6 @@ class UserWalletScreen extends StatefulWidget {
 
 class _UserWalletScreenState extends State<UserWalletScreen>
     with SingleTickerProviderStateMixin {
-  final _repo = WalletRepository();
-  _UserWalletState _state = _Loading();
-  StreamSubscription? _walletSub;
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
 
@@ -66,53 +51,18 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       duration: const Duration(milliseconds: 800),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWallet());
   }
 
-  Future<void> _init() async {
+  void _loadWallet() {
     final auth = context.read<AuthBloc>().state;
-    if (auth is! AuthAuthenticated) return;
-    final userId = auth.user.id;
-
-    setState(() => _state = _Loading());
-
-    try {
-      final wallet = await _repo.getUserWallet(userId);
-      if (wallet == null) {
-        throw Exception('Wallet not found');
-      }
-      final txns = await _repo.getTransactionHistory(userId: userId, walletType: 'user', limit: 50);
-
-      if (!mounted) return;
-      setState(() => _state = _Loaded(wallet: wallet, transactions: txns));
-      _fadeCtrl.forward(from: 0);
-
-      // Real-time wallet updates
-      _walletSub?.cancel();
-      _walletSub = _repo.watchUserWallet(userId).listen((w) async {
-        if (!mounted || w == null) return;
-        final cur = _state;
-        if (cur is _Loaded) {
-          // Temporarily update just the balance
-          setState(() => _state = _Loaded(wallet: w, transactions: cur.transactions));
-          
-          // Fetch updated transactions in the background
-          try {
-            final updatedTxns = await _repo.getTransactionHistory(userId: userId, walletType: 'user', limit: 50);
-            if (mounted && _state is _Loaded) {
-              setState(() => _state = _Loaded(wallet: w, transactions: updatedTxns));
-            }
-          } catch (_) {}
-        }
-      });
-    } catch (e) {
-      if (mounted) setState(() => _state = _Error(AppLocalizations.of(context)!.failedLoadWallet(e.toString())));
+    if (auth is AuthAuthenticated) {
+      context.read<UserWalletCubit>().load(auth.user.id);
     }
   }
 
   @override
   void dispose() {
-    _walletSub?.cancel();
     _fadeCtrl.dispose();
     super.dispose();
   }
@@ -121,18 +71,33 @@ class _UserWalletScreenState extends State<UserWalletScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      body: () {
-        final s = _state;
-        if (s is _Loading) return _buildShimmer();
-        if (s is _Error) return _buildError(s.message);
-        if (s is _Loaded) return _buildLoaded(s);
-        return const SizedBox();
-      }(),
+      body: BlocConsumer<UserWalletCubit, UserWalletState>(
+        listener: (context, state) {
+          if (state is UserWalletLoaded) {
+            _fadeCtrl.forward(from: 0);
+          }
+        },
+        builder: (context, state) {
+          if (state is UserWalletLoading || state is UserWalletInitial) {
+            return _buildShimmer();
+          }
+          if (state is UserWalletError) {
+            return _buildError(
+              state.message == 'failedLoadWallet'
+                  ? AppLocalizations.of(context)!.failedLoadWallet(
+                      AppLocalizations.of(context)!.errorUnexpected)
+                  : state.message,
+            );
+          }
+          if (state is UserWalletLoaded) return _buildLoaded(state);
+          return const SizedBox();
+        },
+      ),
     );
   }
 
   // ── Loaded ────────────────────────────────────────────────────────────────
-  Widget _buildLoaded(_Loaded s) {
+  Widget _buildLoaded(UserWalletLoaded s) {
     return FadeTransition(
       opacity: _fadeAnim,
       child: CustomScrollView(
@@ -150,7 +115,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.receipt_long_rounded, size: 20, color: AppColors.primary),
+                    child: const Icon(Icons.receipt_long_rounded,
+                        size: 20, color: AppColors.primary),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -164,13 +130,15 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: context.elevatedColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      AppLocalizations.of(context)!.totalTransactionsLabel(s.transactions.length),
+                      AppLocalizations.of(context)!
+                          .totalTransactionsLabel(s.transactions.length),
                       style: TextStyle(
                         color: context.textSecondary,
                         fontSize: 12,
@@ -183,12 +151,17 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             ),
           ),
           s.transactions.isEmpty
-              ? SliverFillRemaining(child: _buildEmptyState(AppLocalizations.of(context)!.noTransactionsYet, Icons.receipt_long_outlined, AppLocalizations.of(context)!.transactionsWillAppearHere))
+              ? SliverFillRemaining(
+                  child: _buildEmptyState(
+                      AppLocalizations.of(context)!.noTransactionsYet,
+                      Icons.receipt_long_outlined,
+                      AppLocalizations.of(context)!.transactionsWillAppearHere))
               : SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => _buildTransactionCard(context, s.transactions[i]),
+                      (ctx, i) =>
+                          _buildTransactionCard(context, s.transactions[i]),
                       childCount: s.transactions.length,
                     ),
                   ),
@@ -206,7 +179,9 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       expandedHeight: 380,
       pinned: true,
       stretch: true,
-      backgroundColor: isDark ? AppColors.background : AppColors.primaryDark, // Slate 900 / Blue 900
+      backgroundColor: isDark
+          ? AppColors.background
+          : AppColors.primaryDark, // Slate 900 / Blue 900
       elevation: 0,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -216,12 +191,14 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: AppColors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_rounded,
+                color: AppColors.white, size: 20),
             onPressed: () => context.pop(),
           ),
         ),
       ),
-      title: Text(AppLocalizations.of(context)!.myWallet,
+      title: Text(
+        AppLocalizations.of(context)!.myWallet,
         style: TextStyle(
           color: AppColors.white,
           fontWeight: FontWeight.w800,
@@ -237,9 +214,17 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isDark 
-                ? [AppColors.surfaceElevated, AppColors.background, AppColors.background] // Slate
-                : [AppColors.primary, AppColors.primaryDark, AppColors.primaryDark], // Blue
+              colors: isDark
+                  ? [
+                      AppColors.surfaceElevated,
+                      AppColors.background,
+                      AppColors.background
+                    ] // Slate
+                  : [
+                      AppColors.primary,
+                      AppColors.primaryDark,
+                      AppColors.primaryDark
+                    ], // Blue
             ),
           ),
           child: Stack(
@@ -286,19 +271,23 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.white.withValues(alpha: 0.2)),
+                          border: Border.all(
+                              color: AppColors.white.withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.account_balance_wallet_rounded, color: AppColors.white, size: 16),
+                            Icon(Icons.account_balance_wallet_rounded,
+                                color: AppColors.white, size: 16),
                             SizedBox(width: 8),
                             Text(
-                              AppLocalizations.of(context)!.availableBalanceLabel,
+                              AppLocalizations.of(context)!
+                                  .availableBalanceLabel,
                               style: TextStyle(
                                 color: AppColors.white,
                                 fontSize: 13,
@@ -319,7 +308,10 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: Text(
-                                _getCurrencyFormat(context).format(wallet.balance).replaceAll(AppLocalizations.of(context)!.egp, ''),
+                                _getCurrencyFormat(context)
+                                    .format(wallet.balance)
+                                    .replaceAll(
+                                        AppLocalizations.of(context)!.egp, ''),
                                 style: const TextStyle(
                                   color: AppColors.white,
                                   fontSize: 52,
@@ -331,7 +323,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(AppLocalizations.of(context)!.egp,
+                          Text(
+                            AppLocalizations.of(context)!.egp,
                             style: TextStyle(
                               color: AppColors.white.withValues(alpha: 0.7),
                               fontSize: 18,
@@ -346,13 +339,15 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                           _buildStatChip(
                             icon: Icons.add_card_rounded,
                             label: AppLocalizations.of(context)!.totalTopUp,
-                            value: _getCompactCurrencyFormat(context).format(wallet.totalToppedUp),
+                            value: _getCompactCurrencyFormat(context)
+                                .format(wallet.totalToppedUp),
                           ),
                           const SizedBox(width: 12),
                           _buildStatChip(
                             icon: Icons.shopping_bag_rounded,
                             label: AppLocalizations.of(context)!.totalSpent,
-                            value: _getCompactCurrencyFormat(context).format(wallet.totalSpent),
+                            value: _getCompactCurrencyFormat(context)
+                                .format(wallet.totalSpent),
                           ),
                         ],
                       ),
@@ -367,7 +362,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
     );
   }
 
-  Widget _buildStatChip({required IconData icon, required String label, required String value}) {
+  Widget _buildStatChip(
+      {required IconData icon, required String label, required String value}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -400,12 +396,19 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 children: [
                   Text(
                     label,
-                    style: TextStyle(color: AppColors.white.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: AppColors.white.withValues(alpha: 0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     value,
-                    style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.5),
+                    style: const TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        letterSpacing: -0.5),
                   ),
                 ],
               ),
@@ -422,19 +425,70 @@ class _UserWalletScreenState extends State<UserWalletScreen>
         : iconColor.withValues(alpha: 0.08);
   }
 
-  Widget _buildTransactionCard(BuildContext context, WalletTransactionModel txn) {
+  Widget _buildTransactionCard(
+      BuildContext context, WalletTransactionModel txn) {
     final isCredit = txn.isCredit;
     final (icon, iconColor, lightBg, label) = switch (txn.type) {
-      WalletTransactionType.tripEarning     => (Icons.directions_car_rounded, AppColors.success, AppColors.successLight, AppLocalizations.of(context)!.tripEarning),
-      WalletTransactionType.withdrawal      => (Icons.arrow_upward_rounded, AppColors.warning, AppColors.warningLight, AppLocalizations.of(context)!.withdrawal),
-      WalletTransactionType.withdrawalRefund=> (Icons.undo_rounded, AppColors.primary, AppColors.textPrimary, AppLocalizations.of(context)!.withdrawalRefund),
-      WalletTransactionType.bonus           => (Icons.star_rounded, AppColors.warning, AppColors.warningLight, AppLocalizations.of(context)!.bonus),
-      WalletTransactionType.couponSubsidy   => (Icons.local_offer_rounded, AppColors.purple, AppColors.purpleLight, AppLocalizations.of(context)!.couponSubsidy),
-      WalletTransactionType.penalty         => (Icons.remove_circle_rounded, AppColors.error, AppColors.errorLight, AppLocalizations.of(context)!.penalty),
-      WalletTransactionType.topUp           => (Icons.add_card_rounded, AppColors.success, AppColors.successLight, AppLocalizations.of(context)!.topUp),
-      WalletTransactionType.refund          => (Icons.keyboard_return_rounded, AppColors.primary, AppColors.textPrimary, AppLocalizations.of(context)!.refund),
-      WalletTransactionType.tripPayment     => (Icons.payment_rounded, AppColors.indigo, AppColors.indigoLight, AppLocalizations.of(context)!.tripPayment),
-      WalletTransactionType.adjustment      => (Icons.swap_horiz_rounded, AppColors.grey, AppColors.grey, AppLocalizations.of(context)!.adjustment),
+      WalletTransactionType.tripEarning => (
+          Icons.directions_car_rounded,
+          AppColors.success,
+          AppColors.successLight,
+          AppLocalizations.of(context)!.tripEarning
+        ),
+      WalletTransactionType.withdrawal => (
+          Icons.arrow_upward_rounded,
+          AppColors.warning,
+          AppColors.warningLight,
+          AppLocalizations.of(context)!.withdrawal
+        ),
+      WalletTransactionType.withdrawalRefund => (
+          Icons.undo_rounded,
+          AppColors.primary,
+          AppColors.textPrimary,
+          AppLocalizations.of(context)!.withdrawalRefund
+        ),
+      WalletTransactionType.bonus => (
+          Icons.star_rounded,
+          AppColors.warning,
+          AppColors.warningLight,
+          AppLocalizations.of(context)!.bonus
+        ),
+      WalletTransactionType.couponSubsidy => (
+          Icons.local_offer_rounded,
+          AppColors.purple,
+          AppColors.purpleLight,
+          AppLocalizations.of(context)!.couponSubsidy
+        ),
+      WalletTransactionType.penalty => (
+          Icons.remove_circle_rounded,
+          AppColors.error,
+          AppColors.errorLight,
+          AppLocalizations.of(context)!.penalty
+        ),
+      WalletTransactionType.topUp => (
+          Icons.add_card_rounded,
+          AppColors.success,
+          AppColors.successLight,
+          AppLocalizations.of(context)!.topUp
+        ),
+      WalletTransactionType.refund => (
+          Icons.keyboard_return_rounded,
+          AppColors.primary,
+          AppColors.textPrimary,
+          AppLocalizations.of(context)!.refund
+        ),
+      WalletTransactionType.tripPayment => (
+          Icons.payment_rounded,
+          AppColors.indigo,
+          AppColors.indigoLight,
+          AppLocalizations.of(context)!.tripPayment
+        ),
+      WalletTransactionType.adjustment => (
+          Icons.swap_horiz_rounded,
+          AppColors.grey,
+          AppColors.grey,
+          AppLocalizations.of(context)!.adjustment
+        ),
     };
     final bgColor = _adaptiveIconBg(iconColor, context);
 
@@ -471,13 +525,17 @@ class _UserWalletScreenState extends State<UserWalletScreen>
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontWeight: FontWeight.w800, color: context.textPrimary, fontSize: 15),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: context.textPrimary,
+                      fontSize: 15),
                 ),
                 if (txn.description != null && txn.description!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     txn.description!,
-                    style: TextStyle(color: context.textSecondary, fontSize: 12),
+                    style:
+                        TextStyle(color: context.textSecondary, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -485,11 +543,16 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.access_time_rounded, size: 12, color: context.textSecondary.withValues(alpha: 0.7)),
+                    Icon(Icons.access_time_rounded,
+                        size: 12,
+                        color: context.textSecondary.withValues(alpha: 0.7)),
                     const SizedBox(width: 4),
                     Text(
                       _formatDate(txn.createdAt),
-                      style: TextStyle(color: context.textSecondary.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: context.textSecondary.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -517,8 +580,13 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.balanceAfterLabel(_getCompactCurrencyFormat(context).format(txn.balanceAfter)),
-                  style: TextStyle(color: context.textSecondary, fontSize: 10, fontWeight: FontWeight.w700),
+                  AppLocalizations.of(context)!.balanceAfterLabel(
+                      _getCompactCurrencyFormat(context)
+                          .format(txn.balanceAfter)),
+                  style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -547,13 +615,19 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             child: Icon(icon, size: 64, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
-          Text(title, style: TextStyle(color: context.textPrimary, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+          Text(title,
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5)),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
               subtitle,
-              style: TextStyle(color: context.textSecondary, fontSize: 14, height: 1.5),
+              style: TextStyle(
+                  color: context.textSecondary, fontSize: 14, height: 1.5),
               textAlign: TextAlign.center,
             ),
           ),
@@ -609,25 +683,33 @@ class _UserWalletScreenState extends State<UserWalletScreen>
               color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
+            child: Icon(Icons.error_outline_rounded,
+                size: 56, color: AppColors.error),
           ),
           const SizedBox(height: 24),
-          Text(AppLocalizations.of(context)!.anErrorOccurred, style: TextStyle(color: context.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.of(context)!.anErrorOccurred,
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(msg, textAlign: TextAlign.center, style: TextStyle(color: context.textSecondary, fontSize: 14)),
+            child: Text(msg,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.textSecondary, fontSize: 14)),
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: _init,
+            onPressed: _loadWallet,
             icon: const Icon(Icons.refresh_rounded),
             label: Text(AppLocalizations.of(context)!.retryButton),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
           ),
@@ -639,11 +721,16 @@ class _UserWalletScreenState extends State<UserWalletScreen>
   String _formatDate(DateTime dt) {
     final d = dt.toLocal();
     final today = DateTime.now();
-    final isToday = d.year == today.year && d.month == today.month && d.day == today.day;
-    
-    final timeStr = DateFormat('h:mm a', Localizations.localeOf(context).languageCode).format(d);
+    final isToday =
+        d.year == today.year && d.month == today.month && d.day == today.day;
+
+    final timeStr =
+        DateFormat('h:mm a', Localizations.localeOf(context).languageCode)
+            .format(d);
     if (isToday) return AppLocalizations.of(context)!.todayAtTime(timeStr);
-    
-    return DateFormat('d MMM, yyyy - h:mm a', Localizations.localeOf(context).languageCode).format(d);
+
+    return DateFormat('d MMM, yyyy - h:mm a',
+            Localizations.localeOf(context).languageCode)
+        .format(d);
   }
 }

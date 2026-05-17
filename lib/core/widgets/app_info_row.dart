@@ -26,10 +26,14 @@ class AppInfoRow extends StatelessWidget {
           Icon(icon, size: 18, color: iconColor ?? context.textSecondary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(label, style: TextStyle(color: context.textSecondary, fontSize: 13)),
+            child: Text(label,
+                style: TextStyle(color: context.textSecondary, fontSize: 13)),
           ),
-          Text(value, style: TextStyle(color: context.textPrimary,
-              fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(value,
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );

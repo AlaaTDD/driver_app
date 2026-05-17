@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 
 abstract class TrackingEvent extends Equatable {
@@ -50,4 +49,3 @@ class RecalculateRoute extends TrackingEvent {
   @override
   List<Object?> get props => [tripId];
 }
-

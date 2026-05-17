@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 
 // ─── ENUMs matching DB ─────────────────────────────────────────────────────
@@ -11,19 +10,27 @@ enum WithdrawalMethod {
 
   static WithdrawalMethod fromString(String? s) {
     switch (s) {
-      case 'bank_transfer':   return WithdrawalMethod.bankTransfer;
-      case 'vodafone_cash':   return WithdrawalMethod.vodafoneCash;
-      case 'instapay':        return WithdrawalMethod.instapay;
-      default:                return WithdrawalMethod.orangeMoney;
+      case 'bank_transfer':
+        return WithdrawalMethod.bankTransfer;
+      case 'vodafone_cash':
+        return WithdrawalMethod.vodafoneCash;
+      case 'instapay':
+        return WithdrawalMethod.instapay;
+      default:
+        return WithdrawalMethod.orangeMoney;
     }
   }
 
   String toDbString() {
     switch (this) {
-      case WithdrawalMethod.bankTransfer: return 'bank_transfer';
-      case WithdrawalMethod.vodafoneCash: return 'vodafone_cash';
-      case WithdrawalMethod.instapay:     return 'instapay';
-      case WithdrawalMethod.orangeMoney:  return 'orange_money';
+      case WithdrawalMethod.bankTransfer:
+        return 'bank_transfer';
+      case WithdrawalMethod.vodafoneCash:
+        return 'vodafone_cash';
+      case WithdrawalMethod.instapay:
+        return 'instapay';
+      case WithdrawalMethod.orangeMoney:
+        return 'orange_money';
     }
   }
 }
@@ -38,12 +45,18 @@ enum WithdrawalStatus {
 
   static WithdrawalStatus fromString(String? s) {
     switch (s) {
-      case 'approved':    return WithdrawalStatus.approved;
-      case 'processing':  return WithdrawalStatus.processing;
-      case 'completed':   return WithdrawalStatus.completed;
-      case 'rejected':    return WithdrawalStatus.rejected;
-      case 'cancelled':   return WithdrawalStatus.cancelled;
-      default:            return WithdrawalStatus.pending;
+      case 'approved':
+        return WithdrawalStatus.approved;
+      case 'processing':
+        return WithdrawalStatus.processing;
+      case 'completed':
+        return WithdrawalStatus.completed;
+      case 'rejected':
+        return WithdrawalStatus.rejected;
+      case 'cancelled':
+        return WithdrawalStatus.cancelled;
+      default:
+        return WithdrawalStatus.pending;
     }
   }
 }
@@ -90,32 +103,41 @@ class WithdrawalRequestModel extends Equatable {
 
   factory WithdrawalRequestModel.fromJson(Map<String, dynamic> json) {
     return WithdrawalRequestModel(
-      id:               json['id'] as String,
-      driverId:         json['driver_id'] as String,
-      amount:           (json['amount'] as num).toDouble(),
-      status:           WithdrawalStatus.fromString(json['status'] as String?),
-      idempotencyKey:   json['idempotency_key'] as String? ?? '',
-      paymentMethod:    WithdrawalMethod.fromString(json['payment_method'] as String?),
-      accountDetails:   Map<String, dynamic>.from(json['account_details'] as Map? ?? {}),
-      adminId:          json['admin_id'] as String?,
-      rejectionReason:  json['rejection_reason'] as String?,
-      adminNotes:       json['admin_notes'] as String?,
-      processedAt:      json['processed_at'] != null
+      id: json['id'] as String,
+      driverId: json['driver_id'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      status: WithdrawalStatus.fromString(json['status'] as String?),
+      idempotencyKey: json['idempotency_key'] as String? ?? '',
+      paymentMethod:
+          WithdrawalMethod.fromString(json['payment_method'] as String?),
+      accountDetails:
+          Map<String, dynamic>.from(json['account_details'] as Map? ?? {}),
+      adminId: json['admin_id'] as String?,
+      rejectionReason: json['rejection_reason'] as String?,
+      adminNotes: json['admin_notes'] as String?,
+      processedAt: json['processed_at'] != null
           ? DateTime.parse(json['processed_at'] as String)
           : null,
-      transactionId:    json['transaction_id'] as String?,
-      createdAt:        DateTime.parse(json['created_at'] as String),
-      updatedAt:        DateTime.parse(json['updated_at'] as String),
+      transactionId: json['transaction_id'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 
-  bool get isPending   => status == WithdrawalStatus.pending;
+  bool get isPending => status == WithdrawalStatus.pending;
   bool get isCompleted => status == WithdrawalStatus.completed;
-  bool get isRejected  => status == WithdrawalStatus.rejected;
+  bool get isRejected => status == WithdrawalStatus.rejected;
 
   @override
   List<Object?> get props => [
-    id, driverId, amount, status, paymentMethod,
-    accountDetails, rejectionReason, processedAt, createdAt,
-  ];
+        id,
+        driverId,
+        amount,
+        status,
+        paymentMethod,
+        accountDetails,
+        rejectionReason,
+        processedAt,
+        createdAt,
+      ];
 }

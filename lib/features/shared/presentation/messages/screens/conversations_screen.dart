@@ -142,7 +142,8 @@ class _ConversationsViewState extends State<_ConversationsView> {
             hintStyle: TextStyle(color: context.textSecondary, fontSize: 14),
             prefixIcon: const Padding(
               padding: EdgeInsets.only(left: 12, right: 8),
-              child: Icon(Icons.search_rounded, color: AppColors.primary, size: 24),
+              child: Icon(Icons.search_rounded,
+                  color: AppColors.primary, size: 24),
             ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
@@ -182,9 +183,8 @@ class _ConversationsViewState extends State<_ConversationsView> {
         itemBuilder: (context, index) {
           final conv = conversations[index];
           final isMeSender = conv['is_me_sender'] as bool? ?? true;
-          final convIsRead = isMeSender
-              ? true
-              : (conv['is_read'] as bool? ?? false);
+          final convIsRead =
+              isMeSender ? true : (conv['is_read'] as bool? ?? false);
           final otherId = conv['other_user_id'] as String;
           final lastTime = conv['last_message_at'] as String?;
           final unreadCount = conv['unread_count'] as int? ?? 0;
@@ -222,7 +222,9 @@ class _ConversationsViewState extends State<_ConversationsView> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: 20,
       separatorBuilder: (_, __) => Divider(
-          height: 1, indent: 86, color: context.divColor.withValues(alpha: 0.3)),
+          height: 1,
+          indent: 86,
+          color: context.divColor.withValues(alpha: 0.3)),
       itemBuilder: (_, __) => const _ShimmerTile(),
     );
   }
@@ -324,8 +326,8 @@ class _ConversationsViewState extends State<_ConversationsView> {
                 color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child:
-                  const Icon(Icons.error_outline, size: 44, color: AppColors.error),
+              child: const Icon(Icons.error_outline,
+                  size: 44, color: AppColors.error),
             ),
             const SizedBox(height: 24),
             Text(
@@ -498,7 +500,9 @@ class _ConversationTile extends StatelessWidget {
         return intl.DateFormat.EEEE(locale).format(msgDate);
       }
       return '${dt.day}/${dt.month}/${dt.year}';
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint(
+          '⚠️ ConversationsScreen: invalid last message time "$iso": $e\n$st');
       return '';
     }
   }
@@ -520,7 +524,8 @@ class _ConversationTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.divColor.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: context.divColor.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.black.withValues(alpha: 0.02),
@@ -547,8 +552,9 @@ class _ConversationTile extends StatelessWidget {
                               style: TextStyle(
                                 color: context.textPrimary,
                                 fontSize: 16,
-                                fontWeight:
-                                    hasUnread ? FontWeight.w800 : FontWeight.w600,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
                                 letterSpacing: -0.2,
                               ),
                             ),
@@ -646,7 +652,9 @@ class _ConversationTile extends StatelessWidget {
           ),
           child: avatarUrl == null || avatarUrl!.isEmpty
               ? Icon(
-                  role == 'driver' ? Icons.drive_eta_rounded : Icons.person_rounded,
+                  role == 'driver'
+                      ? Icons.drive_eta_rounded
+                      : Icons.person_rounded,
                   color: AppColors.primary,
                   size: 28,
                 )

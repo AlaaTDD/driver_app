@@ -34,7 +34,8 @@ class AppConfigRepository {
   /// Get all config entries, optionally filtered by category.
   Future<Map<String, dynamic>> getAll({String? category}) async {
     try {
-      var query = _client.from('app_config').select('key, value, label, category');
+      var query =
+          _client.from('app_config').select('key, value, label, category');
       if (category != null) {
         query = query.eq('category', category);
       }
@@ -98,10 +99,7 @@ class AppConfigRepository {
 
   /// Stream config changes in realtime.
   Stream<Map<String, dynamic>> watchConfig() {
-    return _client
-        .from('app_config')
-        .stream(primaryKey: ['key'])
-        .map((rows) {
+    return _client.from('app_config').stream(primaryKey: ['key']).map((rows) {
       final result = <String, dynamic>{};
       for (final row in rows) {
         result[row['key'] as String] = row['value'];
@@ -117,8 +115,19 @@ class AppConfigRepository {
   /// Get default map center from config or fallback to constants
   Future<LatLng?> getDefaultMapCenter() async {
     final config = await getAll();
-    final lat = double.tryParse(config['default_lat']?.toString() ?? '');
-    final lng = double.tryParse(config['default_lng']?.toString() ?? '');
+    final center = config['default_map_center'];
+    if (center is Map) {
+      final lat = double.tryParse(center['lat']?.toString() ?? '');
+      final lng = double.tryParse(center['lng']?.toString() ?? '');
+      if (lat != null && lng != null) return LatLng(lat, lng);
+    }
+
+    final lat = double.tryParse(
+      (config['default_lat'] ?? config['default_map_lat'])?.toString() ?? '',
+    );
+    final lng = double.tryParse(
+      (config['default_lng'] ?? config['default_map_lng'])?.toString() ?? '',
+    );
     if (lat != null && lng != null) return LatLng(lat, lng);
     return null; // fallback
   }

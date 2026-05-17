@@ -24,7 +24,8 @@ class AppErrorState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72, height: 72,
+              width: 72,
+              height: 72,
               decoration: const BoxDecoration(
                   color: AppColors.errorSurface, shape: BoxShape.circle),
               child: const Icon(Icons.error_outline_rounded,
@@ -33,8 +34,10 @@ class AppErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             Text(
               message ?? 'حدث خطأ غير متوقع',
-              style: TextStyle(color: context.textPrimary,
-                  fontSize: 15, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[

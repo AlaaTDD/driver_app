@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,7 +8,8 @@ import 'bloc/profile_event.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../services/r2_storage_service.dart';
 import '../../../../services/supabase_service.dart';
@@ -65,7 +65,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           if (state is ProfileLoaded) {
             final wasPopulated = _populated;
             _populate(state.user);
-            if (wasPopulated) AppToast.success(AppLocalizations.of(context)!.changesSaved);
+            if (wasPopulated)
+              AppToast.success(AppLocalizations.of(context)!.changesSaved);
           } else if (state is ProfileError) {
             AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
           }
@@ -110,9 +111,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     // Fix #20: trip stats from user_trip_stats view
     final statsCompleted = _userData['stats_completed_trips'] as int?;
     final statsCancelled = _userData['stats_cancelled_trips'] as int?;
-    final statsKm        = _userData['stats_total_km'] as num?;
-    final statsRating    = _userData['stats_avg_rating'] as num?;
-    final hasStats = statsCompleted != null || statsCancelled != null || statsKm != null;
+    final statsKm = _userData['stats_total_km'] as num?;
+    final statsRating = _userData['stats_avg_rating'] as num?;
+    final hasStats =
+        statsCompleted != null || statsCancelled != null || statsKm != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -146,9 +148,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     border: Border.all(color: context.bgColor, width: 2),
                   ),
                   child: Icon(
-                    _uploadingAvatar
-                        ? Icons.hourglass_top_rounded
-                        : Icons.edit,
+                    _uploadingAvatar ? Icons.hourglass_top_rounded : Icons.edit,
                     size: 12,
                     color: AppColors.white,
                   ),
@@ -161,7 +161,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.star_rounded, color: AppColors.warning, size: 20),
+                const Icon(Icons.star_rounded,
+                    color: AppColors.warning, size: 20),
                 const SizedBox(width: 4),
                 Text(
                   '${rating.toStringAsFixed(1)}',
@@ -171,7 +172,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Icon(Icons.directions_car_outlined, color: AppColors.primary, size: 20),
+                const Icon(Icons.directions_car_outlined,
+                    color: AppColors.primary, size: 20),
                 const SizedBox(width: 4),
                 Text(
                   '${totalTrips ?? 0} ${l.totalTrips}',
@@ -183,7 +185,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           // ── Fix #20: Trip Stats Card ────────────────────────────────
           if (hasStats) ...[
             const SizedBox(height: 16),
-            _buildTripStatsCard(context, l,
+            _buildTripStatsCard(
+              context,
+              l,
               completed: statsCompleted ?? 0,
               cancelled: statsCancelled ?? 0,
               totalKm: statsKm,
@@ -270,7 +274,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.bar_chart_rounded, color: AppColors.primary, size: 15),
+            const Icon(Icons.bar_chart_rounded,
+                color: AppColors.primary, size: 15),
             const SizedBox(width: 6),
             Text(l.tripStats,
                 style: const TextStyle(
@@ -326,7 +331,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     setState(() => _uploadingAvatar = true);
     try {
       final uid = SupabaseService.currentUser?.id;
-      if (uid == null) throw Exception('Not logged in');
+      if (uid == null) throw AuthException('errorNotLoggedIn');
       final r2 = R2StorageService();
       final url = await r2.uploadFile(
         file: File(image.path),

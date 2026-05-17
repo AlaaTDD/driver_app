@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -48,7 +47,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         _isLoading = false;
       });
       _scrollToBottom();
-    } catch (e) { debugPrint('❌ ChatbotScreen loadMessages: $e');
+    } catch (e) {
+      debugPrint('❌ ChatbotScreen loadMessages: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -68,7 +68,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSending) return;
-    if (_lastSentAt != null && DateTime.now().difference(_lastSentAt!) < const Duration(seconds: 2)) {
+    if (_lastSentAt != null &&
+        DateTime.now().difference(_lastSentAt!) < const Duration(seconds: 2)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context)!.errorRateLimit)),
       );
@@ -85,7 +86,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     await _repository.saveUserMessage(text);
 
-    
     final reply = await _repository.fetchAiReply(text);
 
     if (!mounted) return;
@@ -118,7 +118,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.support_agent, color: AppColors.primary, size: 64),
+                            const Icon(Icons.support_agent,
+                                color: AppColors.primary, size: 64),
                             const SizedBox(height: 16),
                             Text(
                               AppLocalizations.of(context)!.welcomeSupport,

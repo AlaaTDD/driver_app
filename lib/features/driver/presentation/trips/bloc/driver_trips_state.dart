@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../../../../trips/data/models/trip_model.dart';
 
@@ -12,7 +11,6 @@ abstract class DriverTripsState extends Equatable {
 class DriverTripsInitial extends DriverTripsState {}
 
 class DriverTripsLoading extends DriverTripsState {}
-
 
 class DriverTripsLoaded extends DriverTripsState {
   final List<TripModel> trips;

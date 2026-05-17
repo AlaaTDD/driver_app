@@ -47,8 +47,11 @@ class AppTextField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (label != null) ...[
-          Text(label!, style: TextStyle(color: context.textSecondary,
-              fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(label!,
+              style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
         ],
         TextFormField(

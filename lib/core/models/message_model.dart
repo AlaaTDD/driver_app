@@ -1,9 +1,4 @@
-
 import 'package:equatable/equatable.dart';
-
-
-
-
 
 class MessageModel extends Equatable {
   final String id;
@@ -37,7 +32,8 @@ class MessageModel extends Equatable {
       senderId: (json['sender_id'] as String?) ?? '',
       receiverId: (json['receiver_id'] as String?) ?? '',
       tripId: json['trip_id'] as String?,
-      content: content.isNotEmpty ? content : (json['message'] as String?) ?? '',
+      content:
+          content.isNotEmpty ? content : (json['message'] as String?) ?? '',
       type: (json['type'] as String?) ?? 'text',
       attachmentUrl: json['attachment_url'] as String?,
       isRead: (json['is_read'] as bool?) ?? false,

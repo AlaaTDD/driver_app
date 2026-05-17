@@ -1,31 +1,30 @@
-
 import 'package:flutter/foundation.dart';
 import '../core/utils/geohash_helper.dart';
 import 'supabase_service.dart';
-
-
 
 class TripBroadcastService {
   TripBroadcastService._();
   static final TripBroadcastService instance = TripBroadcastService._();
 
-  
   static void _log(String message) {
     if (kDebugMode) debugPrint(message);
   }
 
-  
-  
-  Future<void> findAndBroadcast({
+  Future<List<String>> findAndBroadcast({
     required String tripId,
     required double originLat,
     required double originLng,
     required String vehicleType,
+    Set<String> excludedDriverIds = const {},
   }) async {
-    _log('🔍 TripBroadcast: ========== START secure_broadcast_trip_offers ==========');
-    
+    _log(
+        '🔍 TripBroadcast: ========== START secure_broadcast_trip_offers ==========');
+
     final originCell = GeohashHelper.encode(originLat, originLng, precision: 5);
-    final searchCells = [originCell, ...GeohashHelper.getNeighborCells(originCell)];
+    final searchCells = [
+      originCell,
+      ...GeohashHelper.getNeighborCells(originCell)
+    ];
 
     try {
       final response = await SupabaseService.client.rpc(
@@ -41,9 +40,16 @@ class TripBroadcastService {
 
       if (response != null && response['success'] == true) {
         final driverIdsRaw = response['driver_ids'] as List?;
-        if (driverIdsRaw == null || driverIdsRaw.isEmpty) return;
+        if (driverIdsRaw == null || driverIdsRaw.isEmpty) return const [];
 
-        final driverIds = driverIdsRaw.map((e) => e.toString()).toList();
+        final driverIds = driverIdsRaw
+            .map((e) => e.toString())
+            .where((id) => !excludedDriverIds.contains(id))
+            .toList();
+        if (driverIds.isEmpty) {
+          _log('📤 TripBroadcast: No new drivers to notify');
+          return const [];
+        }
         _log('📤 TripBroadcast: Sending FCM to ${driverIds.length} drivers');
 
         // Send FCM notifications to wake up the drivers
@@ -62,11 +68,13 @@ class TripBroadcastService {
             _log('❌ TripBroadcast: Failed to send FCM to $driverId: $e');
           }
         }
+        return driverIds;
       } else {
         _log('⚠️ TripBroadcast: RPC returned false or no drivers found');
       }
     } catch (e) {
       _log('❌ TripBroadcast: Error invoking secure_broadcast_trip_offers: $e');
     }
+    return const [];
   }
 }

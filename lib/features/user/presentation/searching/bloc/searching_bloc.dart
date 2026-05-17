@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,21 +7,13 @@ import '../../../../../core/utils/retry_helper.dart';
 import 'searching_event.dart';
 import 'searching_state.dart';
 
-
-
-
-
-
-
-
 class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
   Timer? _countdownTimer;
   Timer? _rebroadcastTimer;
-  final TripBroadcastService _broadcastService =
-      TripBroadcastService.instance;
+  final TripBroadcastService _broadcastService = TripBroadcastService.instance;
   final Set<String> _broadcastedDriverIds = {};
 
-  static const int _searchDurationSeconds = 180; 
+  static const int _searchDurationSeconds = 180;
   static const int _rebroadcastIntervalSeconds = 15;
 
   SearchingBloc() : super(SearchingInitial()) {
@@ -45,13 +36,11 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     debugPrint('🔍 SearchingBloc: StartSearching for trip ${event.tripId}');
     _broadcastedDriverIds.clear();
 
-    
     _countdownTimer?.cancel();
     _rebroadcastTimer?.cancel();
     _tripSubscription?.cancel();
     _offersSubscription?.cancel();
 
-    
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final remaining = _searchDurationSeconds - timer.tick;
       if (remaining <= 0) timer.cancel();
@@ -63,17 +52,16 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       tripId: event.tripId,
     ));
 
-    
     _tripSubscription?.cancel();
     _tripSubscription = SupabaseService.client
         .from('trips')
         .stream(primaryKey: ['id'])
         .eq('id', event.tripId)
         .listen((rows) {
-      if (rows.isNotEmpty) {
-        add(TripStatusChanged(Map<String, dynamic>.from(rows.first)));
-      }
-    });
+          if (rows.isNotEmpty) {
+            add(TripStatusChanged(Map<String, dynamic>.from(rows.first)));
+          }
+        });
 
     _offersSubscription?.cancel();
     _offersSubscription = SupabaseService.client
@@ -81,14 +69,14 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         .stream(primaryKey: ['id'])
         .eq('trip_id', event.tripId)
         .listen((rows) {
-      final pendingRows = rows.where((r) => r['status'] == 'pending').toList();
-      add(OffersUpdated(pendingRows.map((e) => Map<String, dynamic>.from(e)).toList()));
-    });
+          final pendingRows =
+              rows.where((r) => r['status'] == 'pending').toList();
+          add(OffersUpdated(
+              pendingRows.map((e) => Map<String, dynamic>.from(e)).toList()));
+        });
 
-    
     await _performBroadcast(event.tripId);
 
-    
     _rebroadcastTimer = Timer.periodic(
       const Duration(seconds: _rebroadcastIntervalSeconds),
       (_) => add(RebroadcastTripOffers(event.tripId)),
@@ -105,21 +93,28 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
           .single();
 
       if (tripDetails['status'] != 'searching') {
-        debugPrint('🔍 SearchingBloc: Trip $tripId no longer searching, skipping broadcast');
+        debugPrint(
+            '🔍 SearchingBloc: Trip $tripId no longer searching, skipping broadcast');
         return;
       }
 
       debugPrint(
           '🔍 SearchingBloc: Trip $tripId - lat=${tripDetails['pickup_lat']}, lng=${tripDetails['pickup_lng']}, vehicle=${tripDetails['vehicle_type']}');
 
-      await _broadcastService.findAndBroadcast(
+      final notifiedDriverIds = await _broadcastService.findAndBroadcast(
         tripId: tripId,
         originLat: (tripDetails['pickup_lat'] as num).toDouble(),
         originLng: (tripDetails['pickup_lng'] as num).toDouble(),
-        vehicleType: (tripDetails['vehicle_type'] as String).trim().toLowerCase(),
+        vehicleType:
+            (tripDetails['vehicle_type'] as String).trim().toLowerCase(),
+        excludedDriverIds: _broadcastedDriverIds,
       );
-      
-      debugPrint('🔍 SearchingBloc: Broadcast completed for trip $tripId');
+      _broadcastedDriverIds.addAll(notifiedDriverIds);
+
+      debugPrint(
+        '🔍 SearchingBloc: Broadcast completed for trip $tripId '
+        '(${notifiedDriverIds.length} new drivers)',
+      );
     } catch (e) {
       debugPrint('❌ SearchingBloc: Error broadcasting trip: $e');
     }
@@ -144,10 +139,10 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       await _offersSubscription?.cancel();
       _tripSubscription = null;
       _offersSubscription = null;
-      
+
       try {
         final tripId = (state as SearchingInProgress).tripId;
-        
+
         await withRetry(
           () => SupabaseService.client.rpc(
             'cancel_trip',
@@ -159,7 +154,8 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
             },
           ),
           maxAttempts: 2,
-          onRetry: (e, attempt) => debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
+          onRetry: (e, attempt) =>
+              debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
         );
       } catch (e) {
         debugPrint('SearchingBloc: error cancelling trip on timeout — $e');
@@ -192,7 +188,8 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         emit(const SearchingNoDrivers());
         break;
       case 'searching':
-        debugPrint('🔍 SearchingBloc: Trip is currently searching, waiting for driver...');
+        debugPrint(
+            '🔍 SearchingBloc: Trip is currently searching, waiting for driver...');
         break;
       default:
         debugPrint('🔍 SearchingBloc: Unknown status: $status');
@@ -208,7 +205,6 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     _rebroadcastTimer?.cancel();
     await _tripSubscription?.cancel();
     try {
-      
       await withRetry(
         () => SupabaseService.client.rpc(
           'cancel_trip',
@@ -216,11 +212,13 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
             'p_trip_id': event.tripId,
             'p_user_id': SupabaseService.currentUser!.id,
             'p_cancelled_by': 'user',
-            if (event.cancelReason != null) 'p_cancel_reason': event.cancelReason,
+            if (event.cancelReason != null)
+              'p_cancel_reason': event.cancelReason,
           },
         ),
         maxAttempts: 2,
-        onRetry: (e, attempt) => debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
+        onRetry: (e, attempt) =>
+            debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
       );
     } catch (e) {
       debugPrint('SearchingBloc: error cancelling trip — $e');
@@ -242,7 +240,8 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     Emitter<SearchingState> emit,
   ) async {
     try {
-      final result = await SupabaseService.client.rpc('user_accept_offer', params: {
+      final result =
+          await SupabaseService.client.rpc('user_accept_offer', params: {
         'p_offer_id': event.offerId,
       });
       debugPrint('SearchingBloc: user_accept_offer result: $result');

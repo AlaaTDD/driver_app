@@ -13,14 +13,32 @@ class LogoutCoordinator {
   final List<Future<void> Function()> _cleanupCallbacks = [];
 
   void register(Future<void> Function() cleanup) {
-    _cleanupCallbacks.add(cleanup);
+    if (!_cleanupCallbacks.contains(cleanup)) {
+      _cleanupCallbacks.add(cleanup);
+    }
   }
 
   Future<void> performLogout() async {
+    await Future.wait([
+      UserPresenceService.instance.stopBroadcasting().catchError((e) {
+        debugPrint('⚠️ LogoutCoordinator: presence cleanup failed — $e');
+      }),
+      CellSubscriptionService.instance.dispose().catchError((e) {
+        debugPrint('⚠️ LogoutCoordinator: cell cleanup failed — $e');
+      }),
+      FCMService().clearFcmToken().catchError((e) {
+        debugPrint('⚠️ LogoutCoordinator: FCM cleanup failed — $e');
+      }),
+    ]);
+
+    HeatmapService.instance.dispose();
+    LocationService.instance.stopAllTracking();
+    DirectionsService.clearCache();
+
     await Future.wait(
       _cleanupCallbacks.map((fn) => fn().catchError((e) {
-        debugPrint('⚠️ LogoutCoordinator: cleanup failed — $e');
-      })),
+            debugPrint('⚠️ LogoutCoordinator: cleanup failed — $e');
+          })),
     );
     _cleanupCallbacks.clear();
     debugPrint('✅ LogoutCoordinator: all services cleaned up');

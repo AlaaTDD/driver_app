@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
@@ -9,14 +8,15 @@ import '../models/user_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 
-
 String _mapError(dynamic e) {
   debugPrint('🔴 AUTH ERROR [${e.runtimeType}]: $e');
   final msg = e.toString().toLowerCase();
-  if (msg.contains('invalid login credentials') || msg.contains('invalid_credentials')) {
+  if (msg.contains('invalid login credentials') ||
+      msg.contains('invalid_credentials')) {
     return 'errorInvalidCredentials';
   }
-  if (msg.contains('user already registered') || msg.contains('already been registered')) {
+  if (msg.contains('user already registered') ||
+      msg.contains('already been registered')) {
     return 'errorEmailRegistered';
   }
   if (msg.contains('email not confirmed')) {
@@ -25,7 +25,9 @@ String _mapError(dynamic e) {
   if (msg.contains('password should be at least')) {
     return 'errorPasswordLength';
   }
-  if (msg.contains('network') || msg.contains('socket') || msg.contains('connection')) {
+  if (msg.contains('network') ||
+      msg.contains('socket') ||
+      msg.contains('connection')) {
     return 'errorNoInternet';
   }
   if (msg.contains('too many requests') || msg.contains('rate limit')) {
@@ -62,7 +64,8 @@ class AuthRepositoryImpl implements AuthRepository {
       try {
         userData = await SupabaseService.client
             .from('users')
-            .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+            .select(
+                'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
             .eq('id', user.id)
             .single();
       } on PostgrestException catch (pe) {
@@ -73,18 +76,22 @@ class AuthRepositoryImpl implements AuthRepository {
             await SupabaseService.client.auth.signOut();
             return const Left('errorDriverProfileIncomplete');
           }
-          userData = await SupabaseService.client.from('users').upsert({
-            'id': user.id,
-            'name': meta['name'] ?? 'User',
-            'phone': meta['phone'] ?? '',
-            'email': user.email ?? email,
-            'role': 'user',
-            'rating': 0.00,
-            'total_trips': 0,
-            'language': 'ar',
-            'is_active': true,
-            'updated_at': DateTime.now().toIso8601String(),
-          }).select().single();
+          userData = await SupabaseService.client
+              .from('users')
+              .upsert({
+                'id': user.id,
+                'name': meta['name'] ?? 'User',
+                'phone': meta['phone'] ?? '',
+                'email': user.email ?? email,
+                'role': 'user',
+                'rating': 0.00,
+                'total_trips': 0,
+                'language': 'ar',
+                'is_active': true,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .select()
+              .single();
         } else {
           rethrow;
         }
@@ -125,31 +132,35 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left('errorCreateAccountFailed');
       }
 
-      
-      
       Map<String, dynamic> userData;
       try {
-        userData = await SupabaseService.client.from('users').upsert({
-          'id': user.id,
-          'name': name,
-          'phone': phone,
-          'email': email,
-          'role': 'user',
-          'rating': 0.00,
-          'total_trips': 0,
-          'language': 'ar',
-          'is_active': true,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).select().single();
+        userData = await SupabaseService.client
+            .from('users')
+            .upsert({
+              'id': user.id,
+              'name': name,
+              'phone': phone,
+              'email': email,
+              'role': 'user',
+              'rating': 0.00,
+              'total_trips': 0,
+              'language': 'ar',
+              'is_active': true,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .select()
+            .single();
       } catch (e) {
         try {
           // Fallback if upsert still fails
           userData = await SupabaseService.client
               .from('users')
-              .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+              .select(
+                  'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
               .eq('id', user.id)
               .single();
-          debugPrint('AuthRepositoryImpl: User already exists, fetched existing data');
+          debugPrint(
+              'AuthRepositoryImpl: User already exists, fetched existing data');
         } catch (innerE) {
           debugPrint('AuthRepositoryImpl: Fallback fetch failed: $innerE');
           return const Left('errorCreateAccountFailed');
@@ -198,7 +209,8 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left('errorCreateAccountFailed');
       }
 
-      final rpcResponse = await SupabaseService.client.rpc('create_driver_account', params: {
+      final rpcResponse =
+          await SupabaseService.client.rpc('create_driver_account', params: {
         'p_user_id': user.id,
         'p_name': name,
         'p_email': email,
@@ -223,7 +235,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userData = await SupabaseService.client
           .from('users')
-          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+          .select(
+              'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .eq('id', user.id)
           .single();
 
@@ -254,7 +267,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final userData = await SupabaseService.client
           .from('users')
-          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+          .select(
+              'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .eq('id', user.id)
           .single();
 
@@ -262,28 +276,34 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(userModel.toEntity());
     } on PostgrestException catch (e) {
       final msg = e.message.toLowerCase();
-      if (msg.contains('network') || msg.contains('timeout') || msg.contains('socket')) {
+      if (msg.contains('network') ||
+          msg.contains('timeout') ||
+          msg.contains('socket')) {
         return const Left('errorNoInternet');
       }
       if (e.code == 'PGRST116') {
         final user = SupabaseService.currentUser;
         if (user != null) {
-           final meta = user.userMetadata ?? {};
-           if (meta['role'] == 'user') {
-              final userData = await SupabaseService.client.from('users').upsert({
-                'id': user.id,
-                'name': meta['name'] ?? 'User',
-                'phone': meta['phone'] ?? '',
-                'email': user.email ?? '',
-                'role': 'user',
-                'rating': 0.00,
-                'total_trips': 0,
-                'language': 'ar',
-                'is_active': true,
-                'updated_at': DateTime.now().toIso8601String(),
-              }).select().single();
-              return Right(UserModel.fromJson(userData).toEntity());
-           }
+          final meta = user.userMetadata ?? {};
+          if (meta['role'] == 'user') {
+            final userData = await SupabaseService.client
+                .from('users')
+                .upsert({
+                  'id': user.id,
+                  'name': meta['name'] ?? 'User',
+                  'phone': meta['phone'] ?? '',
+                  'email': user.email ?? '',
+                  'role': 'user',
+                  'rating': 0.00,
+                  'total_trips': 0,
+                  'language': 'ar',
+                  'is_active': true,
+                  'updated_at': DateTime.now().toIso8601String(),
+                })
+                .select()
+                .single();
+            return Right(UserModel.fromJson(userData).toEntity());
+          }
         }
         await SupabaseService.client.auth.signOut();
         return const Right(null);
@@ -310,7 +330,8 @@ class AuthRepositoryImpl implements AuthRepository {
           .from('users')
           .update(updateData)
           .eq('id', userId)
-          .select('id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+          .select(
+              'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
           .single();
 
       final userModel = UserModel.fromJson(userData);

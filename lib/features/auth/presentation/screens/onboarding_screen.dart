@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_routes.dart';
@@ -18,22 +17,22 @@ class _PageData {
 }
 
 List<_PageData> _getPages(AppLocalizations l) => [
-  _PageData(
-    icon: Icons.hail_rounded,
-    title: l.smartRideService,
-    subtitle: l.smartRideDesc,
-  ),
-  _PageData(
-    icon: Icons.gps_fixed_rounded,
-    title: l.realTimeTracking,
-    subtitle: l.realTimeTrackingDesc,
-  ),
-  _PageData(
-    icon: Icons.security_rounded,
-    title: l.safeAndReliable,
-    subtitle: l.safeAndReliableDesc,
-  ),
-];
+      _PageData(
+        icon: Icons.hail_rounded,
+        title: l.smartRideService,
+        subtitle: l.smartRideDesc,
+      ),
+      _PageData(
+        icon: Icons.gps_fixed_rounded,
+        title: l.realTimeTracking,
+        subtitle: l.realTimeTrackingDesc,
+      ),
+      _PageData(
+        icon: Icons.security_rounded,
+        title: l.safeAndReliable,
+        subtitle: l.safeAndReliableDesc,
+      ),
+    ];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -46,13 +45,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
   int _currentPage = 0;
   int _prevPage = 0;
-  
+
   int _navDirection = 1;
 
   late final AnimationController _anim;
-  
+
   late final Animation<double> _cameraAnim;
-  
+
   late final Animation<double> _outOpacity;
   late final Animation<double> _inOpacity;
   late final Animation<Offset> _outTextSlide;
@@ -75,12 +74,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       curve: const Interval(0.30, 1.0, curve: Curves.easeOutCubic),
     );
 
-    
-    _cameraAnim   = CurvedAnimation(parent: _anim, curve: Curves.easeInOutCubic);
-    _outOpacity   = Tween(begin: 1.0, end: 0.0).animate(out);
-    _outTextSlide = Tween(begin: Offset.zero, end: const Offset(-0.20, 0)).animate(out);
-    _inOpacity    = inn;
-    _inTextSlide  = Tween(begin: const Offset(0.20, 0), end: Offset.zero).animate(inn);
+    _cameraAnim = CurvedAnimation(parent: _anim, curve: Curves.easeInOutCubic);
+    _outOpacity = Tween(begin: 1.0, end: 0.0).animate(out);
+    _outTextSlide =
+        Tween(begin: Offset.zero, end: const Offset(-0.20, 0)).animate(out);
+    _inOpacity = inn;
+    _inTextSlide =
+        Tween(begin: const Offset(0.20, 0), end: Offset.zero).animate(inn);
   }
 
   @override
@@ -89,7 +89,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
-  
   void _navigate(int delta) {
     if (_anim.isAnimating) return;
     final target = _currentPage + delta;
@@ -115,7 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final bottomPad = MediaQuery.of(context).padding.bottom;
     final pages = _getPages(AppLocalizations.of(context)!);
     final isLast = _currentPage == pages.length - 1;
-    final dir = _navDirection.toDouble(); 
+    final dir = _navDirection.toDouble();
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -123,14 +122,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         behavior: HitTestBehavior.opaque,
         onPanEnd: (d) {
           final v = d.velocity.pixelsPerSecond.dx;
-          if (v < -350) _navigate(1);
+          if (v < -350)
+            _navigate(1);
           else if (v > 350) _navigate(-1);
         },
         child: Stack(
           children: [
-            
             Positioned(
-              top: 0, left: 0, right: 0,
+              top: 0,
+              left: 0,
+              right: 0,
               child: Container(
                 height: size.height * 0.68,
                 decoration: BoxDecoration(
@@ -145,11 +146,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
             ),
-            
             SafeArea(
               child: Column(
                 children: [
-                  
                   Padding(
                     padding: const EdgeInsets.only(right: 12, top: 4),
                     child: Row(
@@ -174,14 +173,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ],
                     ),
                   ),
-                  
                   Expanded(
                     flex: 5,
                     child: ClipRect(
                       child: AnimatedBuilder(
                         animation: _anim,
                         builder: (context, _) {
-                          
                           final camPos = _prevPage +
                               (_currentPage - _prevPage) * _cameraAnim.value;
                           return SizedBox.expand(
@@ -191,8 +188,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               children: List.generate(pages.length, (i) {
                                 final dx = (i - camPos) * 240.0;
                                 final dist = (i.toDouble() - camPos).abs();
-                                final scale = (1.0 - dist * 0.14).clamp(0.0, 1.0);
-                                final opacity = (1.0 - dist * 0.7).clamp(0.0, 1.0);
+                                final scale =
+                                    (1.0 - dist * 0.14).clamp(0.0, 1.0);
+                                final opacity =
+                                    (1.0 - dist * 0.7).clamp(0.0, 1.0);
                                 return Transform.translate(
                                   offset: Offset(dx, 0),
                                   child: Transform.scale(
@@ -210,7 +209,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
                   ),
-                  
                   Expanded(
                     flex: 4,
                     child: AnimatedBuilder(
@@ -218,8 +216,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       builder: (context, _) {
                         final tx = !_anim.isCompleted;
                         return Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 34),
+                          padding: const EdgeInsets.symmetric(horizontal: 34),
                           child: Stack(
                             alignment: Alignment.topCenter,
                             children: [
@@ -227,19 +224,17 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 Opacity(
                                   opacity: _outOpacity.value,
                                   child: FractionalTranslation(
-                                    translation: Offset(
-                                        _outTextSlide.value.dx * dir, 0),
-                                    child:
-                                        _TextBlock(page: pages[_prevPage]),
+                                    translation:
+                                        Offset(_outTextSlide.value.dx * dir, 0),
+                                    child: _TextBlock(page: pages[_prevPage]),
                                   ),
                                 ),
                               Opacity(
                                 opacity: _inOpacity.value,
                                 child: FractionalTranslation(
-                                  translation: Offset(
-                                      _inTextSlide.value.dx * dir, 0),
-                                  child: _TextBlock(
-                                      page: pages[_currentPage]),
+                                  translation:
+                                      Offset(_inTextSlide.value.dx * dir, 0),
+                                  child: _TextBlock(page: pages[_currentPage]),
                                 ),
                               ),
                             ],
@@ -248,15 +243,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       },
                     ),
                   ),
-                  
                   Padding(
-                    padding:
-                        EdgeInsets.fromLTRB(32, 0, 32, bottomPad + 24),
+                    padding: EdgeInsets.fromLTRB(32, 0, 32, bottomPad + 24),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        
                         Row(
                           children: List.generate(
                             pages.length,
@@ -275,7 +267,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             ),
                           ),
                         ),
-                        
                         _CircleButton(
                           isLast: isLast,
                           onPressed: () => _navigate(1),
@@ -293,7 +284,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-
 class _IconDisplay extends StatelessWidget {
   final IconData icon;
   const _IconDisplay({required this.icon});
@@ -304,21 +294,24 @@ class _IconDisplay extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         Container(
-          width: 210, height: 210,
+          width: 210,
+          height: 210,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary.withValues(alpha: 0.05),
           ),
         ),
         Container(
-          width: 168, height: 168,
+          width: 168,
+          height: 168,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary.withValues(alpha: 0.09),
           ),
         ),
         Container(
-          width: 128, height: 128,
+          width: 128,
+          height: 128,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: context.primaryTint,
@@ -340,7 +333,6 @@ class _IconDisplay extends StatelessWidget {
     );
   }
 }
-
 
 class _CircleButton extends StatelessWidget {
   final bool isLast;
@@ -389,7 +381,6 @@ class _CircleButton extends StatelessWidget {
     );
   }
 }
-
 
 class _TextBlock extends StatelessWidget {
   final _PageData page;

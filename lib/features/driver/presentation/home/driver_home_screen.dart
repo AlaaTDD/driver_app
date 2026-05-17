@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -27,6 +28,8 @@ import '../../../../core/widgets/custom_animated_bottom_nav.dart';
 import '../../../../services/directions_service.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../widgets/driver_offer_overlay.dart';
+import '../../../../core/utils/map_camera_utils.dart';
+import 'widgets/neon_route_polyline.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -36,15 +39,21 @@ class DriverHomeScreen extends StatefulWidget {
 }
 
 class _DriverHomeScreenState extends State<DriverHomeScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  static const _corridorNeonLoopDuration = Duration(milliseconds: 3200);
+  static const _corridorNeonFrameInterval = Duration(milliseconds: 33);
+  static const _corridorNeonCoreWidth = 5;
+  static const _corridorNeonGlowWidth = 13;
+  static const _corridorNeonHaloWidth = 22;
+
   GoogleMapController? _mapController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _bottomNavIndex = -1;
 
-  static const _defaultCamera = CameraPosition(
-    target: AppConstants.defaultMapCenter,
-    zoom: 15,
-  );
+  static CameraPosition get _defaultCamera => CameraPosition(
+        target: AppConstants.defaultMapCenter,
+        zoom: 15,
+      );
 
   double? _lastAnimatedLat;
   double? _lastAnimatedLng;
@@ -53,6 +62,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   // ── Corridor polyline drawn on home map ─────────────────────────────────────
   Set<Polyline> _corridorPolylines = {};
   Set<Marker> _corridorMarkers = {};
+  List<LatLng> _corridorRoutePoints = [];
+  late final AnimationController _corridorNeonCtrl;
+  Duration _lastCorridorNeonFrame = Duration.zero;
 
   static const double _bottomSheetHeight = 236.0;
   static const double _mapButtonSize = 48.0;
@@ -64,6 +76,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _corridorNeonCtrl = AnimationController(
+      vsync: this,
+      duration: _corridorNeonLoopDuration,
+    )..addListener(_onCorridorNeonFrame);
     context.read<LocationPermissionCubit>().check();
     // Load any saved corridor from DB and draw on map
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCorridorFromDb());
@@ -106,9 +122,54 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
 
+    _corridorNeonCtrl.dispose();
     _mapController?.dispose();
     _mapController = null;
     super.dispose();
+  }
+
+  void _onCorridorNeonFrame() {
+    if (_corridorRoutePoints.length < 2) return;
+    final elapsed = _corridorNeonCtrl.lastElapsedDuration ?? Duration.zero;
+    if (elapsed - _lastCorridorNeonFrame < _corridorNeonFrameInterval) return;
+    _lastCorridorNeonFrame = elapsed;
+    if (!mounted) return;
+    setState(() => _corridorPolylines = _buildCorridorNeonPolylines());
+  }
+
+  void _restartCorridorNeonLoop() {
+    if (_corridorRoutePoints.length < 2) {
+      _stopCorridorNeonLoop();
+      return;
+    }
+    _lastCorridorNeonFrame = Duration.zero;
+    _corridorNeonCtrl
+      ..stop()
+      ..reset()
+      ..repeat();
+  }
+
+  void _stopCorridorNeonLoop() {
+    _corridorNeonCtrl
+      ..stop()
+      ..reset();
+    _lastCorridorNeonFrame = Duration.zero;
+  }
+
+  Set<Polyline> _buildCorridorNeonPolylines() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final routeColor =
+        isDark ? const Color(0xFF34E7FF) : const Color(0xFF4169FF);
+    return NeonRoutePolyline.build(
+      points: _corridorRoutePoints,
+      progress: NeonRoutePolyline.drawProgress(_corridorNeonCtrl.value),
+      opacity: NeonRoutePolyline.fadeOpacity(_corridorNeonCtrl.value),
+      color: routeColor,
+      idPrefix: 'driver_corridor_neon',
+      coreWidth: _corridorNeonCoreWidth,
+      glowWidth: _corridorNeonGlowWidth,
+      haloWidth: _corridorNeonHaloWidth,
+    );
   }
 
   @override
@@ -462,8 +523,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       if (result == null) return;
       if (result.containsKey('cleared')) {
         // User cleared the corridor
+        _stopCorridorNeonLoop();
         if (mounted)
           setState(() {
+            _corridorRoutePoints = [];
             _corridorPolylines = {};
             _corridorMarkers = {};
           });
@@ -477,9 +540,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   Future<void> _drawCorridorPolyline(LatLng origin, LatLng dest) async {
     if (!mounted) return;
+    final l = AppLocalizations.of(context)!;
 
     // Show markers immediately
+    _stopCorridorNeonLoop();
     setState(() {
+      _corridorRoutePoints = [];
       _corridorPolylines = {};
       _corridorMarkers = {
         Marker(
@@ -487,13 +553,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           position: origin,
           icon:
               BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-          infoWindow: const InfoWindow(title: 'بداية الممر'),
+          infoWindow: InfoWindow(title: l.corridorStart),
         ),
         Marker(
           markerId: const MarkerId('corr_dest'),
           position: dest,
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          infoWindow: const InfoWindow(title: 'نهاية الممر'),
+          infoWindow: InfoWindow(title: l.corridorEnd),
         ),
       };
     });
@@ -512,44 +578,19 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     final points = result.points;
 
     setState(() {
-      _corridorPolylines = {
-        // Outer glowing line
-        Polyline(
-          polylineId: const PolylineId('corridor_glow'),
-          points: points,
-          color: AppColors.primary.withValues(alpha: 0.3),
-          width: 12,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-          jointType: JointType.round,
-        ),
-        // Inner core line
-        Polyline(
-          polylineId: const PolylineId('corridor_core'),
-          points: points,
-          color: AppColors.primary,
-          width: 4,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-          jointType: JointType.round,
-        ),
-      };
+      _corridorRoutePoints = points;
+      _corridorPolylines = _buildCorridorNeonPolylines();
     });
+    _restartCorridorNeonLoop();
 
     // Fit camera to polyline
     if (_mapController != null) {
-      final lats = points.map((p) => p.latitude);
-      final lngs = points.map((p) => p.longitude);
-      final sw = LatLng(lats.reduce(math.min), lngs.reduce(math.min));
-      final ne = LatLng(lats.reduce(math.max), lngs.reduce(math.max));
-      Future.delayed(const Duration(milliseconds: 300), () {
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLngBounds(
-            LatLngBounds(southwest: sw, northeast: ne),
-            60,
-          ),
-        );
-      });
+      await MapCameraUtils.fitCameraToPoints(
+        _mapController!,
+        points,
+        padding: 92,
+        delay: const Duration(milliseconds: 300),
+      );
     }
   }
 
@@ -680,6 +721,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         Navigator.pop(context);
         context.push(AppRoutes.driverComplaints);
       },
+      onRevisionTap: () {
+        Navigator.pop(context);
+        context.push(AppRoutes.driverRevision);
+      },
       onLogout: () {
         Navigator.pop(context);
         context.read<DriverHomeBloc>().add(ResetDriverStatus());
@@ -701,7 +746,14 @@ class _CorridorPickerScreen extends StatefulWidget {
   State<_CorridorPickerScreen> createState() => _CorridorPickerScreenState();
 }
 
-class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
+class _CorridorPickerScreenState extends State<_CorridorPickerScreen>
+    with SingleTickerProviderStateMixin {
+  static const _neonLoopDuration = Duration(milliseconds: 3200);
+  static const _neonFrameInterval = Duration(milliseconds: 33);
+  static const _neonCoreWidth = 5;
+  static const _neonGlowWidth = 13;
+  static const _neonHaloWidth = 22;
+
   // Tap step: 0 = waiting for origin, 1 = waiting for dest, 2 = done
   int _step = 0;
 
@@ -718,11 +770,115 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   bool _isSaving = false;
 
   List<LatLng> _routePoints = [];
+  BitmapDescriptor? _originMarkerIcon;
+  BitmapDescriptor? _destMarkerIcon;
+  late final AnimationController _neonRouteCtrl;
+  Duration _lastNeonFrame = Duration.zero;
 
   @override
   void initState() {
     super.initState();
+    _neonRouteCtrl = AnimationController(
+      vsync: this,
+      duration: _neonLoopDuration,
+    )..addListener(_onNeonRouteFrame);
+    _loadCorridorMarkerIcons();
     _loadExistingCorridor();
+  }
+
+  @override
+  void dispose() {
+    _neonRouteCtrl.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onNeonRouteFrame() {
+    if (_routePoints.length < 2) return;
+    final elapsed = _neonRouteCtrl.lastElapsedDuration ?? Duration.zero;
+    if (elapsed - _lastNeonFrame < _neonFrameInterval) return;
+    _lastNeonFrame = elapsed;
+    if (mounted) setState(() {});
+  }
+
+  void _restartNeonRouteLoop() {
+    if (_routePoints.length < 2) {
+      _stopNeonRouteLoop();
+      return;
+    }
+    _lastNeonFrame = Duration.zero;
+    _neonRouteCtrl
+      ..stop()
+      ..reset()
+      ..repeat();
+  }
+
+  void _stopNeonRouteLoop() {
+    _neonRouteCtrl
+      ..stop()
+      ..reset();
+    _lastNeonFrame = Duration.zero;
+  }
+
+  Future<void> _loadCorridorMarkerIcons() async {
+    final originIcon = await _buildCorridorMarkerIcon(
+      color: AppColors.success,
+      icon: Icons.trip_origin_rounded,
+    );
+    final destIcon = await _buildCorridorMarkerIcon(
+      color: AppColors.primary,
+      icon: Icons.flag_rounded,
+    );
+    if (!mounted) return;
+    setState(() {
+      _originMarkerIcon = originIcon;
+      _destMarkerIcon = destIcon;
+    });
+  }
+
+  Future<BitmapDescriptor> _buildCorridorMarkerIcon({
+    required Color color,
+    required IconData icon,
+  }) async {
+    const size = 96.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    final center = Offset(size / 2, size / 2);
+    final shadowPaint = Paint()
+      ..color = AppColors.black.withValues(alpha: 0.22)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center.translate(0, 4), 34, shadowPaint);
+    canvas.drawCircle(center, 32, Paint()..color = color);
+    canvas.drawCircle(
+      center,
+      32,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..color = AppColors.white.withValues(alpha: 0.80),
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          color: AppColors.white,
+          fontSize: 36,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
+    final image = await recorder.endRecording().toImage(
+          size.toInt(),
+          size.toInt(),
+        );
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
   }
 
   Future<void> _loadExistingCorridor() async {
@@ -762,7 +918,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
               if (dMarks.isNotEmpty)
                 _destAddr =
                     '${dMarks.first.street ?? ''}, ${dMarks.first.locality ?? ''}';
-            } catch (_) {}
+            } catch (e, st) {
+              debugPrint(
+                  '⚠️ DriverHomeScreen: failed to reverse geocode corridor: $e\n$st');
+            }
 
             _fetchAndDrawRoute();
           }
@@ -786,9 +945,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('لم يتم العثور على المكان'),
+          SnackBar(
+              content: Text(l.errorLocationNotFound),
               backgroundColor: AppColors.error),
         );
       }
@@ -809,7 +969,9 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         final p = placemarks.first;
         address = '${p.street ?? ''}, ${p.locality ?? ''}';
       }
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint(
+          '⚠️ DriverHomeScreen: failed to reverse geocode map tap: $e\n$st');
       address =
           '${ll.latitude.toStringAsFixed(4)}, ${ll.longitude.toStringAsFixed(4)}';
     }
@@ -842,23 +1004,30 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
     setState(() {
       _routePoints = result.points;
     });
+    _restartNeonRouteLoop();
 
-    final lats = _routePoints.map((p) => p.latitude);
-    final lngs = _routePoints.map((p) => p.longitude);
-    final sw = LatLng(lats.reduce(math.min), lngs.reduce(math.min));
-    final ne = LatLng(lats.reduce(math.max), lngs.reduce(math.max));
-    _mapCtrl?.animateCamera(CameraUpdate.newLatLngBounds(
-        LatLngBounds(southwest: sw, northeast: ne), 60));
+    final ctrl = _mapCtrl;
+    if (ctrl != null) {
+      await MapCameraUtils.fitCameraToPoints(
+        ctrl,
+        _routePoints,
+        padding: 92,
+        delay: const Duration(milliseconds: 120),
+      );
+    }
   }
 
-  void _reset() => setState(() {
-        _step = 0;
-        _originPt = null;
-        _destPt = null;
-        _originAddr = null;
-        _destAddr = null;
-        _routePoints = [];
-      });
+  void _reset() {
+    _stopNeonRouteLoop();
+    setState(() {
+      _step = 0;
+      _originPt = null;
+      _destPt = null;
+      _originAddr = null;
+      _destAddr = null;
+      _routePoints = [];
+    });
+  }
 
   Future<void> _save() async {
     if (_originPt == null || _destPt == null) return;
@@ -900,9 +1069,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
         }
       } catch (e2) {
         if (mounted) {
+          final l = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('خطأ: $e2'),
+                content: Text(l.errorWithDetails(e2.toString())),
                 backgroundColor: AppColors.error),
           );
         }
@@ -931,15 +1101,23 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final panelColor = isDark ? AppColors.background : AppColors.white;
+    final neonRouteColor =
+        isDark ? const Color(0xFF34E7FF) : const Color(0xFF4169FF);
+    final neonRouteProgress = NeonRoutePolyline.drawProgress(
+      _neonRouteCtrl.value,
+    );
+    final neonRouteOpacity = NeonRoutePolyline.fadeOpacity(
+      _neonRouteCtrl.value,
+    );
 
-    // Step instruction text
     final String hintText = _step == 0
-        ? '① اضغط على نقطة بداية الممر (الانطلاق)'
+        ? l.corridorPickOriginHint
         : _step == 1
-            ? '② اضغط على نقطة نهاية الممر (الوجهة)'
-            : 'تم تحديد الممر — راجع التفاصيل وحفظه';
+            ? l.corridorPickDestinationHint
+            : l.corridorReviewHint;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -978,8 +1156,8 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                   color: AppColors.warning.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('إعادة',
-                    style: TextStyle(
+                child: Text(l.resetButton,
+                    style: const TextStyle(
                         color: AppColors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w700)),
@@ -994,8 +1172,8 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                 color: AppColors.error.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('مسح',
-                  style: TextStyle(
+              child: Text(l.clearButton,
+                  style: const TextStyle(
                       color: AppColors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w700)),
@@ -1036,28 +1214,16 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
               ),
           },
           polylines: _routePoints.isNotEmpty
-              ? {
-                  // Outer glowing line
-                  Polyline(
-                    polylineId: const PolylineId('corridor_glow'),
-                    points: _routePoints,
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    width: 12,
-                    startCap: Cap.roundCap,
-                    endCap: Cap.roundCap,
-                    jointType: JointType.round,
-                  ),
-                  // Inner core line
-                  Polyline(
-                    polylineId: const PolylineId('corridor_core'),
-                    points: _routePoints,
-                    color: AppColors.primary,
-                    width: 4,
-                    startCap: Cap.roundCap,
-                    endCap: Cap.roundCap,
-                    jointType: JointType.round,
-                  ),
-                }
+              ? NeonRoutePolyline.build(
+                  points: _routePoints,
+                  progress: neonRouteProgress,
+                  opacity: neonRouteOpacity,
+                  color: neonRouteColor,
+                  idPrefix: 'corridor_neon',
+                  coreWidth: _neonCoreWidth,
+                  glowWidth: _neonGlowWidth,
+                  haloWidth: _neonHaloWidth,
+                )
               : (_originPt != null && _destPt != null)
                   ? {
                       Polyline(
@@ -1074,19 +1240,21 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
               Marker(
                 markerId: const MarkerId('origin'),
                 position: _originPt!,
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueGreen),
+                icon: _originMarkerIcon ??
+                    BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueGreen),
                 infoWindow:
-                    InfoWindow(title: 'بداية الممر', snippet: _originAddr),
+                    InfoWindow(title: l.corridorStart, snippet: _originAddr),
               ),
             if (_destPt != null)
               Marker(
                 markerId: const MarkerId('dest'),
                 position: _destPt!,
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueBlue),
+                icon: _destMarkerIcon ??
+                    BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueBlue),
                 infoWindow:
-                    InfoWindow(title: 'نهاية الممر', snippet: _destAddr),
+                    InfoWindow(title: l.corridorEnd, snippet: _destAddr),
               ),
           },
         ),
@@ -1113,9 +1281,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
               Expanded(
                 child: TextField(
                   controller: _searchCtrl,
-                  decoration: const InputDecoration(
-                    hintText: 'ابحث عن منطقة للذهاب إليها...',
-                    hintStyle: TextStyle(fontSize: 13, color: AppColors.grey),
+                  decoration: InputDecoration(
+                    hintText: l.corridorSearchHint,
+                    hintStyle:
+                        const TextStyle(fontSize: 13, color: AppColors.grey),
                     border: InputBorder.none,
                   ),
                   style: TextStyle(
@@ -1139,35 +1308,14 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
             top: MediaQuery.of(context).padding.top + 120,
             left: 16,
             right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: _step == 2
-                    ? AppColors.success.withValues(alpha: 0.92)
-                    : AppColors.black.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppColors.black.withValues(alpha: 0.26),
-                      blurRadius: 10)
-                ],
-              ),
-              child:
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(
-                  _step == 2
-                      ? Icons.check_circle_rounded
-                      : Icons.touch_app_rounded,
-                  color: AppColors.white.withValues(alpha: 0.7),
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                    child: Text(hintText,
-                        style: const TextStyle(
-                            color: AppColors.white, fontSize: 13),
-                        textAlign: TextAlign.center)),
-              ]),
+            child: _CorridorStepper(
+              currentStep: _step,
+              hint: hintText,
+              labels: [
+                l.corridorStepOrigin,
+                l.corridorStepDestination,
+                l.corridorStepReview,
+              ],
             ),
           ),
 
@@ -1182,18 +1330,18 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                 color: AppColors.black.withValues(alpha: 0.75),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            color: AppColors.white, strokeWidth: 2)),
-                    SizedBox(width: 10),
-                    Text('جاري المعالجة...',
-                        style: TextStyle(color: AppColors.white, fontSize: 13)),
-                  ]),
+              child:
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        color: AppColors.white, strokeWidth: 2)),
+                const SizedBox(width: 10),
+                Text(l.processing,
+                    style:
+                        const TextStyle(color: AppColors.white, fontSize: 13)),
+              ]),
             ),
           ),
 
@@ -1236,7 +1384,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                       currentStep: _step,
                       color: AppColors.success,
                       icon: Icons.trip_origin_rounded,
-                      label: 'نقطة الانطلاق',
+                      label: l.pickupPoint,
                       address: _originAddr,
                     ),
                     const Padding(
@@ -1249,7 +1397,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                       currentStep: _step,
                       color: AppColors.primary,
                       icon: Icons.flag_rounded,
-                      label: 'نقطة الوصول',
+                      label: l.corridorEnd,
                       address: _destAddr,
                     ),
                   ]),
@@ -1258,7 +1406,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                   if (_step == 2) ...[
                     const SizedBox(height: 16),
                     _RadiusSlider(
-                      label: 'نطاق الانطلاق',
+                      label: l.corridorOriginRadius,
                       color: AppColors.success,
                       value: _originRadiusKm,
                       min: 0.5,
@@ -1267,7 +1415,7 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                     ),
                     const SizedBox(height: 8),
                     _RadiusSlider(
-                      label: 'نطاق الوجهة',
+                      label: l.corridorDestinationRadius,
                       color: AppColors.primary,
                       value: _destRadiusKm,
                       min: 0.5,
@@ -1293,10 +1441,10 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
                           : const Icon(Icons.save_rounded),
                       label: Text(
                         _step == 0
-                            ? 'حدد نقطة الانطلاق أولاً'
+                            ? l.selectOriginFirst
                             : _step == 1
-                                ? 'حدد نقطة الوصول'
-                                : 'حفظ الممر المفضل',
+                                ? l.selectDestination
+                                : l.savePreferredCorridor,
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -1318,6 +1466,124 @@ class _CorridorPickerScreenState extends State<_CorridorPickerScreen> {
   }
 }
 
+class _CorridorStepper extends StatelessWidget {
+  final int currentStep;
+  final String hint;
+  final List<String> labels;
+
+  const _CorridorStepper({
+    required this.currentStep,
+    required this.hint,
+    required this.labels,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+      decoration: BoxDecoration(
+        color: AppColors.black.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withValues(alpha: 0.26),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: List.generate(labels.length, (index) {
+              final isDone = currentStep > index;
+              final isActive = currentStep == index;
+              final color = isDone
+                  ? AppColors.success
+                  : isActive
+                      ? AppColors.primary
+                      : AppColors.white.withValues(alpha: 0.28);
+              return Expanded(
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: isDone
+                          ? const Icon(Icons.check_rounded,
+                              color: AppColors.white, size: 15)
+                          : Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                    ),
+                    if (index < labels.length - 1)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          color: currentStep > index
+                              ? AppColors.success
+                              : AppColors.white.withValues(alpha: 0.20),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                Expanded(
+                  child: Text(
+                    labels[i],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: i == 0
+                        ? TextAlign.start
+                        : i == labels.length - 1
+                            ? TextAlign.end
+                            : TextAlign.center,
+                    style: TextStyle(
+                      color: i == currentStep
+                          ? AppColors.white
+                          : AppColors.white.withValues(alpha: 0.60),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hint,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.white.withValues(alpha: 0.88),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PointChip extends StatelessWidget {
   final int step;
   final int currentStep;
@@ -1335,6 +1601,7 @@ class _PointChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final bool isDone = currentStep >= step;
     final bool isActive = currentStep == step - 1;
     return Expanded(
@@ -1369,7 +1636,7 @@ class _PointChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis)
           else
-            Text(isActive ? 'اضغط على الخريطة' : '---',
+            Text(isActive ? l.tapMap : '---',
                 style: const TextStyle(fontSize: 9, color: AppColors.grey)),
         ])),
       ]),
@@ -1398,6 +1665,7 @@ class _RadiusSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Row(children: [
       SizedBox(
         width: 110,
@@ -1428,7 +1696,7 @@ class _RadiusSlider extends StatelessWidget {
       ),
       SizedBox(
         width: 44,
-        child: Text('${value.toStringAsFixed(1)} كم',
+        child: Text(l.kmValue(value.toStringAsFixed(1)),
             style: TextStyle(
                 fontSize: 10,
                 color: enabled ? color : AppColors.grey,

@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -28,10 +27,8 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         return;
       }
 
-      
       final trips = await _repository.loadUserTrips(userId);
 
-      
       final driverIds = trips
           .where((t) => t['driver_id'] != null)
           .map((t) => t['driver_id'] as String)
@@ -40,7 +37,6 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
 
       if (driverIds.isNotEmpty) {
         try {
-          
           final driversMap = await _repository.fetchDriverDetails(driverIds);
 
           for (final trip in trips) {
@@ -50,7 +46,6 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
             }
           }
         } catch (e) {
-          
           debugPrint('⚠️ TripsBloc: Could not fetch driver details: $e');
         }
       }
@@ -70,7 +65,6 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
   ) async {
     if (!event.silent) emit(TripDetailsLoading());
     try {
-      
       final trip = await _repository.loadTripDetails(event.tripId);
 
       if (trip == null) {
@@ -78,7 +72,6 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         return;
       }
 
-      
       final driverId = trip['driver_id'];
       if (driverId != null) {
         final driverData = await _repository.fetchSingleDriverDetails(driverId);
@@ -107,27 +100,25 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         return;
       }
 
-      
       final trip = await _repository.getTripForCancellation(event.tripId);
       if (trip == null) {
         emit(const TripsError('errorCancelTrip'));
         return;
       }
 
-      
       if (trip['user_id'] != userId) {
         emit(const TripsError('errorNotYourTrip'));
         return;
       }
 
-      
       final status = trip['status'] as String?;
-      if (status != 'searching' && status != 'accepted' && status != 'in_progress') {
+      if (status != 'searching' &&
+          status != 'accepted' &&
+          status != 'in_progress') {
         emit(const TripsError('errorCancelStatus'));
         return;
       }
 
-      
       await _repository.cancelTrip(event.tripId, userId);
 
       emit(const TripActionSuccess('successTripCancelled'));

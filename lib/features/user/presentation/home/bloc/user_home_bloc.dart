@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,18 +9,6 @@ import '../../../../../services/user_presence_service.dart';
 import 'user_home_event.dart';
 import 'user_home_state.dart';
 
-
-
-
-
-
-
-
-
-
-
-
-
 class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
   final LocationService _locationService = LocationService.instance;
   final CellSubscriptionService _cellService = CellSubscriptionService.instance;
@@ -29,7 +16,6 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
   StreamSubscription? _driverUpdatesSubscription;
   StreamSubscription? _locationStreamSubscription;
 
-  
   bool _initDone = false;
 
   UserHomeBloc() : super(UserHomeInitial()) {
@@ -43,9 +29,6 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     InitUserHome event,
     Emitter<UserHomeState> emit,
   ) async {
-    
-    
-    
     if (_initDone && state is UserHomeLoaded) {
       debugPrint('📍 UserHome: Already initialized — skipping re-init');
       return;
@@ -66,21 +49,15 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
 
       debugPrint('📍 UserHome: User at ($lat, $lng) cell=$cellId');
 
-      
       await _cellService.subscribeToCells(lat, lng);
 
-      
       await _presenceService.startBroadcasting(lat: lat, lng: lng);
 
-      
       _driverUpdatesSubscription?.cancel();
-      _driverUpdatesSubscription =
-          _cellService.driverUpdates.listen((drivers) {
+      _driverUpdatesSubscription = _cellService.driverUpdates.listen((drivers) {
         add(DriversRealtimeUpdate(drivers));
       });
 
-      
-      
       _locationStreamSubscription?.cancel();
       _locationStreamSubscription =
           _locationService.getLocationStream().listen((pos) {
@@ -97,7 +74,6 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
 
       add(LoadUserCoupons(event.userId));
 
-      
       _initDone = true;
     } catch (e) {
       debugPrint('❌ UserHome: Failed to init: $e');
@@ -111,10 +87,8 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
   ) async {
     if (state is! UserHomeLoaded) return;
     final currentState = state as UserHomeLoaded;
-    final newCellId =
-        GeohashHelper.encode(event.lat, event.lng, precision: 6);
+    final newCellId = GeohashHelper.encode(event.lat, event.lng, precision: 6);
 
-    
     if (newCellId != currentState.currentCellId) {
       debugPrint(
           '📍 UserHome: Cell changed ${currentState.currentCellId} → $newCellId');
@@ -127,7 +101,6 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
       currentCellId: newCellId,
     ));
 
-    
     _presenceService.updateLocation(event.lat, event.lng);
   }
 
@@ -159,7 +132,9 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
             .eq('is_active', true)
             .or('expires_at.is.null,expires_at.gt.$now')
             .order('created_at', ascending: false);
-      } catch (_) {
+      } catch (e, st) {
+        debugPrint(
+            '⚠️ UserHomeBloc: pricing_config coupon query failed: $e\n$st');
         // fallback if is_active column doesn't exist
         try {
           publicData = await SupabaseService.client
@@ -173,11 +148,13 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
       }
 
       // Wrap public coupons in unified shape
-      final publicCoupons = publicData.map((c) => <String, dynamic>{
-        'user_id': event.userId,
-        'used_at': null,
-        'coupons': c as Map<String, dynamic>,
-      }).toList();
+      final publicCoupons = publicData
+          .map((c) => <String, dynamic>{
+                'user_id': event.userId,
+                'used_at': null,
+                'coupons': c as Map<String, dynamic>,
+              })
+          .toList();
 
       // 2. User-specific coupons
       List<dynamic> userData = [];
@@ -213,16 +190,14 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     }
   }
 
-
   @override
   Future<void> close() async {
     _driverUpdatesSubscription?.cancel();
     _locationStreamSubscription?.cancel();
-    
-    
+
     await _presenceService.stopBroadcasting();
     await _cellService.dispose();
-    
+
     return super.close();
   }
 }

@@ -5,7 +5,7 @@ import 'package:snapix/core/widgets/app_cached_image.dart';
 
 class AppAvatar extends StatelessWidget {
   final String? imageUrl;
-  final String? name;  // يُستخدم لعرض الحرف الأول إذا لا صورة
+  final String? name; // يُستخدم لعرض الحرف الأول إذا لا صورة
   final double size;
   final Color? backgroundColor;
   final bool showOnlineIndicator;
@@ -53,7 +53,8 @@ class AppAvatar extends StatelessWidget {
         ),
         if (showOnlineIndicator)
           Positioned(
-            right: 0, bottom: 0,
+            right: 0,
+            bottom: 0,
             child: Container(
               width: size * 0.28,
               height: size * 0.28,

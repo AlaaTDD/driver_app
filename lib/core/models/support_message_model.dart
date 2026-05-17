@@ -1,9 +1,4 @@
-
 import 'package:equatable/equatable.dart';
-
-
-
-
 
 class SupportMessageModel extends Equatable {
   final String id;
@@ -11,10 +6,8 @@ class SupportMessageModel extends Equatable {
   final String message;
   final DateTime createdAt;
 
-  
   final String senderRole;
 
-  
   bool get isFromUser => senderRole == 'user';
 
   const SupportMessageModel({

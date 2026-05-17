@@ -1,6 +1,3 @@
-
-
-
 const String kLightMapStyle = '''
 [
   {"elementType":"geometry","stylers":[{"color":"#EEF2F7"}]},

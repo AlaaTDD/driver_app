@@ -1,19 +1,12 @@
-
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
-
-
-
 
 class TripDetailsRepository {
   final _client = SupabaseService.client;
 
-  
-  
   static const _tripSelectQuery =
       '*, user:users!trips_user_id_fkey(id, name, phone, rating, avatar_url)';
 
-  
   Future<Map<String, dynamic>> loadTripDetails(String tripId) async {
     final data = await _client
         .from('trips')
@@ -23,8 +16,6 @@ class TripDetailsRepository {
     return Map<String, dynamic>.from(data);
   }
 
-  
-  
   Future<Map<String, dynamic>?> acceptTrip(String tripId) async {
     return await _client.rpc(
       'driver_accept_trip',
@@ -32,7 +23,6 @@ class TripDetailsRepository {
     );
   }
 
-  
   Future<void> rejectTripOffer({
     required String tripId,
     required String driverId,
@@ -43,7 +33,6 @@ class TripDetailsRepository {
     );
   }
 
-  
   Future<Map<String, dynamic>?> startTrip({
     required String tripId,
     required String driverId,
@@ -54,7 +43,6 @@ class TripDetailsRepository {
     );
   }
 
-  
   Future<Map<String, dynamic>?> completeTrip({
     required String tripId,
     required String driverId,

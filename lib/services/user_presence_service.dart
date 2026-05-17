@@ -1,21 +1,9 @@
-
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'supabase_service.dart';
 import '../core/utils/retry_helper.dart';
 import '../core/utils/geohash_helper.dart';
-
-
-
-
-
-
-
-
-
-
-
 
 class UserPresenceService with WidgetsBindingObserver {
   UserPresenceService._() {
@@ -38,11 +26,8 @@ class UserPresenceService with WidgetsBindingObserver {
   /// Heartbeat interval — reduced from 20s to 60s to lower DB I/O.
   static const Duration _heartbeatInterval = Duration(seconds: 60);
 
-  
   bool get isBroadcasting => _isBroadcasting;
 
-  
-  
   Future<void> startBroadcasting({double? lat, double? lng}) async {
     final resolvedLat = lat ?? _lastLat;
     final resolvedLng = lng ?? _lastLng;
@@ -67,7 +52,8 @@ class UserPresenceService with WidgetsBindingObserver {
       },
     );
 
-    debugPrint('📡 UserPresence: Started broadcasting loop (${_heartbeatInterval.inSeconds}s interval)');
+    debugPrint(
+        '📡 UserPresence: Started broadcasting loop (${_heartbeatInterval.inSeconds}s interval)');
   }
 
   Future<void> updateLocation(double lat, double lng) async {
@@ -79,8 +65,6 @@ class UserPresenceService with WidgetsBindingObserver {
     _upsertPresence(lat, lng);
   }
 
-  
-  
   Future<void> stopBroadcasting() async {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
@@ -90,14 +74,12 @@ class UserPresenceService with WidgetsBindingObserver {
     await _deletePresence();
   }
 
-  
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_isBroadcasting && !_isPausedByLifecycle) return;
 
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      
-      
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       debugPrint('📡 UserPresence: App backgrounded/killed, pausing broadcast');
       _heartbeatTimer?.cancel();
       _isPausedByLifecycle = true;
@@ -127,14 +109,15 @@ class UserPresenceService with WidgetsBindingObserver {
     }
   }
 
-  
-  Future<void> _upsertPresence(double lat, double lng, {bool force = false}) async {
+  Future<void> _upsertPresence(double lat, double lng,
+      {bool force = false}) async {
     final user = SupabaseService.currentUser;
     if (user == null) return;
 
     // Skip write if the driver hasn't moved significantly
     if (!force && _writtenLat != null && _writtenLng != null) {
-      if (_haversineMeters(_writtenLat!, _writtenLng!, lat, lng) < _minMovementMeters) {
+      if (_haversineMeters(_writtenLat!, _writtenLng!, lat, lng) <
+          _minMovementMeters) {
         return;
       }
     }
@@ -143,7 +126,7 @@ class UserPresenceService with WidgetsBindingObserver {
       await withRetry(
         () async {
           if (!_isBroadcasting) return;
-          
+
           await SupabaseService.client.from('user_presence').upsert({
             'user_id': user.id,
             'lat': lat,
@@ -154,7 +137,8 @@ class UserPresenceService with WidgetsBindingObserver {
           _writtenLng = lng;
         },
         maxAttempts: 3,
-        onRetry: (e, attempt) => debugPrint('📡 UserPresence: Upsert failed, retrying ($attempt/3)...'),
+        onRetry: (e, attempt) => debugPrint(
+            '📡 UserPresence: Upsert failed, retrying ($attempt/3)...'),
       );
       // NOTE: drivers_profile location is updated ONLY via DriverHomeRepository.pushLocation()
       // which is called only when is_available = true. Do NOT update it here to avoid
@@ -165,14 +149,16 @@ class UserPresenceService with WidgetsBindingObserver {
   }
 
   /// Approximate Haversine distance in meters between two coordinates.
-  static double _haversineMeters(double lat1, double lng1, double lat2, double lng2) {
+  static double _haversineMeters(
+      double lat1, double lng1, double lat2, double lng2) {
     const R = 6371000.0; // Earth radius in meters
     final dLat = (lat2 - lat1) * 3.141592653589793 / 180;
     final dLng = (lng2 - lng1) * 3.141592653589793 / 180;
     final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(lat1 * 3.141592653589793 / 180) *
             math.cos(lat2 * 3.141592653589793 / 180) *
-            math.sin(dLng / 2) * math.sin(dLng / 2);
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 }

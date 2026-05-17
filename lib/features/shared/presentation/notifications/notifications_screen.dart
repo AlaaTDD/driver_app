@@ -115,7 +115,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .eq('id', userId)
           .maybeSingle();
       return row != null && row['role'] == 'driver';
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint(
+          '⚠️ NotificationsScreen: failed to resolve current user role: $e\n$st');
       return false;
     }
   }
@@ -128,13 +130,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         notif.referenceId != null &&
         notif.referenceId!.isNotEmpty) {
       final isDriver = await _isDriver();
-      final route = isDriver ? AppRoutes.driverMessages : AppRoutes.userMessages;
+      final route =
+          isDriver ? AppRoutes.driverMessages : AppRoutes.userMessages;
       if (mounted) context.go('$route?otherUserId=${notif.referenceId}');
     } else if (notif.type == 'trip' &&
         notif.referenceId != null &&
         notif.referenceId!.isNotEmpty) {
       final isDriver = await _isDriver();
-      final route = isDriver ? AppRoutes.driverTripDetails : AppRoutes.userTripDetails;
+      final route =
+          isDriver ? AppRoutes.driverTripDetails : AppRoutes.userTripDetails;
       if (mounted) context.go('$route?tripId=${notif.referenceId}');
     }
   }

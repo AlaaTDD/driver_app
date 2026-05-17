@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
@@ -81,7 +80,7 @@ class _SegmentButton extends StatelessWidget {
   Widget build(BuildContext context) {
     const blue = AppColors.primary;
     const card = AppColors.surface;
-    const t2   = AppColors.textSecondary;
+    const t2 = AppColors.textSecondary;
 
     return Expanded(
       child: GestureDetector(
@@ -94,13 +93,19 @@ class _SegmentButton extends StatelessWidget {
             gradient: isSelected
                 ? const LinearGradient(
                     colors: [blue, AppColors.primaryDark],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   )
                 : null,
             color: isSelected ? null : AppColors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
-                ? [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))]
+                ? [
+                    BoxShadow(
+                        color: blue.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3))
+                  ]
                 : null,
           ),
           child: Row(
@@ -123,9 +128,12 @@ class _SegmentButton extends StatelessWidget {
               if (count > 0) ...[
                 const SizedBox(width: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.white.withValues(alpha: 0.2) : card,
+                    color: isSelected
+                        ? AppColors.white.withValues(alpha: 0.2)
+                        : card,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

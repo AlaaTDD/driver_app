@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
@@ -76,9 +75,11 @@ class TripDateSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
           child: Row(children: [
-            Container(width: 4, height: 16, decoration: BoxDecoration(
-              color: blue, borderRadius: BorderRadius.circular(2)
-            )),
+            Container(
+                width: 4,
+                height: 16,
+                decoration: BoxDecoration(
+                    color: blue, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 8),
             Text(
               dateLabel,
@@ -111,9 +112,9 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     const blue = AppColors.primary;
-    const t1   = AppColors.textPrimary;
-    const t2   = AppColors.textSecondary;
-    
+    const t1 = AppColors.textPrimary;
+    const t2 = AppColors.textSecondary;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -134,7 +135,8 @@ class EmptyState extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             l.noTrips,
-            style: const TextStyle(color: t1, fontSize: 18, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+                color: t1, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
@@ -146,20 +148,31 @@ class EmptyState extends StatelessWidget {
             GestureDetector(
               onTap: () => context.pop(),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [blue, AppColors.primaryDark],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: blue.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 3))],
+                  boxShadow: [
+                    BoxShadow(
+                        color: blue.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3))
+                  ],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.arrow_back_rounded, color: AppColors.white, size: 16),
+                  const Icon(Icons.arrow_back_rounded,
+                      color: AppColors.white, size: 16),
                   const SizedBox(width: 8),
                   Text(l.backToHome,
-                    style: const TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700)),
                 ]),
               ),
             ),

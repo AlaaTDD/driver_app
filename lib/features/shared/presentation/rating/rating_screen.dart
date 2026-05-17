@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +10,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
 
 class RatingScreen extends StatefulWidget {
   final String tripId;
@@ -46,7 +45,8 @@ class _RatingScreenState extends State<RatingScreen> {
             Future.delayed(const Duration(seconds: 2), () {
               if (!context.mounted) return;
               final authState = context.read<AuthBloc>().state;
-              final isDriver = authState is AuthAuthenticated && authState.user.role == 'driver';
+              final isDriver = authState is AuthAuthenticated &&
+                  authState.user.role == 'driver';
               context.go(isDriver ? AppRoutes.driverHome : AppRoutes.userHome);
             });
           }
@@ -74,8 +74,8 @@ class _RatingScreenState extends State<RatingScreen> {
                   SizedBox(height: 8),
                   Text(
                     AppLocalizations.of(context)!.returningHome,
-                    style: TextStyle(
-                        color: context.textSecondary, fontSize: 14),
+                    style:
+                        TextStyle(color: context.textSecondary, fontSize: 14),
                   ),
                 ],
               ),
@@ -86,8 +86,7 @@ class _RatingScreenState extends State<RatingScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(ErrorMapper.getErrorMessage(context, state.message),
-                      style:
-                          TextStyle(color: context.textPrimary)),
+                      style: TextStyle(color: context.textPrimary)),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => setState(() => _rating = 0),
@@ -156,10 +155,12 @@ class _RatingScreenState extends State<RatingScreen> {
             onPressed: _rating > 0
                 ? () {
                     context.read<RatingBloc>().add(SubmitRating(
-                      tripId: widget.tripId,
-                      rating: _rating,
-                      comment: _commentController.text.isNotEmpty ? _commentController.text : null,
-                    ));
+                          tripId: widget.tripId,
+                          rating: _rating,
+                          comment: _commentController.text.isNotEmpty
+                              ? _commentController.text
+                              : null,
+                        ));
                   }
                 : null,
             style: ElevatedButton.styleFrom(

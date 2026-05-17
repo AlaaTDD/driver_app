@@ -28,7 +28,8 @@ class AppEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72, height: 72,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
                 color: context.elevatedColor,
                 shape: BoxShape.circle,
@@ -36,20 +37,25 @@ class AppEmptyState extends StatelessWidget {
               child: Icon(icon, size: 32, color: context.textSecondary),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(title, style: TextStyle(color: context.textPrimary,
-                fontSize: 17, fontWeight: FontWeight.w700),
+            Text(title,
+                style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
-              Text(subtitle!, style: TextStyle(color: context.textSecondary,
-                  fontSize: 14), textAlign: TextAlign.center),
+              Text(subtitle!,
+                  style: TextStyle(color: context.textSecondary, fontSize: 14),
+                  textAlign: TextAlign.center),
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.xl),
               TextButton(
                 onPressed: onAction,
-                child: Text(actionLabel!, style: const TextStyle(
-                    color: AppColors.primary, fontWeight: FontWeight.w600)),
+                child: Text(actionLabel!,
+                    style: const TextStyle(
+                        color: AppColors.primary, fontWeight: FontWeight.w600)),
               ),
             ],
           ],

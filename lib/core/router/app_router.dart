@@ -33,11 +33,14 @@ import '../../features/shared/presentation/chatbot/chatbot_screen.dart';
 import '../../features/shared/presentation/rating/rating_screen.dart';
 import '../../features/shared/presentation/screens/complaints_screen.dart';
 import '../../features/wallet/presentation/cubit/wallet_cubit.dart';
+import '../../features/wallet/presentation/cubit/user_wallet_cubit.dart';
 import '../../features/wallet/presentation/screens/driver_wallet_screen.dart';
 import '../../features/wallet/presentation/screens/user_wallet_screen.dart';
 import '../../features/driver/presentation/bonus/bonus_screen.dart';
 import '../../features/driver/presentation/request_feed/driver_request_feed_screen.dart';
+import '../../features/driver/presentation/revision/driver_revision_screen.dart';
 import '../constants/app_routes.dart';
+import '../localization/generated/app_localizations.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/user/presentation/home/bloc/user_home_bloc.dart';
@@ -112,6 +115,20 @@ class AppRouter {
         location == AppRoutes.registerDriver;
   }
 
+  static bool _isDriverRoute(String location) =>
+      location.startsWith('/driver/');
+
+  static bool _isUserRoute(String location) => location.startsWith('/user/');
+
+  static Page<dynamic> _invalidTripIdPage(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    return MaterialPage(
+      child: Scaffold(
+        body: Center(child: Text(l.errorInvalidTripId)),
+      ),
+    );
+  }
+
   static GoRouter router(AuthBloc authBloc) {
     routerInstance = GoRouter(
       initialLocation: AppRoutes.splash,
@@ -134,10 +151,21 @@ class AppRouter {
         }
 
         if (authState is AuthAuthenticated) {
-          if (!_isAuthRoute(loc)) return null;
-          return authState.user.role == 'driver'
-              ? AppRoutes.driverHome
-              : AppRoutes.userHome;
+          final role = authState.user.role;
+          final homeRoute =
+              role == 'driver' ? AppRoutes.driverHome : AppRoutes.userHome;
+
+          if (!_isAuthRoute(loc)) {
+            if (role == 'driver' && _isUserRoute(loc)) {
+              return AppRoutes.driverHome;
+            }
+            if (role != 'driver' && _isDriverRoute(loc)) {
+              return AppRoutes.userHome;
+            }
+            return null;
+          }
+
+          return homeRoute;
         }
 
         if (authState is AuthDriverPending) {
@@ -315,10 +343,7 @@ class AppRouter {
           name: AppRoutes.userTracking,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty)
-              return const MaterialPage(
-                  child:
-                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty) return _invalidTripIdPage(context);
             return MaterialPage(
                 child: BlocProvider(
                     create: (_) => TrackingBloc(),
@@ -330,10 +355,7 @@ class AppRouter {
           name: AppRoutes.userRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty)
-              return const MaterialPage(
-                  child:
-                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty) return _invalidTripIdPage(context);
             return MaterialPage(
                 child: BlocProvider(
                     create: (_) => RatingBloc(),
@@ -345,10 +367,7 @@ class AppRouter {
           name: AppRoutes.userTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty)
-              return const MaterialPage(
-                  child:
-                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty) return _invalidTripIdPage(context);
             return MaterialPage(
               child: MultiBlocProvider(
                 providers: [
@@ -370,8 +389,12 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.userWallet,
           name: AppRoutes.userWallet,
-          pageBuilder: (context, state) =>
-              const MaterialPage(child: UserWalletScreen()),
+          pageBuilder: (context, state) => MaterialPage(
+            child: BlocProvider(
+              create: (_) => UserWalletCubit(),
+              child: const UserWalletScreen(),
+            ),
+          ),
         ),
         GoRoute(
           path: AppRoutes.driverHome,
@@ -440,10 +463,7 @@ class AppRouter {
           name: AppRoutes.driverTripDetails,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty)
-              return const MaterialPage(
-                  child:
-                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty) return _invalidTripIdPage(context);
             return MaterialPage(
               child: MultiBlocProvider(
                 providers: [
@@ -461,10 +481,7 @@ class AppRouter {
           name: AppRoutes.driverRating,
           pageBuilder: (context, state) {
             final tripId = _safeId(state, 'tripId');
-            if (tripId.isEmpty)
-              return const MaterialPage(
-                  child:
-                      Scaffold(body: Center(child: Text('Invalid trip ID'))));
+            if (tripId.isEmpty) return _invalidTripIdPage(context);
             return MaterialPage(
                 child: BlocProvider(
                     create: (_) => RatingBloc(),
@@ -499,6 +516,12 @@ class AppRouter {
           pageBuilder: (context, state) => _buildSlideTransition(
             child: const DriverRequestFeedScreen(),
           ),
+        ),
+        GoRoute(
+          path: AppRoutes.driverRevision,
+          name: AppRoutes.driverRevision,
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: DriverRevisionScreen()),
         ),
       ],
     );

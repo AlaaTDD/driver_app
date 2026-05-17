@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
+import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 
 /// A vertical timeline widget that displays multi-route waypoints (stopovers)
 /// between the pickup and destination points.
-/// 
+///
 /// Visually represents each waypoint as a dot on a vertical line,
 /// with role-based coloring (origin = green, stopover = amber, destination = blue).
 class WaypointsTimeline extends StatelessWidget {
@@ -52,9 +53,10 @@ class WaypointsTimeline extends StatelessWidget {
             onMarkArrived: onMarkArrived != null && !wp.hasArrived
                 ? () => onMarkArrived!(wp.id)
                 : null,
-            onMarkDeparted: onMarkDeparted != null && wp.hasArrived && !wp.hasDeparted
-                ? () => onMarkDeparted!(wp.id)
-                : null,
+            onMarkDeparted:
+                onMarkDeparted != null && wp.hasArrived && !wp.hasDeparted
+                    ? () => onMarkDeparted!(wp.id)
+                    : null,
           );
         }),
         // Add stopover button
@@ -90,9 +92,10 @@ class _WaypointRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final color = _roleColor(waypoint.role);
     final icon = _roleIcon(waypoint.role);
-    final label = _roleLabel(waypoint.role);
+    final label = _roleLabel(context, waypoint.role);
 
     return IntrinsicHeight(
       child: Row(
@@ -154,39 +157,44 @@ class _WaypointRow extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: color,
-                          letterSpacing: 0.3,
+                          letterSpacing: 0,
                         ),
                       ),
                       if (waypoint.hasArrived) ...[
                         const SizedBox(width: 6),
                         _StatusChip(
-                          label: 'وصل',
+                          label: l.arrivalConfirmed,
                           color: AppColors.success,
                         ),
                       ],
                       if (waypoint.hasDeparted) ...[
                         const SizedBox(width: 4),
                         _StatusChip(
-                          label: 'غادر',
+                          label: l.departureConfirmed,
                           color: AppColors.primary,
                         ),
                       ],
-                      if (isDriver && !waypoint.hasArrived && onMarkArrived != null) ...[
+                      if (isDriver &&
+                          !waypoint.hasArrived &&
+                          onMarkArrived != null) ...[
                         const SizedBox(width: 6),
                         GestureDetector(
                           onTap: onMarkArrived,
                           child: _StatusChip(
-                            label: 'تأكيد الوصول',
+                            label: l.confirmArrival,
                             color: AppColors.warning,
                           ),
                         ),
                       ],
-                      if (isDriver && waypoint.hasArrived && !waypoint.hasDeparted && onMarkDeparted != null) ...[
+                      if (isDriver &&
+                          waypoint.hasArrived &&
+                          !waypoint.hasDeparted &&
+                          onMarkDeparted != null) ...[
                         const SizedBox(width: 6),
                         GestureDetector(
                           onTap: onMarkDeparted,
                           child: _StatusChip(
-                            label: 'تأكيد المغادرة',
+                            label: l.confirmDeparture,
                             color: AppColors.success,
                           ),
                         ),
@@ -273,11 +281,14 @@ class _WaypointRow extends StatelessWidget {
         RouteWaypointRole.destination => Icons.flag_rounded,
       };
 
-  String _roleLabel(RouteWaypointRole role) => switch (role) {
-        RouteWaypointRole.origin => 'نقطة الانطلاق',
-        RouteWaypointRole.stopover => 'محطة توقف',
-        RouteWaypointRole.destination => 'الوجهة',
-      };
+  String _roleLabel(BuildContext context, RouteWaypointRole role) {
+    final l = AppLocalizations.of(context)!;
+    return switch (role) {
+      RouteWaypointRole.origin => l.pickupPoint,
+      RouteWaypointRole.stopover => l.stopover,
+      RouteWaypointRole.destination => l.destination,
+    };
+  }
 }
 
 // ─── Status Chip ──────────────────────────────────────────────────────────────
@@ -354,15 +365,15 @@ class _AddStopoverButton extends StatelessWidget {
               strokeAlign: BorderSide.strokeAlignCenter,
             ),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_location_alt_rounded,
+              const Icon(Icons.add_location_alt_rounded,
                   size: 18, color: AppColors.warning),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'إضافة محطة توقف',
-                style: TextStyle(
+                AppLocalizations.of(context)!.addStopover,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: AppColors.warning,

@@ -1,7 +1,5 @@
-
 import '../../../../services/supabase_service.dart';
-
-
+import '../../../../core/errors/exceptions.dart';
 
 class ComplaintsRepository {
   Future<void> submitComplaint({
@@ -10,7 +8,7 @@ class ComplaintsRepository {
     String? tripId,
   }) async {
     final user = SupabaseService.currentUser;
-    if (user == null) throw Exception('errorNotLoggedIn');
+    if (user == null) throw AuthException('errorNotLoggedIn');
     await SupabaseService.client.from('complaints').insert({
       'user_id': user.id,
       if (tripId != null) 'trip_id': tripId,
@@ -24,7 +22,7 @@ class ComplaintsRepository {
   Stream<List<Map<String, dynamic>>> myComplaintsStream() {
     final user = SupabaseService.currentUser;
     if (user == null) return Stream.value([]);
-    
+
     return SupabaseService.client
         .from('complaints')
         .stream(primaryKey: ['id'])

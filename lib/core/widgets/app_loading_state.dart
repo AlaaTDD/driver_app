@@ -14,7 +14,8 @@ class AppLoadingState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
               valueColor: AlwaysStoppedAnimation(AppColors.primary),
@@ -22,7 +23,8 @@ class AppLoadingState extends StatelessWidget {
           ),
           if (message != null) ...[
             const SizedBox(height: 16),
-            Text(message!, style: TextStyle(color: context.textSecondary, fontSize: 14)),
+            Text(message!,
+                style: TextStyle(color: context.textSecondary, fontSize: 14)),
           ],
         ],
       ),

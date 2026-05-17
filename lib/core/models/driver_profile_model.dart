@@ -1,7 +1,4 @@
-
 import 'package:equatable/equatable.dart';
-
-
 
 class DriverProfileModel extends Equatable {
   final String id;
@@ -100,7 +97,6 @@ class DriverProfileModel extends Equatable {
     };
   }
 
-  
   Map<String, dynamic> toVehicleUpdateJson() {
     return {
       'vehicle_type': vehicleType,
@@ -155,10 +151,25 @@ class DriverProfileModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, nationalId, nationalIdImageUrl, licenseNumber, licenseImageUrl,
-        criminalRecordUrl, vehicleType, vehicleBrand, vehicleModel,
-        vehicleYear, vehicleColor, vehiclePlate, vehicleImageUrl,
-        isVerified, isAvailable, currentLat, currentLng, geohash, geohash5,
+        id,
+        nationalId,
+        nationalIdImageUrl,
+        licenseNumber,
+        licenseImageUrl,
+        criminalRecordUrl,
+        vehicleType,
+        vehicleBrand,
+        vehicleModel,
+        vehicleYear,
+        vehicleColor,
+        vehiclePlate,
+        vehicleImageUrl,
+        isVerified,
+        isAvailable,
+        currentLat,
+        currentLng,
+        geohash,
+        geohash5,
         updatedAt,
       ];
 }

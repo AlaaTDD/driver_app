@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import '../../../../../core/models/message_model.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../core/constants/app_constants.dart';
+import '../../../../../core/errors/exceptions.dart';
 
 /// Repository for direct user↔driver messaging (messages table)
 /// and trip-scoped chat.
@@ -54,7 +55,8 @@ class MessagesRepository {
     try {
       final data = await SupabaseService.client
           .from(AppConstants.tableMessages)
-          .select('id, sender_id, receiver_id, content, created_at, is_read, type, attachment_url')
+          .select(
+              'id, sender_id, receiver_id, content, created_at, is_read, type, attachment_url')
           .isFilter('trip_id', null)
           .or('sender_id.eq.$userId,receiver_id.eq.$userId')
           .or('and(deleted_by_sender.eq.false,deleted_by_receiver.eq.false)')
@@ -179,7 +181,9 @@ class MessagesRepository {
         final r = newMessage.receiverId;
         final tid = newMessage.tripId;
 
-        if (tid == null && ((s == userId && r == otherUserId) || (s == otherUserId && r == userId))) {
+        if (tid == null &&
+            ((s == userId && r == otherUserId) ||
+                (s == otherUserId && r == userId))) {
           if (!cachedMessages.any((m) => m.id == newMessage.id)) {
             cachedMessages.add(newMessage);
             cachedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -255,8 +259,8 @@ class MessagesRepository {
     String? attachmentUrl,
   }) async {
     final userId = SupabaseService.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
-    if (receiverId.isEmpty) throw Exception('receiverId cannot be empty');
+    if (userId == null) throw AuthException('errorNotLoggedIn');
+    if (receiverId.isEmpty) throw ValidationException('errorReceiverEmpty');
 
     // Insert message
     await SupabaseService.client.from(AppConstants.tableMessages).insert({
@@ -269,7 +273,8 @@ class MessagesRepository {
     });
 
     // Notification title: e.g. "رسالة من أحمد"
-    final resolvedName = senderName.isNotEmpty ? senderName : (defaultUserName ?? 'User');
+    final resolvedName =
+        senderName.isNotEmpty ? senderName : (defaultUserName ?? 'User');
     final title = newMessageFrom(resolvedName);
 
     // FCM push (works while app is background / terminated)
@@ -415,11 +420,11 @@ class MessagesRepository {
     String? attachmentUrl,
   }) async {
     final userId = SupabaseService.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
-    if (tripId.isEmpty) throw Exception('tripId cannot be empty');
+    if (userId == null) throw AuthException('errorNotLoggedIn');
+    if (tripId.isEmpty) throw ValidationException('errorTripIdEmpty');
 
     final receiverId = await _resolveReceiverId(tripId, userId);
-    if (receiverId == null) throw Exception('Could not resolve receiver ID (participant missing or deleted)');
+    if (receiverId == null) throw NotFoundException('errorReceiverNotFound');
 
     // Insert message
     await SupabaseService.client.from(AppConstants.tableMessages).insert({
@@ -431,7 +436,8 @@ class MessagesRepository {
       if (attachmentUrl != null) 'attachment_url': attachmentUrl,
     });
 
-    final resolvedName = senderName.isNotEmpty ? senderName : (defaultDriverName ?? 'Driver');
+    final resolvedName =
+        senderName.isNotEmpty ? senderName : (defaultDriverName ?? 'Driver');
     final title = newMessageFrom(resolvedName);
 
     // FCM push (works while app is background / terminated)
@@ -452,11 +458,12 @@ class MessagesRepository {
   /// Upload an image to Supabase Storage and return its public URL.
   Future<String> uploadAttachment(File file) async {
     final userId = SupabaseService.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
+    if (userId == null) throw AuthException('errorNotLoggedIn');
 
     try {
       final extension = file.path.split('.').last;
-      final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final fileName =
+          '${userId}_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final path = 'chat_attachments/$fileName';
 
       await SupabaseService.client.storage
@@ -480,7 +487,10 @@ class MessagesRepository {
     try {
       var query = SupabaseService.client
           .from(AppConstants.tableMessages)
-          .update({'is_read': true, 'read_at': DateTime.now().toUtc().toIso8601String()})
+          .update({
+            'is_read': true,
+            'read_at': DateTime.now().toUtc().toIso8601String()
+          })
           .eq('sender_id', senderId)
           .eq('receiver_id', userId)
           .eq('is_read', false);
@@ -505,8 +515,7 @@ class MessagesRepository {
       final column = isSender ? 'deleted_by_sender' : 'deleted_by_receiver';
       await SupabaseService.client
           .from(AppConstants.tableMessages)
-          .update({column: true})
-          .eq('id', messageId);
+          .update({column: true}).eq('id', messageId);
     } catch (e) {
       debugPrint('⚠️ MessagesRepository: deleteMessage failed: $e');
     }
@@ -616,7 +625,8 @@ class MessagesRepository {
   }
 
   /// Tracks current user's presence and optional typing status.
-  Future<void> trackPresence(RealtimeChannel channel, {bool isTyping = false, double? lat, double? lng}) async {
+  Future<void> trackPresence(RealtimeChannel channel,
+      {bool isTyping = false, double? lat, double? lng}) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
 
@@ -630,22 +640,27 @@ class MessagesRepository {
   }
 
   /// Listen to presence changes including typing status.
-  void setupPresenceSync(RealtimeChannel channel, Function(Map<String, bool> onlineMap, Map<String, bool> typingMap) onSync) {
+  void setupPresenceSync(
+      RealtimeChannel channel,
+      Function(Map<String, bool> onlineMap, Map<String, bool> typingMap)
+          onSync) {
     channel.onPresenceSync((payload) {
       final Map<String, bool> onlineMap = {};
       final Map<String, bool> typingMap = {};
       final states = channel.presenceState();
-      
+
       for (final presence in states) {
         final dynamic p = presence;
         // The object is SinglePresenceState. Its data is usually in 'payload'
         Map<String, dynamic>? meta;
         try {
           meta = p.payload as Map<String, dynamic>?;
-        } catch (_) {
+        } catch (e, st) {
+          debugPrint(
+              '⚠️ MessagesRepository: unable to read presence payload: $e\n$st');
           // Fallback if payload is not available
         }
-        
+
         if (meta != null) {
           final uid = meta['user_id'] as String?;
           if (uid != null) {
@@ -673,9 +688,9 @@ class MessagesRepository {
         'lng': lng ?? 0.0,
       };
       await SupabaseService.client.from('user_presence').upsert(
-        payload,
-        onConflict: 'user_id',
-      );
+            payload,
+            onConflict: 'user_id',
+          );
     } catch (e) {
       debugPrint('⚠️ MessagesRepository: ensureMyPresence failed: $e');
     }
@@ -693,7 +708,9 @@ class MessagesRepository {
         final lastSeen = DateTime.parse(lastSeenIso).toUtc();
         final now = DateTime.now().toUtc();
         return now.difference(lastSeen).inSeconds <= 30; // 30s threshold
-      } catch (_) {
+      } catch (e, st) {
+        debugPrint(
+            '⚠️ MessagesRepository: invalid last_seen "$lastSeenIso": $e\n$st');
         return false;
       }
     }
@@ -712,7 +729,9 @@ class MessagesRepository {
           } else {
             controller.add(false);
           }
-        }).catchError((_) {
+        }).catchError((e, st) {
+          debugPrint(
+              '⚠️ MessagesRepository: initial global presence fetch failed: $e\n$st');
           controller.add(false);
         });
 
@@ -732,7 +751,8 @@ class MessagesRepository {
                   controller.add(false);
                 } else {
                   final newRow = payload.newRecord;
-                  if (newRow.isNotEmpty && isRecent(newRow['last_seen'] as String?)) {
+                  if (newRow.isNotEmpty &&
+                      isRecent(newRow['last_seen'] as String?)) {
                     controller.add(true);
                   } else {
                     controller.add(false);
@@ -755,7 +775,10 @@ class MessagesRepository {
             } else {
               controller.add(false);
             }
-          }).catchError((_) {});
+          }).catchError((e, st) {
+            debugPrint(
+                '⚠️ MessagesRepository: global presence fallback fetch failed: $e\n$st');
+          });
         });
       },
       onCancel: () {
@@ -766,8 +789,6 @@ class MessagesRepository {
 
     return controller.stream;
   }
-
-
 
   // ─── Active trip guard ────────────────────────────────────────────────────
 
@@ -809,8 +830,10 @@ class MessagesRepository {
           callback: (payload) {
             final newRow = payload.newRecord;
             final oldRow = payload.oldRecord;
-            final s = newRow['sender_id'] as String? ?? oldRow['sender_id'] as String?;
-            final r = newRow['receiver_id'] as String? ?? oldRow['receiver_id'] as String?;
+            final s = newRow['sender_id'] as String? ??
+                oldRow['sender_id'] as String?;
+            final r = newRow['receiver_id'] as String? ??
+                oldRow['receiver_id'] as String?;
             if (s == userId || r == userId) {
               if (!controller.isClosed) controller.add(null);
             }
@@ -846,7 +869,8 @@ class MessagesRepository {
             final s = newRow['sender_id'] as String?;
             final r = newRow['receiver_id'] as String?;
             if (s == userId || r == userId) {
-              if (!controller.isClosed) controller.add(Map<String, dynamic>.from(newRow));
+              if (!controller.isClosed)
+                controller.add(Map<String, dynamic>.from(newRow));
             }
           },
         )

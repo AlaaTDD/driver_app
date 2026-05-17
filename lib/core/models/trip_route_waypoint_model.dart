@@ -115,8 +115,20 @@ class TripRouteWaypointModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, routePlanId, seqOrder, role, lat, lng, address,
-        placeId, legDistanceKm, legDurationMin, plannedWaitMin,
-        actualArrivedAt, actualDepartedAt, notes, createdAt,
+        id,
+        routePlanId,
+        seqOrder,
+        role,
+        lat,
+        lng,
+        address,
+        placeId,
+        legDistanceKm,
+        legDurationMin,
+        plannedWaitMin,
+        actualArrivedAt,
+        actualDepartedAt,
+        notes,
+        createdAt,
       ];
 }

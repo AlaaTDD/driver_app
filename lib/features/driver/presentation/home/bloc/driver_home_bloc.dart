@@ -9,18 +9,6 @@ import 'package:snapix/features/driver/data/repositories/trip_details_repository
 import 'driver_home_event.dart';
 import 'driver_home_state.dart';
 
-
-
-
-
-
-
-
-
-
-
-
-
 class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   final LocationService _locationService;
   final HeatmapService _heatmapService;
@@ -29,18 +17,14 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   StreamSubscription? _tripsSubscription;
   StreamSubscription? _heatmapSubscription;
 
-  
   bool _statusLoaded = false;
 
-  
-  
   static const int _maxTrackedIds = 200;
   final Set<String> _shownOfferTripIds = {};
   final Set<String> _rejectedOfferTripIds = {};
 
   void _trackId(Set<String> set, String id) {
     if (set.length >= _maxTrackedIds) {
-      
       final toRemove = set.take(50).toList();
       set.removeAll(toRemove);
     }
@@ -88,12 +72,9 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     LoadDriverStatus event,
     Emitter<DriverHomeState> emit,
   ) async {
-    
-    
-    
     if (_statusLoaded) {
       debugPrint('📍 DriverHomeBloc: Status already loaded — skipping re-init');
-      
+
       if (state.isAvailable && _locationSubscription == null) {
         final userId = SupabaseService.currentUser?.id;
         if (userId != null) await _startLocationTracking(userId);
@@ -106,12 +87,10 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) return;
 
-      
       final statusData = await _repository.loadDriverStatus(userId);
       final driverData = statusData['driverData'];
       final userData = statusData['userData'];
 
-      
       final earnings = await _repository.getEarningsSummary(userId);
 
       emit(state.copyWith(
@@ -139,15 +118,17 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         if (shouldBeAvailable) {
           final hasActive = await _repository.hasActiveTrip(userId);
           if (hasActive) {
-            debugPrint('⚠️ DriverHomeBloc: Driver has active trip, forcing offline status');
+            debugPrint(
+                '⚠️ DriverHomeBloc: Driver has active trip, forcing offline status');
             await _repository.setDriverOffline(userId);
             shouldBeAvailable = false;
           } else {
             await _pushLocationToDb(
-                userId, position.latitude, position.longitude, heading: position.heading);
+                userId, position.latitude, position.longitude,
+                heading: position.heading);
           }
         }
-        
+
         emit(state.copyWith(isAvailable: shouldBeAvailable));
 
         if (shouldBeAvailable) {
@@ -172,10 +153,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     Emitter<DriverHomeState> emit,
   ) async {
     if (state.isLoading) {
-      debugPrint('🚦 DriverHomeBloc: Ignored ToggleAvailability, already loading.');
+      debugPrint(
+          '🚦 DriverHomeBloc: Ignored ToggleAvailability, already loading.');
       return;
     }
-    debugPrint('🚦 DriverHomeBloc: ToggleAvailability → isAvailable=${event.isAvailable}');
+    debugPrint(
+        '🚦 DriverHomeBloc: ToggleAvailability → isAvailable=${event.isAvailable}');
     emit(state.copyWith(isLoading: true));
     try {
       final userId = SupabaseService.currentUser?.id;
@@ -187,7 +170,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       if (event.isAvailable) {
         final hasActive = await _repository.hasActiveTrip(userId);
         if (hasActive) {
-          debugPrint('⚠️ DriverHomeBloc: Cannot go online while on an active trip');
+          debugPrint(
+              '⚠️ DriverHomeBloc: Cannot go online while on an active trip');
           emit(state.copyWith(isLoading: false, clearError: true));
           await Future.delayed(const Duration(milliseconds: 50));
           emit(state.copyWith(
@@ -195,12 +179,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
           ));
           return;
         }
-        
+
         final hasPermission = await _locationService.hasPermission();
         if (!hasPermission) {
           await _locationService.requestPermission();
         }
-        
+
         final position = await _locationService.getCurrentLocation();
         final lat = position.latitude;
         final lng = position.longitude;
@@ -219,9 +203,6 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         await _startLocationTracking(userId);
         _subscribeToTripOffers(userId);
       } else {
-        
-        
-        
         await _repository.setDriverOffline(userId);
 
         debugPrint('🔴 Driver OFFLINE');
@@ -236,7 +217,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         _locationSubscription = null;
         _tripsSubscription = null;
 
-        emit(state.copyWith(isAvailable: false, isLoading: false, clearError: true));
+        emit(state.copyWith(
+            isAvailable: false, isLoading: false, clearError: true));
       }
     } catch (e) {
       debugPrint('❌ DriverHomeBloc: ToggleAvailability failed: $e');
@@ -255,14 +237,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     emit(state.copyWith(pendingTripOffer: event.trip));
   }
 
-  
   bool _isAccepting = false;
 
   Future<void> _onAcceptTripOffer(
     AcceptTripOffer event,
     Emitter<DriverHomeState> emit,
   ) async {
-    
     if (_isAccepting) {
       debugPrint('🚦 DriverHomeBloc: Accept already in progress — ignoring');
       return;
@@ -278,10 +258,10 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       return;
     }
 
-    debugPrint('🚦 DriverHomeBloc: Accepting trip ${event.tripId} for driver $userId');
+    debugPrint(
+        '🚦 DriverHomeBloc: Accepting trip ${event.tripId} for driver $userId');
 
     try {
-      
       final tripRepo = TripDetailsRepository();
       final result = await tripRepo.acceptTrip(event.tripId);
 
@@ -290,15 +270,15 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       if (result != null && result['success'] == true) {
         _shownOfferTripIds.clear();
         _isAccepting = false;
-        
+
         final acceptedTripId = result['trip_id'] as String? ?? event.tripId;
-        
+
         // Disable Home tracking and set offline since they are now on a trip
         await _locationSubscription?.cancel();
         await _tripsSubscription?.cancel();
         _locationSubscription = null;
         _tripsSubscription = null;
-        
+
         emit(state.copyWith(
           isAvailable: false,
           clearOffer: true,
@@ -307,11 +287,11 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         return;
       }
 
-      debugPrint('⚠️ DriverHomeBloc: RPC accept returned error: ${result?['error'] ?? result}');
-      
-      
+      debugPrint(
+          '⚠️ DriverHomeBloc: RPC accept returned error: ${result?['error'] ?? result}');
     } catch (rpcError) {
-      debugPrint('⚠️ DriverHomeBloc: RPC accept failed ($rpcError). Trip likely unavailable.');
+      debugPrint(
+          '⚠️ DriverHomeBloc: RPC accept failed ($rpcError). Trip likely unavailable.');
     }
 
     _isAccepting = false;
@@ -331,7 +311,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       return;
     }
 
-    debugPrint('🚦 DriverHomeBloc: Rejecting trip ${event.tripId} for driver $userId');
+    debugPrint(
+        '🚦 DriverHomeBloc: Rejecting trip ${event.tripId} for driver $userId');
 
     try {
       final tripRepo = TripDetailsRepository();
@@ -340,7 +321,6 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       debugPrint('🚦 DriverHomeBloc: driver_reject_trip result = success');
     } catch (rpcError) {
       debugPrint('⚠️ DriverHomeBloc: RPC reject failed ($rpcError).');
-      
     }
 
     _trackId(_rejectedOfferTripIds, event.tripId);
@@ -359,10 +339,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       return;
     }
 
-    debugPrint('🚦 DriverHomeBloc: Submitting offer ${event.proposedPrice} for trip ${event.tripId}');
+    debugPrint(
+        '🚦 DriverHomeBloc: Submitting offer ${event.proposedPrice} for trip ${event.tripId}');
 
     try {
-      final result = await SupabaseService.client.rpc('driver_submit_offer', params: {
+      final result =
+          await SupabaseService.client.rpc('driver_submit_offer', params: {
         'p_trip_id': event.tripId,
         'p_proposed_price': event.proposedPrice,
         'p_driver_lat': state.driverLat ?? 0.0,
@@ -385,11 +367,10 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
     if (!state.isAvailable) return;
-    await _pushLocationToDb(userId, event.lat, event.lng, heading: event.heading);
+    await _pushLocationToDb(userId, event.lat, event.lng,
+        heading: event.heading);
   }
 
-  
-  
   Future<void> _onRefreshDriverLocation(
     RefreshDriverLocation event,
     Emitter<DriverHomeState> emit,
@@ -404,7 +385,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         driverLat: position.latitude,
         driverLng: position.longitude,
       ));
-      await _pushLocationToDb(userId, position.latitude, position.longitude, heading: position.heading);
+      await _pushLocationToDb(userId, position.latitude, position.longitude,
+          heading: position.heading);
       debugPrint('🔄 DriverHomeBloc: Location refreshed after resume');
     } catch (e) {
       debugPrint('⚠️ DriverHomeBloc: RefreshDriverLocation failed: $e');
@@ -420,8 +402,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   /// Push location to DB with smart throttle.
   /// Instead of dropping throttled updates, stores the latest and schedules
   /// a delayed push so the user always sees the most recent position.
-  Future<void> _pushLocationToDb(
-      String userId, double lat, double lng, {double? heading}) async {
+  Future<void> _pushLocationToDb(String userId, double lat, double lng,
+      {double? heading}) async {
     final now = DateTime.now();
     final elapsed = _lastLocationPushTime != null
         ? now.difference(_lastLocationPushTime!).inSeconds
@@ -439,7 +421,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
           if (_pendingLat != null && _pendingLng != null && state.isAvailable) {
             final uid = SupabaseService.currentUser?.id;
             if (uid != null) {
-              _doPushLocation(uid, _pendingLat!, _pendingLng!, heading: _pendingHeading);
+              _doPushLocation(uid, _pendingLat!, _pendingLng!,
+                  heading: _pendingHeading);
             }
           }
           _pendingLat = null;
@@ -458,8 +441,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     await _doPushLocation(userId, lat, lng, heading: heading);
   }
 
-  Future<void> _doPushLocation(
-      String userId, double lat, double lng, {double? heading}) async {
+  Future<void> _doPushLocation(String userId, double lat, double lng,
+      {double? heading}) async {
     _lastLocationPushTime = DateTime.now();
     try {
       await _repository.pushLocation(userId, lat, lng, heading: heading);
@@ -472,7 +455,6 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     LoadHeatmapData event,
     Emitter<DriverHomeState> emit,
   ) async {
-    
     if (_heatmapSubscription != null) return;
     await _heatmapService.startRealtimeUpdates();
     _heatmapSubscription = _heatmapService.heatmapUpdates.listen((cells) {
@@ -488,7 +470,6 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   }
 
   Future<void> _startLocationTracking(String userId) async {
-    
     await _locationSubscription?.cancel();
     _locationSubscription = _locationService.getLocationStream().listen(
       (position) {
@@ -507,8 +488,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
 
   void _subscribeToTripOffers(String userId) {
     _tripsSubscription?.cancel();
-    _tripsSubscription = _repository.getTripOffersStream(userId).listen((offers) async {
-      
+    _tripsSubscription =
+        _repository.getTripOffersStream(userId).listen((offers) async {
       final pendingTripIds = <String>{};
       for (final offer in offers) {
         if (offer['status'] != 'pending') continue;
@@ -524,19 +505,18 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       if (pendingTripIds.isEmpty) return;
 
       try {
-        
         final hasActive = await _repository.hasActiveTrip(userId);
         if (hasActive) return;
 
-        
-        final tripList = await _repository.fetchTripsByIds(pendingTripIds.toList());
+        final tripList =
+            await _repository.fetchTripsByIds(pendingTripIds.toList());
 
         for (final tripData in tripList) {
           final tripId = tripData.id;
           if (tripId.isEmpty) continue;
           _trackId(_shownOfferTripIds, tripId);
           add(NewTripOfferReceived(tripData));
-          break; 
+          break;
         }
       } catch (e) {
         debugPrint('❌ DriverHomeBloc: Failed to fetch trip offers: $e');

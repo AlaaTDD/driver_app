@@ -52,7 +52,7 @@ class BonusCubit extends Cubit<BonusState> {
     try {
       final driverId = SupabaseService.currentUser?.id;
       if (driverId == null) {
-        emit(state.copyWith(isLoading: false, error: 'Not authenticated'));
+        emit(state.copyWith(isLoading: false, error: 'errorNotLoggedIn'));
         return;
       }
 

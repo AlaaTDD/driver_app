@@ -26,6 +26,7 @@ class TripRouteState extends Equatable {
     TripRoutePlanModel? activeRoutePlan,
     List<TripRouteWaypointModel>? waypoints,
     String? errorMessage,
+    bool clearErrorMessage = false,
   }) {
     return TripRouteState(
       status: status ?? this.status,
@@ -33,7 +34,8 @@ class TripRouteState extends Equatable {
       routePlans: routePlans ?? this.routePlans,
       activeRoutePlan: activeRoutePlan ?? this.activeRoutePlan,
       waypoints: waypoints ?? this.waypoints,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage:
+          clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
     );
   }
 

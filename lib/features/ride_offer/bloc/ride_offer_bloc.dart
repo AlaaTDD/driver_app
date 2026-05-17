@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,14 +38,16 @@ class RideOfferBloc extends Bloc<RideOfferEvent, RideOfferState> {
     emit(state.copyWith(status: RideOfferStatus.accepted));
 
     try {
-      final result = await SupabaseService.client.rpc('driver_accept_trip', params: {
+      final result =
+          await SupabaseService.client.rpc('driver_accept_trip', params: {
         'p_trip_id': state.currentOffer?.id ?? event.offerId,
       });
-      
+
       if (result == null || result['success'] != true) {
         emit(state.copyWith(
           status: RideOfferStatus.error,
-          errorMessage: result?['error'] ?? 'Failed to accept offer',
+          errorMessage:
+              result?['error']?.toString() ?? 'errorAcceptOfferFailed',
         ));
         return;
       }
@@ -56,7 +57,7 @@ class RideOfferBloc extends Bloc<RideOfferEvent, RideOfferState> {
       debugPrint('RideOfferBloc: Accept failed — $e');
       emit(state.copyWith(
         status: RideOfferStatus.error,
-        errorMessage: 'Failed to accept offer',
+        errorMessage: 'errorAcceptOfferFailed',
       ));
     }
   }
@@ -74,8 +75,7 @@ class RideOfferBloc extends Bloc<RideOfferEvent, RideOfferState> {
     try {
       await SupabaseService.client
           .from('trip_offers')
-          .update({'status': 'declined'})
-          .eq('id', event.offerId);
+          .update({'status': 'declined'}).eq('id', event.offerId);
     } catch (e) {
       debugPrint('RideOfferBloc: Decline failed — $e');
     }
@@ -106,7 +106,7 @@ class RideOfferBloc extends Bloc<RideOfferEvent, RideOfferState> {
   }
 
   void _startCountdown(Emitter<RideOfferState> emit) {
-    _countdownTimer?.cancel(); 
+    _countdownTimer?.cancel();
     int seconds = 30;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       seconds--;

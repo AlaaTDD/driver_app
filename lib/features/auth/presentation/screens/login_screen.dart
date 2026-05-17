@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -81,7 +80,6 @@ class _LoginScreenState extends State<LoginScreen>
         backgroundColor: context.bgColor,
         body: Stack(
           children: [
-            
             Positioned(
               top: 0,
               left: 0,
@@ -100,7 +98,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-            
             SafeArea(
               child: FadeTransition(
                 opacity: _fadeAnim,
@@ -114,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const SizedBox(height: 60),
-                          
                           Container(
                             width: 80,
                             height: 80,
@@ -123,11 +119,15 @@ class _LoginScreenState extends State<LoginScreen>
                               gradient: const LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [AppColors.primary, AppColors.primaryDark],
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primaryDark
+                                ],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.38),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.38),
                                   blurRadius: 28,
                                   spreadRadius: 6,
                                 ),
@@ -158,7 +158,6 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 48),
-                          
                           _FloatingInput(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
@@ -166,11 +165,11 @@ class _LoginScreenState extends State<LoginScreen>
                             label: AppLocalizations.of(context)!.email,
                             hint: 'example@email.com',
                             icon: Icons.email_outlined,
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? AppLocalizations.of(context)!.enterEmail : null,
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? AppLocalizations.of(context)!.enterEmail
+                                : null,
                           ),
                           const SizedBox(height: 20),
-                          
                           _FloatingInput(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
@@ -186,14 +185,14 @@ class _LoginScreenState extends State<LoginScreen>
                                     : Icons.visibility_off_outlined,
                                 color: context.textSecondary,
                               ),
-                              onPressed: () =>
-                                  setState(() => _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword),
                             ),
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? AppLocalizations.of(context)!.enterPassword : null,
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? AppLocalizations.of(context)!.enterPassword
+                                : null,
                           ),
                           const SizedBox(height: 36),
-                          
                           BlocBuilder<AuthBloc, AuthState>(
                             builder: (context, state) => _GradientButton(
                               text: AppLocalizations.of(context)!.login,
@@ -202,7 +201,6 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 28),
-                          
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -240,7 +238,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 }
-
 
 class _FloatingInput extends StatelessWidget {
   final TextEditingController controller;
@@ -317,7 +314,6 @@ class _FloatingInput extends StatelessWidget {
   }
 }
 
-
 class _GradientButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
@@ -362,7 +358,8 @@ class _GradientButton extends StatelessWidget {
                     height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.white),
                     ),
                   )
                 : Text(

@@ -37,7 +37,8 @@ class WalletRepository {
       if (detailedData.containsKey('earnings_7d')) {
         summaryData['earnings_7d'] = detailedData['earnings_7d'];
       }
-      if (detailedData.containsKey('earnings_30d') && !summaryData.containsKey('earnings_30d')) {
+      if (detailedData.containsKey('earnings_30d') &&
+          !summaryData.containsKey('earnings_30d')) {
         summaryData['earnings_30d'] = detailedData['earnings_30d'];
       }
 
@@ -69,7 +70,8 @@ class WalletRepository {
           .eq('wallet_type', walletType);
 
       if (before != null) {
-        filterBuilder = filterBuilder.lt('created_at', before.toIso8601String());
+        filterBuilder =
+            filterBuilder.lt('created_at', before.toIso8601String());
       }
 
       final result = await filterBuilder
@@ -77,7 +79,8 @@ class WalletRepository {
           .limit(limit);
 
       return (result as List)
-          .map((e) => WalletTransactionModel.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) =>
+              WalletTransactionModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
       debugPrint('❌ WalletRepository.getTransactionHistory: $e');
@@ -105,7 +108,8 @@ class WalletRepository {
       'request_driver_withdrawal',
       params: params,
     );
-    return (result as Map<String, dynamic>?) ?? {'success': false, 'error': 'unknown_error'};
+    return (result as Map<String, dynamic>?) ??
+        {'success': false, 'error': 'unknown_error'};
   }
 
   /// Get typed withdrawal requests
@@ -123,11 +127,11 @@ class WalletRepository {
         filterBuilder = filterBuilder.eq('status', status);
       }
 
-      final result = await filterBuilder
-          .order('created_at', ascending: false);
+      final result = await filterBuilder.order('created_at', ascending: false);
 
       return (result as List)
-          .map((e) => WithdrawalRequestModel.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) =>
+              WithdrawalRequestModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
       debugPrint('❌ WalletRepository.getWithdrawalRequests: $e');
@@ -149,11 +153,8 @@ class WalletRepository {
   /// جلب محفظة المستخدم
   Future<UserWalletModel?> getUserWallet(String userId) async {
     try {
-      final data = await _client
-          .from('user_wallets')
-          .select()
-          .eq('id', userId)
-          .single();
+      final data =
+          await _client.from('user_wallets').select().eq('id', userId).single();
       return UserWalletModel.fromJson(Map<String, dynamic>.from(data));
     } catch (e) {
       debugPrint('❌ WalletRepository.getUserWallet: $e');

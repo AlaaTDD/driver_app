@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'trip_card.dart' as trip_card_widget;
 
@@ -58,7 +57,8 @@ class _AnimatedTripCardState extends State<AnimatedTripCard>
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: trip_card_widget.TripCard(trip: widget.trip, isActive: widget.isActive),
+        child: trip_card_widget.TripCard(
+            trip: widget.trip, isActive: widget.isActive),
       ),
     );
   }

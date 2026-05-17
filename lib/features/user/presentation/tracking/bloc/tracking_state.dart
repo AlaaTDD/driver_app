@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -16,7 +15,7 @@ class TrackingLoading extends TrackingState {}
 class TrackingLoaded extends TrackingState {
   final Map<String, dynamic> trip;
   final Map<String, dynamic>? driver;
-  
+
   final LatLng? driverLocation;
   final List<LatLng> routePoints;
 

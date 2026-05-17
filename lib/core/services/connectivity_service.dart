@@ -1,6 +1,3 @@
-
-
-
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -23,11 +20,12 @@ class ConnectivityService {
 
   Future<void> init() async {
     _subscription?.cancel();
-    
+
     // Set initial status
-    _lastStatus = (await isOnline()) ? NetworkStatus.online : NetworkStatus.offline;
+    _lastStatus =
+        (await isOnline()) ? NetworkStatus.online : NetworkStatus.offline;
     _controller.add(_lastStatus);
-    
+
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
       final isOnline = results.any((r) =>
           r == ConnectivityResult.wifi ||

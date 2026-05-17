@@ -385,6 +385,14 @@
   "errorFileTooLarge": "File is too large",
   "errorFileEmpty": "File is empty",
   "errorFileUnsupported": "Unsupported file type",
+  "errorUploadFailed": "File upload failed. Please try again.",
+  "errorDeleteFailed": "File delete failed. Please try again.",
+  "errorReceiverEmpty": "Invalid recipient.",
+  "errorTripIdEmpty": "Invalid trip ID.",
+  "errorReceiverNotFound": "Chat participant not found.",
+  "errorNullPrice": "Could not calculate price. Please try again.",
+  "errorAcceptOfferFailed": "Failed to accept offer. Please try again.",
+  "unexpectedError": "An unexpected error occurred.",
   "pleaseFillAllFields": "Please fill all fields",
   "describeIssueDetail": "Please describe your issue in detail.",
   "titleLabel": "Title",
@@ -392,6 +400,28 @@
   "editProfileComingSoon": "Edit Profile coming soon",
   "myWallet": "My Wallet",
   "driverWallet": "Driver Wallet",
+  "driverRevisionRequests": "Revision Requests",
+  "noRevisionRequests": "No revision requests",
+  "noRevisionRequestsDesc": "Your verification data does not need changes right now.",
+  "revisionNeedsAction": "Changes required",
+  "revisionResolved": "Revision resolved",
+  "fieldsRequested": "Requested fields",
+  "revisionCreatedAt": "Created: {date}",
+  "@revisionCreatedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "revisionResolvedAt": "Resolved: {date}",
+  "@revisionResolvedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "availableBalanceLabel": "Available Balance",
   "availableToWithdraw": "Available to Withdraw",
   "transactionHistory": "Transaction History",
@@ -627,5 +657,114 @@
   "totalTripsCompleted": "Completed Trips",
   "avgTripRating": "Avg. Rating",
   "totalKmTravelled": "Total KM",
-  "cancelledTrips": "Cancelled"
+  "cancelledTrips": "Cancelled",
+  "errorLoadVehicleTypes": "Failed to load vehicle types. Please try again.",
+  "errorUserBlocked": "Your account has been blocked. Please contact support.",
+  "errorInvalidTripId": "Invalid trip ID.",
+  "addStopover": "Add stopover",
+  "addStopoverMultiRoute": "Add stopover (multi-route)",
+  "addThisStopover": "Add this stopover",
+  "confirmStopover": "Confirm stopover",
+  "selectedStopover": "Selected stopover",
+  "swapLocations": "Swap",
+  "tripRoute": "Trip route",
+  "delete": "Delete",
+  "driverOffersCount": "Driver offers ({count}):",
+  "@driverOffersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stopCount": "{count} stopovers",
+  "@stopCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickupPoint": "Pickup point",
+  "stopoverNumber": "Stopover {number}",
+  "@stopoverNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "loading": "Loading...",
+  "availableRequestsCount": "{count} available requests",
+  "@availableRequestsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noRideRequestsAvailableNow": "No ride requests available right now",
+  "noRideRequestsAvailable": "No ride requests available",
+  "rideRequestsWillAppearHere": "Ride requests will appear here when they arrive",
+  "acceptRide": "Accept ride",
+  "placeNotFoundDetailed": "Place not found. Try a more detailed address",
+  "stopoverAddedSuccessfully": "Stopover added successfully",
+  "errorWithDetails": "Error: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "searchPlaceHint": "Search for a place...",
+  "discountLimited": "Limited discount",
+  "discountOnYourRide": "Discount on your ride",
+  "useCodeForInstantDiscount": "Use the code and get an instant discount",
+  "discountOnAllTrips": "On all trips",
+  "copyCouponCode": "Copy discount code",
+  "couponCodeCopied": "Discount code copied",
+  "couponExpiresAt": "Expires {date}",
+  "@couponExpiresAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "resetButton": "Reset",
+  "clearButton": "Clear",
+  "processing": "Processing...",
+  "corridorStepOrigin": "Choose start",
+  "corridorStepDestination": "Choose end",
+  "corridorStepReview": "Review & save",
+  "corridorPickOriginHint": "Tap the corridor start point",
+  "corridorPickDestinationHint": "Tap the corridor end point",
+  "corridorReviewHint": "Corridor selected. Review the details and save it.",
+  "corridorStart": "Corridor start",
+  "corridorEnd": "Corridor end",
+  "corridorSearchHint": "Search for an area to drive toward...",
+  "corridorOriginRadius": "Start radius",
+  "corridorDestinationRadius": "Destination radius",
+  "selectOriginFirst": "Select the start point first",
+  "selectDestination": "Select the destination",
+  "savePreferredCorridor": "Save preferred corridor",
+  "tapMap": "Tap the map",
+  "kmValue": "{value} km",
+  "@kmValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "moveMapToPickStopover": "Move the map to pick the stopover",
+  "stopover": "Stopover",
+  "arrivalConfirmed": "Arrived",
+  "departureConfirmed": "Departed",
+  "confirmArrival": "Confirm arrival",
+  "confirmDeparture": "Confirm departure",
+  "failedCreateLegacyRoutePlan": "Failed to create the legacy trip route",
+  "errorAddStopover": "Failed to add stopover",
+  "errorRemoveStopover": "Failed to remove stopover"
 }

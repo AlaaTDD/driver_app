@@ -1,11 +1,9 @@
-
 import 'package:equatable/equatable.dart';
 
-
 class VehicleTypeModel extends Equatable {
-  final String name;         
-  final String displayName;  
-  final String icon;         
+  final String name;
+  final String displayName;
+  final String icon;
   final double baseFare;
   final double pricePerKm;
   final bool isActive;
@@ -34,10 +32,9 @@ class VehicleTypeModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [name, displayName, icon, baseFare, pricePerKm, isActive, sortOrder];
+  List<Object?> get props =>
+      [name, displayName, icon, baseFare, pricePerKm, isActive, sortOrder];
 }
-
-
 
 abstract class PricingState extends Equatable {
   const PricingState();
@@ -50,7 +47,6 @@ class PricingInitial extends PricingState {}
 
 class PricingLoading extends PricingState {}
 
-
 class VehicleTypesLoaded extends PricingState {
   final List<VehicleTypeModel> vehicleTypes;
 
@@ -61,7 +57,7 @@ class VehicleTypesLoaded extends PricingState {
 }
 
 class PricingCalculated extends PricingState {
-  final List<VehicleTypeModel> vehicleTypes; 
+  final List<VehicleTypeModel> vehicleTypes;
   final double basePrice;
   final double finalPrice;
   final String vehicleType;
@@ -76,7 +72,8 @@ class PricingCalculated extends PricingState {
   });
 
   @override
-  List<Object?> get props => [vehicleTypes, basePrice, finalPrice, vehicleType, distanceKm];
+  List<Object?> get props =>
+      [vehicleTypes, basePrice, finalPrice, vehicleType, distanceKm];
 }
 
 class CouponApplied extends PricingState {

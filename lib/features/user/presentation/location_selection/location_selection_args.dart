@@ -1,9 +1,8 @@
-
 class LocationSelectionArgs {
   final double? originLat;
   final double? originLng;
   final String? originAddress;
-  final String? initialCouponCode;     // Pre-applied coupon from home screen
+  final String? initialCouponCode; // Pre-applied coupon from home screen
   final double? initialCouponDiscount; // Validated discount amount
 
   const LocationSelectionArgs({

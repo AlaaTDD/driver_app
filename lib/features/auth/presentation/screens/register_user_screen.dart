@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +7,7 @@ import '../bloc/auth_state.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
@@ -47,11 +46,11 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
         return;
       }
       context.read<AuthBloc>().add(SignUpUserRequested(
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      ));
+            name: _nameController.text.trim(),
+            phone: _phoneController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          ));
     }
   }
 
@@ -84,7 +83,6 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
                   Center(
                     child: Column(
                       children: [
@@ -96,11 +94,15 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                             gradient: const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [AppColors.primary, AppColors.primaryDark],
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primaryDark
+                              ],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.35),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
@@ -123,7 +125,8 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          AppLocalizations.of(context)!.enterDataToCreateAccount,
+                          AppLocalizations.of(context)!
+                              .enterDataToCreateAccount,
                           style: TextStyle(
                             fontSize: 13,
                             color: context.textSecondary,
@@ -142,8 +145,9 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       labelText: AppLocalizations.of(context)!.fullName,
                       prefixIcon: Icon(Icons.person_outlined),
                     ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? AppLocalizations.of(context)!.enterFullName : null,
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? AppLocalizations.of(context)!.enterFullName
+                        : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -155,13 +159,17 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       prefixIcon: Icon(Icons.phone_outlined),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return AppLocalizations.of(context)!.enterPhone;
-                      
+                      if (v == null || v.isEmpty)
+                        return AppLocalizations.of(context)!.enterPhone;
+
                       final cleaned = v.replaceAll(RegExp(r'\D'), '');
                       String normalized = cleaned;
-                      if (normalized.startsWith('00966')) normalized = normalized.substring(5);
-                      else if (normalized.startsWith('966')) normalized = normalized.substring(3);
-                      if (normalized.startsWith('0')) normalized = normalized.substring(1);
+                      if (normalized.startsWith('00966'))
+                        normalized = normalized.substring(5);
+                      else if (normalized.startsWith('966'))
+                        normalized = normalized.substring(3);
+                      if (normalized.startsWith('0'))
+                        normalized = normalized.substring(1);
                       if (!RegExp(r'^5\d{8}$').hasMatch(normalized)) {
                         return AppLocalizations.of(context)!.invalidPhoneFormat;
                       }
@@ -179,7 +187,8 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return AppLocalizations.of(context)!.enterEmail;
+                      if (v == null || v.isEmpty)
+                        return AppLocalizations.of(context)!.enterEmail;
                       if (!RegExp(r'^[\w.-]+@[\w.-]+\.\w+$').hasMatch(v)) {
                         return AppLocalizations.of(context)!.invalidEmailFormat;
                       }
@@ -202,13 +211,15 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
                         ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
                       ),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return AppLocalizations.of(context)!.enterPassword;
-                      if (v.length < 6) return AppLocalizations.of(context)!.passwordMinLength;
+                      if (v == null || v.isEmpty)
+                        return AppLocalizations.of(context)!.enterPassword;
+                      if (v.length < 6)
+                        return AppLocalizations.of(context)!.passwordMinLength;
                       return null;
                     },
                   ),
@@ -227,12 +238,14 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                               : Icons.visibility_off_outlined,
                         ),
                         onPressed: () => setState(
-                          () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
                         ),
                       ),
                     ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? AppLocalizations.of(context)!.pleaseConfirmPassword : null,
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? AppLocalizations.of(context)!.pleaseConfirmPassword
+                        : null,
                   ),
                   const SizedBox(height: 36),
                   BlocBuilder<AuthBloc, AuthState>(

@@ -1,4 +1,3 @@
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme_event.dart';
@@ -8,7 +7,8 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   final SharedPreferences _prefs;
   static const _key = 'app_theme_dark';
 
-  ThemeBloc(this._prefs, {ThemeState? initialState}) : super(initialState ?? ThemeDark()) {
+  ThemeBloc(this._prefs, {ThemeState? initialState})
+      : super(initialState ?? ThemeDark()) {
     on<LoadSavedTheme>(_onLoad);
     on<ToggleTheme>(_onToggle);
   }

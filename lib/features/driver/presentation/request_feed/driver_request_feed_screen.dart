@@ -4,29 +4,31 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../services/supabase_service.dart';
 import '../../../../core/constants/app_routes.dart';
+import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 
 // ─── Design tokens (match driver palette) ────────────────────────────────────
 class _C {
-  static const bg       = AppColors.background;
-  static const sheet    = AppColors.primarySurface;
-  static const card     = AppColors.surface;
+  static const bg = AppColors.background;
+  static const sheet = AppColors.primarySurface;
+  static const card = AppColors.surface;
   static const elevated = AppColors.surfaceElevated;
-  static const border   = AppColors.divider;
-  static const blue     = AppColors.primary;
-  static const emerald  = AppColors.secondary;
-  static const rose     = AppColors.error;
-  static const amber    = AppColors.warning;
-  static const t1       = AppColors.textPrimary;
-  static const t2       = AppColors.textSecondary;
-  static const t3       = AppColors.textDisabled;
+  static const border = AppColors.divider;
+  static const blue = AppColors.primary;
+  static const emerald = AppColors.secondary;
+  static const rose = AppColors.error;
+  static const amber = AppColors.warning;
+  static const t1 = AppColors.textPrimary;
+  static const t2 = AppColors.textSecondary;
+  static const t3 = AppColors.textDisabled;
 }
 
 class DriverRequestFeedScreen extends StatefulWidget {
   const DriverRequestFeedScreen({super.key});
 
   @override
-  State<DriverRequestFeedScreen> createState() => _DriverRequestFeedScreenState();
+  State<DriverRequestFeedScreen> createState() =>
+      _DriverRequestFeedScreenState();
 }
 
 class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
@@ -49,18 +51,16 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
         .stream(primaryKey: ['id'])
         .eq('driver_id', driverId)
         .listen((rows) {
-      if (!mounted) return;
-      // Only show pending offers; realtime removes the card when status changes
-      final pending = rows
-          .where((r) => r['status'] == 'pending')
-          .toList()
-        ..sort((a, b) => DateTime.parse(a['created_at'] as String)
-            .compareTo(DateTime.parse(b['created_at'] as String)));
-      setState(() {
-        _offers = pending;
-        _loading = false;
-      });
-    }, onError: (_) => setState(() => _loading = false));
+          if (!mounted) return;
+          // Only show pending offers; realtime removes the card when status changes
+          final pending = rows.where((r) => r['status'] == 'pending').toList()
+            ..sort((a, b) => DateTime.parse(a['created_at'] as String)
+                .compareTo(DateTime.parse(b['created_at'] as String)));
+          setState(() {
+            _offers = pending;
+            _loading = false;
+          });
+        }, onError: (_) => setState(() => _loading = false));
   }
 
   @override
@@ -85,8 +85,7 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
     try {
       await SupabaseService.client
           .from('trip_offers')
-          .update({'status': 'rejected'})
-          .eq('id', offerId);
+          .update({'status': 'rejected'}).eq('id', offerId);
       // Realtime stream will remove the card automatically
     } catch (e) {
       debugPrint('RequestFeed: reject failed — $e');
@@ -95,6 +94,7 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -108,73 +108,91 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Container(
-                    width: 42, height: 42,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: _C.sheet,
                       shape: BoxShape.circle,
                       border: Border.all(color: _C.border),
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded, color: _C.t1, size: 17),
+                    child: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: _C.t1, size: 17),
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('طلبات الرحلات', style: TextStyle(
-                        color: _C.t1, fontSize: 18, fontWeight: FontWeight.w800)),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
-                        _loading ? 'جاري التحميل...'
-                            : _offers.isEmpty ? 'لا توجد طلبات متاحة حالياً'
-                            : '${_offers.length} طلب متاح',
-                        key: ValueKey(_offers.length),
-                        style: const TextStyle(color: _C.t2, fontSize: 12),
-                      ),
-                    ),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l.rideRequests,
+                            style: const TextStyle(
+                                color: _C.t1,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800)),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            _loading
+                                ? l.loading
+                                : _offers.isEmpty
+                                    ? l.noRideRequestsAvailableNow
+                                    : l.availableRequestsCount(_offers.length),
+                            key: ValueKey(_offers.length),
+                            style: const TextStyle(color: _C.t2, fontSize: 12),
+                          ),
+                        ),
+                      ]),
                 ),
                 // Live indicator dot
                 if (!_loading)
                   Container(
-                    width: 10, height: 10,
+                    width: 10,
+                    height: 10,
                     decoration: BoxDecoration(
                       color: _offers.isEmpty ? _C.t3 : _C.emerald,
                       shape: BoxShape.circle,
-                      boxShadow: _offers.isEmpty ? null : [
-                        BoxShadow(color: _C.emerald.withValues(alpha: 0.5), blurRadius: 8),
-                      ],
+                      boxShadow: _offers.isEmpty
+                          ? null
+                          : [
+                              BoxShadow(
+                                  color: _C.emerald.withValues(alpha: 0.5),
+                                  blurRadius: 8),
+                            ],
                     ),
                   ),
               ]),
             ),
 
             // ── Content ─────────────────────────────────────────────────────
-            Expanded(child: _loading
-                ? const Center(child: CircularProgressIndicator(color: _C.blue, strokeWidth: 2))
-                : _offers.isEmpty
-                    ? _buildEmpty()
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        itemCount: _offers.length,
-                        itemBuilder: (_, i) => _OfferCard(
-                          key: ValueKey(_offers[i]['id']),
-                          offer: _offers[i],
-                          onAccept: _accept,
-                          onReject: _reject,
-                        ),
-                      )),
+            Expanded(
+                child: _loading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: _C.blue, strokeWidth: 2))
+                    : _offers.isEmpty
+                        ? _buildEmpty(l)
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                            itemCount: _offers.length,
+                            itemBuilder: (_, i) => _OfferCard(
+                              key: ValueKey(_offers[i]['id']),
+                              offer: _offers[i],
+                              onAccept: _accept,
+                              onReject: _reject,
+                            ),
+                          )),
           ]),
         ),
       ),
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(AppLocalizations l) {
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
-          width: 88, height: 88,
+          width: 88,
+          height: 88,
           decoration: BoxDecoration(
             color: _C.elevated,
             shape: BoxShape.circle,
@@ -183,11 +201,12 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
           child: const Icon(Icons.inbox_rounded, color: _C.t3, size: 40),
         ),
         const SizedBox(height: 20),
-        const Text('لا توجد طلبات متاحة', style: TextStyle(
-            color: _C.t1, fontSize: 16, fontWeight: FontWeight.w700)),
+        Text(l.noRideRequestsAvailable,
+            style: const TextStyle(
+                color: _C.t1, fontSize: 16, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-        const Text('ستظهر هنا طلبات الرحلات عند ورودها',
-            style: TextStyle(color: _C.t2, fontSize: 13)),
+        Text(l.rideRequestsWillAppearHere,
+            style: const TextStyle(color: _C.t2, fontSize: 13)),
       ]),
     );
   }
@@ -210,7 +229,8 @@ class _OfferCard extends StatefulWidget {
   State<_OfferCard> createState() => _OfferCardState();
 }
 
-class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMixin {
+class _OfferCardState extends State<_OfferCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _slideCtrl;
   late Animation<Offset> _slideAnim;
   Timer? _timer;
@@ -220,13 +240,16 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
   @override
   void initState() {
     super.initState();
-    _slideCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    _slideCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
+        .animate(
+            CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
     _slideCtrl.forward();
 
     // Compute remaining seconds from created_at + 30s window
-    final createdAt = DateTime.tryParse(widget.offer['created_at'] as String? ?? '');
+    final createdAt =
+        DateTime.tryParse(widget.offer['created_at'] as String? ?? '');
     if (createdAt != null) {
       final elapsed = DateTime.now().difference(createdAt).inSeconds;
       _seconds = (30 - elapsed).clamp(0, 30);
@@ -257,14 +280,19 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    final offerId  = widget.offer['id'] as String? ?? '';
-    final tripId   = widget.offer['trip_id'] as String? ?? '';
-    final pickup   = widget.offer['pickup_address'] as String? ?? '---';
-    final dest     = widget.offer['destination_address'] as String? ?? '---';
-    final price    = widget.offer['proposed_price'];
+    final l = AppLocalizations.of(context)!;
+    final offerId = widget.offer['id'] as String? ?? '';
+    final tripId = widget.offer['trip_id'] as String? ?? '';
+    final pickup = widget.offer['pickup_address'] as String? ?? '---';
+    final dest = widget.offer['destination_address'] as String? ?? '---';
+    final price = widget.offer['proposed_price'];
     final distance = (widget.offer['distance_km'] as num?)?.toStringAsFixed(1);
     final timerFraction = _seconds / 30.0;
-    final timerColor = _seconds > 15 ? _C.emerald : _seconds > 8 ? _C.amber : _C.rose;
+    final timerColor = _seconds > 15
+        ? _C.emerald
+        : _seconds > 8
+            ? _C.amber
+            : _C.rose;
 
     return SlideTransition(
       position: _slideAnim,
@@ -274,9 +302,15 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
           color: _C.card,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: _C.border),
-          boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.26), blurRadius: 16, offset: Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.black.withValues(alpha: 0.26),
+                blurRadius: 16,
+                offset: Offset(0, 4))
+          ],
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           // ── Timer bar ────────────────────────────────────────────────────
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
@@ -293,124 +327,182 @@ class _OfferCardState extends State<_OfferCard> with SingleTickerProviderStateMi
 
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              // ── Route info ───────────────────────────────────────────────
-              Row(children: [
-                Column(children: [
-                  Container(width: 10, height: 10,
-                      decoration: const BoxDecoration(color: _C.emerald, shape: BoxShape.circle)),
-                  Container(width: 1, height: 28, color: _C.border),
-                  Container(width: 10, height: 10,
-                      decoration: const BoxDecoration(color: _C.rose, shape: BoxShape.circle)),
-                ]),
-                const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(pickup, style: const TextStyle(color: _C.t1, fontSize: 13, fontWeight: FontWeight.w600),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 14),
-                    Text(dest, style: const TextStyle(color: _C.t1, fontSize: 13, fontWeight: FontWeight.w600),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
-                )),
-                // Timer circle
-                Container(
-                  width: 46, height: 46,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: timerColor.withValues(alpha: 0.5), width: 2),
-                    color: timerColor.withValues(alpha: 0.08),
-                  ),
-                  child: Center(child: Text('$_seconds',
-                      style: TextStyle(color: timerColor, fontSize: 16, fontWeight: FontWeight.w800))),
-                ),
-              ]),
-
-              const SizedBox(height: 14),
-
-              // ── Stats row ───────────────────────────────────────────────
-              Row(children: [
-                if (price != null) _StatChip(
-                  icon: Icons.attach_money_rounded,
-                  label: '$price ج.م',
-                  color: _C.amber,
-                ),
-                if (distance != null) ...[
-                  const SizedBox(width: 8),
-                  _StatChip(
-                    icon: Icons.straighten_rounded,
-                    label: '$distance كم',
-                    color: _C.blue,
-                  ),
-                ],
-              ]),
-
-              const SizedBox(height: 14),
-
-              // ── Action buttons ──────────────────────────────────────────
-              Row(children: [
-                // Reject
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _acting ? null : () async {
-                      setState(() => _acting = true);
-                      _timer?.cancel();
-                      await widget.onReject(offerId);
-                    },
-                    child: Container(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Route info ───────────────────────────────────────────────
+                  Row(children: [
+                    Column(children: [
+                      Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                              color: _C.emerald, shape: BoxShape.circle)),
+                      Container(width: 1, height: 28, color: _C.border),
+                      Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                              color: _C.rose, shape: BoxShape.circle)),
+                    ]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(pickup,
+                            style: const TextStyle(
+                                color: _C.t1,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 14),
+                        Text(dest,
+                            style: const TextStyle(
+                                color: _C.t1,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ],
+                    )),
+                    // Timer circle
+                    Container(
+                      width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _C.rose.withValues(alpha: 0.5)),
-                        color: _C.rose.withValues(alpha: 0.06),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: timerColor.withValues(alpha: 0.5), width: 2),
+                        color: timerColor.withValues(alpha: 0.08),
                       ),
-                      child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.close_rounded, color: _C.rose, size: 18),
-                        SizedBox(width: 6),
-                        Text('رفض', style: TextStyle(color: _C.rose, fontSize: 13, fontWeight: FontWeight.w700)),
-                      ]),
+                      child: Center(
+                          child: Text('$_seconds',
+                              style: TextStyle(
+                                  color: timerColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800))),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Accept
-                Expanded(
-                  flex: 2,
-                  child: GestureDetector(
-                    onTap: _acting || tripId.isEmpty ? null : () async {
-                      setState(() => _acting = true);
-                      _timer?.cancel();
-                      await widget.onAccept(offerId, tripId);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 46,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        gradient: _acting ? null : const LinearGradient(
-                          colors: [_C.emerald, AppColors.success],
-                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ]),
+
+                  const SizedBox(height: 14),
+
+                  // ── Stats row ───────────────────────────────────────────────
+                  Row(children: [
+                    if (price != null)
+                      _StatChip(
+                        icon: Icons.attach_money_rounded,
+                        label: '$price ج.م',
+                        color: _C.amber,
+                      ),
+                    if (distance != null) ...[
+                      const SizedBox(width: 8),
+                      _StatChip(
+                        icon: Icons.straighten_rounded,
+                        label: '$distance كم',
+                        color: _C.blue,
+                      ),
+                    ],
+                  ]),
+
+                  const SizedBox(height: 14),
+
+                  // ── Action buttons ──────────────────────────────────────────
+                  Row(children: [
+                    // Reject
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _acting
+                            ? null
+                            : () async {
+                                setState(() => _acting = true);
+                                _timer?.cancel();
+                                await widget.onReject(offerId);
+                              },
+                        child: Container(
+                          height: 46,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: _C.rose.withValues(alpha: 0.5)),
+                            color: _C.rose.withValues(alpha: 0.06),
+                          ),
+                          child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.close_rounded,
+                                    color: _C.rose, size: 18),
+                                const SizedBox(width: 6),
+                                Text(l.rejectBtn,
+                                    style: const TextStyle(
+                                        color: _C.rose,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700)),
+                              ]),
                         ),
-                        color: _acting ? _C.elevated : null,
-                        boxShadow: _acting ? null : [
-                          BoxShadow(color: _C.emerald.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4)),
-                        ],
                       ),
-                      child: _acting
-                          ? const Center(child: SizedBox(width: 18, height: 18,
-                              child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2)))
-                          : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(Icons.check_rounded, color: AppColors.white, size: 18),
-                              SizedBox(width: 6),
-                              Text('قبول الرحلة', style: TextStyle(
-                                  color: AppColors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                            ]),
                     ),
-                  ),
-                ),
-              ]),
-            ]),
+                    const SizedBox(width: 10),
+                    // Accept
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: _acting || tripId.isEmpty
+                            ? null
+                            : () async {
+                                setState(() => _acting = true);
+                                _timer?.cancel();
+                                await widget.onAccept(offerId, tripId);
+                              },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          height: 46,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: _acting
+                                ? null
+                                : const LinearGradient(
+                                    colors: [_C.emerald, AppColors.success],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                            color: _acting ? _C.elevated : null,
+                            boxShadow: _acting
+                                ? null
+                                : [
+                                    BoxShadow(
+                                        color:
+                                            _C.emerald.withValues(alpha: 0.35),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4)),
+                                  ],
+                          ),
+                          child: _acting
+                              ? const Center(
+                                  child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          color: AppColors.white,
+                                          strokeWidth: 2)))
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                      const Icon(Icons.check_rounded,
+                                          color: AppColors.white, size: 18),
+                                      const SizedBox(width: 6),
+                                      Text(l.acceptRide,
+                                          style: const TextStyle(
+                                              color: AppColors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700)),
+                                    ]),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ]),
           ),
         ]),
       ),
@@ -422,20 +514,23 @@ class _StatChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _StatChip({required this.icon, required this.label, required this.color});
+  const _StatChip(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: color.withValues(alpha: 0.25)),
-    ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, color: color, size: 13),
-      const SizedBox(width: 4),
-      Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
-    ]),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+        ]),
+      );
 }

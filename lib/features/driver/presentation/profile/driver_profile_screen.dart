@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,12 +8,12 @@ import 'bloc/driver_profile_event.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/widgets/stat_card.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../services/r2_storage_service.dart';
 import '../../../../services/supabase_service.dart';
-
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -121,7 +120,6 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
     return CustomScrollView(
       slivers: [
-        
         SliverAppBar(
           backgroundColor: context.bgColor,
           expandedHeight: 0,
@@ -129,7 +127,6 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           pinned: true,
           title: Text(l.editProfile),
           actions: [
-            
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Container(
@@ -149,8 +146,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           ? Icons.verified_rounded
                           : Icons.pending_rounded,
                       size: 14,
-                      color:
-                          isVerified ? AppColors.success : AppColors.warning,
+                      color: isVerified ? AppColors.success : AppColors.warning,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -168,7 +164,6 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             ),
           ],
         ),
-
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -176,12 +171,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 8),
-
-                
                 Center(
                   child: Column(
                     children: [
-                      
                       // ── Avatar with functional edit button ────────────
                       GestureDetector(
                         onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
@@ -192,7 +184,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.3),
                                   width: 3,
                                 ),
                               ),
@@ -232,7 +225,6 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      
                       if (vehicleType != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -270,14 +262,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                
                 Row(
                   children: [
                     Expanded(
                       child: StatCard(
                         label: l.trips,
-                        value: '${totalTrips ?? driver['completed_trips_wallet'] ?? 0}',
+                        value:
+                            '${totalTrips ?? driver['completed_trips_wallet'] ?? 0}',
                         icon: Icons.directions_car_rounded,
                       ),
                     ),
@@ -293,22 +284,19 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     Expanded(
                       child: StatCard(
                         label: l.earnings,
-                        value: '${(driver['total_earnings'] as num?)?.toStringAsFixed(0) ?? 0}',
+                        value:
+                            '${(driver['total_earnings'] as num?)?.toStringAsFixed(0) ?? 0}',
                         icon: Icons.payments_rounded,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 28),
-
-                
                 _SectionHeader(
                   title: l.vehicleInfo,
                   icon: Icons.directions_car_filled_rounded,
                 ),
                 const SizedBox(height: 12),
-
-                
                 if (vehicleImageUrl != null)
                   Container(
                     width: double.infinity,
@@ -316,16 +304,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      border:
-                          Border.all(color: context.divColor, width: 1),
+                      border: Border.all(color: context.divColor, width: 1),
                       image: DecorationImage(
                         image: NetworkImage(vehicleImageUrl),
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
-
-                
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -369,14 +354,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                
                 _SectionHeader(
                   title: l.documents,
                   icon: Icons.folder_copy_rounded,
                 ),
                 const SizedBox(height: 12),
-
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -407,14 +389,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                
                 _SectionHeader(
                   title: l.personalInfo,
                   icon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(height: 12),
-
                 TextField(
                   controller: _nameController,
                   style: TextStyle(color: context.textPrimary),
@@ -439,13 +418,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   style: TextStyle(color: context.textPrimary),
                   decoration: InputDecoration(
                     labelText: l.plateNumber,
-                    prefixIcon:
-                        const Icon(Icons.confirmation_number_outlined),
+                    prefixIcon: const Icon(Icons.confirmation_number_outlined),
                   ),
                 ),
                 const SizedBox(height: 28),
-
-                
                 ElevatedButton(
                   onPressed: state is DriverProfileLoading
                       ? null
@@ -466,8 +442,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   child: state is DriverProfileLoading
                       ? const CircularProgressIndicator(color: AppColors.white)
                       : Text(l.saveChanges,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.bold)),
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -487,7 +462,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     setState(() => _uploadingAvatar = true);
     try {
       final uid = SupabaseService.currentUser?.id;
-      if (uid == null) throw Exception('Not logged in');
+      if (uid == null) throw AuthException('errorNotLoggedIn');
       final r2 = R2StorageService();
       final url = await r2.uploadFile(
         file: File(image.path),
@@ -518,8 +493,6 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     return labels[type] ?? type;
   }
 }
-
-
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -553,8 +526,6 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
-
-
 
 class _DetailRow extends StatelessWidget {
   final IconData icon;
@@ -595,8 +566,6 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-
-
 class _DocumentRow extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -635,9 +604,7 @@ class _DocumentRow extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                hasUrl
-                    ? Icons.check_circle_rounded
-                    : Icons.upload_file_rounded,
+                hasUrl ? Icons.check_circle_rounded : Icons.upload_file_rounded,
                 size: 12,
                 color: hasUrl ? AppColors.success : AppColors.warning,
               ),

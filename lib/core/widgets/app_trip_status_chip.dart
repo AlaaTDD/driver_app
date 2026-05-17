@@ -14,12 +14,12 @@ class AppTripStatusChip extends StatelessWidget {
   });
 
   AppBadgeVariant get _variant => switch (status) {
-    TripStatus.searching  => AppBadgeVariant.primary,
-    TripStatus.accepted   => AppBadgeVariant.info,
-    TripStatus.inProgress => AppBadgeVariant.success,
-    TripStatus.completed  => AppBadgeVariant.neutral,
-    TripStatus.cancelled  => AppBadgeVariant.error,
-  };
+        TripStatus.searching => AppBadgeVariant.primary,
+        TripStatus.accepted => AppBadgeVariant.info,
+        TripStatus.inProgress => AppBadgeVariant.success,
+        TripStatus.completed => AppBadgeVariant.neutral,
+        TripStatus.cancelled => AppBadgeVariant.error,
+      };
 
   @override
   Widget build(BuildContext context) {

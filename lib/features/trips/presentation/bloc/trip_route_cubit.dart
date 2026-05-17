@@ -32,7 +32,7 @@ class TripRouteCubit extends Cubit<TripRouteState> {
     _routePlansSub = _routeRepository.watchRoutePlans(tripId).listen(
       (plans) {
         final activePlan = plans.where((p) => p.isActive).firstOrNull;
-        
+
         emit(state.copyWith(
           status: TripRouteStatus.loaded,
           routePlans: plans,
@@ -75,13 +75,20 @@ class TripRouteCubit extends Cubit<TripRouteState> {
     if (activePlan == null) {
       // Legacy backward compatibility: If no active route plan, create one from legacy trip!
       if (state.tripId != null) {
-        emit(state.copyWith(status: TripRouteStatus.loading, errorMessage: null));
-        final created = await _routeRepository.createRoutePlanFromLegacy(state.tripId!);
+        emit(state.copyWith(
+          status: TripRouteStatus.loading,
+          clearErrorMessage: true,
+        ));
+        final created =
+            await _routeRepository.createRoutePlanFromLegacy(state.tripId!);
         if (created == null) {
-          emit(state.copyWith(status: TripRouteStatus.error, errorMessage: "Failed to create route plan from legacy trip"));
+          emit(state.copyWith(
+              status: TripRouteStatus.error,
+              errorMessage: 'failedCreateLegacyRoutePlan'));
           return;
         }
-        emit(state.copyWith(status: TripRouteStatus.loaded, errorMessage: null));
+        emit(state.copyWith(
+            status: TripRouteStatus.loaded, clearErrorMessage: true));
       }
       return;
     }
@@ -100,9 +107,13 @@ class TripRouteCubit extends Cubit<TripRouteState> {
       address: address,
       placeId: placeId,
     );
-    
-    final previousWaypoints = List<TripRouteWaypointModel>.from(state.waypoints);
-    emit(state.copyWith(waypoints: [...previousWaypoints, tempWaypoint], errorMessage: null));
+
+    final previousWaypoints =
+        List<TripRouteWaypointModel>.from(state.waypoints);
+    emit(state.copyWith(
+      waypoints: [...previousWaypoints, tempWaypoint],
+      clearErrorMessage: true,
+    ));
 
     final result = await _routeRepository.addStopover(
       routePlanId: activePlan.id,
@@ -112,24 +123,31 @@ class TripRouteCubit extends Cubit<TripRouteState> {
       address: address,
       placeId: placeId,
     );
-    
+
     if (result == null) {
       // Rollback
-      emit(state.copyWith(waypoints: previousWaypoints, errorMessage: "فشل إضافة المحطة"));
+      emit(state.copyWith(
+          waypoints: previousWaypoints, errorMessage: 'errorAddStopover'));
     }
   }
 
   /// Remove a stopover.
   Future<void> removeStopover(String waypointId) async {
     // ✅ Clear any prior error, then optimistic delete
-    final previousWaypoints = List<TripRouteWaypointModel>.from(state.waypoints);
-    final updatedWaypoints = state.waypoints.where((w) => w.id != waypointId).toList();
-    emit(state.copyWith(waypoints: updatedWaypoints, errorMessage: null));
+    final previousWaypoints =
+        List<TripRouteWaypointModel>.from(state.waypoints);
+    final updatedWaypoints =
+        state.waypoints.where((w) => w.id != waypointId).toList();
+    emit(state.copyWith(
+      waypoints: updatedWaypoints,
+      clearErrorMessage: true,
+    ));
 
     final success = await _routeRepository.removeStopover(waypointId);
     if (!success) {
       // Rollback
-      emit(state.copyWith(waypoints: previousWaypoints, errorMessage: "فشل حذف المحطة"));
+      emit(state.copyWith(
+          waypoints: previousWaypoints, errorMessage: 'errorRemoveStopover'));
     }
   }
 

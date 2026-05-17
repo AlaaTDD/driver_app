@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/user_entity.dart';
 
@@ -57,7 +56,9 @@ class UserModel extends Equatable {
       isAdmin: json['is_admin'] as bool? ?? false,
       isBlocked: json['is_blocked'] as bool? ?? false,
       blockedReason: json['blocked_reason'] as String?,
-      blockedAt: json['blocked_at'] != null ? DateTime.parse(json['blocked_at'] as String) : null,
+      blockedAt: json['blocked_at'] != null
+          ? DateTime.parse(json['blocked_at'] as String)
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),

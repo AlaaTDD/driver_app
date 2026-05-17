@@ -1,12 +1,7 @@
-
 import '../../../../core/utils/trip_status.dart';
 import '../../domain/entities/trip_entity.dart';
 
-
-
-
 class TripModel extends TripEntity {
-  
   final Map<String, dynamic>? userData;
 
   const TripModel({
@@ -65,31 +60,62 @@ class TripModel extends TripEntity {
       vehicleType: json['vehicle_type'] as String,
       distanceKm: (json['distance_km'] as num).toDouble(),
       price: (json['price'] as num).toDouble(),
-      status: TripStatus.fromString(json['status'] as String?) ?? TripStatus.searching,
+      status: TripStatus.fromString(json['status'] as String?) ??
+          TripStatus.searching,
       paymentMethod: json['payment_method'] as String?,
       isPaid: json['is_paid'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
-      acceptedAt: json['accepted_at'] != null ? DateTime.parse(json['accepted_at'] as String) : null,
-      startedAt: json['started_at'] != null ? DateTime.parse(json['started_at'] as String) : null,
-      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
+      acceptedAt: json['accepted_at'] != null
+          ? DateTime.parse(json['accepted_at'] as String)
+          : null,
+      startedAt: json['started_at'] != null
+          ? DateTime.parse(json['started_at'] as String)
+          : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
+          : null,
       geohash: json['geohash'] as String?,
-      meetingLat: json['meeting_lat'] != null ? (json['meeting_lat'] as num).toDouble() : null,
-      meetingLng: json['meeting_lng'] != null ? (json['meeting_lng'] as num).toDouble() : null,
+      meetingLat: json['meeting_lat'] != null
+          ? (json['meeting_lat'] as num).toDouble()
+          : null,
+      meetingLng: json['meeting_lng'] != null
+          ? (json['meeting_lng'] as num).toDouble()
+          : null,
       meetingAddress: json['meeting_address'] as String?,
-      finalPrice: json['final_price'] != null ? (json['final_price'] as num).toDouble() : null,
-      userRatingToDriver: json['user_rating_to_driver'] != null ? (json['user_rating_to_driver'] as num).toDouble() : null,
-      driverRatingToUser: json['driver_rating_to_user'] != null ? (json['driver_rating_to_user'] as num).toDouble() : null,
-      cancelledAt: json['cancelled_at'] != null ? DateTime.parse(json['cancelled_at'] as String) : null,
+      finalPrice: json['final_price'] != null
+          ? (json['final_price'] as num).toDouble()
+          : null,
+      userRatingToDriver: json['user_rating_to_driver'] != null
+          ? (json['user_rating_to_driver'] as num).toDouble()
+          : null,
+      driverRatingToUser: json['driver_rating_to_user'] != null
+          ? (json['driver_rating_to_user'] as num).toDouble()
+          : null,
+      cancelledAt: json['cancelled_at'] != null
+          ? DateTime.parse(json['cancelled_at'] as String)
+          : null,
       cancelReason: json['cancel_reason'] as String?,
       cancelledBy: json['cancelled_by'] as String?,
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
-      driverEarnings: json['driver_earnings'] != null ? (json['driver_earnings'] as num).toDouble() : null,
-      platformCommission: json['platform_commission'] != null ? (json['platform_commission'] as num).toDouble() : null,
-      couponDiscount: json['coupon_discount'] != null ? (json['coupon_discount'] as num).toDouble() : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
+      driverEarnings: json['driver_earnings'] != null
+          ? (json['driver_earnings'] as num).toDouble()
+          : null,
+      platformCommission: json['platform_commission'] != null
+          ? (json['platform_commission'] as num).toDouble()
+          : null,
+      couponDiscount: json['coupon_discount'] != null
+          ? (json['coupon_discount'] as num).toDouble()
+          : null,
       paymentSource: json['payment_source'] as String?,
       serviceAreaId: json['service_area_id'] as String?,
-      estimatedDurationMin: json['estimated_duration_min'] != null ? (json['estimated_duration_min'] as num).toDouble() : null,
-      scheduledAt: json['scheduled_at'] != null ? DateTime.parse(json['scheduled_at'] as String) : null,
+      estimatedDurationMin: json['estimated_duration_min'] != null
+          ? (json['estimated_duration_min'] as num).toDouble()
+          : null,
+      scheduledAt: json['scheduled_at'] != null
+          ? DateTime.parse(json['scheduled_at'] as String)
+          : null,
       cancelReasonCategory: json['cancel_reason_category'] as String?,
       userData: json['user'] as Map<String, dynamic>?,
     );
@@ -139,8 +165,6 @@ class TripModel extends TripEntity {
     };
   }
 
-  
-  
   TripEntity toEntity() => this;
 
   @override

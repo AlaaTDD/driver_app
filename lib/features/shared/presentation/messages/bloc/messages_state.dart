@@ -41,7 +41,16 @@ class MessagesChatLoaded extends MessagesState {
     this.hasMore = true,
   });
   @override
-  List<Object?> get props => [messages, otherName, otherUserId, tripId, isOtherOnline, isOtherTyping, canSend, hasMore];
+  List<Object?> get props => [
+        messages,
+        otherName,
+        otherUserId,
+        tripId,
+        isOtherOnline,
+        isOtherTyping,
+        canSend,
+        hasMore
+      ];
 }
 
 class MessagesError extends MessagesState {

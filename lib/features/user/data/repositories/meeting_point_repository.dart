@@ -1,8 +1,6 @@
-
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../core/utils/retry_helper.dart';
-
 
 class MeetingPointRepository {
   final _client = SupabaseService.client;
@@ -12,8 +10,8 @@ class MeetingPointRepository {
         .from('trips')
         .select('id')
         .eq('user_id', userId)
-        .inFilter('status', ['searching', 'accepted', 'in_progress'])
-        .maybeSingle();
+        .inFilter(
+            'status', ['searching', 'accepted', 'in_progress']).maybeSingle();
     return activeTrip?['id'] as String?;
   }
 
@@ -28,7 +26,6 @@ class MeetingPointRepository {
     );
   }
 
-  
   Future<Map<String, dynamic>> createTrip({
     required String userId,
     required double pickupLat,
@@ -49,7 +46,8 @@ class MeetingPointRepository {
     double? estimatedDurationMin,
     DateTime? scheduledAt, // Fix #16
   }) async {
-    final isScheduled = scheduledAt != null && scheduledAt.isAfter(DateTime.now());
+    final isScheduled =
+        scheduledAt != null && scheduledAt.isAfter(DateTime.now());
     final tripData = <String, dynamic>{
       'user_id': userId,
       'pickup_lat': pickupLat,
@@ -67,18 +65,16 @@ class MeetingPointRepository {
       if (meetingLat != null) 'meeting_lat': meetingLat,
       if (meetingLng != null) 'meeting_lng': meetingLng,
       if (meetingAddress != null) 'meeting_address': meetingAddress,
-      if (estimatedDurationMin != null) 'estimated_duration_min': estimatedDurationMin,
+      if (estimatedDurationMin != null)
+        'estimated_duration_min': estimatedDurationMin,
       if (isScheduled) 'scheduled_at': scheduledAt!.toIso8601String(),
     };
 
     final result = await withRetry<Map<String, dynamic>>(
-      () => _client
-          .from('trips')
-          .insert(tripData)
-          .select('id')
-          .single(),
+      () => _client.from('trips').insert(tripData).select('id').single(),
       maxAttempts: 3,
-      onRetry: (e, attempt) => debugPrint('Trip insert attempt $attempt failed: $e'),
+      onRetry: (e, attempt) =>
+          debugPrint('Trip insert attempt $attempt failed: $e'),
     );
 
     // Apply coupon to the trip ATOMICALLY — if the coupon was promised to the
@@ -94,7 +90,8 @@ class MeetingPointRepository {
         });
         debugPrint('🎫 Coupon applied: $couponResult');
       } catch (e) {
-        debugPrint('🚨 MeetingPointRepository: Coupon failed — rolling back trip: $e');
+        debugPrint(
+            '🚨 MeetingPointRepository: Coupon failed — rolling back trip: $e');
         // Roll back: cancel the trip that was just created so the user
         // is not charged full price while expecting a discount.
         try {
@@ -111,4 +108,3 @@ class MeetingPointRepository {
     return result;
   }
 }
-

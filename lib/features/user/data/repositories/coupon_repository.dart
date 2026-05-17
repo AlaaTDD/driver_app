@@ -1,18 +1,9 @@
-
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
-
-
 
 class CouponRepository {
   final _client = SupabaseService.client;
 
-  
-  
-  
-  
-  
-  
   Future<CouponResult> validateCoupon({
     required String couponCode,
     required double originalPrice,
@@ -21,7 +12,6 @@ class CouponRepository {
     try {
       final normalizedCode = couponCode.trim().toUpperCase();
 
-      
       final response = await _client.rpc(
         'validate_coupon',
         params: {
@@ -38,7 +28,7 @@ class CouponRepository {
 
       final row = data.first as Map<String, dynamic>;
       final discountAmount = (row['discount_amount'] as num).toDouble();
-      
+
       final finalPrice = originalPrice - discountAmount;
 
       return CouponResult.success(
@@ -53,7 +43,6 @@ class CouponRepository {
     }
   }
 }
-
 
 class CouponResult {
   final bool isSuccess;

@@ -18,13 +18,25 @@ class AppBadge extends StatelessWidget {
   });
 
   (Color, Color) get _colors => switch (variant) {
-    AppBadgeVariant.primary => (AppColors.primarySurface, AppColors.primary),
-    AppBadgeVariant.success => (AppColors.successSurface, AppColors.success),
-    AppBadgeVariant.warning => (AppColors.warningSurface, AppColors.warning),
-    AppBadgeVariant.error   => (AppColors.errorSurface, AppColors.error),
-    AppBadgeVariant.info    => (AppColors.primarySurface, AppColors.info),
-    AppBadgeVariant.neutral => (AppColors.darkElevated, AppColors.darkTextSecondary),
-  };
+        AppBadgeVariant.primary => (
+            AppColors.primarySurface,
+            AppColors.primary
+          ),
+        AppBadgeVariant.success => (
+            AppColors.successSurface,
+            AppColors.success
+          ),
+        AppBadgeVariant.warning => (
+            AppColors.warningSurface,
+            AppColors.warning
+          ),
+        AppBadgeVariant.error => (AppColors.errorSurface, AppColors.error),
+        AppBadgeVariant.info => (AppColors.primarySurface, AppColors.info),
+        AppBadgeVariant.neutral => (
+            AppColors.darkElevated,
+            AppColors.darkTextSecondary
+          ),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +48,15 @@ class AppBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (dot) ...[
-            Container(width: 6, height: 6,
+            Container(
+                width: 6,
+                height: 6,
                 decoration: BoxDecoration(color: fg, shape: BoxShape.circle)),
             const SizedBox(width: 5),
           ],
-          Text(label, style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(label,
+              style: TextStyle(
+                  color: fg, fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );

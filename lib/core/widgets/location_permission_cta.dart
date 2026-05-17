@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/location_permission_cubit.dart';
 import '../services/location_permission_service.dart';
-import '../theme/app_colors.dart';
 import '../theme/theme_extensions.dart';
 import '../localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
@@ -29,8 +28,7 @@ class LocationPermissionCta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<LocationPermissionCubit, LocationPermissionState>(
-      listenWhen: (prev, curr) =>
-          prev.status != curr.status && curr.isGranted,
+      listenWhen: (prev, curr) => prev.status != curr.status && curr.isGranted,
       listener: (context, state) {
         onGranted?.call();
       },

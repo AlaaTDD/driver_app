@@ -17,8 +17,7 @@ class PendingVerificationScreen extends StatefulWidget {
       _PendingVerificationScreenState();
 }
 
-class _PendingVerificationScreenState
-    extends State<PendingVerificationScreen> {
+class _PendingVerificationScreenState extends State<PendingVerificationScreen> {
   List<Map<String, dynamic>> _revisions = [];
   bool _loadingRevisions = true;
   StreamSubscription? _sub;
@@ -42,17 +41,19 @@ class _PendingVerificationScreenState
         .eq('driver_id', uid)
         .order('created_at', ascending: false)
         .listen(
-      (rows) {
-        if (!mounted) return;
-        setState(() {
-          _revisions = rows;
-          _loadingRevisions = false;
-        });
-      },
-      onError: (_) {
-        if (mounted) setState(() => _loadingRevisions = false);
-      },
-    );
+          (rows) {
+            if (!mounted) return;
+            setState(() {
+              _revisions = rows;
+              _loadingRevisions = false;
+            });
+          },
+          onError: (e, st) {
+            debugPrint(
+                '❌ PendingVerificationScreen: revision stream failed: $e\n$st');
+            if (mounted) setState(() => _loadingRevisions = false);
+          },
+        );
   }
 
   @override
@@ -128,7 +129,7 @@ class _PendingVerificationScreenState
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        'طلبات التعديل (${_revisions.length})',
+                        '${l.driverRevisionRequests} (${_revisions.length})',
                         style: TextStyle(
                           color: context.textPrimary,
                           fontSize: 16,
@@ -175,14 +176,14 @@ class _RevisionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final field = revision['field_name'] as String? ?? '—';
-    final reason = revision['reason'] as String? ?? '—';
+    final l = AppLocalizations.of(context)!;
+    final fields = _fields(context);
+    final message = revision['message'] as String? ?? '';
     final status = revision['status'] as String? ?? 'pending';
     final isResolved = status == 'resolved';
 
-    final statusColor =
-        isResolved ? AppColors.success : AppColors.error;
-    final statusLabel = isResolved ? 'مُعالج' : 'يحتاج تعديل';
+    final statusColor = isResolved ? AppColors.success : AppColors.error;
+    final statusLabel = isResolved ? l.completed : l.revisionNeedsAction;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -198,12 +199,11 @@ class _RevisionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded,
-                  color: statusColor, size: 16),
+              Icon(Icons.warning_amber_rounded, color: statusColor, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'الحقل: $field',
+                  l.fieldsRequested,
                   style: TextStyle(
                     color: context.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -212,8 +212,7 @@ class _RevisionCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -230,16 +229,62 @@ class _RevisionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            reason,
-            style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 13,
-              height: 1.4,
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: fields
+                .map(
+                  (field) => Chip(
+                    label: Text(field),
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: context.elevatedColor,
+                    side: BorderSide(color: context.divColor),
+                  ),
+                )
+                .toList(),
           ),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: TextStyle(
+                color: context.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  List<String> _fields(BuildContext context) {
+    final raw = revision['fields_requested'];
+    final values = raw is List
+        ? raw.map((field) => field.toString()).toList()
+        : <String>[];
+    if (values.isEmpty && revision['field_name'] != null) {
+      values.add(revision['field_name'].toString());
+    }
+    if (values.isEmpty) return [AppLocalizations.of(context)!.unspecified];
+    return values.map((field) => _fieldLabel(context, field)).toList();
+  }
+
+  String _fieldLabel(BuildContext context, String field) {
+    final l = AppLocalizations.of(context)!;
+    return switch (field) {
+      'national_id' || 'national_id_image_url' => l.nationalId,
+      'license_number' || 'license_image_url' => l.driverLicense,
+      'criminal_record_url' => l.criminalRecord,
+      'vehicle_type' => l.vehicleType,
+      'vehicle_brand' => l.vehicleBrand,
+      'vehicle_model' => l.vehicleModel,
+      'vehicle_year' => l.vehicleYear,
+      'vehicle_color' => l.vehicleColor,
+      'vehicle_plate' => l.plateNumber,
+      'vehicle_image_url' => l.vehiclePhoto,
+      _ => field,
+    };
   }
 }

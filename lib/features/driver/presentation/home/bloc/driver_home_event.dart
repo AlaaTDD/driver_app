@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../../../../../services/heatmap_service.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
@@ -58,15 +57,14 @@ class DriverLocationChanged extends DriverHomeEvent {
   final double lat;
   final double lng;
   final double? heading;
-  const DriverLocationChanged({required this.lat, required this.lng, this.heading});
+  const DriverLocationChanged(
+      {required this.lat, required this.lng, this.heading});
 
   @override
   List<Object?> get props => [lat, lng, heading];
 }
 
-
 class LoadHeatmapData extends DriverHomeEvent {}
-
 
 class HeatmapDataUpdated extends DriverHomeEvent {
   final List<HeatmapCell> cells;
@@ -75,8 +73,6 @@ class HeatmapDataUpdated extends DriverHomeEvent {
   @override
   List<Object?> get props => [cells];
 }
-
-
 
 class RefreshDriverLocation extends DriverHomeEvent {}
 

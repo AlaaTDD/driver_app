@@ -48,7 +48,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
         stream: _repository.myComplaintsStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary));
           }
           if (snapshot.hasError) {
             return Center(
@@ -63,7 +64,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
             return _buildEmptyState(context, l);
           }
           return ListView.separated(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+            padding: const EdgeInsets.only(
+                left: 16, right: 16, top: 16, bottom: 100),
             itemCount: complaints.length,
             separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
@@ -79,7 +81,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
         icon: const Icon(Icons.add, color: AppColors.white),
         label: Text(
           l.submitComplaint,
-          style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              color: AppColors.white, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -96,7 +99,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.support_agent_rounded, size: 64, color: AppColors.primary),
+            child: const Icon(Icons.support_agent_rounded,
+                size: 64, color: AppColors.primary),
           ),
           const SizedBox(height: 24),
           Text(
@@ -144,7 +148,10 @@ class _ComplaintCard extends StatelessWidget {
       try {
         final dt = DateTime.parse(createdAtStr).toLocal();
         dateStr = DateFormat('yyyy-MM-dd HH:mm').format(dt);
-      } catch (_) {}
+      } catch (e, st) {
+        debugPrint(
+            '⚠️ ComplaintsScreen: invalid created_at "$createdAtStr": $e\n$st');
+      }
     }
 
     final isPending = status == 'pending';
@@ -185,7 +192,8 @@ class _ComplaintCard extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -221,8 +229,10 @@ class _ComplaintCard extends StatelessWidget {
               ],
             ),
           ),
-          if (adminReply != null && adminReply.toString().trim().isNotEmpty) ...[
-            Divider(height: 1, color: context.textSecondary.withValues(alpha: 0.1)),
+          if (adminReply != null &&
+              adminReply.toString().trim().isNotEmpty) ...[
+            Divider(
+                height: 1, color: context.textSecondary.withValues(alpha: 0.1)),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -241,7 +251,8 @@ class _ComplaintCard extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.support_agent_rounded, size: 20, color: AppColors.primary),
+                    child: const Icon(Icons.support_agent_rounded,
+                        size: 20, color: AppColors.primary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -300,7 +311,8 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
 
   Future<void> _submitComplaint() async {
     final l = AppLocalizations.of(context)!;
-    if (_titleController.text.trim().isEmpty || _descController.text.trim().isEmpty) {
+    if (_titleController.text.trim().isEmpty ||
+        _descController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l.pleaseFillAllFields)),
       );
@@ -440,7 +452,8 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              color: AppColors.white, strokeWidth: 2),
                         )
                       : Text(
                           l.send,

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
@@ -8,9 +7,6 @@ import '../../../../features/trips/data/models/trip_model.dart';
 import '../home/bloc/driver_home_bloc.dart';
 import '../home/bloc/driver_home_event.dart';
 import '../home/bloc/driver_home_state.dart';
-
-
-
 
 class DriverOfferOverlay extends StatelessWidget {
   final Widget child;
@@ -36,12 +32,10 @@ class DriverOfferOverlay extends StatelessWidget {
     );
   }
 
-  
-
   Widget _buildOverlay(BuildContext context, TripModel trip) {
-    
     final user = trip.userData;
-    final userName = user?['name'] as String? ?? AppLocalizations.of(context)!.user;
+    final userName =
+        user?['name'] as String? ?? AppLocalizations.of(context)!.user;
     final avatarUrl = user?['avatar_url'] as String?;
 
     final price = trip.price;
@@ -84,7 +78,6 @@ class DriverOfferOverlay extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                       decoration: BoxDecoration(
@@ -153,7 +146,6 @@ class DriverOfferOverlay extends StatelessWidget {
                       ),
                     ),
 
-                    
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                       child: Row(
@@ -206,7 +198,10 @@ class DriverOfferOverlay extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      isCash ? AppLocalizations.of(context)!.cash : AppLocalizations.of(context)!.bankCard,
+                                      isCash
+                                          ? AppLocalizations.of(context)!.cash
+                                          : AppLocalizations.of(context)!
+                                              .bankCard,
                                       style: TextStyle(
                                         color: isCash
                                             ? AppColors.success
@@ -226,7 +221,6 @@ class DriverOfferOverlay extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: _AddressRow(
@@ -256,7 +250,8 @@ class DriverOfferOverlay extends StatelessWidget {
                         return Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -264,15 +259,25 @@ class DriverOfferOverlay extends StatelessWidget {
                                       onPressed: () {
                                         final tripId = trip.id;
                                         if (tripId.isEmpty) return;
-                                        context.read<DriverHomeBloc>().add(SubmitTripOffer(tripId, price + 10));
+                                        context.read<DriverHomeBloc>().add(
+                                            SubmitTripOffer(
+                                                tripId, price + 10));
                                       },
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppColors.primary,
-                                        side: const BorderSide(color: AppColors.primary),
-                                        padding: const EdgeInsets.symmetric(vertical: 8),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        side: const BorderSide(
+                                            color: AppColors.primary),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
                                       ),
-                                      child: Text('+10 ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      child: Text(
+                                          '+10 ${AppLocalizations.of(context)!.currencySar}',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold)),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -281,15 +286,25 @@ class DriverOfferOverlay extends StatelessWidget {
                                       onPressed: () {
                                         final tripId = trip.id;
                                         if (tripId.isEmpty) return;
-                                        context.read<DriverHomeBloc>().add(SubmitTripOffer(tripId, price + 20));
+                                        context.read<DriverHomeBloc>().add(
+                                            SubmitTripOffer(
+                                                tripId, price + 20));
                                       },
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppColors.primary,
-                                        side: const BorderSide(color: AppColors.primary),
-                                        padding: const EdgeInsets.symmetric(vertical: 8),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        side: const BorderSide(
+                                            color: AppColors.primary),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
                                       ),
-                                      child: Text('+20 ${AppLocalizations.of(context)!.currencySar}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      child: Text(
+                                          '+20 ${AppLocalizations.of(context)!.currencySar}',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold)),
                                     ),
                                   ),
                                 ],
@@ -305,15 +320,22 @@ class DriverOfferOverlay extends StatelessWidget {
                                       onPressed: () {
                                         final tripId = trip.id;
                                         if (tripId.isEmpty) return;
-                                        context.read<DriverHomeBloc>().add(RejectTripOffer(tripId));
+                                        context
+                                            .read<DriverHomeBloc>()
+                                            .add(RejectTripOffer(tripId));
                                       },
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: context.textPrimary,
-                                        side: BorderSide(color: context.divColor),
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        side:
+                                            BorderSide(color: context.divColor),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14)),
                                       ),
-                                      child: Text(AppLocalizations.of(context)!.reject),
+                                      child: Text(
+                                          AppLocalizations.of(context)!.reject),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -323,17 +345,24 @@ class DriverOfferOverlay extends StatelessWidget {
                                       onPressed: () {
                                         final tripId = trip.id;
                                         if (tripId.isEmpty) return;
-                                        context.read<DriverHomeBloc>().add(AcceptTripOffer(tripId));
+                                        context
+                                            .read<DriverHomeBloc>()
+                                            .add(AcceptTripOffer(tripId));
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primary,
                                         foregroundColor: AppColors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(14)),
                                       ),
                                       child: Text(
-                                        AppLocalizations.of(context)!.acceptTrip,
-                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                        AppLocalizations.of(context)!
+                                            .acceptTrip,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                   ),
@@ -354,8 +383,6 @@ class DriverOfferOverlay extends StatelessWidget {
     );
   }
 }
-
-
 
 class _AddressRow extends StatelessWidget {
   final IconData icon;

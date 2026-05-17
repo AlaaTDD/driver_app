@@ -1,9 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../theme/theme_extensions.dart';
 import 'package:snapix/core/theme/app_colors.dart';
-
-
 
 class MapButton extends StatelessWidget {
   final IconData icon;

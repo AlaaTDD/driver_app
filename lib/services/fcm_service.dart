@@ -1,4 +1,3 @@
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -15,11 +14,11 @@ import '../core/constants/env_constants.dart';
 import '../../firebase_options.dart';
 import '../core/router/app_router.dart';
 import '../core/constants/app_routes.dart';
-import '../core/constants/app_routes.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  developer.log('🔥 FCM BACKGROUND: Message received! ID: ${message.messageId}');
+  developer
+      .log('🔥 FCM BACKGROUND: Message received! ID: ${message.messageId}');
   // Do not initialize Supabase or UI in background isolate
 }
 
@@ -29,11 +28,13 @@ class FCMService {
   FCMService._internal();
 
   Future<void> Function(Map<String, dynamic>)? _onRideOffer;
-  void setRideOfferHandler(Future<void> Function(Map<String, dynamic>) h) => _onRideOffer = h;
+  void setRideOfferHandler(Future<void> Function(Map<String, dynamic>) h) =>
+      _onRideOffer = h;
 
   bool get _isInitialized => Firebase.apps.isNotEmpty;
   FirebaseMessaging get _messaging => FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
     if (!_isInitialized) return;
@@ -57,13 +58,13 @@ class FCMService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    const initSettings = InitializationSettings(android: androidInit, iOS: darwinInit);
+    const initSettings =
+        InitializationSettings(android: androidInit, iOS: darwinInit);
 
-    
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel', 
-      'High Importance Notifications', 
-      description: 'This channel is used for important notifications.', 
+      'high_importance_channel',
+      'High Importance Notifications',
+      description: 'This channel is used for important notifications.',
       importance: Importance.high,
     );
 
@@ -79,17 +80,18 @@ class FCMService {
     await _localNotifications.initialize(initSettings);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      developer.log('🔥 FCM FOREGROUND: Message received! ID: ${message.messageId}');
+      developer
+          .log('🔥 FCM FOREGROUND: Message received! ID: ${message.messageId}');
       developer.log('🔥 FCM FOREGROUND: Data payload: ${message.data}');
       _handleForegroundMessage(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      developer.log('🔥 FCM OPENED APP: Message clicked! ID: ${message.messageId}');
+      developer
+          .log('🔥 FCM OPENED APP: Message clicked! ID: ${message.messageId}');
       _handleMessageOpen(message);
     });
 
-    
     _messaging.onTokenRefresh.listen((newToken) {
       _onTokenRefresh(newToken);
     });
@@ -115,19 +117,39 @@ class FCMService {
     }
   }
 
-  
   Future<void> _onTokenRefresh(String newToken) async {
     try {
       final userId = SupabaseService.currentUser?.id;
       if (userId != null) {
         await SupabaseService.client
             .from('users')
-            .update({'fcm_token': newToken})
-            .eq('id', userId);
+            .update({'fcm_token': newToken}).eq('id', userId);
         developer.log('FCMService: Token refreshed and stored for $userId');
       }
-    } catch (e) {
-      developer.log('FCMService: Failed to store refreshed token: $e');
+    } catch (e, st) {
+      developer.log(
+        'FCMService: Failed to store refreshed token',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  Future<void> clearFcmToken() async {
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) return;
+
+      await SupabaseService.client
+          .from('users')
+          .update({'fcm_token': null}).eq('id', userId);
+      developer.log('FCMService: Cleared FCM token for $userId');
+    } catch (e, st) {
+      developer.log(
+        'FCMService: Failed to clear FCM token',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -137,7 +159,8 @@ class FCMService {
     final messageId = message.messageId;
     if (messageId != null) {
       if (_handledMessageIds.contains(messageId)) {
-        developer.log('🔥 FCM FOREGROUND: Duplicate message ignored: $messageId');
+        developer
+            .log('🔥 FCM FOREGROUND: Duplicate message ignored: $messageId');
         return;
       }
       if (_handledMessageIds.length >= 100) {
@@ -176,10 +199,13 @@ class FCMService {
         }
         break;
       case 'trip':
-        final referenceId = message.data['referenceId'] ?? message.data['tripId'];
+        final referenceId =
+            message.data['referenceId'] ?? message.data['tripId'];
         if (referenceId != null && referenceId.toString().isNotEmpty) {
           final isDriver = await _isDriver();
-          final route = isDriver ? AppRoutes.driverTripDetails : AppRoutes.userTripDetails;
+          final route = isDriver
+              ? AppRoutes.driverTripDetails
+              : AppRoutes.userTripDetails;
           router.go('$route?tripId=$referenceId');
         }
         break;
@@ -210,7 +236,12 @@ class FCMService {
           .eq('id', userId)
           .maybeSingle();
       return row != null && row['role'] == 'driver';
-    } catch (_) {
+    } catch (e, st) {
+      developer.log(
+        'FCMService: Failed to resolve current user role',
+        error: e,
+        stackTrace: st,
+      );
       return false;
     }
   }
@@ -229,7 +260,8 @@ class FCMService {
       icon: '@mipmap/ic_launcher',
     );
     const darwinDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: darwinDetails);
+    const details =
+        NotificationDetails(android: androidDetails, iOS: darwinDetails);
 
     await _localNotifications.show(
       _notificationCounter++,

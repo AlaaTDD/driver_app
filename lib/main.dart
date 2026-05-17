@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'core/bloc_observer.dart';
+import 'core/constants/app_constants.dart';
 import 'core/constants/env_constants.dart';
 import 'core/localization/bloc/language_bloc.dart';
 import 'core/localization/generated/app_localizations.dart';
@@ -26,6 +27,7 @@ import 'services/r2_storage_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'firebase_options.dart';
 import 'core/repositories/app_config_repository.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
@@ -49,14 +51,25 @@ void main() async {
     debugPrint('⚠️ Firebase not configured — run: flutterfire configure');
   }
 
-  
   await ConnectivityService().init().catchError((e) {
     debugPrint('⚠️ ConnectivityService init failed: $e');
   });
 
+  final appConfigRepository = AppConfigRepository();
+  final configuredMapCenter = await appConfigRepository
+      .getDefaultMapCenter()
+      .timeout(const Duration(seconds: 2), onTimeout: () => null)
+      .catchError((e) {
+    debugPrint('⚠️ Default map center load failed: $e');
+    return null;
+  });
+  if (configuredMapCenter != null) {
+    AppConstants.setDefaultMapCenter(configuredMapCenter);
+  }
+
   // Activate AppConfigRepository — warms cache and checks maintenance mode.
   // Runs in background so it never blocks startup.
-  AppConfigRepository().getAll().then((config) {
+  appConfigRepository.getAll().then((config) {
     debugPrint('✅ AppConfig loaded: ${config.keys.join(', ')}');
   }).catchError((e) {
     debugPrint('⚠️ AppConfig load failed: $e');
@@ -127,7 +140,9 @@ class _MyAppState extends State<MyApp> {
             create: (_) => LanguageBloc(widget.prefs)..add(LoadSavedLanguage()),
           ),
           BlocProvider<ThemeBloc>(
-            create: (_) => ThemeBloc(widget.prefs, initialState: widget.initialTheme)..add(LoadSavedTheme()),
+            create: (_) =>
+                ThemeBloc(widget.prefs, initialState: widget.initialTheme)
+                  ..add(LoadSavedTheme()),
           ),
           BlocProvider<AuthBloc>.value(
             value: widget.authBloc,
@@ -138,18 +153,20 @@ class _MyAppState extends State<MyApp> {
             final locale = langState is LanguageLoaded
                 ? langState.locale
                 : const Locale('ar');
-            
+
             return BlocBuilder<ThemeBloc, ThemeState>(
               builder: (context, themeState) {
                 return MaterialApp.router(
-                  title: 'Taxi',
+                  onGenerateTitle: (context) =>
+                      AppLocalizations.of(context)!.appName,
                   debugShowCheckedModeBanner: false,
                   themeMode: themeState.themeMode,
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
                   locale: locale,
                   supportedLocales: AppLocalizations.supportedLocales,
-                  localizationsDelegates: AppLocalizations.localizationsDelegates,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
                   routerConfig: _router,
                   builder: (context, child) {
                     return child!;

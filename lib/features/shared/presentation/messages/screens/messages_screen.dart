@@ -289,7 +289,7 @@ class _MessagesViewState extends State<_MessagesView> {
             tripId: widget.tripId,
             canSend: true,
           );
-          
+
           return _ChatUI(
             state: placeholderState,
             l: l,
@@ -602,7 +602,8 @@ class _ChatUIState extends State<_ChatUI> {
         curve: Curves.easeInOut,
         child: _isOtherTyping
             ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 color: context.elevatedColor.withValues(alpha: 0.5),
                 child: Row(
                   children: [
@@ -773,15 +774,18 @@ class _ChatUIState extends State<_ChatUI> {
   Widget _buildInputBar(BuildContext context) {
     return Container(
       color: context.bgColor, // solid background for premium feel
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20), // added bottom padding for SafeArea
+      padding: const EdgeInsets.fromLTRB(
+          16, 8, 16, 20), // added bottom padding for SafeArea
       child: Directionality(
-        textDirection: TextDirection.ltr, // Force LTR so send button is on the right
+        textDirection:
+            TextDirection.ltr, // Force LTR so send button is on the right
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: Directionality(
-                textDirection: Directionality.of(context), // Revert to app direction for text field
+                textDirection: Directionality.of(
+                    context), // Revert to app direction for text field
                 child: Container(
                   decoration: BoxDecoration(
                     color: context.elevatedColor,
@@ -798,16 +802,21 @@ class _ChatUIState extends State<_ChatUI> {
                       Expanded(
                         child: TextField(
                           controller: widget.textController,
-                          style: TextStyle(color: context.textPrimary, fontSize: 16),
+                          style: TextStyle(
+                              color: context.textPrimary, fontSize: 16),
                           textInputAction: TextInputAction.send,
                           onSubmitted: (_) => widget.onSendMessage?.call(),
                           maxLines: 5,
                           minLines: 1,
                           decoration: InputDecoration(
                             hintText: widget.l.typeMessage,
-                            hintStyle: TextStyle(color: context.textSecondary.withValues(alpha: 0.7), fontSize: 15),
+                            hintStyle: TextStyle(
+                                color: context.textSecondary
+                                    .withValues(alpha: 0.7),
+                                fontSize: 15),
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 12),
                           ),
                         ),
                       ),
@@ -1040,7 +1049,9 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: isMe ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+      alignment: isMe
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart,
       child: GestureDetector(
         onLongPress: onLongPress,
         child: Container(
@@ -1096,7 +1107,8 @@ class _ChatBubble extends StatelessWidget {
                     children: [
                       _buildContent(context),
                       Padding(
-                        padding: const EdgeInsetsDirectional.only(start: 8, top: 4),
+                        padding:
+                            const EdgeInsetsDirectional.only(start: 8, top: 4),
                         child: _buildTimeAndStatus(context),
                       ),
                     ],
@@ -1132,7 +1144,6 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-
     return Text(
       message.content,
       style: TextStyle(
@@ -1152,7 +1163,9 @@ class _ChatBubble extends StatelessWidget {
           '${message.createdAt.minute.toString().padLeft(2, '0')}',
           style: TextStyle(
             fontSize: 10,
-            color: isMe ? AppColors.white.withValues(alpha: 0.7) : context.textSecondary,
+            color: isMe
+                ? AppColors.white.withValues(alpha: 0.7)
+                : context.textSecondary,
           ),
         ),
         if (isMe) ...[
@@ -1222,7 +1235,8 @@ class _ChatShimmerList extends StatelessWidget {
               children: [
                 if (!isMe && showAvatar)
                   Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 4, bottom: 2),
+                    padding:
+                        const EdgeInsetsDirectional.only(end: 4, bottom: 2),
                     child: Shimmer.fromColors(
                       baseColor: baseColor,
                       highlightColor: highlightColor,
@@ -1239,7 +1253,8 @@ class _ChatShimmerList extends StatelessWidget {
                     highlightColor: highlightColor,
                     child: Container(
                       width: MediaQuery.of(context).size.width * widthRatio,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.only(
@@ -1257,7 +1272,8 @@ class _ChatShimmerList extends StatelessWidget {
                             height: 12,
                             margin: EdgeInsets.only(
                               bottom: lineIndex == lines - 1 ? 0 : 6,
-                              right: lineIndex == lines - 1 && lines > 1 ? 40 : 0,
+                              right:
+                                  lineIndex == lines - 1 && lines > 1 ? 40 : 0,
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.black,

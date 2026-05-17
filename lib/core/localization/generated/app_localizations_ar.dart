@@ -992,6 +992,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errorFileUnsupported => 'نوع الملف غير مدعوم';
 
   @override
+  String get errorUploadFailed => 'فشل رفع الملف، حاول مرة أخرى.';
+
+  @override
+  String get errorDeleteFailed => 'فشل حذف الملف، حاول مرة أخرى.';
+
+  @override
+  String get errorReceiverEmpty => 'المستقبِل غير صالح.';
+
+  @override
+  String get errorTripIdEmpty => 'معرّف الرحلة غير صالح.';
+
+  @override
+  String get errorReceiverNotFound => 'لم يُعثر على المشارك في المحادثة.';
+
+  @override
+  String get errorNullPrice => 'تعذّر حساب السعر، حاول مرة أخرى.';
+
+  @override
+  String get errorAcceptOfferFailed => 'فشل قبول العرض، حاول مرة أخرى.';
+
+  @override
+  String get unexpectedError => 'حدث خطأ غير متوقع.';
+
+  @override
   String get pleaseFillAllFields => 'يرجى ملء جميع الحقول';
 
   @override
@@ -1011,6 +1035,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get driverWallet => 'محفظة السائق';
+
+  @override
+  String get driverRevisionRequests => 'طلبات مراجعة البيانات';
+
+  @override
+  String get noRevisionRequests => 'لا توجد طلبات مراجعة';
+
+  @override
+  String get noRevisionRequestsDesc => 'بيانات التحقق لا تحتاج تعديلات حالياً.';
+
+  @override
+  String get revisionNeedsAction => 'مطلوب تعديل';
+
+  @override
+  String get revisionResolved => 'تمت معالجة الطلب';
+
+  @override
+  String get fieldsRequested => 'الحقول المطلوبة';
+
+  @override
+  String revisionCreatedAt(String date) {
+    return 'تاريخ الطلب: $date';
+  }
+
+  @override
+  String revisionResolvedAt(String date) {
+    return 'تاريخ المعالجة: $date';
+  }
 
   @override
   String get availableBalanceLabel => 'الرصيد المتاح';
@@ -1441,4 +1493,200 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cancelledTrips => 'رحلات ملغاة';
+
+  @override
+  String get errorLoadVehicleTypes =>
+      'فشل تحميل أنواع المركبات، حاول مرة أخرى.';
+
+  @override
+  String get errorUserBlocked => 'تم حظر حسابك. تواصل مع الدعم الفني.';
+
+  @override
+  String get errorInvalidTripId => 'معرّف الرحلة غير صالح.';
+
+  @override
+  String get addStopover => 'إضافة محطة توقف';
+
+  @override
+  String get addStopoverMultiRoute => 'إضافة محطة توقف (مسار متعدد)';
+
+  @override
+  String get addThisStopover => 'إضافة هذه المحطة';
+
+  @override
+  String get confirmStopover => 'تأكيد المحطة';
+
+  @override
+  String get selectedStopover => 'المحطة المختارة';
+
+  @override
+  String get swapLocations => 'عكس';
+
+  @override
+  String get tripRoute => 'مسار الرحلة';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String driverOffersCount(int count) {
+    return 'عروض السائقين ($count):';
+  }
+
+  @override
+  String stopCount(int count) {
+    return '$count محطة';
+  }
+
+  @override
+  String get pickupPoint => 'نقطة الانطلاق';
+
+  @override
+  String stopoverNumber(int number) {
+    return 'محطة $number';
+  }
+
+  @override
+  String get loading => 'جاري التحميل...';
+
+  @override
+  String availableRequestsCount(int count) {
+    return '$count طلب متاح';
+  }
+
+  @override
+  String get noRideRequestsAvailableNow => 'لا توجد طلبات متاحة حالياً';
+
+  @override
+  String get noRideRequestsAvailable => 'لا توجد طلبات متاحة';
+
+  @override
+  String get rideRequestsWillAppearHere => 'ستظهر هنا طلبات الرحلات عند ورودها';
+
+  @override
+  String get acceptRide => 'قبول الرحلة';
+
+  @override
+  String get placeNotFoundDetailed => 'المكان غير موجود، حاول تفصيل العنوان';
+
+  @override
+  String get stopoverAddedSuccessfully => 'تمت إضافة المحطة بنجاح';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'خطأ: $error';
+  }
+
+  @override
+  String get searchPlaceHint => 'ابحث عن مكان...';
+
+  @override
+  String get discountLimited => 'خصم محدود';
+
+  @override
+  String get discountOnYourRide => 'خصم على رحلتك';
+
+  @override
+  String get useCodeForInstantDiscount => 'استخدم الكود واحصل على خصم فوري';
+
+  @override
+  String get discountOnAllTrips => 'على جميع الرحلات';
+
+  @override
+  String get copyCouponCode => 'نسخ كود الخصم';
+
+  @override
+  String get couponCodeCopied => 'تم نسخ كود الخصم';
+
+  @override
+  String couponExpiresAt(String date) {
+    return 'ينتهي في $date';
+  }
+
+  @override
+  String get resetButton => 'إعادة';
+
+  @override
+  String get clearButton => 'مسح';
+
+  @override
+  String get processing => 'جاري المعالجة...';
+
+  @override
+  String get corridorStepOrigin => 'اختيار البداية';
+
+  @override
+  String get corridorStepDestination => 'اختيار النهاية';
+
+  @override
+  String get corridorStepReview => 'مراجعة وحفظ';
+
+  @override
+  String get corridorPickOriginHint => 'اضغط على نقطة بداية الممر (الانطلاق)';
+
+  @override
+  String get corridorPickDestinationHint =>
+      'اضغط على نقطة نهاية الممر (الوجهة)';
+
+  @override
+  String get corridorReviewHint => 'تم تحديد الممر. راجع التفاصيل واحفظه.';
+
+  @override
+  String get corridorStart => 'بداية الممر';
+
+  @override
+  String get corridorEnd => 'نهاية الممر';
+
+  @override
+  String get corridorSearchHint => 'ابحث عن منطقة للذهاب إليها...';
+
+  @override
+  String get corridorOriginRadius => 'نطاق الانطلاق';
+
+  @override
+  String get corridorDestinationRadius => 'نطاق الوجهة';
+
+  @override
+  String get selectOriginFirst => 'حدد نقطة الانطلاق أولاً';
+
+  @override
+  String get selectDestination => 'حدد نقطة الوصول';
+
+  @override
+  String get savePreferredCorridor => 'حفظ الممر المفضل';
+
+  @override
+  String get tapMap => 'اضغط على الخريطة';
+
+  @override
+  String kmValue(String value) {
+    return '$value كم';
+  }
+
+  @override
+  String get moveMapToPickStopover => 'حرّك الخريطة لاختيار المحطة';
+
+  @override
+  String get stopover => 'محطة توقف';
+
+  @override
+  String get arrivalConfirmed => 'وصل';
+
+  @override
+  String get departureConfirmed => 'غادر';
+
+  @override
+  String get confirmArrival => 'تأكيد الوصول';
+
+  @override
+  String get confirmDeparture => 'تأكيد المغادرة';
+
+  @override
+  String get failedCreateLegacyRoutePlan => 'فشل إنشاء مسار الرحلة القديم';
+
+  @override
+  String get errorAddStopover => 'فشل إضافة المحطة';
+
+  @override
+  String get errorRemoveStopover => 'فشل حذف المحطة';
 }

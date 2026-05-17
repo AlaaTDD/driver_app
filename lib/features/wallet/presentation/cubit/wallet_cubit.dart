@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/driver_wallet_model.dart';
 import '../../data/models/wallet_transaction_model.dart';
@@ -82,7 +83,8 @@ class WalletCubit extends Cubit<WalletState> {
       final walletJson = await _repo.getDriverEarningsSummary(driverId);
       walletJson['driver_id'] = driverId;
 
-      final transactions = await _repo.getTransactionHistory(userId: driverId, walletType: 'driver', limit: 30);
+      final transactions = await _repo.getTransactionHistory(
+          userId: driverId, walletType: 'driver', limit: 30);
       final withdrawals = await _repo.getWithdrawalRequests(driverId);
 
       emit(WalletLoaded(
@@ -90,7 +92,7 @@ class WalletCubit extends Cubit<WalletState> {
         transactions: transactions,
         withdrawals: withdrawals,
       ));
-      
+
       watchWallet(driverId);
     } catch (e) {
       emit(WalletError('failedLoadWallet'));
@@ -150,12 +152,12 @@ class WalletCubit extends Cubit<WalletState> {
     _walletSub?.cancel();
     _walletSub = _repo.watchDriverWallet(driverId).listen((newWallet) async {
       if (isClosed || newWallet == null || state is! WalletLoaded) return;
-      
+
       final currentState = state as WalletLoaded;
       final currentWallet = currentState.wallet;
-      
+
       // Preserve summary-only fields that the real-time stream (driver_wallets table) doesn't have.
-      // Core financial fields (balance, totalEarned, totalWithdrawn, pendingWithdrawal) 
+      // Core financial fields (balance, totalEarned, totalWithdrawn, pendingWithdrawal)
       // come from the stream and are correctly mapped by fromJson.
       final mergedWallet = newWallet.copyWith(
         earningsLastWeek: currentWallet.earningsLastWeek,
@@ -165,11 +167,12 @@ class WalletCubit extends Cubit<WalletState> {
 
       if (isClosed) return;
       emit(currentState.copyWith(wallet: mergedWallet));
-      
+
       // Fetch latest transactions and withdrawals since balance changed
       try {
         final results = await Future.wait([
-          _repo.getTransactionHistory(userId: driverId, walletType: 'driver', limit: 30),
+          _repo.getTransactionHistory(
+              userId: driverId, walletType: 'driver', limit: 30),
           _repo.getWithdrawalRequests(driverId),
         ]);
         if (!isClosed && state is WalletLoaded) {
@@ -178,7 +181,13 @@ class WalletCubit extends Cubit<WalletState> {
             withdrawals: results[1] as List<WithdrawalRequestModel>,
           ));
         }
-      } catch (_) {}
+      } catch (e, st) {
+        debugPrint(
+            '⚠️ WalletCubit: failed to refresh wallet side data: $e\n$st');
+        if (!isClosed) {
+          emit(const WalletError('failedLoadWallet'));
+        }
+      }
     });
   }
 

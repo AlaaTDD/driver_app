@@ -36,8 +36,7 @@ class RouteRepository {
           .eq('trip_id', tripId)
           .order('created_at', ascending: true);
       return (data as List)
-          .map((e) =>
-              TripRoutePlanModel.fromJson(Map<String, dynamic>.from(e)))
+          .map((e) => TripRoutePlanModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
       debugPrint('❌ RouteRepository.getAllRoutePlans: $e');
@@ -62,8 +61,7 @@ class RouteRepository {
   }
 
   /// Create a route plan from legacy trip data using the DB RPC.
-  Future<String?> createRoutePlanFromLegacy(
-      String tripId) async {
+  Future<String?> createRoutePlanFromLegacy(String tripId) async {
     try {
       final result = await _client.rpc(
         'fn_create_route_plan_from_legacy',
@@ -79,8 +77,7 @@ class RouteRepository {
   // ─── Waypoints / Stopovers ────────────────────────────────────────────────
 
   /// Fetch waypoints for a route plan, ordered by seq_order.
-  Future<List<TripRouteWaypointModel>> getWaypoints(
-      String routePlanId) async {
+  Future<List<TripRouteWaypointModel>> getWaypoints(String routePlanId) async {
     try {
       final data = await _client
           .from('trip_route_waypoints')
@@ -143,10 +140,9 @@ class RouteRepository {
   /// Mark a waypoint as arrived (driver reached the stopover).
   Future<bool> markWaypointArrived(String waypointId) async {
     try {
-      await _client
-          .from('trip_route_waypoints')
-          .update({'actual_arrived_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('id', waypointId);
+      await _client.from('trip_route_waypoints').update({
+        'actual_arrived_at': DateTime.now().toUtc().toIso8601String()
+      }).eq('id', waypointId);
       return true;
     } catch (e) {
       debugPrint('❌ RouteRepository.markWaypointArrived: $e');
@@ -157,10 +153,9 @@ class RouteRepository {
   /// Mark a waypoint as departed (driver left the stopover).
   Future<bool> markWaypointDeparted(String waypointId) async {
     try {
-      await _client
-          .from('trip_route_waypoints')
-          .update({'actual_departed_at': DateTime.now().toUtc().toIso8601String()})
-          .eq('id', waypointId);
+      await _client.from('trip_route_waypoints').update({
+        'actual_departed_at': DateTime.now().toUtc().toIso8601String()
+      }).eq('id', waypointId);
       return true;
     } catch (e) {
       debugPrint('❌ RouteRepository.markWaypointDeparted: $e');

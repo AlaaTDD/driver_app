@@ -1,16 +1,12 @@
-
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
 import '../../../../../core/utils/geohash_helper.dart';
 import '../../../../../core/repositories/driver_earnings_helper.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
 
-
-
 class DriverHomeRepository {
   final _client = SupabaseService.client;
 
-  
   Future<Map<String, dynamic>> loadDriverStatus(String userId) async {
     final results = await Future.wait([
       _client
@@ -31,12 +27,10 @@ class DriverHomeRepository {
     };
   }
 
-  
   Future<Map<String, dynamic>> getEarningsSummary(String userId) async {
     return DriverEarningsHelper.fetch(userId);
   }
 
-  
   Future<void> setDriverOnline(
     String userId,
     double lat,
@@ -54,14 +48,12 @@ class DriverHomeRepository {
     });
   }
 
-  
   Future<void> setDriverOffline(String userId) async {
     await _client.rpc('set_driver_offline', params: {
       'p_driver_id': userId,
     });
   }
 
-  
   Future<void> pushLocation(
     String userId,
     double lat,
@@ -84,18 +76,15 @@ class DriverHomeRepository {
   // NOTE: acceptTrip() and rejectTrip() are in TripDetailsRepository.
   // Use TripDetailsRepository for trip lifecycle actions to avoid duplication.
 
-  
   Future<bool> hasActiveTrip(String userId) async {
     final activeTrips = await _client
         .from('trips')
         .select('id')
         .eq('driver_id', userId)
-        .inFilter('status', ['accepted', 'in_progress'])
-        .maybeSingle();
+        .inFilter('status', ['accepted', 'in_progress']).maybeSingle();
     return activeTrips != null;
   }
 
-  
   Future<List<TripModel>> fetchTripsByIds(List<String> tripIds) async {
     if (tripIds.isEmpty) return [];
     final tripList = await _client
@@ -108,11 +97,9 @@ class DriverHomeRepository {
         .toList();
   }
 
-  
   Stream<List<Map<String, dynamic>>> getTripOffersStream(String userId) {
     return _client
         .from('trip_offers')
-        .stream(primaryKey: ['id'])
-        .eq('driver_id', userId);
+        .stream(primaryKey: ['id']).eq('driver_id', userId);
   }
 }

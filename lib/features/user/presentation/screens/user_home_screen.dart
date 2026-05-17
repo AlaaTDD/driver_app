@@ -13,7 +13,7 @@ import '../../../../core/constants/map_styles.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/bottom_sheet_container.dart';
 import '../../../../core/widgets/map_button.dart';
@@ -58,7 +58,8 @@ class _UserHomeScreenState extends State<UserHomeScreen>
 
   BitmapDescriptor? _carIcon;
 
-  static const double _bottomSheetHeight = 236;
+  static const double _compactBottomSheetHeight = 236;
+  static const double _couponBottomSheetHeight = 348;
   static const double _mapButtonSize = 48.0;
   static const double _mapButtonRadius = 14.0;
   static const double _topBarHorizontalPadding = 18.0;
@@ -79,12 +80,16 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     _animationTicker = createTicker((_) {
       bool needsUpdate = false;
       for (final id in _targetDriverPositions.keys) {
-        final prev = _animatedDriverPositions[id] ?? _targetDriverPositions[id]!;
+        final prev =
+            _animatedDriverPositions[id] ?? _targetDriverPositions[id]!;
         final target = _targetDriverPositions[id]!;
 
-        if (prev.latitude != target.latitude || prev.longitude != target.longitude) {
-          final newLat = prev.latitude + (target.latitude - prev.latitude) * 0.1;
-          final newLng = prev.longitude + (target.longitude - prev.longitude) * 0.1;
+        if (prev.latitude != target.latitude ||
+            prev.longitude != target.longitude) {
+          final newLat =
+              prev.latitude + (target.latitude - prev.latitude) * 0.1;
+          final newLng =
+              prev.longitude + (target.longitude - prev.longitude) * 0.1;
 
           if ((newLat - target.latitude).abs() < 0.00001 &&
               (newLng - target.longitude).abs() < 0.00001) {
@@ -120,8 +125,10 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   void _updateDriverPositions(Map<String, DriverLocation> drivers) {
     // Remove old drivers
     final currentIds = drivers.keys.toSet();
-    _targetDriverPositions.removeWhere((key, value) => !currentIds.contains(key));
-    _animatedDriverPositions.removeWhere((key, value) => !currentIds.contains(key));
+    _targetDriverPositions
+        .removeWhere((key, value) => !currentIds.contains(key));
+    _animatedDriverPositions
+        .removeWhere((key, value) => !currentIds.contains(key));
     _driverRotations.removeWhere((key, value) => !currentIds.contains(key));
 
     for (final d in drivers.values) {
@@ -133,16 +140,17 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         _animatedDriverPositions[id] = newLoc;
         _targetDriverPositions[id] = newLoc;
         _driverRotations[id] = 0.0;
-      } else if (currentTarget.latitude != newLoc.latitude || currentTarget.longitude != newLoc.longitude) {
+      } else if (currentTarget.latitude != newLoc.latitude ||
+          currentTarget.longitude != newLoc.longitude) {
         final bearing = _calculateBearing(currentTarget, newLoc);
-        if ((currentTarget.latitude - newLoc.latitude).abs() > 0.00001 || 
+        if ((currentTarget.latitude - newLoc.latitude).abs() > 0.00001 ||
             (currentTarget.longitude - newLoc.longitude).abs() > 0.00001) {
           _driverRotations[id] = bearing;
         }
         _targetDriverPositions[id] = newLoc;
       }
     }
-    
+
     if (mounted) {
       _markersNotifier.value = _buildDriverMarkers();
     }
@@ -181,7 +189,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         _lastAnimatedLat = null;
         _lastAnimatedLng = null;
         _animateTo(loaded.userLat, loaded.userLng);
-        
+
         // Force a refresh of the websocket and initial drivers to fix "getting stuck"
         CellSubscriptionService.instance.refresh();
       }
@@ -308,6 +316,17 @@ class _UserHomeScreenState extends State<UserHomeScreen>
     }).toSet();
   }
 
+  static bool _hasDisplayCoupon(UserHomeState state) {
+    return state is UserHomeLoaded &&
+        state.coupons.any((row) => row['coupons'] is Map<String, dynamic>);
+  }
+
+  static double _sheetHeightForState(UserHomeState state) {
+    return _hasDisplayCoupon(state)
+        ? _couponBottomSheetHeight
+        : _compactBottomSheetHeight;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLocating || _initialPosition == null) {
@@ -372,36 +391,43 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   }
 
   Widget _buildMap() {
-    return ValueListenableBuilder<Set<Marker>>(
-      valueListenable: _markersNotifier,
-      builder: (context, markers, child) {
-        return GoogleMap(
-          key: const ValueKey('user_home_map'),
-          initialCameraPosition: CameraPosition(
-            target: _initialPosition!,
-            zoom: 15,
-          ),
-          onMapCreated: (ctrl) {
-            _mapController?.dispose();
-            _mapController = ctrl;
+    return BlocBuilder<UserHomeBloc, UserHomeState>(
+      buildWhen: (prev, curr) =>
+          _hasDisplayCoupon(prev) != _hasDisplayCoupon(curr),
+      builder: (context, homeState) {
+        final sheetHeight = _sheetHeightForState(homeState);
+        return ValueListenableBuilder<Set<Marker>>(
+          valueListenable: _markersNotifier,
+          builder: (context, markers, child) {
+            return GoogleMap(
+              key: const ValueKey('user_home_map'),
+              initialCameraPosition: CameraPosition(
+                target: _initialPosition!,
+                zoom: 15,
+              ),
+              onMapCreated: (ctrl) {
+                _mapController?.dispose();
+                _mapController = ctrl;
 
-            _lastAnimatedLat = null;
-            _lastAnimatedLng = null;
+                _lastAnimatedLat = null;
+                _lastAnimatedLng = null;
 
-            final s = context.read<UserHomeBloc>().state;
-            if (s is UserHomeLoaded) {
-              Future.microtask(() => _animateTo(s.userLat, s.userLng));
-            }
+                final s = context.read<UserHomeBloc>().state;
+                if (s is UserHomeLoaded) {
+                  Future.microtask(() => _animateTo(s.userLat, s.userLng));
+                }
+              },
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+              mapType: MapType.normal,
+              markers: markers,
+              padding: EdgeInsets.only(bottom: sheetHeight + 8),
+              style: Theme.of(context).brightness == Brightness.dark
+                  ? kDarkMapStyle
+                  : kLightMapStyle,
+            );
           },
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapType: MapType.normal,
-          markers: markers,
-          padding: const EdgeInsets.only(bottom: _bottomSheetHeight + 8),
-          style: Theme.of(context).brightness == Brightness.dark
-              ? kDarkMapStyle
-              : kLightMapStyle,
         );
       },
     );
@@ -436,22 +462,28 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   }
 
   Widget _buildLocationButton() {
-    return Positioned(
-      bottom: _bottomSheetHeight + 16,
-      right: 18,
-      child: MapButton(
-        icon: Icons.my_location_rounded,
-        size: _mapButtonSize,
-        borderRadius: _mapButtonRadius,
-        onTap: () {
-          final state = context.read<UserHomeBloc>().state;
-          if (state is UserHomeLoaded) {
-            _lastAnimatedLat = null;
-            _lastAnimatedLng = null;
-            _animateTo(state.userLat, state.userLng);
-          }
-        },
-      ),
+    return BlocBuilder<UserHomeBloc, UserHomeState>(
+      buildWhen: (prev, curr) =>
+          _hasDisplayCoupon(prev) != _hasDisplayCoupon(curr),
+      builder: (context, state) {
+        return Positioned(
+          bottom: _sheetHeightForState(state) + 16,
+          right: 18,
+          child: MapButton(
+            icon: Icons.my_location_rounded,
+            size: _mapButtonSize,
+            borderRadius: _mapButtonRadius,
+            onTap: () {
+              final state = context.read<UserHomeBloc>().state;
+              if (state is UserHomeLoaded) {
+                _lastAnimatedLat = null;
+                _lastAnimatedLng = null;
+                _animateTo(state.userLat, state.userLng);
+              }
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -486,7 +518,9 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                       // Re-init location when granted
                       final authState = context.read<AuthBloc>().state;
                       if (authState is AuthAuthenticated) {
-                        context.read<UserHomeBloc>().add(InitUserHome(authState.user.id));
+                        context
+                            .read<UserHomeBloc>()
+                            .add(InitUserHome(authState.user.id));
                       }
                     },
                   ),
@@ -547,14 +581,13 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                   builder: (context, state) {
                     if (state is UserHomeLoaded && state.coupons.isNotEmpty) {
                       final userCoupon = state.coupons.first;
-                      final coupon = userCoupon['coupons'] as Map<String, dynamic>?;
+                      final coupon =
+                          userCoupon['coupons'] as Map<String, dynamic>?;
                       if (coupon != null) {
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _CouponBanner(coupon: coupon),
-                            const SizedBox(height: 10),
-                            const _SafeRideBanner(),
                           ],
                         );
                       }
@@ -607,137 +640,449 @@ class _UserHomeScreenState extends State<UserHomeScreen>
   }
 }
 
-class _CouponBanner extends StatelessWidget {
+class _CouponBanner extends StatefulWidget {
   final Map<String, dynamic> coupon;
   const _CouponBanner({required this.coupon});
 
   @override
+  State<_CouponBanner> createState() => _CouponBannerState();
+}
+
+class _CouponBannerState extends State<_CouponBanner> {
+  Timer? _copyTimer;
+  bool _copied = false;
+
+  @override
+  void dispose() {
+    _copyTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _copyCode(String code, AppLocalizations l) async {
+    if (code.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) return;
+    setState(() => _copied = true);
+    AppToast.success(l.couponCodeCopied);
+    _copyTimer?.cancel();
+    _copyTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final String code         = coupon['code']?.toString() ?? '';
-    final num discountVal     = (coupon['discount_value'] as num?) ?? 0;
-    final String discountType = coupon['discount_type']?.toString() ?? 'percentage';
+    final l = AppLocalizations.of(context)!;
+    final textDirection = Directionality.of(context);
+    final String code = widget.coupon['code']?.toString() ?? '';
+    final num discountVal = (widget.coupon['discount_value'] as num?) ?? 0;
+    final String discountType =
+        widget.coupon['discount_type']?.toString() ?? 'percentage';
 
     final bool isPercent = discountType == 'percentage';
     final String discountNumber = isPercent
         ? '${discountVal.toStringAsFixed(0)}%'
-        : '${discountVal.toStringAsFixed(0)}';
+        : discountVal.toStringAsFixed(0);
 
     final bool isDark = context.isDark;
+    final cardColor = isDark ? const Color(0xFF151A2B) : AppColors.white;
+    final cardBorder =
+        isDark ? const Color(0xFF28324A) : const Color(0xFFE8EDF5);
+    final titleColor = isDark ? AppColors.white : const Color(0xFF111827);
+    final subtitleColor =
+        isDark ? const Color(0xFFA5AEC3) : const Color(0xFF6B7280);
+    final mutedColor =
+        isDark ? const Color(0xFF8D96AB) : const Color(0xFF6B7280);
+    final codeBorder = isDark
+        ? const Color(0xFF6863FF).withValues(alpha: 0.58)
+        : const Color(0xFF8F85E8).withValues(alpha: 0.54);
+    final codeTextColor =
+        isDark ? const Color(0xFF817BFF) : const Color(0xFF4B55D9);
+    final codeFill = isDark ? const Color(0xFF11162A) : const Color(0xFFFBFBFF);
+    final dividerColor =
+        isDark ? const Color(0xFF262D42) : const Color(0xFFE9EDF4);
+    final badgeBg = isDark ? const Color(0xFF3A2C14) : const Color(0xFFFFF1D6);
+    final badgeText =
+        isDark ? const Color(0xFFFFB545) : const Color(0xFFE69A00);
+    final ticketGradient = isDark
+        ? const [Color(0xFFB86B00), Color(0xFFD48A00)]
+        : const [Color(0xFFFFC329), Color(0xFFFF9F0A)];
+    final buttonGradient = isDark
+        ? const [Color(0xFF6E63FF), Color(0xFF463CE8)]
+        : const [Color(0xFF5C54F5), Color(0xFF4238DD)];
 
-    final Color cardBg = isDark ? const Color(0xFF141829) : const Color(0xFFF3F4F6);
-    final Color cardBorder = isDark ? const Color(0xFF1E2338) : const Color(0xFFE0E0E8);
-    final Color titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    final Color subtitleColor = isDark ? const Color(0xFF8A90A8) : const Color(0xFF6B7280);
-    final Color codeBorder = isDark
-        ? const Color(0xFF6C7BBF).withValues(alpha: 0.4)
-        : const Color(0xFF8B9AD8).withValues(alpha: 0.5);
-    final Color codeIconColor = isDark ? const Color(0xFF7B8BC8) : const Color(0xFF6B7BBF);
-    final Color codeTextColor = isDark ? const Color(0xFFC0C8E8) : const Color(0xFF2A2E4A);
-    final Color badgeBg = isDark ? const Color(0xFFC49520) : const Color(0xFFEAAD1A);
-    final Color badgePillBg = isDark ? const Color(0xFFD4A42A) : const Color(0xFFF0B828);
-
-    return GestureDetector(
-      onTap: () => context.push(
+    void openLocationSelection() {
+      context.push(
         AppRoutes.userLocationSelect,
         extra: LocationSelectionArgs(
           initialCouponCode: code,
           initialCouponDiscount: discountVal.toDouble(),
         ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 10, 14),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: cardBorder, width: 1),
+      );
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 10 * (1 - value)),
+          child: child,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── Top: left content + right discount box ──
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // "خصم محدود" pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: badgePillBg,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'خصم محدود',
-                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700, height: 1.3),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'خصم على رحلتك',
-                          style: TextStyle(color: titleColor, fontSize: 19, fontWeight: FontWeight.w800, height: 1.2),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'استخدم الكود واحصل على خصم فوري',
-                          style: TextStyle(color: subtitleColor, fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // ── Tall discount box ──
-                  Container(
-                    width: 100,
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: badgeBg,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('خصم', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, height: 1.2)),
-                        const SizedBox(height: 2),
-                        Text(
-                          discountNumber,
-                          style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, height: 1.1, letterSpacing: -1),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text('على جميع الرحلات', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500, height: 1.3), textAlign: TextAlign.center),
-                      ],
-                    ),
-                  ),
-                ],
+      ),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: cardBorder, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withValues(alpha: isDark ? 0.34 : 0.10),
+                blurRadius: 26,
+                offset: const Offset(0, 12),
               ),
-            ),
-            const SizedBox(height: 14),
-            // ── Dashed code box ──
-            CustomPaint(
-              painter: _DashedBorderPainter(color: codeBorder, borderRadius: 12, strokeWidth: 1.4, dashWidth: 6, dashGap: 4),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
+              BoxShadow(
+                color: AppColors.black.withValues(alpha: isDark ? 0.18 : 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.copy_rounded, size: 18, color: codeIconColor),
-                    const Spacer(),
-                    Text(code, style: TextStyle(color: codeTextColor, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: 4)),
-                    const Spacer(),
-                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: badgeBg,
+                                borderRadius: BorderRadius.circular(11),
+                              ),
+                              child: Text(
+                                l.discountLimited,
+                                textDirection: textDirection,
+                                style: TextStyle(
+                                  color: badgeText,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                l.discountOnYourRide,
+                                textAlign: TextAlign.center,
+                                textDirection: textDirection,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: titleColor,
+                                  fontSize: 18.5,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                l.useCodeForInstantDiscount,
+                                textAlign: TextAlign.center,
+                                textDirection: textDirection,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: subtitleColor,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          CustomPaint(
+                            painter: _DashedBorderPainter(
+                              color: codeBorder,
+                              borderRadius: 12,
+                              strokeWidth: 1.25,
+                              dashWidth: 6,
+                              dashGap: 5,
+                            ),
+                            child: Material(
+                              color: codeFill,
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () => _copyCode(code, l),
+                                child: SizedBox(
+                                  height: 38,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                    ),
+                                    child: Row(
+                                      textDirection: TextDirection.ltr,
+                                      children: [
+                                        Tooltip(
+                                          message: l.copyCouponCode,
+                                          child: Icon(
+                                            _copied
+                                                ? Icons.check_circle_rounded
+                                                : Icons.copy_rounded,
+                                            size: 20,
+                                            color: _copied
+                                                ? AppColors.success
+                                                : codeTextColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Center(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                code,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  color: codeTextColor,
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 5,
+                                                  height: 1.1,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 32),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ClipPath(
+                      clipper: const _CouponTicketClipper(),
+                      child: Container(
+                        width: 86,
+                        height: 92,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: ticketGradient,
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              l.discount,
+                              textDirection: textDirection,
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                discountNumber,
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 31,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                l.discountOnAllTrips,
+                                textAlign: TextAlign.center,
+                                textDirection: textDirection,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.15,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 9),
+                Divider(height: 1, thickness: 1, color: dividerColor),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.verified_user_outlined,
+                        color: AppColors.success,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'سفرك محمي وآمن مع كل رحلة',
+                            textDirection: TextDirection.rtl,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: mutedColor,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: openLocationSelection,
+                      child: Container(
+                        height: 38,
+                        width: 116,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: buttonGradient,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(13),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF5147F7)
+                                  .withValues(alpha: 0.24),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.chevron_left_rounded,
+                              color: AppColors.white,
+                              size: 21,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                AppLocalizations.of(context)!.bookNow,
+                                textDirection: textDirection,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _CouponTicketClipper extends CustomClipper<Path> {
+  static const double _borderRadius = 16;
+  static const double _notchRadius = 8;
+
+  const _CouponTicketClipper();
+
+  @override
+  Path getClip(Size size) {
+    final ticket = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          const Radius.circular(_borderRadius),
+        ),
+      );
+    final notches = Path()
+      ..addOval(
+        Rect.fromCircle(
+          center: Offset(0, size.height * 0.5),
+          radius: _notchRadius,
+        ),
+      )
+      ..addOval(
+        Rect.fromCircle(
+          center: Offset(size.width, size.height * 0.5),
+          radius: _notchRadius,
+        ),
+      );
+    return Path.combine(ui.PathOperation.difference, ticket, notches);
+  }
+
+  @override
+  bool shouldReclip(covariant _CouponTicketClipper oldClipper) => false;
 }
 
 class _DashedBorderPainter extends CustomPainter {
@@ -747,12 +1092,22 @@ class _DashedBorderPainter extends CustomPainter {
   final double dashWidth;
   final double dashGap;
 
-  _DashedBorderPainter({required this.color, this.borderRadius = 10, this.strokeWidth = 1.2, this.dashWidth = 5, this.dashGap = 4});
+  _DashedBorderPainter(
+      {required this.color,
+      this.borderRadius = 10,
+      this.strokeWidth = 1.2,
+      this.dashWidth = 5,
+      this.dashGap = 4});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..strokeWidth = strokeWidth..style = PaintingStyle.stroke;
-    final rrect = RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), Radius.circular(borderRadius));
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+    final rrect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        Radius.circular(borderRadius));
     final path = Path()..addRRect(rrect);
     final metrics = path.computeMetrics();
     for (final metric in metrics) {
@@ -766,54 +1121,15 @@ class _DashedBorderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DashedBorderPainter old) => color != old.color || borderRadius != old.borderRadius;
+  bool shouldRepaint(covariant _DashedBorderPainter old) =>
+      color != old.color ||
+      borderRadius != old.borderRadius ||
+      strokeWidth != old.strokeWidth ||
+      dashWidth != old.dashWidth ||
+      dashGap != old.dashGap;
 }
 
-// ── Safe Ride + Book Now (separate row below coupon card) ────────────────────
-class _SafeRideBanner extends StatelessWidget {
-  const _SafeRideBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = context.isDark;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Row(
-        children: [
-          Icon(Icons.verified_user_rounded, color: AppColors.success, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'سفرك محمي وآمن مع كل رحلة',
-              style: TextStyle(
-                color: isDark ? const Color(0xFF8A90A8) : const Color(0xFF6B7280),
-                fontSize: 12, fontWeight: FontWeight.w500, height: 1.3,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.userLocationSelect),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(color: const Color(0xFF5B5FE6), borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 18),
-                  const SizedBox(width: 4),
-                  Text(AppLocalizations.of(context)!.bookNow, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 class _PromoBanner extends StatefulWidget {
-
   const _PromoBanner();
 
   @override
@@ -1049,7 +1365,8 @@ class _PromoBannerState extends State<_PromoBanner> {
                             decoration: InputDecoration(
                               hintText: 'PROMO20',
                               hintStyle: TextStyle(
-                                color: context.textSecondary.withValues(alpha: 0.4),
+                                color: context.textSecondary
+                                    .withValues(alpha: 0.4),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,
                                 letterSpacing: 1.5,
@@ -1066,16 +1383,18 @@ class _PromoBannerState extends State<_PromoBanner> {
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide(
                                     color: _isValid == true
-                                        ? AppColors.success.withValues(alpha: 0.5)
+                                        ? AppColors.success
+                                            .withValues(alpha: 0.5)
                                         : _isValid == false
-                                            ? AppColors.error.withValues(alpha: 0.5)
+                                            ? AppColors.error
+                                                .withValues(alpha: 0.5)
                                             : context.divColor,
                                     width: _isValid != null ? 1.5 : 0.8),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide:
-                                    BorderSide(color: AppColors.primary, width: 1.2),
+                                borderSide: BorderSide(
+                                    color: AppColors.primary, width: 1.2),
                               ),
                               prefixIcon: Icon(Icons.local_offer_rounded,
                                   color: _isValid == true
@@ -1098,7 +1417,8 @@ class _PromoBannerState extends State<_PromoBanner> {
                       const SizedBox(width: 8),
                       SizedBox(
                         height: 42,
-                        width: 72, // explicit width — prevents infinite-width crash
+                        width:
+                            72, // explicit width — prevents infinite-width crash
                         child: ElevatedButton(
                           onPressed: _isValidating ? null : _validateAndApply,
                           style: ElevatedButton.styleFrom(
@@ -1222,7 +1542,7 @@ class _PromoBannerState extends State<_PromoBanner> {
               ],
             ),
           ),
-        ],
-      );
+      ],
+    );
   }
 }

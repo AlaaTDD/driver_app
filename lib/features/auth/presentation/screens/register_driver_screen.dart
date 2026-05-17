@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../../core/error/error_mapper.dart';
+import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
@@ -55,8 +54,6 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
   void initState() {
     super.initState();
   }
-
-
 
   @override
   void dispose() {
@@ -147,23 +144,23 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
 
     if (!mounted) return;
     context.read<AuthBloc>().add(SignUpDriverRequested(
-      name: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      nationalId: _nationalIdController.text.trim(),
-      nationalIdImageUrl: nationalIdUrl!,
-      licenseNumber: _licenseNumberController.text.trim(),
-      licenseImageUrl: licenseUrl!,
-      criminalRecordUrl: criminalRecordUrl!,
-      vehicleType: _vehicleType ?? 'sedan',
-      vehicleBrand: _vehicleBrandController.text.trim(),
-      vehicleModel: _vehicleModelController.text.trim(),
-      vehicleYear: int.tryParse(_vehicleYearController.text) ?? 2020,
-      vehicleColor: _vehicleColorController.text.trim(),
-      vehiclePlate: _vehiclePlateController.text.trim(),
-      vehicleImageUrl: vehicleUrl!,
-    ));
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          nationalId: _nationalIdController.text.trim(),
+          nationalIdImageUrl: nationalIdUrl!,
+          licenseNumber: _licenseNumberController.text.trim(),
+          licenseImageUrl: licenseUrl!,
+          criminalRecordUrl: criminalRecordUrl!,
+          vehicleType: _vehicleType ?? 'sedan',
+          vehicleBrand: _vehicleBrandController.text.trim(),
+          vehicleModel: _vehicleModelController.text.trim(),
+          vehicleYear: int.tryParse(_vehicleYearController.text) ?? 2020,
+          vehicleColor: _vehicleColorController.text.trim(),
+          vehiclePlate: _vehiclePlateController.text.trim(),
+          vehicleImageUrl: vehicleUrl!,
+        ));
   }
 
   @override
@@ -242,7 +239,9 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                         ),
                         onPressed: () {
                           setState(() {
@@ -270,7 +269,9 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscureConfirmPassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                         ),
                         onPressed: () {
                           setState(() {
@@ -281,7 +282,8 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return AppLocalizations.of(context)!.pleaseConfirmPassword;
+                        return AppLocalizations.of(context)!
+                            .pleaseConfirmPassword;
                       }
                       return null;
                     },
@@ -362,37 +364,50 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                   ),
                   const SizedBox(height: 16),
                   BlocProvider(
-                    create: (context) => VehicleTypesCubit()..fetchVehicleTypes(),
+                    create: (context) =>
+                        VehicleTypesCubit()..fetchVehicleTypes(),
                     child: BlocBuilder<VehicleTypesCubit, VehicleTypesState>(
                       builder: (context, state) {
                         if (state.isLoading) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
 
-                        
                         final types = state.vehicleTypes.isNotEmpty
                             ? state.vehicleTypes
                             : [
-                                {'name': 'sedan', 'display_name': AppLocalizations.of(context)!.sedan},
-                                {'name': 'motorcycle', 'display_name': AppLocalizations.of(context)!.motorcycle}
+                                {
+                                  'name': 'sedan',
+                                  'display_name':
+                                      AppLocalizations.of(context)!.sedan
+                                },
+                                {
+                                  'name': 'motorcycle',
+                                  'display_name':
+                                      AppLocalizations.of(context)!.motorcycle
+                                }
                               ];
 
-                        if (_vehicleType == null || !types.any((t) => t['name'] == _vehicleType)) {
-                           _vehicleType = types.first['name'] as String;
+                        if (_vehicleType == null ||
+                            !types.any((t) => t['name'] == _vehicleType)) {
+                          _vehicleType = types.first['name'] as String;
                         }
 
                         return DropdownButtonFormField<String>(
                           value: _vehicleType,
                           decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!.vehicleType,
-                            prefixIcon: const Icon(Icons.directions_car_rounded),
+                            labelText:
+                                AppLocalizations.of(context)!.vehicleType,
+                            prefixIcon:
+                                const Icon(Icons.directions_car_rounded),
                           ),
                           dropdownColor: context.cardColor,
                           items: types
                               .map((t) => DropdownMenuItem<String>(
                                     value: t['name'] as String,
                                     child: Text(t['display_name'] as String,
-                                        style: TextStyle(color: context.textPrimary)),
+                                        style: TextStyle(
+                                            color: context.textPrimary)),
                                   ))
                               .toList(),
                           onChanged: (v) => setState(() => _vehicleType = v),

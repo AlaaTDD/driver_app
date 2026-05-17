@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:snapix/core/theme/app_colors.dart';
@@ -6,29 +5,102 @@ import 'package:snapix/core/theme/app_colors.dart';
 class AppTheme {
   static ThemeData get lightTheme => ThemeData(
         brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF5F7FF),
+        scaffoldBackgroundColor: AppColors.lightBg,
         colorScheme: const ColorScheme.light(
           primary: AppColors.primary,
-          surface: Colors.white,
-          onPrimary: Colors.white,
-          onSurface: Color(0xFF1A1F36),
+          surface: AppColors.lightSurface,
+          onPrimary: AppColors.white,
+          onSurface: AppColors.lightTextPrimary,
           error: AppColors.error,
+          outline: AppColors.lightDivider,
         ),
         useMaterial3: true,
         fontFamily: GoogleFonts.cairo().fontFamily,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF1A1F36),
+          backgroundColor: AppColors.lightSurface,
+          foregroundColor: AppColors.lightTextPrimary,
           elevation: 0,
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: AppColors.transparent,
+          iconTheme: IconThemeData(color: AppColors.lightTextPrimary),
+          titleTextStyle: TextStyle(
+            color: AppColors.lightTextPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         cardTheme: const CardThemeData(
-          color: Colors.white,
+          color: AppColors.lightSurface,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
-            side: BorderSide(color: Color(0xFFE8EAF6), width: .8),
+            side: BorderSide(color: AppColors.lightDivider, width: .8),
           ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.lightDivider,
+          thickness: .8,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+            minimumSize: const Size.fromHeight(54),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 0,
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            minimumSize: const Size.fromHeight(54),
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.lightElevated,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                const BorderSide(color: AppColors.lightDivider, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                const BorderSide(color: AppColors.lightDivider, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.error, width: 1.8),
+          ),
+          hintStyle: const TextStyle(color: AppColors.lightTextDisabled),
+          labelStyle: const TextStyle(color: AppColors.lightTextSecondary),
+          prefixIconColor: AppColors.lightTextSecondary,
+          suffixIconColor: AppColors.lightTextSecondary,
+          errorStyle: const TextStyle(color: AppColors.error, fontSize: 12),
         ),
       );
 

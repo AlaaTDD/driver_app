@@ -1,13 +1,9 @@
-
 import 'package:flutter/foundation.dart';
 import '../../../../../services/supabase_service.dart';
-
-
 
 class TripsRepository {
   final _client = SupabaseService.client;
 
-  
   Future<List<Map<String, dynamic>>> loadUserTrips(String userId) async {
     final data = await _client
         .from('trips')
@@ -15,19 +11,14 @@ class TripsRepository {
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
-    return (data as List)
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
+    return (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  
-  
   Future<Map<String, Map<String, dynamic>>> fetchDriverDetails(
     List<String> driverIds,
   ) async {
     if (driverIds.isEmpty) return {};
 
-    
     final results = await Future.wait([
       _client
           .from('users')
@@ -35,7 +26,8 @@ class TripsRepository {
           .inFilter('id', driverIds),
       _client
           .from('driver_public_profile')
-          .select('id, vehicle_type, vehicle_plate, vehicle_model, vehicle_color')
+          .select(
+              'id, vehicle_type, vehicle_plate, vehicle_model, vehicle_color')
           .inFilter('id', driverIds),
     ]);
 
@@ -46,7 +38,7 @@ class TripsRepository {
     for (final user in usersData) {
       driversMap[user['id']] = Map<String, dynamic>.from(user);
     }
-    
+
     for (final profile in profilesData) {
       final id = profile['id'] as String;
       if (driversMap.containsKey(id)) {
@@ -60,18 +52,14 @@ class TripsRepository {
     return driversMap;
   }
 
-  
   Future<Map<String, dynamic>?> loadTripDetails(String tripId) async {
-    final data = await _client
-        .from('trips')
-        .select('*')
-        .eq('id', tripId)
-        .single();
+    final data =
+        await _client.from('trips').select('*').eq('id', tripId).single();
     return Map<String, dynamic>.from(data);
   }
 
-  
-  Future<Map<String, dynamic>?> fetchSingleDriverDetails(String driverId) async {
+  Future<Map<String, dynamic>?> fetchSingleDriverDetails(
+      String driverId) async {
     try {
       final driverData = await _client
           .from('users')
@@ -85,7 +73,6 @@ class TripsRepository {
     }
   }
 
-  
   Future<Map<String, dynamic>?> getTripForCancellation(String tripId) async {
     try {
       return await _client
@@ -99,8 +86,6 @@ class TripsRepository {
     }
   }
 
-  
-  
   Future<void> cancelTrip(
     String tripId,
     String userId, {
@@ -120,10 +105,8 @@ class TripsRepository {
 
       // Update structured category separately if provided
       if (cancelReasonCategory != null) {
-        await _client
-            .from('trips')
-            .update({'cancel_reason_category': cancelReasonCategory})
-            .eq('id', tripId);
+        await _client.from('trips').update(
+            {'cancel_reason_category': cancelReasonCategory}).eq('id', tripId);
       }
     } catch (e) {
       debugPrint('❌ TripsRepository: Failed to cancel trip: $e');
@@ -131,7 +114,6 @@ class TripsRepository {
     }
   }
 
-  
   Future<void> submitComplaint({
     required String? userId,
     required String tripId,

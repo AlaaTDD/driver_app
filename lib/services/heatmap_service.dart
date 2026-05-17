@@ -1,25 +1,8 @@
-
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class HeatmapService with WidgetsBindingObserver {
   HeatmapService._() {
@@ -27,47 +10,34 @@ class HeatmapService with WidgetsBindingObserver {
   }
   static final HeatmapService instance = HeatmapService._();
 
-  
   static const double hexRadiusMeters = 300.0;
 
-  
-  
   static const Duration _staleDuration = Duration(seconds: 45);
 
   Timer? _staleCleanupTimer;
   Timer? _pollingTimer;
   bool _isDisposed = false;
 
-  final _heatmapController =
-      StreamController<List<HeatmapCell>>.broadcast();
+  final _heatmapController = StreamController<List<HeatmapCell>>.broadcast();
 
-  
   Stream<List<HeatmapCell>> get heatmapUpdates => _heatmapController.stream;
 
-  
   final Map<String, _UserPresenceEntry> _presenceMap = {};
 
   List<HeatmapCell> _currentCells = [];
 
-  
   List<HeatmapCell> get currentCells => List.unmodifiable(_currentCells);
 
-  
-
-  
-  
-  
-  
   Future<void> startRealtimeUpdates() async {
     _isDisposed = false; // Allow restarting after sign-out
     if (_pollingTimer != null) return;
 
     await _fetchAllPresence();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchAllPresence());
+    _pollingTimer =
+        Timer.periodic(const Duration(seconds: 30), (_) => _fetchAllPresence());
     _startStaleCleanup();
   }
 
-  
   void stopRealtimeUpdates() {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = null;
@@ -80,7 +50,6 @@ class HeatmapService with WidgetsBindingObserver {
     }
   }
 
-  
   void dispose() {
     _isDisposed = true;
     // WidgetsBinding.instance.removeObserver(this); // Singleton stays alive
@@ -95,8 +64,8 @@ class HeatmapService with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       stopRealtimeUpdates();
     } else if (state == AppLifecycleState.resumed) {
       if (!_isDisposed) {
@@ -105,15 +74,10 @@ class HeatmapService with WidgetsBindingObserver {
     }
   }
 
-  
-
-  
   Future<void> _fetchAllPresence() async {
     try {
-      final cutoff = DateTime.now()
-          .toUtc()
-          .subtract(_staleDuration)
-          .toIso8601String();
+      final cutoff =
+          DateTime.now().toUtc().subtract(_staleDuration).toIso8601String();
 
       final data = await SupabaseService.client
           .from('user_presence')
@@ -122,7 +86,6 @@ class HeatmapService with WidgetsBindingObserver {
 
       _presenceMap.clear();
 
-      
       final myId = SupabaseService.currentUser?.id;
 
       for (final row in data) {
@@ -143,20 +106,14 @@ class HeatmapService with WidgetsBindingObserver {
       }
 
       _rebuildHexCells();
-      debugPrint(
-          '🔥 Heatmap: Fetched ${_presenceMap.length} active users');
+      debugPrint('🔥 Heatmap: Fetched ${_presenceMap.length} active users');
     } catch (e) {
       debugPrint('❌ Heatmap: Failed to fetch presence: $e');
     }
   }
 
-  
-
   // RT methods removed
 
-  
-
-  
   void _startStaleCleanup() {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = Timer.periodic(
@@ -182,16 +139,10 @@ class HeatmapService with WidgetsBindingObserver {
     }
 
     _rebuildHexCells();
-    debugPrint(
-        '🔥 Heatmap: Cleaned ${staleUserIds.length} stale users, '
+    debugPrint('🔥 Heatmap: Cleaned ${staleUserIds.length} stale users, '
         '${_presenceMap.length} remaining');
   }
 
-  
-
-  
-  
-  
   Timer? _rebuildDebounce;
 
   void _rebuildHexCells() {
@@ -202,12 +153,13 @@ class HeatmapService with WidgetsBindingObserver {
     }
 
     _rebuildDebounce?.cancel();
-    _rebuildDebounce = Timer(const Duration(milliseconds: 100), _computeHexCells);
+    _rebuildDebounce =
+        Timer(const Duration(milliseconds: 100), _computeHexCells);
   }
 
   void _computeHexCells() {
     if (_isDisposed) return;
-    
+
     final cellCounts = <String, _HexCellAccumulator>{};
 
     for (final entry in _presenceMap.values) {
@@ -226,7 +178,6 @@ class HeatmapService with WidgetsBindingObserver {
       }
     }
 
-    
     int maxCount = 1;
     for (final acc in cellCounts.values) {
       if (acc.count > maxCount) maxCount = acc.count;
@@ -249,51 +200,34 @@ class HeatmapService with WidgetsBindingObserver {
     _heatmapController.add(_currentCells);
   }
 
-  
-
-  
-  
-  
-  
-  
-  
-  
-  
   static ({double lat, double lng}) snapToHexGrid(
       double lat, double lng, double radiusMeters) {
     const metersPerDegreeLat = 111320.0;
-    final metersPerDegreeLng =
-        111320.0 * math.cos(lat * math.pi / 180.0);
+    final metersPerDegreeLng = 111320.0 * math.cos(lat * math.pi / 180.0);
 
     final radiusLat = radiusMeters / metersPerDegreeLat;
     final radiusLng = radiusMeters / metersPerDegreeLng;
 
-    
     final colWidth = radiusLng * math.sqrt(3);
     final rowHeight = radiusLat * 1.5;
 
-    
     final row = (lat / rowHeight).round();
-    
+
     final lngOffset = (row % 2 == 0) ? 0.0 : colWidth / 2.0;
     final col = ((lng - lngOffset) / colWidth).round();
 
-    
     final snappedLng = col * colWidth + lngOffset;
     final snappedLat = row * rowHeight;
 
     return (lat: snappedLat, lng: snappedLng);
   }
 
-  
   static HeatmapLevel _intensityLevel(int count) {
     if (count >= 10) return HeatmapLevel.high;
     if (count >= 5) return HeatmapLevel.medium;
     return HeatmapLevel.low;
   }
 }
-
-
 
 class _UserPresenceEntry {
   final double lat;
@@ -319,15 +253,12 @@ class _HexCellAccumulator {
   });
 }
 
-
-
-
 class HeatmapCell {
   final String cellId;
   final double centerLat;
   final double centerLng;
   final int userCount;
-  final double intensity; 
+  final double intensity;
   final HeatmapLevel level;
 
   const HeatmapCell({
@@ -350,14 +281,10 @@ class HeatmapCell {
   int get hashCode => Object.hash(cellId, userCount);
 }
 
-
 enum HeatmapLevel {
-  
   high,
 
-  
   medium,
 
-  
   low,
 }

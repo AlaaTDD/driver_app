@@ -3,13 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
+import '../core/errors/exceptions.dart';
 import '../core/utils/geohash_helper.dart';
-
-
-
-
-
-
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -26,8 +21,6 @@ class LocationService {
   double? _lastLng;
   double? _lastHeading;
 
-  
-
   Future<bool> hasPermission() async {
     final perm = await _geolocator.checkPermission();
     return perm == LocationPermission.always ||
@@ -40,27 +33,18 @@ class LocationService {
         permission == LocationPermission.whileInUse;
   }
 
-  
-
-  
-  
-  
-  
-  
   Future<Position> getCurrentLocation() async {
-    
     final isEnabled = await _geolocator.isLocationServiceEnabled();
     if (!isEnabled) {
-      
       final last = await _geolocator.getLastKnownPosition();
       if (last != null) return last;
-      
-      debugPrint('⚠️ LocationService: GPS disabled and no last known location. Throwing error.');
-      throw Exception('location_disabled');
+
+      debugPrint(
+          '⚠️ LocationService: GPS disabled and no last known location. Throwing error.');
+      throw ValidationException('location_disabled');
     }
 
     try {
-      
       return await _geolocator
           .getCurrentPosition(
             locationSettings: const LocationSettings(
@@ -70,11 +54,9 @@ class LocationService {
           )
           .timeout(const Duration(seconds: 12));
     } catch (primaryError) {
-      
       final last = await _geolocator.getLastKnownPosition();
       if (last != null) return last;
 
-      
       try {
         return await _geolocator
             .getCurrentPosition(
@@ -85,18 +67,12 @@ class LocationService {
             )
             .timeout(const Duration(seconds: 10));
       } catch (e) {
-        
         debugPrint('❌ LocationService: All 3 fallbacks failed. Last error: $e');
         rethrow;
       }
     }
   }
 
-  
-
-  
-  
-  
   StreamController<Position>? _locationController;
   StreamSubscription<Position>? _geolocatorSub;
 
@@ -120,7 +96,8 @@ class LocationService {
   Stream<Position> _createLocationStream() async* {
     final isEnabled = await _geolocator.isLocationServiceEnabled();
     if (!isEnabled) {
-      debugPrint('⚠️ LocationService (Stream): GPS disabled. Waiting for location to be enabled.');
+      debugPrint(
+          '⚠️ LocationService (Stream): GPS disabled. Waiting for location to be enabled.');
       return;
     }
 
@@ -138,12 +115,14 @@ class LocationService {
       stopTripTracking();
     }
     _activeTripDriverId = driverId;
-    debugPrint('📍 LocationService: Starting global trip tracking for driver $driverId');
-    
+    debugPrint(
+        '📍 LocationService: Starting global trip tracking for driver $driverId');
+
     // Create a dedicated broadcast channel so the user can get REAL-TIME updates
     // even faster than the DB stream (no RLS issues with broadcast)
     _broadcastChannel?.unsubscribe();
-    _broadcastChannel = SupabaseService.client.channel('trip-tracking-$driverId');
+    _broadcastChannel =
+        SupabaseService.client.channel('trip-tracking-$driverId');
     _broadcastChannel!.subscribe((status, [error]) {
       debugPrint('📍 LocationService: Broadcast channel status=$status');
       // Once subscribed, immediately broadcast last known position (if any) so user gets it instantly
@@ -151,11 +130,15 @@ class LocationService {
         // Send the last known position immediately to any new subscribers
         _broadcastChannel?.sendBroadcastMessage(
           event: 'location_update',
-          payload: {'lat': _lastLat, 'lng': _lastLng, 'heading': _lastHeading ?? 0.0},
+          payload: {
+            'lat': _lastLat,
+            'lng': _lastLng,
+            'heading': _lastHeading ?? 0.0
+          },
         );
       }
     });
-    
+
     // Heartbeat: broadcast every 5s so any late subscriber gets the driver's position
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -163,7 +146,11 @@ class LocationService {
         try {
           _broadcastChannel!.sendBroadcastMessage(
             event: 'location_update',
-            payload: {'lat': _lastLat, 'lng': _lastLng, 'heading': _lastHeading ?? 0.0},
+            payload: {
+              'lat': _lastLat,
+              'lng': _lastLng,
+              'heading': _lastHeading ?? 0.0
+            },
           );
         } catch (e, st) {
           debugPrint('⚠️ LocationService heartbeat broadcast failed: $e\n$st');
@@ -178,15 +165,20 @@ class LocationService {
         _lastLat = pos.latitude;
         _lastLng = pos.longitude;
         _lastHeading = pos.heading;
-        
+
         await _broadcastChannel?.sendBroadcastMessage(
           event: 'location_update',
-          payload: {'lat': pos.latitude, 'lng': pos.longitude, 'heading': pos.heading},
+          payload: {
+            'lat': pos.latitude,
+            'lng': pos.longitude,
+            'heading': pos.heading
+          },
         );
-        
+
         try {
           final geohash = GeohashHelper.encode(pos.latitude, pos.longitude);
-          final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
+          final geohash5 =
+              geohash.length > 5 ? geohash.substring(0, 5) : geohash;
           await SupabaseService.client.from('drivers_profile').update({
             'current_lat': pos.latitude,
             'current_lng': pos.longitude,
@@ -194,19 +186,21 @@ class LocationService {
             'geohash5': geohash5,
           }).eq('id', driverId);
         } catch (e, st) {
-          debugPrint('⚠️ LocationService initial geohash DB update failed: $e\n$st');
+          debugPrint(
+              '⚠️ LocationService initial geohash DB update failed: $e\n$st');
         }
       }
     } catch (e) {
-      debugPrint('⚠️ LocationService.startTripTracking: Initial GPS fix failed: $e');
+      debugPrint(
+          '⚠️ LocationService.startTripTracking: Initial GPS fix failed: $e');
     }
-    
+
     _tripTrackingSub = getLocationStream().listen((pos) async {
       // Save last known position for heartbeat
       _lastLat = pos.latitude;
       _lastLng = pos.longitude;
       _lastHeading = pos.heading;
-      
+
       // 1) Broadcast via realtime channel (instant, bypasses RLS)
       try {
         await _broadcastChannel?.sendBroadcastMessage(
@@ -238,7 +232,8 @@ class LocationService {
         // Fallback: direct update
         try {
           final geohash = GeohashHelper.encode(pos.latitude, pos.longitude);
-          final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
+          final geohash5 =
+              geohash.length > 5 ? geohash.substring(0, 5) : geohash;
           await SupabaseService.client.from('drivers_profile').update({
             'current_lat': pos.latitude,
             'current_lng': pos.longitude,
@@ -246,7 +241,8 @@ class LocationService {
             'geohash5': geohash5,
           }).eq('id', driverId);
         } catch (e, st) {
-          debugPrint('⚠️ LocationService fallback driver location update failed: $e\n$st');
+          debugPrint(
+              '⚠️ LocationService fallback driver location update failed: $e\n$st');
         }
       }
     });
@@ -276,5 +272,4 @@ class LocationService {
     }
     _locationController = null;
   }
-
 }

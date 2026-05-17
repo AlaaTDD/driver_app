@@ -1003,6 +1003,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorFileUnsupported => 'Unsupported file type';
 
   @override
+  String get errorUploadFailed => 'File upload failed. Please try again.';
+
+  @override
+  String get errorDeleteFailed => 'File delete failed. Please try again.';
+
+  @override
+  String get errorReceiverEmpty => 'Invalid recipient.';
+
+  @override
+  String get errorTripIdEmpty => 'Invalid trip ID.';
+
+  @override
+  String get errorReceiverNotFound => 'Chat participant not found.';
+
+  @override
+  String get errorNullPrice => 'Could not calculate price. Please try again.';
+
+  @override
+  String get errorAcceptOfferFailed =>
+      'Failed to accept offer. Please try again.';
+
+  @override
+  String get unexpectedError => 'An unexpected error occurred.';
+
+  @override
   String get pleaseFillAllFields => 'Please fill all fields';
 
   @override
@@ -1022,6 +1047,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get driverWallet => 'Driver Wallet';
+
+  @override
+  String get driverRevisionRequests => 'Revision Requests';
+
+  @override
+  String get noRevisionRequests => 'No revision requests';
+
+  @override
+  String get noRevisionRequestsDesc =>
+      'Your verification data does not need changes right now.';
+
+  @override
+  String get revisionNeedsAction => 'Changes required';
+
+  @override
+  String get revisionResolved => 'Revision resolved';
+
+  @override
+  String get fieldsRequested => 'Requested fields';
+
+  @override
+  String revisionCreatedAt(String date) {
+    return 'Created: $date';
+  }
+
+  @override
+  String revisionResolvedAt(String date) {
+    return 'Resolved: $date';
+  }
 
   @override
   String get availableBalanceLabel => 'Available Balance';
@@ -1456,4 +1510,206 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cancelledTrips => 'Cancelled';
+
+  @override
+  String get errorLoadVehicleTypes =>
+      'Failed to load vehicle types. Please try again.';
+
+  @override
+  String get errorUserBlocked =>
+      'Your account has been blocked. Please contact support.';
+
+  @override
+  String get errorInvalidTripId => 'Invalid trip ID.';
+
+  @override
+  String get addStopover => 'Add stopover';
+
+  @override
+  String get addStopoverMultiRoute => 'Add stopover (multi-route)';
+
+  @override
+  String get addThisStopover => 'Add this stopover';
+
+  @override
+  String get confirmStopover => 'Confirm stopover';
+
+  @override
+  String get selectedStopover => 'Selected stopover';
+
+  @override
+  String get swapLocations => 'Swap';
+
+  @override
+  String get tripRoute => 'Trip route';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String driverOffersCount(int count) {
+    return 'Driver offers ($count):';
+  }
+
+  @override
+  String stopCount(int count) {
+    return '$count stopovers';
+  }
+
+  @override
+  String get pickupPoint => 'Pickup point';
+
+  @override
+  String stopoverNumber(int number) {
+    return 'Stopover $number';
+  }
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String availableRequestsCount(int count) {
+    return '$count available requests';
+  }
+
+  @override
+  String get noRideRequestsAvailableNow =>
+      'No ride requests available right now';
+
+  @override
+  String get noRideRequestsAvailable => 'No ride requests available';
+
+  @override
+  String get rideRequestsWillAppearHere =>
+      'Ride requests will appear here when they arrive';
+
+  @override
+  String get acceptRide => 'Accept ride';
+
+  @override
+  String get placeNotFoundDetailed =>
+      'Place not found. Try a more detailed address';
+
+  @override
+  String get stopoverAddedSuccessfully => 'Stopover added successfully';
+
+  @override
+  String errorWithDetails(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get searchPlaceHint => 'Search for a place...';
+
+  @override
+  String get discountLimited => 'Limited discount';
+
+  @override
+  String get discountOnYourRide => 'Discount on your ride';
+
+  @override
+  String get useCodeForInstantDiscount =>
+      'Use the code and get an instant discount';
+
+  @override
+  String get discountOnAllTrips => 'On all trips';
+
+  @override
+  String get copyCouponCode => 'Copy discount code';
+
+  @override
+  String get couponCodeCopied => 'Discount code copied';
+
+  @override
+  String couponExpiresAt(String date) {
+    return 'Expires $date';
+  }
+
+  @override
+  String get resetButton => 'Reset';
+
+  @override
+  String get clearButton => 'Clear';
+
+  @override
+  String get processing => 'Processing...';
+
+  @override
+  String get corridorStepOrigin => 'Choose start';
+
+  @override
+  String get corridorStepDestination => 'Choose end';
+
+  @override
+  String get corridorStepReview => 'Review & save';
+
+  @override
+  String get corridorPickOriginHint => 'Tap the corridor start point';
+
+  @override
+  String get corridorPickDestinationHint => 'Tap the corridor end point';
+
+  @override
+  String get corridorReviewHint =>
+      'Corridor selected. Review the details and save it.';
+
+  @override
+  String get corridorStart => 'Corridor start';
+
+  @override
+  String get corridorEnd => 'Corridor end';
+
+  @override
+  String get corridorSearchHint => 'Search for an area to drive toward...';
+
+  @override
+  String get corridorOriginRadius => 'Start radius';
+
+  @override
+  String get corridorDestinationRadius => 'Destination radius';
+
+  @override
+  String get selectOriginFirst => 'Select the start point first';
+
+  @override
+  String get selectDestination => 'Select the destination';
+
+  @override
+  String get savePreferredCorridor => 'Save preferred corridor';
+
+  @override
+  String get tapMap => 'Tap the map';
+
+  @override
+  String kmValue(String value) {
+    return '$value km';
+  }
+
+  @override
+  String get moveMapToPickStopover => 'Move the map to pick the stopover';
+
+  @override
+  String get stopover => 'Stopover';
+
+  @override
+  String get arrivalConfirmed => 'Arrived';
+
+  @override
+  String get departureConfirmed => 'Departed';
+
+  @override
+  String get confirmArrival => 'Confirm arrival';
+
+  @override
+  String get confirmDeparture => 'Confirm departure';
+
+  @override
+  String get failedCreateLegacyRoutePlan =>
+      'Failed to create the legacy trip route';
+
+  @override
+  String get errorAddStopover => 'Failed to add stopover';
+
+  @override
+  String get errorRemoveStopover => 'Failed to remove stopover';
 }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../services/supabase_service.dart';
@@ -24,10 +23,11 @@ class DriverTripsBloc extends Bloc<DriverTripsEvent, DriverTripsState> {
       }
       final data = await SupabaseService.client
           .from('trips')
-          .select('*, user:users!trips_user_id_fkey(id, name, avatar_url, phone)')
+          .select(
+              '*, user:users!trips_user_id_fkey(id, name, avatar_url, phone)')
           .eq('driver_id', driverId)
           .order('created_at', ascending: false);
-      
+
       final trips = (data as List)
           .map((e) => TripModel.fromJson(e as Map<String, dynamic>))
           .toList();

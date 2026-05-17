@@ -1,4 +1,3 @@
-
 class MeetingPointArgs {
   final double? originLat;
   final double? originLng;
@@ -11,7 +10,8 @@ class MeetingPointArgs {
   final String? vehicleType;
   final String? paymentMethod;
   final String? couponCode;
-  final List<dynamic>? waypoints; // Using dynamic or WaypointArg (need to import it)
+  final List<dynamic>?
+      waypoints; // Using dynamic or WaypointArg (need to import it)
   final DateTime? scheduledAt; // Fix #16: scheduled trip support
 
   const MeetingPointArgs({

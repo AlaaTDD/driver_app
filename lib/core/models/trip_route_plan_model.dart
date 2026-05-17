@@ -25,10 +25,12 @@ enum RoutePlanStatus {
   String toDbString() => name;
 
   /// Whether this plan is currently usable.
-  bool get isUsable => this == RoutePlanStatus.active || this == RoutePlanStatus.draft;
+  bool get isUsable =>
+      this == RoutePlanStatus.active || this == RoutePlanStatus.draft;
 
   /// Whether this plan has been deactivated/ended.
-  bool get isTerminal => this == RoutePlanStatus.inactive || this == RoutePlanStatus.archived;
+  bool get isTerminal =>
+      this == RoutePlanStatus.inactive || this == RoutePlanStatus.archived;
 }
 
 /// Maps to `trip_route_plans` table.
@@ -108,8 +110,17 @@ class TripRoutePlanModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, tripId, label, status, totalDistanceKm,
-        totalDurationMin, estimatedPrice, encodedPolyline,
-        isSystemGenerated, createdBy, createdAt, updatedAt,
+        id,
+        tripId,
+        label,
+        status,
+        totalDistanceKm,
+        totalDurationMin,
+        estimatedPrice,
+        encodedPolyline,
+        isSystemGenerated,
+        createdBy,
+        createdAt,
+        updatedAt,
       ];
 }

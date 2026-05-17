@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_routes.dart';
@@ -40,7 +39,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       backgroundColor: context.bgColor,
       body: Stack(
         children: [
-          
           Positioned(
             top: 0,
             left: 0,
@@ -59,7 +57,6 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
           ),
-          
           SafeArea(
             child: FadeTransition(
               opacity: _fadeAnim,
@@ -69,7 +66,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: Icon(
@@ -96,25 +92,28 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                     ),
                     const SizedBox(height: 40),
-                    
                     _AccountTypeCard(
                       icon: Icons.person_rounded,
                       title: AppLocalizations.of(context)!.user,
                       subtitle: AppLocalizations.of(context)!.userDesc,
-                      gradientColors: const [AppColors.primary, AppColors.primaryDark],
+                      gradientColors: const [
+                        AppColors.primary,
+                        AppColors.primaryDark
+                      ],
                       onTap: () => context.push(AppRoutes.registerUser),
                     ),
                     const SizedBox(height: 16),
-                    
                     _AccountTypeCard(
                       icon: Icons.drive_eta_rounded,
                       title: AppLocalizations.of(context)!.driver,
                       subtitle: AppLocalizations.of(context)!.driverDesc,
-                      gradientColors: const [AppColors.success, AppColors.success],
+                      gradientColors: const [
+                        AppColors.success,
+                        AppColors.success
+                      ],
                       onTap: () => context.push(AppRoutes.registerDriver),
                     ),
                     const SizedBox(height: 36),
-                    
                     Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -231,7 +230,6 @@ class _AccountTypeCardState extends State<_AccountTypeCard>
           ),
           child: Row(
             children: [
-              
               Container(
                 width: 56,
                 height: 56,
@@ -253,7 +251,6 @@ class _AccountTypeCardState extends State<_AccountTypeCard>
                 child: Icon(widget.icon, size: 28, color: AppColors.white),
               ),
               const SizedBox(width: 16),
-              
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,7 +276,6 @@ class _AccountTypeCardState extends State<_AccountTypeCard>
                 ),
               ),
               const SizedBox(width: 10),
-              
               Container(
                 width: 30,
                 height: 30,

@@ -31,11 +31,12 @@ class DriverEarningsHelper {
 
       return {
         'totalEarnings': (summary['total_earnings'] as num?)?.toDouble() ?? 0,
-        'availableBalance': (summary['available_balance'] as num?)?.toDouble() ?? 0,
+        'availableBalance':
+            (summary['available_balance'] as num?)?.toDouble() ?? 0,
         'earningsThisWeek': (detailed['earnings_7d'] as num?)?.toDouble() ?? 0,
-        'earningsLast30Days': (summary['earnings_30d'] as num?)?.toDouble()
-            ?? (detailed['earnings_30d'] as num?)?.toDouble()
-            ?? 0,
+        'earningsLast30Days': (summary['earnings_30d'] as num?)?.toDouble() ??
+            (detailed['earnings_30d'] as num?)?.toDouble() ??
+            0,
         'completedTrips': (summary['completed_trips'] as int?) ?? 0,
         // pass through raw data for consumers that need it
         '_raw_summary': summary,
