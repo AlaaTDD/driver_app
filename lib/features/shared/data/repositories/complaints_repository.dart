@@ -10,8 +10,9 @@ class ComplaintsRepository {
     String? tripId,
   }) async {
     final user = SupabaseService.currentUser;
+    if (user == null) throw Exception('errorNotLoggedIn');
     await SupabaseService.client.from('complaints').insert({
-      'user_id': user?.id,
+      'user_id': user.id,
       if (tripId != null) 'trip_id': tripId,
       'title': title.trim(),
       'description': description.trim(),

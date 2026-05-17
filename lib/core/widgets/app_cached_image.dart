@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../theme/theme_extensions.dart';
+import '../theme/app_radius.dart';
 
 class AppCachedImage extends StatelessWidget {
   final String imageUrl;
@@ -45,7 +46,7 @@ class AppCachedImage extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: context.cardColor,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
       ),
     );
@@ -57,7 +58,7 @@ class AppCachedImage extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: context.cardColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Icon(
         Icons.person_outline,

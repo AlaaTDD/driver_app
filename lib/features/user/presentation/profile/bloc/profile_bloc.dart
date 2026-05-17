@@ -22,12 +22,32 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         emit(const ProfileError('errorNotLoggedIn'));
         return;
       }
-      final data = await SupabaseService.client
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-      emit(ProfileLoaded(Map<String, dynamic>.from(data)));
+      // Fix #20: fetch user_trip_stats in parallel
+      final results = await Future.wait([
+        SupabaseService.client
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single(),
+        SupabaseService.client
+            .from('user_trip_stats')
+            .select('total_trips, completed_trips, cancelled_trips, total_km, avg_rating')
+            .eq('user_id', userId)
+            .maybeSingle()
+            .catchError((_) => null),
+      ]);
+
+      final user = Map<String, dynamic>.from(results[0] as Map);
+      final stats = results[1] as Map<String, dynamic>?;
+      if (stats != null) {
+        user['stats_total_trips']     = stats['total_trips'];
+        user['stats_completed_trips'] = stats['completed_trips'];
+        user['stats_cancelled_trips'] = stats['cancelled_trips'];
+        user['stats_total_km']        = stats['total_km'];
+        user['stats_avg_rating']      = stats['avg_rating'];
+      }
+
+      emit(ProfileLoaded(user));
     } catch (e, stackTrace) {
       debugPrint('❌ ProfileBloc: Load failed: $e');
       debugPrint(stackTrace.toString());

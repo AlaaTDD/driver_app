@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../services/supabase_service.dart';
 
 /// Repository for app-level configuration (feature flags, min versions, etc.)
@@ -112,4 +113,13 @@ class AppConfigRepository {
 
   /// Clear cached values (e.g. on user logout).
   void clearCache() => _cache.clear();
+
+  /// Get default map center from config or fallback to constants
+  Future<LatLng?> getDefaultMapCenter() async {
+    final config = await getAll();
+    final lat = double.tryParse(config['default_lat']?.toString() ?? '');
+    final lng = double.tryParse(config['default_lng']?.toString() ?? '');
+    if (lat != null && lng != null) return LatLng(lat, lng);
+    return null; // fallback
+  }
 }

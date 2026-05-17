@@ -21,30 +21,14 @@ import 'core/router/app_router.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-
 import 'services/fcm_service.dart';
 import 'services/r2_storage_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'firebase_options.dart';
 import 'core/repositories/app_config_repository.dart';
-
-
-
-
-
-
-
-
-
-
-
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load(fileName: '.env');
-
   await Supabase.initialize(
     url: EnvConstants.supabaseUrl,
     anonKey: EnvConstants.supabaseAnonKey,
@@ -66,7 +50,9 @@ void main() async {
   }
 
   
-  ConnectivityService().init();
+  await ConnectivityService().init().catchError((e) {
+    debugPrint('⚠️ ConnectivityService init failed: $e');
+  });
 
   // Activate AppConfigRepository — warms cache and checks maintenance mode.
   // Runs in background so it never blocks startup.
@@ -77,6 +63,9 @@ void main() async {
   });
 
   final prefs = await SharedPreferences.getInstance();
+  final isDark = prefs.getBool('app_theme_dark') ?? true;
+  final initialTheme = isDark ? ThemeDark() : ThemeLight();
+
   Bloc.observer = AppBlocObserver();
 
   final r2StorageService = R2StorageService();
@@ -88,6 +77,7 @@ void main() async {
     r2StorageService: r2StorageService,
     authRepository: authRepository,
     authBloc: authBloc,
+    initialTheme: initialTheme,
   ));
 }
 
@@ -96,6 +86,7 @@ class MyApp extends StatefulWidget {
   final R2StorageService r2StorageService;
   final AuthRepositoryImpl authRepository;
   final AuthBloc authBloc;
+  final ThemeState initialTheme;
 
   const MyApp({
     super.key,
@@ -103,6 +94,7 @@ class MyApp extends StatefulWidget {
     required this.r2StorageService,
     required this.authRepository,
     required this.authBloc,
+    required this.initialTheme,
   });
 
   @override
@@ -135,7 +127,7 @@ class _MyAppState extends State<MyApp> {
             create: (_) => LanguageBloc(widget.prefs)..add(LoadSavedLanguage()),
           ),
           BlocProvider<ThemeBloc>(
-            create: (_) => ThemeBloc(widget.prefs)..add(LoadSavedTheme()),
+            create: (_) => ThemeBloc(widget.prefs, initialState: widget.initialTheme)..add(LoadSavedTheme()),
           ),
           BlocProvider<AuthBloc>.value(
             value: widget.authBloc,

@@ -8,7 +8,7 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   final SharedPreferences _prefs;
   static const _key = 'app_theme_dark';
 
-  ThemeBloc(this._prefs) : super(ThemeDark()) {
+  ThemeBloc(this._prefs, {ThemeState? initialState}) : super(initialState ?? ThemeDark()) {
     on<LoadSavedTheme>(_onLoad);
     on<ToggleTheme>(_onToggle);
   }

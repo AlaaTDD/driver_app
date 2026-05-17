@@ -37,8 +37,33 @@ class AppColors {
   // Semantic
   static const success       = Color(0xFF1FC87A); // _C.emerald
   static const successLight  = Color(0xFF6EE7B7);
+  static const successSurface= Color(0x331FC87A); // 20% opacity
+  
   static const warning       = Color(0xFFF5A524); // _C.amber
   static const warningLight  = Color(0xFFFCD34D);
+  static const warningSurface= Color(0x33F5A524); // 20% opacity
+  
   static const error         = Color(0xFFFF4060); // _C.rose
   static const errorLight    = Color(0xFFFDA4AF);
+  static const errorSurface  = Color(0x33FF4060); // 20% opacity
+
+  // Dark Theme specifics
+  static const darkBg              = Color(0xFF070C18);
+  static const darkSurface         = Color(0xFF181C2A);
+  static const darkElevated        = Color(0xFF1E2336);
+  static const darkDivider         = Color(0xFF252A3D);
+  static const darkSheet           = Color(0xFF12151F);
+  static const darkTextPrimary     = Color(0xFFEEF0FF);
+  static const darkTextSecondary   = Color(0xFF7B82A3);
+  static const darkTextDisabled    = Color(0xFF3A4060);
+
+  // Light Theme specifics
+  static const lightBg             = Color(0xFFF8FAFC);
+  static const lightSurface        = Color(0xFFFFFFFF);
+  static const lightElevated       = Color(0xFFF1F5F9);
+  static const lightDivider        = Color(0xFFE2E8F0);
+  static const lightSheet          = Color(0xFFFFFFFF);
+  static const lightTextPrimary    = Color(0xFF0F172A);
+  static const lightTextSecondary  = Color(0xFF64748B);
+  static const lightTextDisabled   = Color(0xFF94A3B8);
 }

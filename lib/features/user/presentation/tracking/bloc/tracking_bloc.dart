@@ -340,7 +340,9 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   Future<void> close() {
     _tripSubscription?.cancel();
     _driverLocationSubscription?.cancel();
-    _driverLocationChannel?.unsubscribe();
+    if (_driverLocationChannel != null) {
+      SupabaseService.client.removeChannel(_driverLocationChannel!);
+    }
     return super.close();
   }
 }

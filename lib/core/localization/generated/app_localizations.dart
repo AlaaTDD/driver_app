@@ -2804,6 +2804,54 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تقييم بالنجوم'**
   String get ratingStars;
+
+  /// No description provided for @scheduledTrip.
+  ///
+  /// In ar, this message translates to:
+  /// **'مجدولة'**
+  String get scheduledTrip;
+
+  /// No description provided for @scheduleForLater.
+  ///
+  /// In ar, this message translates to:
+  /// **'جدولة الرحلة'**
+  String get scheduleForLater;
+
+  /// No description provided for @tomorrow.
+  ///
+  /// In ar, this message translates to:
+  /// **'غداً'**
+  String get tomorrow;
+
+  /// No description provided for @tripStats.
+  ///
+  /// In ar, this message translates to:
+  /// **'إحصاءات الرحلات'**
+  String get tripStats;
+
+  /// No description provided for @totalTripsCompleted.
+  ///
+  /// In ar, this message translates to:
+  /// **'رحلات مكتملة'**
+  String get totalTripsCompleted;
+
+  /// No description provided for @avgTripRating.
+  ///
+  /// In ar, this message translates to:
+  /// **'متوسط التقييم'**
+  String get avgTripRating;
+
+  /// No description provided for @totalKmTravelled.
+  ///
+  /// In ar, this message translates to:
+  /// **'إجمالي الكيلومترات'**
+  String get totalKmTravelled;
+
+  /// No description provided for @cancelledTrips.
+  ///
+  /// In ar, this message translates to:
+  /// **'رحلات ملغاة'**
+  String get cancelledTrips;
 }
 
 class _AppLocalizationsDelegate

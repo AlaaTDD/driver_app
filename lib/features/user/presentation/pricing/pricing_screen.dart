@@ -50,6 +50,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
   _PaymentMethod _paymentMethod = _PaymentMethod.cash;
   final _couponCtrl = TextEditingController();
   bool _showCoupon = false;
+  DateTime? _scheduledAt; // Fix #16: scheduled trip time
   double _distanceKm = 0;
   List<LatLng> _routePoints = [];
   List<LatLng> _visiblePoints = [];
@@ -131,6 +132,7 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
       paymentMethod: _paymentMethod.name,
       couponCode: _couponCtrl.text.trim(),
       waypoints: a.waypoints,
+      scheduledAt: _scheduledAt, // Fix #16
     ));
   }
 
@@ -409,7 +411,11 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
                   ]),
                   const SizedBox(height: 12),
 
-                  
+                  // ── Scheduled Trip Picker ── Fix #16 ──────────────
+                  _buildScheduledPicker(isDark),
+                  const SizedBox(height: 8),
+
+                  // ── Coupon ─────────────────────────────────────────
                   GestureDetector(
                     onTap: () => setState(() => _showCoupon = !_showCoupon),
                     child: Container(
@@ -568,6 +574,102 @@ class _PricingScreenState extends State<PricingScreen> with TickerProviderStateM
       Divider(color: context.divColor, height: 16),
       _PriceRow(label: AppLocalizations.of(context)!.total, value: s.finalPrice, isTotal: true),
     ]);
+  }
+
+  // ── Scheduled Trip Picker ── Fix #16 ────────────────────────────────────
+  Widget _buildScheduledPicker(bool isDark) {
+    final l = AppLocalizations.of(context)!;
+    final scheduled = _scheduledAt;
+
+    if (scheduled != null) {
+      // Active state — show selected time chip with remove button
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.warning.withValues(alpha: 0.35)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.schedule_rounded, color: AppColors.warning, size: 15),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${l.scheduledTrip}: ${_formatScheduledTime(scheduled)}',
+              style: const TextStyle(color: AppColors.warning, fontSize: 12.5, fontWeight: FontWeight.w700),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          GestureDetector(
+            onTap: () => setState(() => _scheduledAt = null),
+            child: const Icon(Icons.close_rounded, color: AppColors.warning, size: 16),
+          ),
+        ]),
+      );
+    }
+
+    // Idle state — show tap-to-schedule chip
+    return GestureDetector(
+      onTap: () async {
+        final now = DateTime.now();
+        final date = await showDatePicker(
+          context: context,
+          initialDate: now.add(const Duration(hours: 1)),
+          firstDate: now,
+          lastDate: now.add(const Duration(days: 30)),
+          builder: (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+            ),
+            child: child!,
+          ),
+        );
+        if (date == null || !mounted) return;
+        final time = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(now.add(const Duration(hours: 1))),
+          builder: (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+            ),
+            child: child!,
+          ),
+        );
+        if (time == null || !mounted) return;
+        setState(() {
+          _scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.elevatedColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(children: [
+          Icon(Icons.schedule_outlined, color: context.textSecondary, size: 15),
+          const SizedBox(width: 8),
+          Text(
+            l.scheduleForLater,
+            style: TextStyle(color: context.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w500),
+          ),
+          const Spacer(),
+          Icon(Icons.chevron_right_rounded, color: context.textSecondary, size: 18),
+        ]),
+      ),
+    );
+  }
+
+  String _formatScheduledTime(DateTime dt) {
+    final now = DateTime.now();
+    final isToday = dt.day == now.day && dt.month == now.month && dt.year == now.year;
+    final isTomorrow = dt.day == now.day + 1 && dt.month == now.month && dt.year == now.year;
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final min  = dt.minute.toString().padLeft(2, '0');
+    final timeStr = '$hour:$min';
+    if (isToday)    return '${AppLocalizations.of(context)!.today} $timeStr';
+    if (isTomorrow) return '${AppLocalizations.of(context)!.tomorrow} $timeStr';
+    return '${dt.day}/${dt.month} $timeStr';
   }
 }
 

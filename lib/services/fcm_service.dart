@@ -13,8 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 import '../core/constants/env_constants.dart';
 import '../../firebase_options.dart';
-import '../features/ride_offer/overlay/ride_offer_overlay.dart';
 import '../core/router/app_router.dart';
+import '../core/constants/app_routes.dart';
 import '../core/constants/app_routes.dart';
 
 @pragma('vm:entry-point')
@@ -27,6 +27,9 @@ class FCMService {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
   FCMService._internal();
+
+  Future<void> Function(Map<String, dynamic>)? _onRideOffer;
+  void setRideOfferHandler(Future<void> Function(Map<String, dynamic>) h) => _onRideOffer = h;
 
   bool get _isInitialized => Firebase.apps.isNotEmpty;
   FirebaseMessaging get _messaging => FirebaseMessaging.instance;
@@ -128,7 +131,7 @@ class FCMService {
     }
   }
 
-  final Set<String> _handledMessageIds = {};
+  final List<String> _handledMessageIds = [];
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     final messageId = message.messageId;
@@ -137,17 +140,18 @@ class FCMService {
         developer.log('🔥 FCM FOREGROUND: Duplicate message ignored: $messageId');
         return;
       }
-      _handledMessageIds.add(messageId);
-      // Clean up old message IDs to prevent memory leaks
-      if (_handledMessageIds.length > 100) {
-        _handledMessageIds.clear();
+      if (_handledMessageIds.length >= 100) {
+        _handledMessageIds.removeAt(0);
       }
+      _handledMessageIds.add(messageId);
     }
 
     final type = message.data['type'] ?? message.data['notification_type'];
 
     if (type == 'ride_offer') {
-      await handleRideOfferNotification(message.data);
+      if (_onRideOffer != null) {
+        await _onRideOffer!(message.data);
+      }
       return;
     }
 
@@ -180,8 +184,11 @@ class FCMService {
         }
         break;
       case 'ride_offer':
-        developer.log('🔥 FCM OPENED APP: User tapped ride_offer notification!');
-        // Typically you'd navigate to the trip details page here.
+        final tripId = message.data['trip_id'] ?? message.data['tripId'];
+        router.go(AppRoutes.driverHome);
+        if (tripId != null) {
+          router.go('${AppRoutes.driverTripDetails}?tripId=$tripId');
+        }
         break;
     }
   }
@@ -208,6 +215,8 @@ class FCMService {
     }
   }
 
+  int _notificationCounter = 0;
+
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
@@ -223,7 +232,7 @@ class FCMService {
     const details = NotificationDetails(android: androidDetails, iOS: darwinDetails);
 
     await _localNotifications.show(
-      notification.hashCode,
+      _notificationCounter++,
       notification.title,
       notification.body,
       details,

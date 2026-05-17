@@ -1417,4 +1417,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ratingStars => 'تقييم بالنجوم';
+
+  @override
+  String get scheduledTrip => 'مجدولة';
+
+  @override
+  String get scheduleForLater => 'جدولة الرحلة';
+
+  @override
+  String get tomorrow => 'غداً';
+
+  @override
+  String get tripStats => 'إحصاءات الرحلات';
+
+  @override
+  String get totalTripsCompleted => 'رحلات مكتملة';
+
+  @override
+  String get avgTripRating => 'متوسط التقييم';
+
+  @override
+  String get totalKmTravelled => 'إجمالي الكيلومترات';
+
+  @override
+  String get cancelledTrips => 'رحلات ملغاة';
 }

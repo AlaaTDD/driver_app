@@ -12,6 +12,7 @@ class MeetingPointArgs {
   final String? paymentMethod;
   final String? couponCode;
   final List<dynamic>? waypoints; // Using dynamic or WaypointArg (need to import it)
+  final DateTime? scheduledAt; // Fix #16: scheduled trip support
 
   const MeetingPointArgs({
     this.originLat,
@@ -26,5 +27,6 @@ class MeetingPointArgs {
     this.paymentMethod,
     this.couponCode,
     this.waypoints,
+    this.scheduledAt,
   });
 }

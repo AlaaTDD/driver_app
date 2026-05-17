@@ -40,6 +40,7 @@ class TripOfferModel extends Equatable {
   final String tripId;
   final String driverId;
   final TripOfferStatus status;
+  final double? proposedPrice;
   final DateTime? createdAt;
   final DateTime? respondedAt;
   final DateTime? updatedAt;
@@ -49,6 +50,7 @@ class TripOfferModel extends Equatable {
     required this.tripId,
     required this.driverId,
     this.status = TripOfferStatus.pending,
+    this.proposedPrice,
     this.createdAt,
     this.respondedAt,
     this.updatedAt,
@@ -61,6 +63,7 @@ class TripOfferModel extends Equatable {
       driverId: json['driver_id'] as String,
       status: TripOfferStatus.fromString(json['status'] as String?) ??
           TripOfferStatus.pending,
+      proposedPrice: (json['proposed_price'] as num?)?.toDouble(),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -82,6 +85,7 @@ class TripOfferModel extends Equatable {
         tripId,
         driverId,
         status,
+        proposedPrice,
         createdAt,
         respondedAt,
         updatedAt,

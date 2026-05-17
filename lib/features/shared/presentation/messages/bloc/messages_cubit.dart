@@ -15,7 +15,6 @@ class MessagesCubit extends Cubit<MessagesState> {
 
   // Conversations subs
   StreamSubscription? _convRealtimeSub;
-  StreamSubscription? _payloadSub;
   // Chat subs
   StreamSubscription? _chatSub;
   // Presence
@@ -161,7 +160,7 @@ class MessagesCubit extends Cubit<MessagesState> {
         otherUserId: otherId,
         tripId: tripId,
         otherAvatarUrl: otherAvatar,
-        canSend: true, // Always allow sending
+        canSend: active, // Use the actual active state
         hasMore: messages.length >= 50,
       ));
       if (isClosed) return;
@@ -457,7 +456,6 @@ class MessagesCubit extends Cubit<MessagesState> {
   @override
   Future<void> close() async {
     await _convRealtimeSub?.cancel();
-    await _payloadSub?.cancel();
     await _chatSub?.cancel();
     await _presenceSub?.cancel();
     await _globalPresenceSub?.cancel();

@@ -154,7 +154,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
             params: {
               'p_trip_id': tripId,
               'p_user_id': SupabaseService.currentUser!.id,
-              'p_cancelled_by': 'system',
+              'p_cancelled_by': 'user',
               'p_cancel_reason': 'timeout',
             },
           ),

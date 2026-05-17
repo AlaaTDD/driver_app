@@ -7,6 +7,7 @@ import '../../../../services/cell_subscription_service.dart';
 import '../../../../services/heatmap_service.dart';
 import '../../../../services/supabase_service.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../services/directions_service.dart';
 import '../../../../services/location_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -147,9 +148,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       vehiclePlate: event.vehiclePlate,
       vehicleImageUrl: event.vehicleImageUrl,
     );
-    result.fold(
-      (error) => emit(AuthError(error)),
-      (user) => emit(AuthDriverPending(user)),
+    await result.fold(
+      (error) async => emit(AuthError(error)),
+      (user) async {
+        await _storeFcmToken(user.id);
+        emit(AuthDriverPending(user));
+      },
     );
   }
 
@@ -163,6 +167,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await CellSubscriptionService.instance.dispose();
     HeatmapService.instance.dispose();
     LocationService.instance.stopAllTracking(); // Fix: Stop GPS tracking completely on logout
+    DirectionsService.clearCache();
     final result = await _authRepository.signOut();
     result.fold(
       (error) => emit(AuthError(error)),

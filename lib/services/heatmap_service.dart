@@ -35,7 +35,7 @@ class HeatmapService with WidgetsBindingObserver {
   static const Duration _staleDuration = Duration(seconds: 45);
 
   Timer? _staleCleanupTimer;
-  RealtimeChannel? _realtimeChannel;
+  Timer? _pollingTimer;
   bool _isDisposed = false;
 
   final _heatmapController =
@@ -60,10 +60,10 @@ class HeatmapService with WidgetsBindingObserver {
   
   Future<void> startRealtimeUpdates() async {
     _isDisposed = false; // Allow restarting after sign-out
-    if (_realtimeChannel != null) return;
+    if (_pollingTimer != null) return;
 
     await _fetchAllPresence();
-    _subscribeToRealtime();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchAllPresence());
     _startStaleCleanup();
   }
 
@@ -71,7 +71,8 @@ class HeatmapService with WidgetsBindingObserver {
   void stopRealtimeUpdates() {
     _staleCleanupTimer?.cancel();
     _staleCleanupTimer = null;
-    _unsubscribeRealtime();
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
     _presenceMap.clear();
     _currentCells = [];
     if (!_heatmapController.isClosed) {
@@ -151,78 +152,7 @@ class HeatmapService with WidgetsBindingObserver {
 
   
 
-  void _subscribeToRealtime() {
-    _unsubscribeRealtime();
-
-    _realtimeChannel = SupabaseService.client.channel('heatmap-presence');
-
-    _realtimeChannel!
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'user_presence',
-          callback: (payload) => _handlePresenceChange(payload),
-        )
-        .subscribe((status, [error]) {
-      debugPrint('🔥 Heatmap RT: channel status=$status');
-    });
-  }
-
-  void _unsubscribeRealtime() {
-    if (_realtimeChannel != null) {
-      try {
-        SupabaseService.client.removeChannel(_realtimeChannel!);
-      } catch (e) {
-        debugPrint('HeatmapService: removeChannel error — $e');
-      }
-      _realtimeChannel = null;
-    }
-  }
-
-  void _handlePresenceChange(PostgresChangePayload payload) {
-    final myId = SupabaseService.currentUser?.id;
-
-    
-    if (payload.eventType == PostgresChangeEvent.delete) {
-      final oldRecord = payload.oldRecord;
-      final userId = oldRecord['user_id'] as String?;
-      if (userId != null && userId != myId) {
-        final removed = _presenceMap.remove(userId);
-        if (removed != null) {
-          _rebuildHexCells();
-          debugPrint('🔥 Heatmap: User $userId went OFFLINE (deleted)');
-        }
-      }
-      return;
-    }
-
-    
-    final newRecord = payload.newRecord;
-    if (newRecord.isEmpty) return;
-
-    final userId = newRecord['user_id'] as String?;
-    if (userId == null || userId == myId) return;
-
-    final lat = (newRecord['lat'] as num?)?.toDouble();
-    final lng = (newRecord['lng'] as num?)?.toDouble();
-    final lastSeenStr = newRecord['last_seen'] as String?;
-    final lastSeen = DateTime.tryParse(lastSeenStr ?? '');
-
-    if (lat == null || lng == null || lastSeen == null) return;
-
-    _presenceMap[userId] = _UserPresenceEntry(
-      lat: lat,
-      lng: lng,
-      lastSeen: lastSeen,
-    );
-
-    _rebuildHexCells();
-
-    final eventName = payload.eventType == PostgresChangeEvent.insert
-        ? 'ONLINE'
-        : 'MOVED';
-    debugPrint('🔥 Heatmap: User $userId $eventName at ($lat, $lng)');
-  }
+  // RT methods removed
 
   
 

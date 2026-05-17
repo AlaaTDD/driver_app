@@ -44,18 +44,25 @@ class UserPresenceService with WidgetsBindingObserver {
   
   
   Future<void> startBroadcasting({double? lat, double? lng}) async {
-    _lastLat = lat ?? _lastLat ?? 0.0;
-    _lastLng = lng ?? _lastLng ?? 0.0;
+    final resolvedLat = lat ?? _lastLat;
+    final resolvedLng = lng ?? _lastLng;
     _isBroadcasting = true;
 
-    // Always write immediately on start (force = true)
-    await _upsertPresence(_lastLat!, _lastLng!, force: true);
+    if (resolvedLat == null || resolvedLng == null) {
+      debugPrint('📡 UserPresence: Waiting for GPS — not writing to DB');
+      // Set the timer anyway to keep polling once location updates
+    } else {
+      _lastLat = resolvedLat;
+      _lastLng = resolvedLng;
+      // Always write immediately on start if we have location
+      await _upsertPresence(_lastLat!, _lastLng!, force: true);
+    }
 
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
       _heartbeatInterval,
       (_) {
-        if (!_isBroadcasting) return;
+        if (!_isBroadcasting || _lastLat == null || _lastLng == null) return;
         _upsertPresence(_lastLat!, _lastLng!);
       },
     );

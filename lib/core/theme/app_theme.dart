@@ -1,11 +1,36 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme => darkTheme;
+  static ThemeData get lightTheme => ThemeData(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF5F7FF),
+        colorScheme: const ColorScheme.light(
+          primary: AppColors.primary,
+          surface: Colors.white,
+          onPrimary: Colors.white,
+          onSurface: Color(0xFF1A1F36),
+          error: AppColors.error,
+        ),
+        useMaterial3: true,
+        fontFamily: GoogleFonts.cairo().fontFamily,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF1A1F36),
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+        cardTheme: const CardThemeData(
+          color: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            side: BorderSide(color: Color(0xFFE8EAF6), width: .8),
+          ),
+        ),
+      );
 
   static ThemeData get darkTheme => ThemeData(
         brightness: Brightness.dark,

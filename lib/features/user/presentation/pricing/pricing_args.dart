@@ -14,6 +14,8 @@ class PricingArgs {
   final double? destLng;
   final String? destAddress;
   final List<WaypointArg>? waypoints;
+  final String? couponCode;
+  final double? couponDiscount;
 
   const PricingArgs({
     this.originLat,
@@ -23,5 +25,7 @@ class PricingArgs {
     this.destLng,
     this.destAddress,
     this.waypoints,
+    this.couponCode,
+    this.couponDiscount,
   });
 }

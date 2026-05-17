@@ -172,6 +172,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         paymentMethod: args.paymentMethod ?? 'cash',
         geohash: tripData['geohash'] as String?,
         couponCode: args.couponCode,
+        scheduledAt: args.scheduledAt, // Fix #16
       );
 
       final waypoints = args.waypoints;

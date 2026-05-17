@@ -106,6 +106,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     final avatarUrl = _userData['avatar_url'] as String?;
     final rating = _userData['rating'] as num?;
     final totalTrips = _userData['total_trips'] as num?;
+
+    // Fix #20: trip stats from user_trip_stats view
+    final statsCompleted = _userData['stats_completed_trips'] as int?;
+    final statsCancelled = _userData['stats_cancelled_trips'] as int?;
+    final statsKm        = _userData['stats_total_km'] as num?;
+    final statsRating    = _userData['stats_avg_rating'] as num?;
+    final hasStats = statsCompleted != null || statsCancelled != null || statsKm != null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -172,6 +180,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ],
             ),
           ],
+          // ── Fix #20: Trip Stats Card ────────────────────────────────
+          if (hasStats) ...[
+            const SizedBox(height: 16),
+            _buildTripStatsCard(context, l,
+              completed: statsCompleted ?? 0,
+              cancelled: statsCancelled ?? 0,
+              totalKm: statsKm,
+              avgRating: statsRating,
+            ),
+          ],
           const SizedBox(height: 28),
           TextField(
             controller: _nameController,
@@ -226,6 +244,79 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
+  Widget _buildTripStatsCard(
+    BuildContext context,
+    AppLocalizations l, {
+    required int completed,
+    required int cancelled,
+    num? totalKm,
+    num? avgRating,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.10),
+            AppColors.primary.withValues(alpha: 0.04),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.bar_chart_rounded, color: AppColors.primary, size: 15),
+            const SizedBox(width: 6),
+            Text(l.tripStats,
+                style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            _StatCell(
+              icon: Icons.check_circle_outline_rounded,
+              color: AppColors.success,
+              label: l.totalTripsCompleted,
+              value: '$completed',
+            ),
+            const SizedBox(width: 8),
+            _StatCell(
+              icon: Icons.cancel_outlined,
+              color: AppColors.error,
+              label: l.cancelledTrips,
+              value: '$cancelled',
+            ),
+            if (totalKm != null) ...[
+              const SizedBox(width: 8),
+              _StatCell(
+                icon: Icons.route_rounded,
+                color: AppColors.info,
+                label: l.totalKmTravelled,
+                value: totalKm.toStringAsFixed(0),
+              ),
+            ],
+            if (avgRating != null) ...[
+              const SizedBox(width: 8),
+              _StatCell(
+                icon: Icons.star_rounded,
+                color: AppColors.warning,
+                label: l.avgTripRating,
+                value: avgRating.toStringAsFixed(1),
+              ),
+            ],
+          ]),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickAndUploadAvatar() async {
     final picker = ImagePicker();
     final XFile? image =
@@ -249,5 +340,61 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
     }
+  }
+}
+
+// ── Compact stat cell used in the trip stats card ─────────────────────────
+class _StatCell extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+
+  const _StatCell({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: context.textSecondary,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -9,6 +9,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../../../../services/directions_service.dart';
+import '../../../../services/supabase_service.dart';
+import '../../data/repositories/coupon_repository.dart';
 import 'bloc/location_bloc.dart';
 import 'bloc/location_event.dart';
 import 'bloc/location_state.dart';
@@ -135,6 +137,15 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   AnimationController? _cardPulseCtrl;
   Animation<double>? _cardPulseAnim;
 
+  // ── Coupon state ───────────────────────────────────────────────────────
+  bool _couponExpanded = false;
+  final _couponCtrl = TextEditingController();
+  bool _couponValidating = false;
+  bool? _couponValid;
+  String? _appliedCouponCode;
+  double? _appliedCouponDiscount;
+  String? _couponError;
+
   static const _defaultCamera = CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
 
   @override
@@ -158,6 +169,18 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     } else {
       context.read<LocationBloc>().add(const SelectCurrentLocation());
     }
+
+    // Pre-apply coupon passed from the home screen CouponBanner
+    final preCode     = widget.extra?.initialCouponCode;
+    final preDiscount = widget.extra?.initialCouponDiscount;
+    if (preCode != null && preCode.isNotEmpty) {
+      _couponCtrl.text       = preCode;
+      _appliedCouponCode     = preCode;
+      _appliedCouponDiscount = preDiscount;
+      _couponValid           = true;
+      _couponExpanded        = true; // show section so user sees it's applied
+    }
+
     _originFocus.addListener(() => _onFocusChanged('origin', _originFocus));
     _destFocus.addListener(() => _onFocusChanged('destination', _destFocus));
     _originCtrl.addListener(() => _onTextChanged(_originCtrl.text, 'origin'));
@@ -393,20 +416,73 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       AppToast.error(AppLocalizations.of(context)!.pleaseSelectOriginAndDest);
       return;
     }
-    
     final validWaypoints = _waypoints
         .where((w) => w.lat != null && w.lng != null)
         .map((w) => WaypointArg(lat: w.lat!, lng: w.lng!, address: w.address ?? ''))
         .toList();
-
     context.push(AppRoutes.userPricing, extra: PricingArgs(
       originLat: _originLat!, originLng: _originLng!,
       originAddress: _originAddress ?? '',
       destLat: _destLat!, destLng: _destLng!,
       destAddress: _destAddress ?? '',
       waypoints: validWaypoints.isNotEmpty ? validWaypoints : null,
+      couponCode: _appliedCouponCode,
+      couponDiscount: _appliedCouponDiscount,
     ));
   }
+
+  // ── Coupon helpers ─────────────────────────────────────────────────────
+
+  Future<void> _validateCoupon() async {
+    final code = _couponCtrl.text.trim();
+    if (code.isEmpty) return;
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return;
+    setState(() { _couponValidating = true; _couponValid = null; _couponError = null; });
+    try {
+      final result = await CouponRepository().validateCoupon(
+        couponCode: code, originalPrice: 100, userId: userId,
+      );
+      if (!mounted) return;
+      if (result.isSuccess) {
+        setState(() {
+          _couponValidating = false; _couponValid = true;
+          _appliedCouponCode = result.couponCode;
+          _appliedCouponDiscount = result.discount;
+        });
+      } else {
+        setState(() {
+          _couponValidating = false; _couponValid = false;
+          _couponError = _mapCouponError(result.errorKey);
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _couponValidating = false; _couponValid = false;
+        _couponError = AppLocalizations.of(context)!.errorApplyCoupon;
+      });
+    }
+  }
+
+  String _mapCouponError(String? key) {
+    final l = AppLocalizations.of(context)!;
+    return switch (key) {
+      'errorInvalidCoupon' => l.errorInvalidCoupon,
+      'errorCouponDepleted' => l.errorCouponDepleted,
+      'errorCouponUsed' => l.errorCouponUsed,
+      _ => l.invalidCouponCode,
+    };
+  }
+
+  void _removeCoupon() {
+    setState(() {
+      _couponValid = null; _appliedCouponCode = null;
+      _appliedCouponDiscount = null; _couponError = null;
+      _couponCtrl.clear();
+    });
+  }
+
 
   @override
   void dispose() {
@@ -416,6 +492,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     _debounce?.cancel();
     _originCtrl.dispose(); _destCtrl.dispose();
     _originFocus.dispose(); _destFocus.dispose();
+    _couponCtrl.dispose();
     for (var w in _waypoints) { w.dispose(); }
     super.dispose();
   }
@@ -490,7 +567,14 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 top: false,
                 child: _pickMode != _PickMode.none
                     ? _buildPickModeDialog(isDark)
-                    : _buildConfirmButton(isDark),
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildCouponSection(isDark),
+                          const SizedBox(height: 10),
+                          _buildConfirmButton(isDark),
+                        ],
+                      ),
               ),
             ),
           ],
@@ -695,6 +779,225 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
   }
 
   
+
+  // ── Coupon Section ──────────────────────────────────────────────────────
+  Widget _buildCouponSection(bool isDark) {
+    if (_couponValid == true && _appliedCouponCode != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
+          boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.14), blurRadius: 16, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+              child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 17),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(AppLocalizations.of(context)!.couponApplied,
+                      style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w700)),
+                  Text(_appliedCouponCode!,
+                      style: TextStyle(color: AppColors.success.withValues(alpha: 0.8), fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: _removeCoupon,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.close_rounded, size: 14, color: AppColors.success),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() {
+            _couponExpanded = !_couponExpanded;
+            if (!_couponExpanded) { _couponValid = null; _couponError = null; }
+          }),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: _couponExpanded
+                      ? AppColors.primary.withValues(alpha: 0.09)
+                      : (isDark ? AppColors.background.withValues(alpha: 0.90) : AppColors.white.withValues(alpha: 0.90)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _couponExpanded
+                        ? AppColors.primary.withValues(alpha: 0.30)
+                        : (isDark ? AppColors.white.withValues(alpha: 0.08) : AppColors.black.withValues(alpha: 0.07)),
+                  ),
+                  boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: isDark ? 0.35 : 0.10), blurRadius: 18, offset: const Offset(0, 4))],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: _couponExpanded ? AppColors.primary.withValues(alpha: 0.14) : context.primaryTint,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.confirmation_number_outlined, color: AppColors.primary, size: 16),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _couponExpanded
+                            ? AppLocalizations.of(context)!.haveDiscountCoupon
+                            : AppLocalizations.of(context)!.haveCoupon,
+                        style: TextStyle(color: context.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _couponExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _couponExpanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.background.withValues(alpha: 0.90) : AppColors.white.withValues(alpha: 0.90),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: isDark ? AppColors.white.withValues(alpha: 0.07) : AppColors.black.withValues(alpha: 0.06)),
+                              boxShadow: [BoxShadow(color: AppColors.black.withValues(alpha: 0.14), blurRadius: 16, offset: const Offset(0, 4))],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 42,
+                                    child: TextField(
+                                      controller: _couponCtrl,
+                                      textCapitalization: TextCapitalization.characters,
+                                      onChanged: (_) {
+                                        if (_couponValid != null) setState(() { _couponValid = null; _couponError = null; });
+                                      },
+                                      style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1.8),
+                                      decoration: InputDecoration(
+                                        hintText: 'PROMO20',
+                                        hintStyle: TextStyle(color: context.textSecondary.withValues(alpha: 0.35), fontSize: 13, letterSpacing: 1.5),
+                                        filled: true,
+                                        fillColor: isDark ? AppColors.white.withValues(alpha: 0.04) : AppColors.black.withValues(alpha: 0.03),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: BorderSide(
+                                            color: _couponValid == true
+                                                ? AppColors.success.withValues(alpha: 0.5)
+                                                : _couponValid == false
+                                                    ? AppColors.error.withValues(alpha: 0.5)
+                                                    : context.divColor,
+                                            width: _couponValid != null ? 1.5 : 0.8,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.2)),
+                                        prefixIcon: Icon(Icons.local_offer_rounded, size: 16,
+                                            color: _couponValid == true ? AppColors.success : _couponValid == false ? AppColors.error : context.textSecondary),
+                                        suffixIcon: _couponValid == true
+                                            ? const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18)
+                                            : _couponValid == false
+                                                ? const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18)
+                                                : null,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  height: 42,
+                                  child: ElevatedButton(
+                                    onPressed: _couponValidating ? null : _validateCoupon,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary, foregroundColor: AppColors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: _couponValidating
+                                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
+                                        : Text(AppLocalizations.of(context)!.apply, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        child: _couponValid == false && _couponError != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 15),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(_couponError!, style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w500)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
 
   Widget _buildPickModeBanner(bool isDark) {
     final isOrigin = _pickMode == _PickMode.origin;

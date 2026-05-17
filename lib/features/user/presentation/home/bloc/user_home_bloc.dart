@@ -148,25 +148,71 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     Emitter<UserHomeState> emit,
   ) async {
     try {
-      final data = await SupabaseService.client
-          .from('user_coupons')
-          .select('*, coupons(*)')
-          .eq('user_id', event.userId)
-          .order('assigned_at', ascending: false);
+      final now = DateTime.now().toUtc().toIso8601String();
 
-      final unusedCoupons = (data as List)
-          .where((json) => json['used_at'] == null)
-          .toList();
+      // 1. Public coupons the admin created (visible on every user's home)
+      List<dynamic> publicData = [];
+      try {
+        publicData = await SupabaseService.client
+            .from('coupons')
+            .select()
+            .eq('is_active', true)
+            .or('expires_at.is.null,expires_at.gt.$now')
+            .order('created_at', ascending: false);
+      } catch (_) {
+        // fallback if is_active column doesn't exist
+        try {
+          publicData = await SupabaseService.client
+              .from('coupons')
+              .select()
+              .or('expires_at.is.null,expires_at.gt.$now')
+              .order('created_at', ascending: false);
+        } catch (e2) {
+          debugPrint('⚠️ UserHomeBloc: Could not load public coupons: $e2');
+        }
+      }
+
+      // Wrap public coupons in unified shape
+      final publicCoupons = publicData.map((c) => <String, dynamic>{
+        'user_id': event.userId,
+        'used_at': null,
+        'coupons': c as Map<String, dynamic>,
+      }).toList();
+
+      // 2. User-specific coupons
+      List<dynamic> userData = [];
+      try {
+        userData = await SupabaseService.client
+            .from('user_coupons')
+            .select('*, coupons(*)')
+            .eq('user_id', event.userId)
+            .isFilter('used_at', null)
+            .order('assigned_at', ascending: false);
+      } catch (e) {
+        debugPrint('⚠️ UserHomeBloc: Could not load user coupons: $e');
+      }
+
+      // Merge deduplicated by coupon code (user-specific first)
+      final seen = <String>{};
+      final merged = <Map<String, dynamic>>[];
+      for (final row in [...userData, ...publicCoupons]) {
+        final coupon = row['coupons'] as Map<String, dynamic>?;
+        if (coupon == null) continue;
+        final code = coupon['code']?.toString() ?? '';
+        if (code.isNotEmpty && seen.add(code)) {
+          merged.add(Map<String, dynamic>.from(row as Map));
+        }
+      }
 
       if (state is UserHomeLoaded) {
-        emit((state as UserHomeLoaded).copyWith(
-          coupons: List<Map<String, dynamic>>.from(unusedCoupons),
-        ));
+        emit((state as UserHomeLoaded).copyWith(coupons: merged));
+        debugPrint('🎟️ UserHomeBloc: Loaded ${merged.length} coupons');
       }
     } catch (e) {
       debugPrint('⚠️ UserHomeBloc: Failed to load coupons: $e');
     }
   }
+
 
   @override
   Future<void> close() async {

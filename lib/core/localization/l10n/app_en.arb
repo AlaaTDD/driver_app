@@ -618,5 +618,14 @@
   "noBonusYet": "No bonuses awarded yet",
   "tripsDay": "Trips / Day",
   "tripsWeek": "Trips / Week",
-  "ratingStars": "Stars Rating"
+  "ratingStars": "Stars Rating",
+  "scheduledTrip": "Scheduled",
+  "scheduleForLater": "Schedule for later",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "tripStats": "Trip Stats",
+  "totalTripsCompleted": "Completed Trips",
+  "avgTripRating": "Avg. Rating",
+  "totalKmTravelled": "Total KM",
+  "cancelledTrips": "Cancelled"
 }

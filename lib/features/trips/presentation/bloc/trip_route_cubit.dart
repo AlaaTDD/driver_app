@@ -81,7 +81,7 @@ class TripRouteCubit extends Cubit<TripRouteState> {
           emit(state.copyWith(status: TripRouteStatus.error, errorMessage: "Failed to create route plan from legacy trip"));
           return;
         }
-        emit(state.copyWith(status: TripRouteStatus.error, errorMessage: "Route plan initialized. Please try adding the stopover again."));
+        emit(state.copyWith(status: TripRouteStatus.loaded, errorMessage: null));
       }
       return;
     }

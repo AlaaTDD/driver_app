@@ -47,7 +47,9 @@ class MeetingPointRepository {
     double? meetingLng,
     String? meetingAddress,
     double? estimatedDurationMin,
+    DateTime? scheduledAt, // Fix #16
   }) async {
+    final isScheduled = scheduledAt != null && scheduledAt.isAfter(DateTime.now());
     final tripData = <String, dynamic>{
       'user_id': userId,
       'pickup_lat': pickupLat,
@@ -60,12 +62,13 @@ class MeetingPointRepository {
       'price': price,
       'vehicle_type': vehicleType,
       'payment_method': paymentMethod,
-      'status': 'searching',
+      'status': isScheduled ? 'scheduled' : 'searching',
       if (geohash != null) 'geohash': geohash,
       if (meetingLat != null) 'meeting_lat': meetingLat,
       if (meetingLng != null) 'meeting_lng': meetingLng,
       if (meetingAddress != null) 'meeting_address': meetingAddress,
       if (estimatedDurationMin != null) 'estimated_duration_min': estimatedDurationMin,
+      if (isScheduled) 'scheduled_at': scheduledAt!.toIso8601String(),
     };
 
     final result = await withRetry<Map<String, dynamic>>(

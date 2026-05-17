@@ -132,7 +132,7 @@ class LocationService {
     );
   }
 
-  void startTripTracking(String driverId) {
+  Future<void> startTripTracking(String driverId) async {
     if (_tripTrackingSub != null) {
       if (_activeTripDriverId == driverId) return;
       stopTripTracking();
@@ -165,18 +165,21 @@ class LocationService {
             event: 'location_update',
             payload: {'lat': _lastLat, 'lng': _lastLng, 'heading': _lastHeading ?? 0.0},
           );
-        } catch (_) {}
+        } catch (e, st) {
+          debugPrint('⚠️ LocationService heartbeat broadcast failed: $e\n$st');
+        }
       }
     });
 
     // IMMEDIATELY fetch location so we don't wait for the stream (which has distance filter)
-    getCurrentLocation().then((pos) {
+    try {
+      final pos = await getCurrentLocation();
       if (_lastLat == null) {
         _lastLat = pos.latitude;
         _lastLng = pos.longitude;
         _lastHeading = pos.heading;
         
-        _broadcastChannel?.sendBroadcastMessage(
+        await _broadcastChannel?.sendBroadcastMessage(
           event: 'location_update',
           payload: {'lat': pos.latitude, 'lng': pos.longitude, 'heading': pos.heading},
         );
@@ -184,15 +187,19 @@ class LocationService {
         try {
           final geohash = GeohashHelper.encode(pos.latitude, pos.longitude);
           final geohash5 = geohash.length > 5 ? geohash.substring(0, 5) : geohash;
-          SupabaseService.client.from('drivers_profile').update({
+          await SupabaseService.client.from('drivers_profile').update({
             'current_lat': pos.latitude,
             'current_lng': pos.longitude,
             'geohash': geohash,
             'geohash5': geohash5,
           }).eq('id', driverId);
-        } catch (_) {}
+        } catch (e, st) {
+          debugPrint('⚠️ LocationService initial geohash DB update failed: $e\n$st');
+        }
       }
-    }).catchError((_) {});
+    } catch (e) {
+      debugPrint('⚠️ LocationService.startTripTracking: Initial GPS fix failed: $e');
+    }
     
     _tripTrackingSub = getLocationStream().listen((pos) async {
       // Save last known position for heartbeat
@@ -238,7 +245,9 @@ class LocationService {
             'geohash': geohash,
             'geohash5': geohash5,
           }).eq('id', driverId);
-        } catch (_) {}
+        } catch (e, st) {
+          debugPrint('⚠️ LocationService fallback driver location update failed: $e\n$st');
+        }
       }
     });
   }
@@ -249,10 +258,10 @@ class LocationService {
       _tripTrackingSub?.cancel();
       _tripTrackingSub = null;
       _heartbeatTimer?.cancel();
-      _heartbeatTimer = null;
-      _broadcastChannel?.unsubscribe();
+      if (_broadcastChannel != null) {
+        SupabaseService.client.removeChannel(_broadcastChannel!);
+      }
       _broadcastChannel = null;
-      _activeTripDriverId = null;
       _lastLat = null;
       _lastLng = null;
     }

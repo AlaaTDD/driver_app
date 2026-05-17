@@ -618,5 +618,14 @@
   "noBonusYet": "لم يتم الحصول على مكافآت بعد",
   "tripsDay": "رحلة / يوم",
   "tripsWeek": "رحلة / أسبوع",
-  "ratingStars": "تقييم بالنجوم"
+  "ratingStars": "تقييم بالنجوم",
+  "scheduledTrip": "مجدولة",
+  "scheduleForLater": "جدولة الرحلة",
+  "today": "اليوم",
+  "tomorrow": "غداً",
+  "tripStats": "إحصاءات الرحلات",
+  "totalTripsCompleted": "رحلات مكتملة",
+  "avgTripRating": "متوسط التقييم",
+  "totalKmTravelled": "إجمالي الكيلومترات",
+  "cancelledTrips": "رحلات ملغاة"
 }

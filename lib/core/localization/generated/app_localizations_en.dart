@@ -1432,4 +1432,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ratingStars => 'Stars Rating';
+
+  @override
+  String get scheduledTrip => 'Scheduled';
+
+  @override
+  String get scheduleForLater => 'Schedule for later';
+
+  @override
+  String get tomorrow => 'Tomorrow';
+
+  @override
+  String get tripStats => 'Trip Stats';
+
+  @override
+  String get totalTripsCompleted => 'Completed Trips';
+
+  @override
+  String get avgTripRating => 'Avg. Rating';
+
+  @override
+  String get totalKmTravelled => 'Total KM';
+
+  @override
+  String get cancelledTrips => 'Cancelled';
 }
