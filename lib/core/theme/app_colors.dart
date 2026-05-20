@@ -46,15 +46,24 @@ class AppColors {
   static const errorLight = Color(0xFFFDA4AF);
   static const errorSurface = Color(0x33FF4060); // 20% opacity
 
-  // Dark Theme specifics
-  static const darkBg = Color(0xFF070C18);
-  static const darkSurface = Color(0xFF181C2A);
-  static const darkElevated = Color(0xFF1E2336);
-  static const darkDivider = Color(0xFF252A3D);
-  static const darkSheet = Color(0xFF12151F);
-  static const darkTextPrimary = Color(0xFFEEF0FF);
-  static const darkTextSecondary = Color(0xFF7B82A3);
-  static const darkTextDisabled = Color(0xFF3A4060);
+  // Dark Theme specifics (canonical values are above — these are kept as
+  // deprecated aliases for backward compatibility during migration)
+  @Deprecated('Use AppColors.background instead')
+  static const darkBg = background;
+  @Deprecated('Use AppColors.surface instead')
+  static const darkSurface = surface;
+  @Deprecated('Use AppColors.surfaceElevated instead')
+  static const darkElevated = surfaceElevated;
+  @Deprecated('Use AppColors.divider instead')
+  static const darkDivider = divider;
+  @Deprecated('Use AppColors.primarySurface instead')
+  static const darkSheet = primarySurface;
+  @Deprecated('Use AppColors.textPrimary instead')
+  static const darkTextPrimary = textPrimary;
+  @Deprecated('Use AppColors.textSecondary instead')
+  static const darkTextSecondary = textSecondary;
+  @Deprecated('Use AppColors.textDisabled instead')
+  static const darkTextDisabled = textDisabled;
 
   // Light Theme specifics
   static const lightBg = Color(0xFFF8FAFC);

@@ -75,15 +75,15 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
               pendingRows.map((e) => Map<String, dynamic>.from(e)).toList()));
         });
 
-    await _performBroadcast(event.tripId);
+    await _performBroadcast(event.tripId, event.title, event.body);
 
     _rebroadcastTimer = Timer.periodic(
       const Duration(seconds: _rebroadcastIntervalSeconds),
-      (_) => add(RebroadcastTripOffers(event.tripId)),
+      (_) => add(RebroadcastTripOffers(event.tripId, title: event.title, body: event.body)),
     );
   }
 
-  Future<void> _performBroadcast(String tripId) async {
+  Future<void> _performBroadcast(String tripId, String title, String body) async {
     debugPrint('🔍 SearchingBloc: Performing broadcast for trip $tripId');
     try {
       final tripDetails = await SupabaseService.client
@@ -107,6 +107,8 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         originLng: (tripDetails['pickup_lng'] as num).toDouble(),
         vehicleType:
             (tripDetails['vehicle_type'] as String).trim().toLowerCase(),
+        title: title,
+        body: body,
         excludedDriverIds: _broadcastedDriverIds,
       );
       _broadcastedDriverIds.addAll(notifiedDriverIds);
@@ -125,7 +127,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     Emitter<SearchingState> emit,
   ) async {
     if (state is! SearchingInProgress) return;
-    await _performBroadcast(event.tripId);
+    await _performBroadcast(event.tripId, event.title, event.body);
   }
 
   Future<void> _onTick(

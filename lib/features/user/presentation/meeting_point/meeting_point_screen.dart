@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:snapix/core/map/app_map.dart';
+import '../../../../core/widgets/app_button.dart';
 import 'package:geocoding/geocoding.dart';
 import 'bloc/meeting_bloc.dart';
 import 'bloc/meeting_event.dart';
@@ -221,7 +223,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       if (!mounted) return;
       final oParams = '&oLat=$finalLat&oLng=$finalLng';
       final dParams = '&dLat=${args.destLat}&dLng=${args.destLng}';
-      context.go(
+      context.push(
           '${AppRoutes.userSearching}?tripId=${result['id']}$oParams$dParams');
     } catch (e) {
       debugPrint('❌ Trip insert error: $e');
@@ -255,13 +257,10 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
               child: Text(AppLocalizations.of(context)!.goBack,
                   style: TextStyle(color: context.textSecondary)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
+            AppButton(
+              text: AppLocalizations.of(context)!.cancelTripAndSearch,
+              variant: AppButtonVariant.danger,
+              size: AppButtonSize.sm,
               onPressed: () async {
                 Navigator.pop(ctx);
                 setState(() => _isCreatingTrip = true);
@@ -278,7 +277,6 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                   }
                 }
               },
-              child: Text(AppLocalizations.of(context)!.cancelTripAndSearch),
             ),
           ],
         );
@@ -320,7 +318,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.background : context.cardColor,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
@@ -352,7 +350,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.background : context.cardColor,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -431,17 +429,14 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       ));
     }
 
-    return GoogleMap(
+    return AppGoogleMap(
       initialCameraPosition: CameraPosition(target: origin, zoom: 15),
       onMapCreated: (ctrl) {
         if (!_mapController.isCompleted) _mapController.complete(ctrl);
       },
       onTap: _onMapTap,
       myLocationEnabled: true,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
       markers: markers,
-      style: isDark ? kDarkMapStyle : kLightMapStyle,
       padding: EdgeInsets.only(bottom: _sheetHeight, top: 80),
     );
   }
@@ -451,7 +446,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     return Container(
       constraints: const BoxConstraints(maxHeight: _sheetHeight),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.background : context.cardColor,
+        color: context.cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
@@ -567,36 +562,11 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                       flex: 2,
                       child: SizedBox(
                         height: 50,
-                        child: ElevatedButton(
+                        child: AppButton(
+                          text: AppLocalizations.of(context)!.searchForDriver,
                           onPressed: _isCreatingTrip ? null : _startSearch,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
-                            elevation: 6,
-                            shadowColor:
-                                AppColors.primary.withValues(alpha: 0.4),
-                          ),
-                          child: _isCreatingTrip
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                      color: AppColors.white, strokeWidth: 2.5))
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                      const Icon(Icons.search_rounded,
-                                          size: 18),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                          AppLocalizations.of(context)!
-                                              .searchForDriver,
-                                          style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700)),
-                                    ]),
+                          isLoading: _isCreatingTrip,
+                          leadingIcon: Icons.search_rounded,
                         ),
                       ),
                     ),

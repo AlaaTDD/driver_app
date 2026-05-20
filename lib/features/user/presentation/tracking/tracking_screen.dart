@@ -11,12 +11,16 @@ import 'bloc/tracking_event.dart';
 import 'bloc/tracking_state.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/env_constants.dart';
 import 'package:flutter/scheduler.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import '../../../../core/constants/map_styles.dart';
+import '../../../../core/map/app_map.dart';
+import '../../../../core/models/trip_route_waypoint_model.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 import '../../../../core/utils/map_camera_utils.dart';
+import '../../../../services/directions_service.dart';
 
 class TripTrackingScreen extends StatefulWidget {
   final String tripId;
@@ -44,6 +48,15 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
   Ticker? _animationTicker;
   bool _is3DMode = false;
   String? _lastRouteBoundsSignature;
+  CameraPosition? _lastCameraPosition;
+  List<LatLng> _driverApproachRoutePoints = const [];
+  String? _lastDriverApproachRouteHash;
+  DateTime? _lastDriverApproachRouteRequestAt;
+  bool _driverApproachRouteLoading = false;
+  String? _completedDriverApproachTargetHash;
+  final Map<String, BitmapDescriptor> _routeMarkerIcons = {};
+  final Set<String> _pendingRouteMarkerIcons = {};
+  String? _routeMarkerLocaleCode;
 
   static CameraPosition get _defaultCamera => CameraPosition(
         target: AppConstants.defaultMapCenter,
@@ -58,6 +71,17 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     _startAnimationLoop();
     _routeCubit = TripRouteCubit()..watchTripRoutes(widget.tripId);
     context.read<TrackingBloc>().add(LoadTripTracking(widget.tripId));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final localeCode = Localizations.localeOf(context).languageCode;
+    if (_routeMarkerLocaleCode != localeCode) {
+      _routeMarkerLocaleCode = localeCode;
+      _routeMarkerIcons.clear();
+      _pendingRouteMarkerIcons.clear();
+    }
   }
 
   Future<void> _loadCircleIcons() async {
@@ -111,7 +135,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         anchor: const Offset(0.5, 0.5),
         flat: true,
-        zIndex: 2,
+        zIndexInt: 2,
       );
     });
     _animationTicker?.start();
@@ -183,105 +207,128 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
           BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       anchor: const Offset(0.5, 0.5),
       flat: true,
-      zIndex: 2,
+      zIndexInt: 2,
     );
-  }
-
-  Future<void> _animateTo(double lat, double lng) async {
-    try {
-      if (_mapController == null) return;
-
-      final state = context.read<TrackingBloc>().state;
-      if (state is TrackingLoaded) {
-        final status = state.trip['status'];
-        final isHeadingToDest = status == 'in_progress';
-
-        final targetLat =
-            (state.trip[isHeadingToDest ? 'destination_lat' : 'pickup_lat']
-                    as num?)
-                ?.toDouble();
-        final targetLng =
-            (state.trip[isHeadingToDest ? 'destination_lng' : 'pickup_lng']
-                    as num?)
-                ?.toDouble();
-
-        if (targetLat != null &&
-            targetLng != null &&
-            targetLat != 0.0 &&
-            targetLng != 0.0) {
-          if ((lat - targetLat).abs() < 0.0001 &&
-              (lng - targetLng).abs() < 0.0001) {
-            await _mapController!.animateCamera(
-                CameraUpdate.newLatLngZoom(LatLng(lat, lng), 17));
-            return;
-          }
-
-          await MapCameraUtils.fitCameraToPoints(
-            _mapController!,
-            [
-              LatLng(lat, lng),
-              LatLng(targetLat, targetLng),
-            ],
-            padding: 96,
-          );
-          return;
-        }
-      }
-
-      // Fallback: just center on driver if target is unknown
-      await _mapController!
-          .animateCamera(CameraUpdate.newLatLng(LatLng(lat, lng)));
-    } catch (e) {
-      debugPrint('⚠️ TrackingScreen: animateCamera failed: $e');
-    }
   }
 
   // ─── Simulator route command printer ────────────────────────────────────
   bool _routeCommandPrinted = false;
+  bool _routeCommandPrinting = false;
+  DateTime? _lastRouteCommandPrintAttemptAt;
 
-  void _printSimulatorRouteCommand(List<LatLng> routePoints) {
-    if (_routeCommandPrinted || routePoints.isEmpty) return;
-    _routeCommandPrinted = true;
+  Future<void> _printSimulatorRouteCommand(TrackingLoaded state) async {
+    if (_routeCommandPrinted || _routeCommandPrinting) return;
 
-    final deviceId =
-        '4974EF7A-D797-4988-947C-C06ED3D50A7E'; // ← replace with your simulator UDID
-    final buffer = StringBuffer();
-    buffer
-        .write('xcrun simctl location $deviceId start --speed=50 --interval=1');
-
-    for (final point in routePoints) {
-      buffer.write(' ${point.latitude},${point.longitude}');
+    final driverPoint = state.driverLocation;
+    final pickupPoint = _tripPoint(state.trip, 'pickup_lat', 'pickup_lng');
+    final meetingPoint = _tripPoint(state.trip, 'meeting_lat', 'meeting_lng');
+    final destinationPoint =
+        _tripPoint(state.trip, 'destination_lat', 'destination_lng');
+    if (driverPoint == null ||
+        pickupPoint == null ||
+        destinationPoint == null ||
+        state.routePoints.length < 2) {
+      return;
     }
 
-    // Use print() — single line, no truncation, no "flutter:" splitting
-    print(buffer.toString());
+    final separateMeetingPoint =
+        meetingPoint != null && !_samePoint(meetingPoint, pickupPoint)
+            ? meetingPoint
+            : null;
+    final approachTarget = separateMeetingPoint ?? pickupPoint;
+    final now = DateTime.now();
+    final lastAttempt = _lastRouteCommandPrintAttemptAt;
+    if (lastAttempt != null &&
+        now.difference(lastAttempt) < const Duration(seconds: 18)) {
+      return;
+    }
+
+    _routeCommandPrinting = true;
+    _lastRouteCommandPrintAttemptAt = now;
+
+    try {
+      final approachPoints = await _loadDriverApproachForCommand(
+        driverPoint: driverPoint,
+        targetPoint: approachTarget,
+      );
+      if (!mounted || approachPoints == null) return;
+
+      final fullRoutePoints = approachPoints.length >= 2
+          ? _mergeRoutePoints(approachPoints, state.routePoints)
+          : state.routePoints;
+      if (fullRoutePoints.length < 2) return;
+
+      _routeCommandPrinted = true;
+      print(_simulatorRouteCommand(fullRoutePoints));
+    } finally {
+      _routeCommandPrinting = false;
+    }
   }
 
-  // ── color tokens (matches trip_details) ─────────────────────────────────
-  static const _bg = AppColors.background;
-  static const _sheet = AppColors.primarySurface;
-  static const _card = AppColors.surface;
-  static const _elevated = AppColors.surfaceElevated;
-  static const _border = AppColors.divider;
-  static const _blue = AppColors.primary;
-  static const _emerald = AppColors.secondary;
-  static const _rose = AppColors.error;
-  static const _amber = AppColors.warning;
-  static const _t1 = AppColors.textPrimary;
-  static const _t2 = AppColors.textSecondary;
-  static const _t3 = AppColors.textDisabled;
+  Future<List<LatLng>?> _loadDriverApproachForCommand({
+    required LatLng driverPoint,
+    required LatLng targetPoint,
+  }) async {
+    if (_distanceMeters(driverPoint, targetPoint) <= 55) {
+      return const [];
+    }
 
+    if (_driverApproachRoutePoints.length >= 2 &&
+        _distanceMeters(_driverApproachRoutePoints.first, driverPoint) <= 120 &&
+        _distanceMeters(_driverApproachRoutePoints.last, targetPoint) <= 120) {
+      return _driverApproachRoutePoints;
+    }
+
+    final result = await DirectionsService.getRoute(
+      originLat: driverPoint.latitude,
+      originLng: driverPoint.longitude,
+      destLat: targetPoint.latitude,
+      destLng: targetPoint.longitude,
+      apiKey: EnvConstants.googleMapsApiKey,
+    );
+    if (result == null || result.points.length < 2) return null;
+    return result.points;
+  }
+
+  String _simulatorRouteCommand(List<LatLng> routePoints) {
+    final deviceId = '4974EF7A-D797-4988-947C-C06ED3D50A7E';
+    final buffer = StringBuffer(
+      'xcrun simctl location $deviceId start --speed=50 --interval=1',
+    );
+
+    for (final point in routePoints) {
+      buffer.write(' ${_formatRoutePoint(point)}');
+    }
+    return buffer.toString();
+  }
+
+  List<LatLng> _mergeRoutePoints(List<LatLng> first, List<LatLng> second) {
+    final merged = <LatLng>[...first];
+    for (final point in second) {
+      if (merged.isNotEmpty && _distanceMeters(merged.last, point) <= 20) {
+        continue;
+      }
+      merged.add(point);
+    }
+    return merged;
+  }
+
+  String _formatRoutePoint(LatLng point) {
+    return '${point.latitude.toStringAsFixed(5)},'
+        '${point.longitude.toStringAsFixed(5)}';
+  }
+
+  // ── color tokens removed (using context theme extensions) ─────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: BlocListener<TrackingBloc, TrackingState>(
         listener: (context, state) {
           if (state is TrackingLoaded) {
             final tripStatus = state.trip['status'] as String?;
-
-            // ─── Print xcrun simctl location command for route simulation ───
-            _printSimulatorRouteCommand(state.routePoints);
 
             // Only update map/marker when we are NOT about to navigate away.
             // Updating _driverMarkerNotifier (ValueNotifier) marks semantics
@@ -291,10 +338,13 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             if (tripStatus != 'completed' && tripStatus != 'cancelled') {
               final loc = state.driverLocation;
               if (loc != null) {
-                _animateTo(loc.latitude, loc.longitude);
                 _updateDriverPosition(LatLng(loc.latitude, loc.longitude));
               }
             }
+
+            // Print one full simulator command:
+            // driver current route -> pickup/meeting -> destination route.
+            unawaited(_printSimulatorRouteCommand(state));
 
             if (tripStatus == 'completed') {
               // Defer navigation to after the current frame so Flutter can
@@ -313,7 +363,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
           }
         },
         child: Scaffold(
-          backgroundColor: _bg,
+          backgroundColor: context.bgColor,
           body: Builder(builder: (context) {
             final state = context.watch<TrackingBloc>().state;
             if (state is TrackingLoading || state is TrackingInitial) {
@@ -332,10 +382,10 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
   Widget _buildSkeleton(BuildContext context) {
     final h = MediaQuery.of(context).size.height;
     return Column(children: [
-      Container(height: h * 0.55, color: _card),
+      Container(height: h * 0.55, color: context.cardColor),
       Expanded(
           child: Container(
-        color: _sheet,
+        color: context.cardColor,
         padding: const EdgeInsets.all(20),
         child: Column(children: [
           const SizedBox(height: 8),
@@ -343,17 +393,20 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
               height: 28,
               width: 160,
               decoration: BoxDecoration(
-                  color: _elevated, borderRadius: BorderRadius.circular(14))),
+                  color: context.elevatedColor,
+                  borderRadius: BorderRadius.circular(14))),
           const SizedBox(height: 20),
           Container(
               height: 80,
               decoration: BoxDecoration(
-                  color: _elevated, borderRadius: BorderRadius.circular(16))),
+                  color: context.elevatedColor,
+                  borderRadius: BorderRadius.circular(16))),
           const SizedBox(height: 12),
           Container(
               height: 80,
               decoration: BoxDecoration(
-                  color: _elevated, borderRadius: BorderRadius.circular(16))),
+                  color: context.elevatedColor,
+                  borderRadius: BorderRadius.circular(16))),
         ]),
       )),
     ]);
@@ -371,13 +424,16 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             height: 88,
             decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: _rose.withValues(alpha: 0.3)),
-                color: _rose.withValues(alpha: 0.08)),
-            child: const Icon(Icons.cloud_off_rounded, size: 40, color: _rose)),
+                border:
+                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                color: AppColors.error.withValues(alpha: 0.08)),
+            child: const Icon(Icons.cloud_off_rounded,
+                size: 40, color: AppColors.error)),
         const SizedBox(height: 24),
         Text(message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _t2, fontSize: 14, height: 1.6)),
+            style: TextStyle(
+                color: context.textSecondary, fontSize: 14, height: 1.6)),
         const SizedBox(height: 32),
         GestureDetector(
           onTap: () =>
@@ -386,11 +442,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
               height: 50,
               decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                      colors: [_blue, AppColors.primaryDark]),
+                      colors: [AppColors.primary, AppColors.primaryDark]),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                        color: _blue.withValues(alpha: 0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4))
                   ]),
@@ -411,7 +467,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
   }
 
   Widget _buildTracking(BuildContext context, TrackingLoaded state) {
-    _scheduleRouteBoundsFit(state);
+    final l = AppLocalizations.of(context)!;
     // Ensure driver marker is visible as soon as we have a location
     if (state.driverLocation != null) {
       final loc = state.driverLocation!;
@@ -420,7 +476,6 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
         // First time — place immediately, avoid setState-during-build
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _updateDriverPosition(locLatLng);
-          _animateTo(loc.latitude, loc.longitude);
         });
       } else if (_targetDriverPosition != locLatLng) {
         // Location changed — update without addPostFrameCallback (called from listener)
@@ -431,66 +486,117 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     // Static markers (pickup & destination) — never change during session
     final staticMarkers = <Marker>{};
     final polylines = <Polyline>{};
+    final tripStatus = state.trip['status'] as String?;
 
-    final pickupLat = state.trip['pickup_lat'];
-    final pickupLng = state.trip['pickup_lng'];
-    final destLat = state.trip['destination_lat'];
-    final destLng = state.trip['destination_lng'];
+    final pickupPoint = _tripPoint(state.trip, 'pickup_lat', 'pickup_lng');
+    final meetingPoint = _tripPoint(state.trip, 'meeting_lat', 'meeting_lng');
+    final destinationPoint =
+        _tripPoint(state.trip, 'destination_lat', 'destination_lng');
+    final separateMeetingPoint = meetingPoint != null &&
+            pickupPoint != null &&
+            !_samePoint(meetingPoint, pickupPoint)
+        ? meetingPoint
+        : null;
+    final driverApproachTarget = separateMeetingPoint ?? pickupPoint;
+    final showDriverApproach = _shouldShowDriverApproachRoute(
+      status: tripStatus,
+      driverPoint: state.driverLocation,
+      targetPoint: driverApproachTarget,
+    );
+    _syncDriverApproachRoute(
+      status: tripStatus,
+      driverPoint: state.driverLocation,
+      targetPoint: driverApproachTarget,
+    );
+    final driverApproachPoints =
+        showDriverApproach ? _driverApproachRoutePoints : const <LatLng>[];
 
-    if (pickupLat != null && pickupLng != null) {
+    if (separateMeetingPoint != null) {
       staticMarkers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: LatLng(
-            (pickupLat as num).toDouble(), (pickupLng as num).toDouble()),
-        icon: _pickupIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        anchor: const Offset(0.5, 0.5),
-        zIndex: 1,
-        infoWindow:
-            InfoWindow(title: AppLocalizations.of(context)!.meetingPointLabel),
+        markerId: const MarkerId('meeting'),
+        position: separateMeetingPoint,
+        icon: _routeMarkerIcon(
+          cacheKey: 'meeting',
+          label: l.meetingPointLabel,
+          color: AppColors.primary,
+          fallback: _pickupIcon,
+          icon: Icons.groups_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 4,
+        infoWindow: InfoWindow(title: l.meetingPointLabel),
       ));
     }
-    if (destLat != null && destLng != null) {
+    if (pickupPoint != null) {
+      staticMarkers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: pickupPoint,
+        icon: _routeMarkerIcon(
+          cacheKey: 'pickup',
+          label: l.pickupPoint,
+          color: AppColors.success,
+          fallback: _pickupIcon,
+          icon: Icons.trip_origin_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 3,
+        infoWindow: InfoWindow(title: l.pickupPoint),
+      ));
+    }
+    if (destinationPoint != null) {
       staticMarkers.add(Marker(
         markerId: const MarkerId('destination'),
-        position:
-            LatLng((destLat as num).toDouble(), (destLng as num).toDouble()),
-        icon: _destIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        anchor: const Offset(0.5, 0.5),
-        zIndex: 1,
-        infoWindow:
-            InfoWindow(title: AppLocalizations.of(context)!.destination),
+        position: destinationPoint,
+        icon: _routeMarkerIcon(
+          cacheKey: 'destination',
+          label: l.destination,
+          color: AppColors.error,
+          fallback: _destIcon,
+          icon: Icons.flag_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 3,
+        infoWindow: InfoWindow(title: l.destination),
       ));
     }
     // ── Waypoint markers are built reactively inside BlocBuilder below ──
+    if (driverApproachPoints.length >= 2) {
+      polylines.add(Polyline(
+        polylineId: const PolylineId('driver_to_meeting'),
+        points: driverApproachPoints,
+        color: AppColors.success.withValues(alpha: 0.78),
+        width: 4,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 1,
+      ));
+    }
     if (state.routePoints.isNotEmpty) {
       polylines.add(Polyline(
         polylineId: const PolylineId('route_bg'),
         points: state.routePoints,
-        color: _blue.withValues(alpha: 0.25),
+        color: AppColors.primary.withValues(alpha: 0.25),
         width: 12,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
-        zIndex: 0,
+        zIndex: 2,
       ));
       polylines.add(Polyline(
         polylineId: const PolylineId('route_fg'),
         points: state.routePoints,
-        color: _blue,
+        color: AppColors.primary,
         width: 5,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
-        zIndex: 1,
+        zIndex: 3,
       ));
     }
 
     final screenH = MediaQuery.of(context).size.height;
     final mapH = screenH * 0.55;
-    final tripStatus = state.trip['status'] as String?;
-    final l = AppLocalizations.of(context)!;
 
     return Stack(children: [
       // Full-bleed map — reactive to driver location AND route cubit waypoints
@@ -502,16 +608,21 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             final waypointMarkers = <Marker>{};
             final activeStopovers =
                 routeCubitState.waypoints.where((w) => w.isStopover).toList();
+            _scheduleRouteBoundsFit(state, activeStopovers);
             for (int i = 0; i < activeStopovers.length; i++) {
               final wp = activeStopovers[i];
               waypointMarkers.add(Marker(
                 markerId: MarkerId('wp_$i'),
                 position: LatLng(wp.lat, wp.lng),
-                icon: _waypointIcon ??
-                    BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueOrange),
-                anchor: const Offset(0.5, 0.5),
-                zIndex: 1,
+                icon: _routeMarkerIcon(
+                  cacheKey: 'stopover_$i',
+                  label: l.stopoverNumber(i + 1),
+                  color: AppColors.warning,
+                  fallback: _waypointIcon,
+                  icon: Icons.location_on_rounded,
+                ),
+                anchor: const Offset(0.5, 0.78),
+                zIndexInt: 2,
                 infoWindow:
                     InfoWindow(title: wp.address ?? l.stopoverNumber(i + 1)),
               ));
@@ -525,17 +636,16 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                   builder: (context, driverMarker, _) {
                     final allMarkers = Set<Marker>.from(combinedMarkers);
                     if (driverMarker != null) allMarkers.add(driverMarker);
-                    return GoogleMap(
+                    return AppGoogleMap(
                       initialCameraPosition: _defaultCamera,
                       onMapCreated: (ctrl) {
                         _mapController = ctrl;
                         _fitBounds(ctrl, state);
                       },
-                      myLocationEnabled: false,
-                      myLocationButtonEnabled: false,
-                      zoomControlsEnabled: false,
-                      compassEnabled: false,
-                      mapToolbarEnabled: false,
+                      onCameraMove: (position) =>
+                          _lastCameraPosition = position,
+                      mapStyle: AppMapStyle.auto,
+                      buildingsEnabled: false,
                       minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
                       padding: EdgeInsets.only(
                         top: MediaQuery.of(context).padding.top + 70,
@@ -543,7 +653,6 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                       ),
                       markers: allMarkers,
                       polylines: polylines,
-                      style: kDarkMapStyle,
                     );
                   },
                 ),
@@ -558,7 +667,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                     gradient: LinearGradient(
                       colors: [
                         AppColors.transparent,
-                        _bg.withValues(alpha: 0.88)
+                        context.bgColor.withValues(alpha: 0.88)
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -595,22 +704,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                 ),
                 _MapBtn(
                   icon: _is3DMode ? Icons.view_in_ar : Icons.map_outlined,
-                  onTap: () async {
-                    setState(() => _is3DMode = !_is3DMode);
-                    if (_mapController != null &&
-                        state.driverLocation != null) {
-                      await _mapController!.animateCamera(
-                        CameraUpdate.newCameraPosition(
-                          CameraPosition(
-                            target: state.driverLocation!,
-                            zoom: _is3DMode ? 18 : 16,
-                            tilt: _is3DMode ? 60 : 0,
-                            bearing: _driverRotation,
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                  onTap: () => _toggle3DMode(state),
                 ),
                 const SizedBox(width: 8),
                 _MapBtn(
@@ -632,11 +726,18 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
         end: 14,
         child: _MapBtn(
           icon: Icons.my_location_rounded,
-          onTap: () {
+          onTap: () async {
             if (_mapController != null && state.driverLocation != null) {
-              _mapController!.animateCamera(CameraUpdate.newCameraPosition(
-                CameraPosition(target: state.driverLocation!, zoom: 16),
-              ));
+              await _mapController!.animateCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                    target: state.driverLocation!,
+                    zoom: _is3DMode ? 17.2 : 16,
+                    tilt: _is3DMode ? 48 : 0,
+                    bearing: _is3DMode ? _driverRotation : 0,
+                  ),
+                ),
+              );
             }
           },
         ),
@@ -649,8 +750,8 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
         right: 0,
         bottom: 0,
         child: Container(
-          decoration: const BoxDecoration(
-            color: _sheet,
+          decoration: BoxDecoration(
+            color: context.cardColor,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(children: [
@@ -659,7 +760,8 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                  color: _border, borderRadius: BorderRadius.circular(2)),
+                  color: context.divColor,
+                  borderRadius: BorderRadius.circular(2)),
             ),
             Expanded(
                 child: SingleChildScrollView(
@@ -672,7 +774,20 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                       _buildDriverCard(context, state.driver!, state),
                       const SizedBox(height: 12),
                     ],
-                    _buildRouteCard(context, state.trip, l),
+                    BlocBuilder<TripRouteCubit, TripRouteState>(
+                      bloc: _routeCubit,
+                      builder: (context, routeState) {
+                        final stopovers = routeState.waypoints
+                            .where((w) => w.isStopover)
+                            .toList();
+                        return _buildRouteCard(
+                          context,
+                          state.trip,
+                          l,
+                          stopovers,
+                        );
+                      },
+                    ),
                     const SizedBox(height: 12),
                     // Trip stats row
                     _buildTripStatsRow(context, state.trip, l),
@@ -686,18 +801,18 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                                color: _rose.withValues(alpha: 0.5),
+                                color: AppColors.error.withValues(alpha: 0.5),
                                 width: 1.2),
                           ),
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(Icons.cancel_outlined,
-                                    color: _rose, size: 17),
+                                    color: AppColors.error, size: 17),
                                 const SizedBox(width: 7),
                                 Text(l.cancelTrip,
                                     style: const TextStyle(
-                                        color: _rose,
+                                        color: AppColors.error,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700)),
                               ]),
@@ -712,30 +827,213 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     ]);
   }
 
-  void _scheduleRouteBoundsFit(TrackingLoaded state) {
+  void _scheduleRouteBoundsFit(
+    TrackingLoaded state,
+    List<TripRouteWaypointModel> stopovers,
+  ) {
     if (_mapController == null || state.routePoints.isEmpty) return;
     final first = state.routePoints.first;
     final last = state.routePoints.last;
+    final stopoversSignature = stopovers
+        .map((w) => '${w.lat.toStringAsFixed(5)},${w.lng.toStringAsFixed(5)}')
+        .join('|');
     final signature =
         '${state.routePoints.length}:${first.latitude.toStringAsFixed(5)},'
         '${first.longitude.toStringAsFixed(5)}:${last.latitude.toStringAsFixed(5)},'
-        '${last.longitude.toStringAsFixed(5)}';
+        '${last.longitude.toStringAsFixed(5)}:$stopoversSignature';
     if (_lastRouteBoundsSignature == signature) return;
     _lastRouteBoundsSignature = signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctrl = _mapController;
-      if (!mounted || ctrl == null) return;
+      if (!mounted || ctrl == null || _is3DMode) return;
       _fitBounds(ctrl, state);
     });
   }
 
+  void _syncDriverApproachRoute({
+    required String? status,
+    required LatLng? driverPoint,
+    required LatLng? targetPoint,
+  }) {
+    if (!_shouldShowDriverApproachRoute(
+      status: status,
+      driverPoint: driverPoint,
+      targetPoint: targetPoint,
+    )) {
+      _clearDriverApproachRoute();
+      return;
+    }
+
+    final hash = _driverApproachRouteHash(driverPoint!, targetPoint!);
+    final now = DateTime.now();
+    final lastRequestAt = _lastDriverApproachRouteRequestAt;
+    final recentlyRequested = lastRequestAt != null &&
+        now.difference(lastRequestAt) < const Duration(seconds: 18);
+
+    if (_lastDriverApproachRouteHash == hash &&
+        _driverApproachRoutePoints.length >= 2) {
+      return;
+    }
+    if (recentlyRequested) return;
+    if (_driverApproachRouteLoading) return;
+
+    _driverApproachRouteLoading = true;
+    _lastDriverApproachRouteHash = hash;
+    _lastDriverApproachRouteRequestAt = now;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _lastDriverApproachRouteHash != hash) return;
+
+      final result = await DirectionsService.getRoute(
+        originLat: driverPoint.latitude,
+        originLng: driverPoint.longitude,
+        destLat: targetPoint.latitude,
+        destLng: targetPoint.longitude,
+        apiKey: EnvConstants.googleMapsApiKey,
+      );
+      if (!mounted || _lastDriverApproachRouteHash != hash) {
+        _driverApproachRouteLoading = false;
+        return;
+      }
+
+      final points = result != null && result.points.length >= 2
+          ? result.points
+          : const <LatLng>[];
+      setState(() {
+        _driverApproachRouteLoading = false;
+        _driverApproachRoutePoints = points;
+      });
+    });
+  }
+
+  bool _shouldShowDriverApproachRoute({
+    required String? status,
+    required LatLng? driverPoint,
+    required LatLng? targetPoint,
+  }) {
+    if (driverPoint == null || targetPoint == null) return false;
+    final normalizedStatus = status?.trim().toLowerCase();
+    if ({
+      'arrived',
+      'picked_up',
+      'in_progress',
+      'completed',
+      'cancelled',
+      'rejected',
+    }.contains(normalizedStatus)) {
+      return false;
+    }
+
+    final targetHash = _driverApproachTargetHash(targetPoint);
+    if (_completedDriverApproachTargetHash == targetHash) return false;
+    if (_samePoint(driverPoint, targetPoint) ||
+        _distanceMeters(driverPoint, targetPoint) <= 55) {
+      _completedDriverApproachTargetHash = targetHash;
+      return false;
+    }
+    return true;
+  }
+
+  void _clearDriverApproachRoute() {
+    if (_driverApproachRoutePoints.isEmpty &&
+        _lastDriverApproachRouteHash == null &&
+        !_driverApproachRouteLoading) {
+      return;
+    }
+
+    _lastDriverApproachRouteHash = null;
+    _lastDriverApproachRouteRequestAt = null;
+    _driverApproachRouteLoading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _driverApproachRoutePoints.isEmpty) return;
+      setState(() => _driverApproachRoutePoints = const []);
+    });
+  }
+
+  String _driverApproachRouteHash(LatLng driverPoint, LatLng targetPoint) {
+    return '${driverPoint.latitude.toStringAsFixed(4)},'
+        '${driverPoint.longitude.toStringAsFixed(4)}>'
+        '${_driverApproachTargetHash(targetPoint)}';
+  }
+
+  String _driverApproachTargetHash(LatLng targetPoint) {
+    return '${targetPoint.latitude.toStringAsFixed(4)},'
+        '${targetPoint.longitude.toStringAsFixed(4)}';
+  }
+
+  double _distanceMeters(LatLng a, LatLng b) {
+    const earthRadiusMeters = 6371000.0;
+    final dLat = (b.latitude - a.latitude) * math.pi / 180;
+    final dLng = (b.longitude - a.longitude) * math.pi / 180;
+    final lat1 = a.latitude * math.pi / 180;
+    final lat2 = b.latitude * math.pi / 180;
+    final h = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return earthRadiusMeters * 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
+  }
+
+  Future<void> _toggle3DMode(TrackingLoaded state) async {
+    final ctrl = _mapController;
+    if (ctrl == null) return;
+
+    final enable3D = !_is3DMode;
+    setState(() => _is3DMode = enable3D);
+
+    if (!enable3D) {
+      final current = await _currentCameraPosition(ctrl);
+      await ctrl.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: current.target,
+            zoom: current.zoom,
+            tilt: 0,
+            bearing: 0,
+          ),
+        ),
+      );
+      _fitBounds(ctrl, state);
+      return;
+    }
+
+    final current = await _currentCameraPosition(ctrl);
+    await ctrl.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: current.target,
+          zoom: current.zoom,
+          tilt: 48,
+          bearing: _driverRotation,
+        ),
+      ),
+    );
+  }
+
+  Future<CameraPosition> _currentCameraPosition(
+    GoogleMapController ctrl,
+  ) async {
+    final cached = _lastCameraPosition;
+    if (cached != null) return cached;
+
+    try {
+      final bounds = await ctrl.getVisibleRegion();
+      final zoom = await ctrl.getZoomLevel();
+      return CameraPosition(
+          target: MapCameraUtils.centerOf(bounds), zoom: zoom);
+    } catch (_) {
+      return CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
+    }
+  }
+
   Widget _statusPill(String? status, AppLocalizations l) {
     final color = switch (status) {
-      'completed' => _emerald,
-      'cancelled' => _rose,
-      'in_progress' || 'accepted' => _blue,
-      'searching' => _amber,
-      _ => _t2,
+      'completed' => AppColors.success,
+      'cancelled' => AppColors.error,
+      'in_progress' || 'accepted' => AppColors.primary,
+      'searching' => AppColors.warning,
+      _ => context.textSecondary,
     };
     final label = switch (status) {
       'completed' => l.completed,
@@ -748,7 +1046,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: _sheet.withValues(alpha: 0.95),
+        color: context.cardColor.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
         boxShadow: [
@@ -775,64 +1073,115 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     );
   }
 
-  Widget _buildRouteCard(
-      BuildContext context, Map<String, dynamic> trip, AppLocalizations l) {
-    final pickup = trip['meeting_address'] ?? trip['pickup_address'] ?? '';
-    final dest = trip['destination_address'] ?? '';
+  Widget _buildRouteCard(BuildContext context, Map<String, dynamic> trip,
+      AppLocalizations l, List<TripRouteWaypointModel> stopovers) {
+    final meeting = (trip['meeting_address'] as String?)?.trim() ?? '';
+    final pickup = (trip['pickup_address'] as String?)?.trim() ?? '';
+    final dest = (trip['destination_address'] as String?)?.trim() ?? '';
+    final pickupPoint = _tripPoint(trip, 'pickup_lat', 'pickup_lng');
+    final meetingPoint = _tripPoint(trip, 'meeting_lat', 'meeting_lng');
+    final hasSeparateMeeting = meetingPoint != null &&
+        pickupPoint != null &&
+        !_samePoint(meetingPoint, pickupPoint);
+    final showMeeting =
+        hasSeparateMeeting || (meeting.isNotEmpty && meeting != pickup);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: _card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
-      child: Row(children: [
-        // Destination (left side)
-        Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l.destination.toUpperCase(),
-              style: const TextStyle(
-                  color: _blue,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5)),
-          const SizedBox(height: 6),
-          Text(dest.isEmpty ? '---' : dest,
-              style: const TextStyle(
-                  color: _t1,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis),
-        ])),
-        // Arrow
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: const Icon(Icons.arrow_back_rounded, color: _t3, size: 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (showMeeting)
+          _routeSummaryRow(
+            context: context,
+            label: l.meetingPointLabel,
+            address: meeting.isEmpty ? l.meetingPointLabel : meeting,
+            color: AppColors.primary,
+            icon: Icons.groups_rounded,
+          ),
+        _routeSummaryRow(
+          context: context,
+          label: l.pickupPoint,
+          address: pickup.isEmpty ? l.notAvailable : pickup,
+          color: AppColors.success,
+          icon: Icons.trip_origin_rounded,
         ),
-        // Pickup (right side)
+        ...List.generate(stopovers.length, (index) {
+          final waypoint = stopovers[index];
+          return _routeSummaryRow(
+            context: context,
+            label: l.stopoverNumber(index + 1),
+            address: waypoint.address ?? l.stopoverNumber(index + 1),
+            color: AppColors.warning,
+            icon: Icons.location_on_rounded,
+          );
+        }),
+        _routeSummaryRow(
+          context: context,
+          label: l.destination,
+          address: dest.isEmpty ? l.notAvailable : dest,
+          color: AppColors.error,
+          icon: Icons.flag_rounded,
+          isLast: true,
+        ),
+      ]),
+    );
+  }
+
+  Widget _routeSummaryRow({
+    required BuildContext context,
+    required String label,
+    required String address,
+    required Color color,
+    required IconData icon,
+    bool isLast = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Column(children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.13),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withValues(alpha: 0.32)),
+            ),
+            child: Icon(icon, color: color, size: 13),
+          ),
+          if (!isLast)
+            Container(
+              width: 2,
+              height: 14,
+              margin: const EdgeInsets.only(top: 4),
+              color: context.divColor,
+            ),
+        ]),
+        const SizedBox(width: 10),
         Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(l.meetingPointLabel.toUpperCase(),
-              style: const TextStyle(
-                  color: _emerald,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5)),
-          const SizedBox(height: 6),
-          Text(pickup.isEmpty ? '---' : pickup,
-              style: const TextStyle(
-                  color: _t1,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end),
-        ])),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label.toUpperCase(),
+                style: TextStyle(
+                    color: color,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0)),
+            const SizedBox(height: 3),
+            Text(address,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25)),
+          ]),
+        ),
       ]),
     );
   }
@@ -850,13 +1199,13 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
       child: Row(children: [
         // Location center button
-        _buildActionIcon(Icons.my_location_rounded, _amber, () {
+        _buildActionIcon(Icons.my_location_rounded, AppColors.warning, () {
           if (_mapController != null && state.driverLocation != null) {
             _mapController!.animateCamera(CameraUpdate.newCameraPosition(
               CameraPosition(target: state.driverLocation!, zoom: 16),
@@ -866,11 +1215,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
         // Phone button
         if (phone != null) ...[
           const SizedBox(width: 8),
-          _buildActionIcon(Icons.phone_rounded, _emerald, () {}),
+          _buildActionIcon(Icons.phone_rounded, AppColors.success, () {}),
         ],
         // Chat button
         const SizedBox(width: 8),
-        _buildActionIcon(Icons.chat_bubble_rounded, _blue, () {
+        _buildActionIcon(Icons.chat_bubble_rounded, AppColors.primary, () {
           if (tripId != null && tripId.isNotEmpty && driverId != null) {
             context.push(
                 '${AppRoutes.userMessages}?tripId=$tripId&otherUserId=$driverId&otherUserName=${Uri.encodeComponent(name)}');
@@ -884,15 +1233,19 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text(name,
-              style: const TextStyle(
-                  color: _t1, fontSize: 14, fontWeight: FontWeight.w700)),
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            const Icon(Icons.star_rounded, color: _amber, size: 13),
+            const Icon(Icons.star_rounded, color: AppColors.warning, size: 13),
             const SizedBox(width: 3),
             Text(rating,
                 style: const TextStyle(
-                    color: _amber, fontSize: 11, fontWeight: FontWeight.w700)),
+                    color: AppColors.warning,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700)),
           ]),
         ])),
         const SizedBox(width: 12),
@@ -900,23 +1253,23 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
         Stack(children: [
           Container(
             padding: const EdgeInsets.all(2.5),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [_blue, AppColors.primaryDark],
+                colors: [AppColors.primary, AppColors.primaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
             child: CircleAvatar(
               radius: 24,
-              backgroundColor: _elevated,
+              backgroundColor: context.elevatedColor,
               backgroundImage:
                   avatarUrl != null ? NetworkImage(avatarUrl) : null,
               child: avatarUrl == null
                   ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'D',
                       style: const TextStyle(
-                          color: _blue,
+                          color: AppColors.primary,
                           fontSize: 17,
                           fontWeight: FontWeight.w800))
                   : null,
@@ -929,9 +1282,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                   width: 11,
                   height: 11,
                   decoration: BoxDecoration(
-                      color: _emerald,
+                      color: AppColors.success,
                       shape: BoxShape.circle,
-                      border: Border.all(color: _card, width: 2)))),
+                      border: Border.all(color: context.cardColor, width: 2)))),
         ]),
       ]),
     );
@@ -957,7 +1310,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     showDialog(
       context: ctx,
       builder: (dialogCtx) => Dialog(
-        backgroundColor: _card,
+        backgroundColor: context.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -969,29 +1322,33 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _rose.withValues(alpha: 0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: _rose.withValues(alpha: 0.25)),
+                    border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.25)),
                   ),
-                  child: const Icon(Icons.warning_amber_rounded,
-                      color: _rose, size: 20),
+                  child: Icon(Icons.warning_rounded,
+                      color: AppColors.error, size: 20),
                 ),
                 const SizedBox(width: 14),
                 Text(l.cancelTrip,
-                    style: const TextStyle(
-                        color: _t1, fontSize: 17, fontWeight: FontWeight.w800)),
+                    style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800)),
               ]),
               const SizedBox(height: 14),
               Text(l.areYouSureCancelTrip,
-                  style:
-                      const TextStyle(color: _t2, fontSize: 14, height: 1.6)),
+                  style: TextStyle(
+                      color: context.textSecondary, fontSize: 14, height: 1.6)),
               const SizedBox(height: 24),
               Row(children: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
                   child: Text(l.noLabel,
-                      style: const TextStyle(
-                          color: _t2, fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          color: context.textSecondary,
+                          fontWeight: FontWeight.w600)),
                 ),
                 const Spacer(),
                 GestureDetector(
@@ -1004,14 +1361,17 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [_rose, _rose.withValues(alpha: 0.75)],
+                        colors: [
+                          AppColors.error,
+                          AppColors.error.withValues(alpha: 0.75)
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                            color: _rose.withValues(alpha: 0.26),
+                            color: AppColors.error.withValues(alpha: 0.26),
                             blurRadius: 12,
                             offset: const Offset(0, 4)),
                       ],
@@ -1065,16 +1425,16 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _card,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _border, width: 1),
+                border: Border.all(color: context.divColor, width: 1),
               ),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(l.fareDetails.toUpperCase(),
-                        style: const TextStyle(
-                            color: _t3,
+                        style: TextStyle(
+                            color: context.textDisabled,
                             fontSize: 8,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.5)),
@@ -1088,12 +1448,12 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                         alignment: Alignment.centerLeft,
                         child: Text(
                           '${price.toStringAsFixed(0)} ${l.currencySar}',
-                          style: const TextStyle(
-                            color: _t3,
+                          style: TextStyle(
+                            color: context.textDisabled,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.lineThrough,
-                            decorationColor: _t3,
+                            decorationColor: context.textDisabled,
                           ),
                         ),
                       ),
@@ -1107,16 +1467,16 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(finalPrice.toStringAsFixed(0),
-                                style: const TextStyle(
-                                    color: _t1,
+                                style: TextStyle(
+                                    color: context.textPrimary,
                                     fontSize: 34,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: -2,
                                     height: 1)),
                             const SizedBox(width: 4),
                             Text(l.currencySar,
-                                style: const TextStyle(
-                                    color: _t2,
+                                style: TextStyle(
+                                    color: context.textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600)),
                           ],
@@ -1159,16 +1519,16 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(price.toStringAsFixed(0),
-                                style: const TextStyle(
-                                    color: _t1,
+                                style: TextStyle(
+                                    color: context.textPrimary,
                                     fontSize: 34,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: -2,
                                     height: 1)),
                             const SizedBox(width: 4),
                             Text(l.currencySar,
-                                style: const TextStyle(
-                                    color: _t2,
+                                style: TextStyle(
+                                    color: context.textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600)),
                           ],
@@ -1182,25 +1542,29 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: isPaid
-                            ? _emerald.withValues(alpha: 0.1)
-                            : _amber.withValues(alpha: 0.1),
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : AppColors.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                             color: isPaid
-                                ? _emerald.withValues(alpha: 0.28)
-                                : _amber.withValues(alpha: 0.28)),
+                                ? AppColors.success.withValues(alpha: 0.28)
+                                : AppColors.warning.withValues(alpha: 0.28)),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         Container(
                             width: 6,
                             height: 6,
                             decoration: BoxDecoration(
-                                color: isPaid ? _emerald : _amber,
+                                color: isPaid
+                                    ? AppColors.success
+                                    : AppColors.warning,
                                 shape: BoxShape.circle)),
                         const SizedBox(width: 5),
                         Text(isPaid ? l.paid : l.unpaid,
                             style: TextStyle(
-                                color: isPaid ? _emerald : _amber,
+                                color: isPaid
+                                    ? AppColors.success
+                                    : AppColors.warning,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700)),
                       ]),
@@ -1214,22 +1578,22 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _card,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _border, width: 1),
+                border: Border.all(color: context.divColor, width: 1),
               ),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(l.tripDetails.toUpperCase(),
-                        style: const TextStyle(
-                            color: _t3,
+                        style: TextStyle(
+                            color: context.textDisabled,
                             fontSize: 8,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.5)),
                     const SizedBox(height: 12),
-                    _buildStatItem(
-                        Icons.straighten_rounded, _blue, '$dist ${l.km}'),
+                    _buildStatItem(Icons.straighten_rounded, AppColors.primary,
+                        '$dist ${l.km}'),
                     const SizedBox(height: 8),
                     _buildStatItem(
                         Icons.directions_car_rounded, AppColors.purple, vName),
@@ -1238,7 +1602,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                       pay == 'cash'
                           ? Icons.payments_rounded
                           : Icons.credit_card_rounded,
-                      _amber,
+                      AppColors.warning,
                       pay == 'cash' ? l.cash : l.bankCard,
                     ),
                   ]),
@@ -1263,19 +1627,58 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
       const SizedBox(width: 8),
       Flexible(
           child: Text(label,
-              style: const TextStyle(
-                  color: _t1, fontSize: 11, fontWeight: FontWeight.w600))),
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600))),
     ]);
+  }
+
+  LatLng? _tripPoint(Map<String, dynamic> trip, String latKey, String lngKey) {
+    final lat = (trip[latKey] as num?)?.toDouble();
+    final lng = (trip[lngKey] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+    if (lat == 0.0 && lng == 0.0) return null;
+    if (!lat.isFinite || !lng.isFinite) return null;
+    return LatLng(lat, lng);
+  }
+
+  bool _samePoint(LatLng a, LatLng b) {
+    return (a.latitude - b.latitude).abs() < 0.00005 &&
+        (a.longitude - b.longitude).abs() < 0.00005;
+  }
+
+  BitmapDescriptor _routeMarkerIcon({
+    required String cacheKey,
+    required String label,
+    required Color color,
+    required IconData icon,
+    BitmapDescriptor? fallback,
+  }) {
+    final key = '${_routeMarkerLocaleCode ?? ''}|$cacheKey|$label';
+    final cached = _routeMarkerIcons[key];
+    if (cached != null) return cached;
+    if (!_pendingRouteMarkerIcons.contains(key)) {
+      _pendingRouteMarkerIcons.add(key);
+      AppMapMarkerFactory.labeledPin(
+        label: label,
+        color: color,
+        icon: icon,
+        textDirection: Directionality.of(context),
+      ).then((descriptor) {
+        if (!mounted) return;
+        setState(() {
+          _routeMarkerIcons[key] = descriptor;
+          _pendingRouteMarkerIcons.remove(key);
+        });
+      });
+    }
+    return fallback ??
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
   }
 
   void _fitBounds(GoogleMapController ctrl, TrackingLoaded state) {
     final points = <LatLng>[];
-    if (state.driverLocation != null &&
-        state.driverLocation!.latitude != 0.0 &&
-        state.driverLocation!.longitude != 0.0) {
-      points.add(LatLng(
-          state.driverLocation!.latitude, state.driverLocation!.longitude));
-    }
     if (state.trip['pickup_lat'] != null &&
         state.trip['pickup_lng'] != null &&
         state.trip['pickup_lat'] != 0.0 &&
@@ -1283,6 +1686,15 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
       points.add(LatLng(
         (state.trip['pickup_lat'] as num).toDouble(),
         (state.trip['pickup_lng'] as num).toDouble(),
+      ));
+    }
+    if (state.trip['meeting_lat'] != null &&
+        state.trip['meeting_lng'] != null &&
+        state.trip['meeting_lat'] != 0.0 &&
+        state.trip['meeting_lng'] != 0.0) {
+      points.add(LatLng(
+        (state.trip['meeting_lat'] as num).toDouble(),
+        (state.trip['meeting_lng'] as num).toDouble(),
       ));
     }
     if (state.trip['destination_lat'] != null &&
@@ -1308,8 +1720,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     MapCameraUtils.fitCameraToPoints(
       ctrl,
       points,
-      padding: 96,
-      delay: const Duration(milliseconds: 400),
+      padding: 42,
+      minimumLatSpan: 0.0007,
+      minimumLngSpan: 0.0007,
     );
   }
 }
@@ -1326,16 +1739,16 @@ class _MapBtn extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: AppColors.primarySurface.withValues(alpha: 0.9),
+            color: context.cardColor.withValues(alpha: 0.9),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.divider, width: 1),
+            border: Border.all(color: context.divColor, width: 1),
             boxShadow: [
               BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.38),
+                  color: AppColors.black.withValues(alpha: 0.15),
                   blurRadius: 10)
             ],
           ),
-          child: Icon(icon, color: AppColors.textPrimary, size: 18),
+          child: Icon(icon, color: context.textPrimary, size: 18),
         ),
       );
 }

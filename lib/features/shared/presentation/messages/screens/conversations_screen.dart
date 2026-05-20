@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../core/constants/app_routes.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
@@ -9,6 +11,7 @@ import '../screens/messages_screen.dart';
 import '../bloc/messages_cubit.dart';
 import '../bloc/messages_state.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 class ConversationsScreen extends StatelessWidget {
   final String? tripId;
@@ -115,6 +118,18 @@ class _ConversationsViewState extends State<_ConversationsView> {
         ),
       ),
       iconTheme: IconThemeData(color: context.textPrimary),
+      actions: [
+        IconButton(
+          tooltip: l.supportAssistant,
+          icon: const Icon(Icons.smart_toy_outlined),
+          onPressed: () {
+            final path = GoRouterState.of(context).uri.path;
+            context.push(path.startsWith('/driver')
+                ? AppRoutes.driverChatbot
+                : AppRoutes.userChatbot);
+          },
+        ),
+      ],
     );
   }
 
@@ -340,21 +355,13 @@ class _ConversationsViewState extends State<_ConversationsView> {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
+            AppButton(
+              text: l.retry,
               onPressed: () {
                 context.read<MessagesCubit>().loadConversations();
               },
-              icon: const Icon(Icons.refresh_rounded, size: 20),
-              label: Text(l.retry),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                elevation: 0,
-              ),
+              leadingIcon: Icons.refresh_rounded,
+              size: AppButtonSize.md,
             ),
           ],
         ),
@@ -509,7 +516,9 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = isMeSender ? 'أنت: $lastMessage' : lastMessage;
+    final preview = isMeSender
+        ? '${AppLocalizations.of(context)!.youPrefix}$lastMessage'
+        : lastMessage;
     final hasUnread = !isRead || unreadCount > 0;
 
     return Padding(

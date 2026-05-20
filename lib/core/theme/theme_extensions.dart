@@ -7,23 +7,23 @@ extension AppThemeX on BuildContext {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ألوان الخلفية (تتكيف مع الـ Theme)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Color get bgColor => isDark ? AppColors.darkBg : AppColors.lightBg;
+  Color get bgColor => isDark ? AppColors.background : AppColors.lightBg;
   Color get cardColor =>
-      isDark ? AppColors.darkSurface : AppColors.lightSurface;
+      isDark ? AppColors.surface : AppColors.lightSurface;
   Color get elevatedColor =>
-      isDark ? AppColors.darkElevated : AppColors.lightElevated;
-  Color get divColor => isDark ? AppColors.darkDivider : AppColors.lightDivider;
-  Color get sheetColor => isDark ? AppColors.darkSheet : AppColors.lightSheet;
+      isDark ? AppColors.surfaceElevated : AppColors.lightElevated;
+  Color get divColor => isDark ? AppColors.divider : AppColors.lightDivider;
+  Color get sheetColor => isDark ? AppColors.primarySurface : AppColors.lightSheet;
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ألوان النص (تتكيف)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━
   Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+      isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
   Color get textSecondary =>
-      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+      isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
   Color get textDisabled =>
-      isDark ? AppColors.darkTextDisabled : AppColors.lightTextDisabled;
+      isDark ? AppColors.textDisabled : AppColors.lightTextDisabled;
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Aliases للتوافق مع الكود القديم (لا تحذفها)

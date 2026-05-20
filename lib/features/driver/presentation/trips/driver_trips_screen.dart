@@ -12,6 +12,7 @@ import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/trip_status.dart';
 import '../../../trips/data/models/trip_model.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 class DriverTripsScreen extends StatefulWidget {
   const DriverTripsScreen({super.key});
@@ -48,7 +49,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.bgColor,
       body: SafeArea(
         top: true,
         child: BlocConsumer<DriverTripsBloc, DriverTripsState>(
@@ -137,8 +138,8 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
   }
 
   Widget _buildLoadingState() {
-    const card = AppColors.surface;
-    const elevated = AppColors.surfaceElevated;
+    final card = context.cardColor;
+    final elevated = context.elevatedColor;
     return Shimmer.fromColors(
       baseColor: card,
       highlightColor: elevated,
@@ -175,8 +176,8 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
   Widget _buildErrorState(String message, AppLocalizations l) {
     const rose = AppColors.error;
     const blue = AppColors.primary;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -194,7 +195,7 @@ class _DriverTripsScreenState extends State<DriverTripsScreen>
           const SizedBox(height: 24),
           Text(
             message,
-            style: const TextStyle(color: t2, fontSize: 14, height: 1.6),
+            style: TextStyle(color: t2, fontSize: 14, height: 1.6),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -315,14 +316,14 @@ class _TripsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const card = AppColors.surface;
-    const elevated = AppColors.surfaceElevated;
-    const border = AppColors.divider;
+    final card = context.cardColor;
+    final elevated = context.elevatedColor;
+    final border = context.divColor;
     const blue = AppColors.primary;
     const emerald = AppColors.secondary;
     const rose = AppColors.error;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -354,7 +355,7 @@ class _TripsHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: border, width: 1),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                child: Icon(Icons.arrow_back_ios_new_rounded,
                     color: t1, size: 16),
               ),
             ),
@@ -364,14 +365,14 @@ class _TripsHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(l.myTrips,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: t1,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           height: 1.2)),
                   const SizedBox(height: 2),
                   Text(l.totalTripsLabel(total),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: t2, fontSize: 12, height: 1.2)),
                 ])),
             GestureDetector(
@@ -447,9 +448,9 @@ class _CompactStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const elevated = AppColors.surfaceElevated;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
+    final elevated = context.elevatedColor;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -473,13 +474,13 @@ class _CompactStat extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   color: t1,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   height: 1.2)),
           Text(label,
-              style: const TextStyle(color: t2, fontSize: 11, height: 1.2)),
+              style: TextStyle(color: t2, fontSize: 11, height: 1.2)),
         ])),
       ]),
     );
@@ -504,7 +505,7 @@ class _SegmentedControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const elevated = AppColors.surfaceElevated;
+    final elevated = context.elevatedColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -562,8 +563,8 @@ class _SegmentButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const blue = AppColors.primary;
-    const card = AppColors.surface;
-    const t2 = AppColors.textSecondary;
+    final card = context.cardColor;
+    final t2 = context.textSecondary;
 
     return Expanded(
       child: GestureDetector(
@@ -656,7 +657,7 @@ class _TripListView extends StatelessWidget {
         context.read<DriverTripsBloc>().add(const LoadDriverTrips());
       },
       color: AppColors.primary,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.cardColor,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: grouped.length,
@@ -712,8 +713,8 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     const blue = AppColors.primary;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
 
     return Center(
       child: Column(
@@ -735,7 +736,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             l.noTrips,
-            style: const TextStyle(
+            style: TextStyle(
                 color: t1, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
@@ -743,7 +744,7 @@ class _EmptyState extends StatelessWidget {
             isActive
                 ? AppLocalizations.of(context)!.noActiveTrips
                 : AppLocalizations.of(context)!.tripsWillAppearHere,
-            style: const TextStyle(color: t2, fontSize: 14),
+            style: TextStyle(color: t2, fontSize: 14),
           ),
           if (isActive) ...[
             const SizedBox(height: 28),
@@ -798,7 +799,7 @@ class _TripDateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const t2 = AppColors.textSecondary;
+    final t2 = context.textSecondary;
     const blue = AppColors.primary;
 
     return Column(
@@ -815,7 +816,7 @@ class _TripDateSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               dateLabel,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: t2,
@@ -915,17 +916,17 @@ class _TripCard extends StatelessWidget {
     final price = trip.price.toStringAsFixed(0);
     final time = _formatTime(trip.createdAt);
 
-    final statusColor = _getStatusColor(status);
+    final statusColor = _getStatusColor(context, status);
     final statusLabel = _getStatusText(status, l);
 
-    const card = AppColors.surface;
-    const elevated = AppColors.surfaceElevated;
-    const border = AppColors.divider;
+    final card = context.cardColor;
+    final elevated = context.elevatedColor;
+    final border = context.divColor;
     const blue = AppColors.primary;
     const emerald = AppColors.secondary;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
-    const t3 = AppColors.textDisabled;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
+    final t3 = context.textDisabled;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -993,11 +994,11 @@ class _TripCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (time.isNotEmpty) ...[
-                      const Icon(Icons.access_time_rounded,
+                      Icon(Icons.access_time_rounded,
                           size: 12, color: t3),
                       const SizedBox(width: 4),
                       Text(time,
-                          style: const TextStyle(color: t2, fontSize: 12)),
+                          style: TextStyle(color: t2, fontSize: 12)),
                     ],
                   ]),
 
@@ -1057,9 +1058,9 @@ class _TripCard extends StatelessWidget {
                             children: [
                           Text(
                             trip.pickupAddress.isEmpty
-                                ? '---'
+                                ? l.notAvailable
                                 : trip.pickupAddress,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: t1,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -1070,9 +1071,9 @@ class _TripCard extends StatelessWidget {
                           const SizedBox(height: 18),
                           Text(
                             trip.destinationAddress.isEmpty
-                                ? '---'
+                                ? l.notAvailable
                                 : trip.destinationAddress,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: t1,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -1098,11 +1099,11 @@ class _TripCard extends StatelessWidget {
                         border: Border.all(color: border),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.straighten_rounded,
+                        Icon(Icons.straighten_rounded,
                             size: 12, color: t2),
                         const SizedBox(width: 4),
-                        Text('$distance ${l.km}',
-                            style: const TextStyle(
+                        Text(l.distanceWithKm(distance),
+                            style: TextStyle(
                                 color: t2,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600)),
@@ -1126,7 +1127,7 @@ class _TripCard extends StatelessWidget {
                               offset: const Offset(0, 2))
                         ],
                       ),
-                      child: Text('$price ${l.currencySar}',
+                      child: Text(l.priceWithCurrency(price, l.currencySar),
                           style: const TextStyle(
                               color: AppColors.white,
                               fontSize: 14,
@@ -1142,12 +1143,12 @@ class _TripCard extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(TripStatus? status) {
+  Color _getStatusColor(BuildContext context, TripStatus? status) {
     const blue = AppColors.primary;
     const emerald = AppColors.secondary;
     const rose = AppColors.error;
     const amber = AppColors.warning;
-    const t2 = AppColors.textSecondary;
+    final t2 = context.textSecondary;
 
     return switch (status) {
       TripStatus.completed => emerald,

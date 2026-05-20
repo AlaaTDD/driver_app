@@ -163,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen>
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
                             label: AppLocalizations.of(context)!.email,
-                            hint: 'example@email.com',
+                            hint: AppLocalizations.of(context)!.emailExample,
                             icon: Icons.email_outlined,
                             validator: (v) => (v == null || v.isEmpty)
                                 ? AppLocalizations.of(context)!.enterEmail

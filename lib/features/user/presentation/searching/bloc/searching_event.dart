@@ -9,11 +9,13 @@ abstract class SearchingEvent extends Equatable {
 
 class StartSearching extends SearchingEvent {
   final String tripId;
+  final String title;
+  final String body;
 
-  const StartSearching(this.tripId);
+  const StartSearching(this.tripId, {required this.title, required this.body});
 
   @override
-  List<Object?> get props => [tripId];
+  List<Object?> get props => [tripId, title, body];
 }
 
 class TimerTick extends SearchingEvent {
@@ -46,11 +48,13 @@ class CancelSearch extends SearchingEvent {
 
 class RebroadcastTripOffers extends SearchingEvent {
   final String tripId;
+  final String title;
+  final String body;
 
-  const RebroadcastTripOffers(this.tripId);
+  const RebroadcastTripOffers(this.tripId, {required this.title, required this.body});
 
   @override
-  List<Object?> get props => [tripId];
+  List<Object?> get props => [tripId, title, body];
 }
 
 class OffersUpdated extends SearchingEvent {

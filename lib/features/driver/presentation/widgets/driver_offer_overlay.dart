@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../features/trips/data/models/trip_model.dart';
 import '../home/bloc/driver_home_bloc.dart';
 import '../home/bloc/driver_home_event.dart';
@@ -115,7 +116,7 @@ class DriverOfferOverlay extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '${distance.toStringAsFixed(1)} km · ${vehicleType.toUpperCase()}',
+                                  '${AppLocalizations.of(context)!.distanceWithKm(distance.toStringAsFixed(1))} · $vehicleType',
                                   style: TextStyle(
                                     color: context.textSecondary,
                                     fontSize: 12,
@@ -134,7 +135,7 @@ class DriverOfferOverlay extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
-                              '${price.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
+                              AppLocalizations.of(context)!.priceWithCurrency(price.toStringAsFixed(0), AppLocalizations.of(context)!.currencySar),
                               style: const TextStyle(
                                 color: AppColors.white,
                                 fontSize: 14,
@@ -274,7 +275,7 @@ class DriverOfferOverlay extends StatelessWidget {
                                                 BorderRadius.circular(10)),
                                       ),
                                       child: Text(
-                                          '+10 ${AppLocalizations.of(context)!.currencySar}',
+                                          '+${AppLocalizations.of(context)!.priceWithCurrency('10', AppLocalizations.of(context)!.currencySar)}',
                                           style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold)),
@@ -301,7 +302,7 @@ class DriverOfferOverlay extends StatelessWidget {
                                                 BorderRadius.circular(10)),
                                       ),
                                       child: Text(
-                                          '+20 ${AppLocalizations.of(context)!.currencySar}',
+                                          '+${AppLocalizations.of(context)!.priceWithCurrency('20', AppLocalizations.of(context)!.currencySar)}',
                                           style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold)),
@@ -341,7 +342,8 @@ class DriverOfferOverlay extends StatelessWidget {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     flex: 2,
-                                    child: ElevatedButton(
+                                    child: AppButton(
+                                      text: AppLocalizations.of(context)!.acceptTrip,
                                       onPressed: () {
                                         final tripId = trip.id;
                                         if (tripId.isEmpty) return;
@@ -349,21 +351,6 @@ class DriverOfferOverlay extends StatelessWidget {
                                             .read<DriverHomeBloc>()
                                             .add(AcceptTripOffer(tripId));
                                       },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: AppColors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(14)),
-                                      ),
-                                      child: Text(
-                                        AppLocalizations.of(context)!
-                                            .acceptTrip,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w600),
-                                      ),
                                     ),
                                   ),
                                 ],

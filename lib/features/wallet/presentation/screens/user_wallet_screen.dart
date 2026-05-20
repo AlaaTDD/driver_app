@@ -10,6 +10,7 @@ import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../data/models/user_wallet_model.dart';
 import '../../data/models/wallet_transaction_model.dart';
 import '../cubit/user_wallet_cubit.dart';
+import '../../../../core/widgets/app_button.dart';
 
 // ─── Number Formatter ─────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ NumberFormat _getCurrencyFormat(BuildContext context) {
   final l = AppLocalizations.of(context)!;
   return NumberFormat.currency(
       locale: Localizations.localeOf(context).languageCode,
-      symbol: l.egp,
+      symbol: l.currencySar,
       decimalDigits: 2);
 }
 
@@ -25,7 +26,7 @@ NumberFormat _getCompactCurrencyFormat(BuildContext context) {
   final l = AppLocalizations.of(context)!;
   return NumberFormat.currency(
       locale: Localizations.localeOf(context).languageCode,
-      symbol: l.egp,
+      symbol: l.currencySar,
       decimalDigits: 0);
 }
 
@@ -180,7 +181,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       pinned: true,
       stretch: true,
       backgroundColor: isDark
-          ? AppColors.background
+          ? context.bgColor
           : AppColors.primaryDark, // Slate 900 / Blue 900
       elevation: 0,
       leading: Padding(
@@ -216,9 +217,9 @@ class _UserWalletScreenState extends State<UserWalletScreen>
               end: Alignment.bottomRight,
               colors: isDark
                   ? [
-                      AppColors.surfaceElevated,
-                      AppColors.background,
-                      AppColors.background
+                      context.elevatedColor,
+                      context.bgColor,
+                      context.bgColor
                     ] // Slate
                   : [
                       AppColors.primary,
@@ -311,7 +312,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                                 _getCurrencyFormat(context)
                                     .format(wallet.balance)
                                     .replaceAll(
-                                        AppLocalizations.of(context)!.egp, ''),
+                                        AppLocalizations.of(context)!.currencySar, ''),
                                 style: const TextStyle(
                                   color: AppColors.white,
                                   fontSize: 52,
@@ -324,7 +325,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            AppLocalizations.of(context)!.egp,
+                            AppLocalizations.of(context)!.currencySar,
                             style: TextStyle(
                               color: AppColors.white.withValues(alpha: 0.7),
                               fontSize: 18,
@@ -444,7 +445,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       WalletTransactionType.withdrawalRefund => (
           Icons.undo_rounded,
           AppColors.primary,
-          AppColors.textPrimary,
+          context.textPrimary,
           AppLocalizations.of(context)!.withdrawalRefund
         ),
       WalletTransactionType.bonus => (
@@ -474,7 +475,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
       WalletTransactionType.refund => (
           Icons.keyboard_return_rounded,
           AppColors.primary,
-          AppColors.textPrimary,
+          context.textPrimary,
           AppLocalizations.of(context)!.refund
         ),
       WalletTransactionType.tripPayment => (
@@ -700,18 +701,11 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 style: TextStyle(color: context.textSecondary, fontSize: 14)),
           ),
           const SizedBox(height: 32),
-          ElevatedButton.icon(
+          AppButton(
+            text: AppLocalizations.of(context)!.retryButton,
             onPressed: _loadWallet,
-            icon: const Icon(Icons.refresh_rounded),
-            label: Text(AppLocalizations.of(context)!.retryButton),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
-            ),
+            leadingIcon: Icons.refresh_rounded,
+            size: AppButtonSize.md,
           ),
         ],
       ),

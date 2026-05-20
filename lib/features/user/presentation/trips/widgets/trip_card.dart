@@ -3,20 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/constants/app_routes.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
-
-// Shared color tokens — mirrors trip_details_screen._C
-const _bg = AppColors.background;
-const _card = AppColors.surface;
-const _elevated = AppColors.surfaceElevated;
-const _border = AppColors.divider;
-const _blue = AppColors.primary;
-const _emerald = AppColors.secondary;
-const _rose = AppColors.error;
-const _amber = AppColors.warning;
-const _violet = AppColors.purple;
-const _t1 = AppColors.textPrimary;
-const _t2 = AppColors.textSecondary;
-const _t3 = AppColors.textDisabled;
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 class TripCard extends StatelessWidget {
   final Map<String, dynamic> trip;
@@ -49,21 +36,21 @@ class TripCard extends StatelessWidget {
     final dest = trip['destination_address'] as String? ?? '';
     final time = _formatTime(trip['created_at'] as String?);
 
-    final statusColor = _statusColor(status);
+    final statusColor = _statusColor(context, status);
     final statusLabel = _statusLabel(status, l);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: _card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
         border: isActive
-            ? Border.all(color: _blue.withValues(alpha: 0.4), width: 1.5)
-            : Border.all(color: _border, width: 1),
+            ? Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5)
+            : Border.all(color: context.divColor, width: 1),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                    color: _blue.withValues(alpha: 0.12),
+                    color: AppColors.primary.withValues(alpha: 0.12),
                     blurRadius: 16,
                     offset: const Offset(0, 4))
               ]
@@ -81,8 +68,8 @@ class TripCard extends StatelessWidget {
           child: InkWell(
             onTap: () => context
                 .push('${AppRoutes.userTripDetails}?tripId=${trip['id']}'),
-            splashColor: _blue.withValues(alpha: 0.08),
-            highlightColor: _elevated.withValues(alpha: 0.5),
+            splashColor: AppColors.primary.withValues(alpha: 0.08),
+            highlightColor: context.elevatedColor.withValues(alpha: 0.5),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -118,11 +105,11 @@ class TripCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (time.isNotEmpty) ...[
-                      const Icon(Icons.access_time_rounded,
-                          size: 12, color: _t3),
+                      Icon(Icons.access_time_rounded,
+                          size: 12, color: context.textDisabled),
                       const SizedBox(width: 4),
                       Text(time,
-                          style: const TextStyle(color: _t2, fontSize: 12)),
+                          style: TextStyle(color: context.textSecondary, fontSize: 12)),
                     ],
                   ]),
 
@@ -137,10 +124,10 @@ class TripCard extends StatelessWidget {
                         height: 9,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _emerald,
+                          color: AppColors.success,
                           boxShadow: [
                             BoxShadow(
-                                color: _emerald.withValues(alpha: 0.4),
+                                color: AppColors.success.withValues(alpha: 0.4),
                                 blurRadius: 5)
                           ],
                         ),
@@ -152,8 +139,8 @@ class TripCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              _emerald.withValues(alpha: 0.4),
-                              _blue.withValues(alpha: 0.4)
+                              AppColors.success.withValues(alpha: 0.4),
+                              AppColors.primary.withValues(alpha: 0.4)
                             ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
@@ -165,10 +152,10 @@ class TripCard extends StatelessWidget {
                         height: 9,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _blue,
+                          color: AppColors.primary,
                           boxShadow: [
                             BoxShadow(
-                                color: _blue.withValues(alpha: 0.4),
+                                color: AppColors.primary.withValues(alpha: 0.4),
                                 blurRadius: 5)
                           ],
                         ),
@@ -181,9 +168,9 @@ class TripCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                           Text(
-                            pickup.isEmpty ? '---' : pickup,
-                            style: const TextStyle(
-                                color: _t1,
+                            pickup.isEmpty ? l.notAvailable : pickup,
+                            style: TextStyle(
+                                color: context.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 height: 1.3),
@@ -192,9 +179,9 @@ class TripCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            dest.isEmpty ? '---' : dest,
-                            style: const TextStyle(
-                                color: _t1,
+                            dest.isEmpty ? l.notAvailable : dest,
+                            style: TextStyle(
+                                color: context.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 height: 1.3),
@@ -205,7 +192,7 @@ class TripCard extends StatelessWidget {
                   ]),
 
                   const SizedBox(height: 14),
-                  Container(height: 1, color: _border),
+                  Container(height: 1, color: context.divColor),
                   const SizedBox(height: 12),
 
                   // ── Footer: distance + price ────────────────────────────────
@@ -214,17 +201,17 @@ class TripCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _elevated,
+                        color: context.elevatedColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: context.divColor),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.straighten_rounded,
-                            size: 12, color: _t2),
+                        Icon(Icons.straighten_rounded,
+                            size: 12, color: context.textSecondary),
                         const SizedBox(width: 4),
-                        Text('$distance ${l.km}',
-                            style: const TextStyle(
-                                color: _t2,
+                        Text(l.distanceWithKm(distance),
+                            style: TextStyle(
+                                color: context.textSecondary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600)),
                       ]),
@@ -236,18 +223,18 @@ class TripCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _violet.withValues(alpha: 0.12),
+                          color: AppColors.purple.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                           border:
-                              Border.all(color: _violet.withValues(alpha: 0.3)),
+                              Border.all(color: AppColors.purple.withValues(alpha: 0.3)),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           const Icon(Icons.local_offer_rounded,
-                              size: 10, color: _violet),
+                              size: 10, color: AppColors.purple),
                           const SizedBox(width: 3),
                           Text('-${couponDiscount.toStringAsFixed(0)}',
                               style: const TextStyle(
-                                  color: _violet,
+                                  color: AppColors.purple,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700)),
                         ]),
@@ -259,20 +246,21 @@ class TripCard extends StatelessWidget {
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [_blue, AppColors.primaryDark],
+                          colors: [AppColors.primary, AppColors.primaryDark],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                              color: _blue.withValues(alpha: 0.25),
+                              color: AppColors.primary.withValues(alpha: 0.25),
                               blurRadius: 8,
                               offset: const Offset(0, 2))
                         ],
                       ),
                       child: Text(
-                          '${displayPrice.toStringAsFixed(0)} ${l.currencySar}',
+                          l.priceWithCurrency(
+                              displayPrice.toStringAsFixed(0), l.currencySar),
                           style: const TextStyle(
                               color: AppColors.white,
                               fontSize: 14,
@@ -288,12 +276,12 @@ class TripCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(String? s) => switch (s) {
-        'completed' => _emerald,
-        'cancelled' => _rose,
-        'in_progress' || 'accepted' => _blue,
-        'searching' => _amber,
-        _ => _t2,
+  Color _statusColor(BuildContext context, String? s) => switch (s) {
+        'completed' => AppColors.success,
+        'cancelled' => AppColors.error,
+        'in_progress' || 'accepted' => AppColors.primary,
+        'searching' => AppColors.warning,
+        _ => context.textSecondary,
       };
 
   String _statusLabel(String? s, AppLocalizations l) => switch (s) {

@@ -4,12 +4,13 @@ import 'package:snapix/core/theme/app_spacing.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
 import 'package:snapix/core/widgets/app_button.dart';
 import 'package:snapix/core/widgets/bottom_sheet_container.dart';
+import '../localization/generated/app_localizations.dart';
 
 class AppConfirmSheet extends StatelessWidget {
   final String title;
   final String message;
-  final String confirmLabel;
-  final String cancelLabel;
+  final String? confirmLabel;
+  final String? cancelLabel;
   final VoidCallback onConfirm;
   final bool isDangerous;
 
@@ -18,8 +19,8 @@ class AppConfirmSheet extends StatelessWidget {
     required this.title,
     required this.message,
     required this.onConfirm,
-    this.confirmLabel = 'تأكيد',
-    this.cancelLabel = 'إلغاء',
+    this.confirmLabel,
+    this.cancelLabel,
     this.isDangerous = false,
   });
 
@@ -27,8 +28,8 @@ class AppConfirmSheet extends StatelessWidget {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = 'تأكيد',
-    String cancelLabel = 'إلغاء',
+    String? confirmLabel,
+    String? cancelLabel,
     bool isDangerous = false,
   }) async {
     final result = await showModalBottomSheet<bool>(
@@ -65,7 +66,7 @@ class AppConfirmSheet extends StatelessWidget {
                   color: context.textSecondary, fontSize: 14, height: 1.5)),
           const SizedBox(height: AppSpacing.xl),
           AppButton(
-            text: confirmLabel,
+            text: confirmLabel ?? AppLocalizations.of(context)!.confirm,
             variant: isDangerous
                 ? AppButtonVariant.danger
                 : AppButtonVariant.primary,
@@ -76,7 +77,7 @@ class AppConfirmSheet extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           AppButton(
-            text: cancelLabel,
+            text: cancelLabel ?? AppLocalizations.of(context)!.cancel,
             variant: AppButtonVariant.ghost,
             onPressed: () => Navigator.pop(context, false),
           ),

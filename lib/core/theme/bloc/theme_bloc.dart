@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme_event.dart';
@@ -14,7 +15,11 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   }
 
   void _onLoad(LoadSavedTheme event, Emitter<ThemeState> emit) {
-    final isDark = _prefs.getBool(_key) ?? true;
+    final isDarkOpt = _prefs.getBool(_key);
+    final isSystemDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
+    final isDark = isDarkOpt ?? isSystemDark;
     emit(isDark ? ThemeDark() : ThemeLight());
   }
 

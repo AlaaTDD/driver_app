@@ -13,6 +13,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../services/r2_storage_service.dart';
 import '../../../../services/supabase_service.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -28,6 +29,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _populated = false;
   Map<String, dynamic> _userData = {};
   bool _uploadingAvatar = false;
+  File? _localAvatarFile;
 
   @override
   void initState() {
@@ -44,8 +46,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   void _populate(Map<String, dynamic> user) {
+    _userData = {..._userData, ...user};
+    _localAvatarFile = null;
     if (_populated) return;
-    _userData = user;
     _nameController.text = user['name'] as String? ?? '';
     _phoneController.text = user['phone'] as String? ?? '';
     _emailController.text = user['email'] as String? ?? '';
@@ -65,8 +68,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           if (state is ProfileLoaded) {
             final wasPopulated = _populated;
             _populate(state.user);
-            if (wasPopulated)
+            if (wasPopulated) {
               AppToast.success(AppLocalizations.of(context)!.changesSaved);
+            }
           } else if (state is ProfileError) {
             AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
           }
@@ -84,13 +88,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   Text(state.message,
                       style: TextStyle(color: context.textPrimary)),
                   const SizedBox(height: 16),
-                  ElevatedButton(
+                  AppButton(
+                    text: AppLocalizations.of(context)!.retry,
                     onPressed: () => context
                         .read<ProfileBloc>()
                         .add(const LoadUserProfile()),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary),
-                    child: Text(AppLocalizations.of(context)!.retry),
+                    size: AppButtonSize.sm,
                   ),
                 ],
               ),
@@ -105,6 +108,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget _buildForm(BuildContext context, ProfileState state) {
     final l = AppLocalizations.of(context)!;
     final avatarUrl = _userData['avatar_url'] as String?;
+    final ImageProvider<Object>? avatarImage;
+    if (_localAvatarFile != null) {
+      avatarImage = FileImage(_localAvatarFile!);
+    } else if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      avatarImage = NetworkImage(avatarUrl);
+    } else {
+      avatarImage = null;
+    }
     final rating = _userData['rating'] as num?;
     final totalTrips = _userData['total_trips'] as num?;
 
@@ -130,12 +141,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: context.primaryTint,
-                  backgroundImage:
-                      avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  backgroundImage: avatarImage,
                   child: _uploadingAvatar
                       ? const CircularProgressIndicator(
                           color: AppColors.white, strokeWidth: 2)
-                      : avatarUrl == null
+                      : avatarImage == null
                           ? const Icon(Icons.person_rounded,
                               size: 50, color: AppColors.primary)
                           : null,
@@ -165,7 +175,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     color: AppColors.warning, size: 20),
                 const SizedBox(width: 4),
                 Text(
-                  '${rating.toStringAsFixed(1)}',
+                  rating.toStringAsFixed(1),
                   style: TextStyle(
                     color: context.textPrimary,
                     fontWeight: FontWeight.bold,
@@ -224,24 +234,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          ElevatedButton(
+          AppButton(
+            text: l.saveChanges,
             onPressed: state is ProfileLoading
                 ? null
                 : () => context.read<ProfileBloc>().add(UpdateProfile({
                       'name': _nameController.text.trim(),
                       'phone': _phoneController.text.trim(),
                     })),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: state is ProfileLoading
-                ? const CircularProgressIndicator(color: AppColors.white)
-                : Text(l.saveChanges,
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+            isLoading: state is ProfileLoading,
           ),
         ],
       ),
@@ -284,67 +285,135 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     fontSize: 13)),
           ]),
           const SizedBox(height: 12),
-          Row(children: [
-            _StatCell(
-              icon: Icons.check_circle_outline_rounded,
-              color: AppColors.success,
-              label: l.totalTripsCompleted,
-              value: '$completed',
-            ),
-            const SizedBox(width: 8),
-            _StatCell(
-              icon: Icons.cancel_outlined,
-              color: AppColors.error,
-              label: l.cancelledTrips,
-              value: '$cancelled',
-            ),
-            if (totalKm != null) ...[
-              const SizedBox(width: 8),
-              _StatCell(
-                icon: Icons.route_rounded,
-                color: AppColors.info,
-                label: l.totalKmTravelled,
-                value: totalKm.toStringAsFixed(0),
-              ),
-            ],
-            if (avgRating != null) ...[
-              const SizedBox(width: 8),
-              _StatCell(
-                icon: Icons.star_rounded,
-                color: AppColors.warning,
-                label: l.avgTripRating,
-                value: avgRating.toStringAsFixed(1),
-              ),
-            ],
-          ]),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cells = [
+                _StatCell(
+                  icon: Icons.check_circle_outline_rounded,
+                  color: AppColors.success,
+                  label: l.totalTripsCompleted,
+                  value: '$completed',
+                ),
+                _StatCell(
+                  icon: Icons.cancel_outlined,
+                  color: AppColors.error,
+                  label: l.cancelledTrips,
+                  value: '$cancelled',
+                ),
+                if (totalKm != null)
+                  _StatCell(
+                    icon: Icons.route_rounded,
+                    color: AppColors.info,
+                    label: l.totalKmTravelled,
+                    value: totalKm.toStringAsFixed(0),
+                  ),
+                if (avgRating != null)
+                  _StatCell(
+                    icon: Icons.star_rounded,
+                    color: AppColors.warning,
+                    label: l.avgTripRating,
+                    value: avgRating.toStringAsFixed(1),
+                  ),
+              ];
+              final columns = constraints.maxWidth >= 360 ? cells.length : 2;
+              final itemWidth =
+                  (constraints.maxWidth - ((columns - 1) * 8)) / columns;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: cells
+                    .map((cell) => SizedBox(width: itemWidth, child: cell))
+                    .toList(),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
   Future<void> _pickAndUploadAvatar() async {
+    final source = await _chooseAvatarSource();
+    if (source == null) return;
+
     final picker = ImagePicker();
-    final XFile? image =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 82,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
     if (image == null) return;
 
-    setState(() => _uploadingAvatar = true);
+    setState(() {
+      _localAvatarFile = File(image.path);
+      _uploadingAvatar = true;
+    });
     try {
       final uid = SupabaseService.currentUser?.id;
       if (uid == null) throw AuthException('errorNotLoggedIn');
       final r2 = R2StorageService();
+      final ext = _imageExtension(image.path);
+      final stamp = DateTime.now().millisecondsSinceEpoch;
       final url = await r2.uploadFile(
         file: File(image.path),
-        path: 'avatars/user_$uid.${image.path.split('.').last}',
+        path: 'avatars/user_${uid}_$stamp.$ext',
       );
       if (mounted) {
         context.read<ProfileBloc>().add(UpdateProfile({'avatar_url': url}));
       }
     } catch (e) {
-      if (mounted) AppToast.error('فشل رفع الصورة: $e');
+      if (mounted) {
+        setState(() => _localAvatarFile = null);
+        final message = e is AppException ? e.message : 'errorUploadFailed';
+        AppToast.error(ErrorMapper.getErrorMessage(context, message));
+      }
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
     }
+  }
+
+  String _imageExtension(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => 'jpg',
+      'png' => 'png',
+      'webp' => 'webp',
+      _ => 'jpg',
+    };
+  }
+
+  Future<ImageSource?> _chooseAvatarSource() {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded,
+                    color: AppColors.primary),
+                title: Text(isAr ? 'المعرض' : 'Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded,
+                    color: AppColors.primary),
+                title: Text(isAr ? 'الكاميرا' : 'Camera'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -364,41 +433,39 @@ class _StatCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: context.textSecondary,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

@@ -6,6 +6,8 @@ class AppRoutes {
   static const String registerUser = '/register/user';
   static const String registerDriver = '/register/driver';
   static const String pendingVerification = '/pending-verification';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String helpSupport = '/help-support';
 
   static const String userHome = '/user/home';
   static const String userProfile = '/user/profile';
@@ -36,4 +38,5 @@ class AppRoutes {
   static const String driverBonus = '/driver/bonus';
   static const String driverRequestFeed = '/driver/request-feed';
   static const String driverRevision = '/driver/revision';
+  static const String driverCorridorPicker = '/driver/corridor-picker';
 }

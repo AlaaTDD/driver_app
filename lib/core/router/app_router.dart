@@ -32,6 +32,7 @@ import '../../features/shared/presentation/notifications/notifications_screen.da
 import '../../features/shared/presentation/chatbot/chatbot_screen.dart';
 import '../../features/shared/presentation/rating/rating_screen.dart';
 import '../../features/shared/presentation/screens/complaints_screen.dart';
+import '../../features/shared/presentation/screens/help_support_screen.dart';
 import '../../features/wallet/presentation/cubit/wallet_cubit.dart';
 import '../../features/wallet/presentation/cubit/user_wallet_cubit.dart';
 import '../../features/wallet/presentation/screens/driver_wallet_screen.dart';
@@ -39,6 +40,7 @@ import '../../features/wallet/presentation/screens/user_wallet_screen.dart';
 import '../../features/driver/presentation/bonus/bonus_screen.dart';
 import '../../features/driver/presentation/request_feed/driver_request_feed_screen.dart';
 import '../../features/driver/presentation/revision/driver_revision_screen.dart';
+import '../../features/shared/presentation/screens/privacy_policy_screen.dart';
 import '../constants/app_routes.dart';
 import '../localization/generated/app_localizations.dart';
 
@@ -221,6 +223,18 @@ class AppRouter {
           name: AppRoutes.pendingVerification,
           pageBuilder: (context, state) =>
               const MaterialPage(child: PendingVerificationScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.privacyPolicy,
+          name: AppRoutes.privacyPolicy,
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: PrivacyPolicyScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.helpSupport,
+          name: AppRoutes.helpSupport,
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: HelpSupportScreen()),
         ),
         GoRoute(
           path: AppRoutes.userHome,

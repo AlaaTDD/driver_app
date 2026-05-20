@@ -766,5 +766,11 @@
   "confirmDeparture": "Confirm departure",
   "failedCreateLegacyRoutePlan": "Failed to create the legacy trip route",
   "errorAddStopover": "Failed to add stopover",
-  "errorRemoveStopover": "Failed to remove stopover"
+  "errorRemoveStopover": "Failed to remove stopover",
+  "confirm": "Confirm",
+  "youPrefix": "You: ",
+  "emailExample": "example@email.com",
+  "promoCodeExample": "PROMO20",
+  "notAvailable": "N/A",
+  "noData": "—"
 }

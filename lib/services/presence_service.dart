@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 import '../features/shared/data/repositories/messages_repository.dart';
@@ -6,7 +5,6 @@ import '../features/shared/data/repositories/messages_repository.dart';
 class PresenceService {
   final MessagesRepository _repo;
   RealtimeChannel? _channel;
-  Timer? _heartbeatTimer;
   bool _isTyping = false;
 
   PresenceService({MessagesRepository? repo})
@@ -37,23 +35,14 @@ class PresenceService {
 
       // NOW subscribe and track
       _channel!.subscribe((status, [error]) async {
-        if (status == 'SUBSCRIBED' && _channel != null) {
+        if (status == RealtimeSubscribeStatus.subscribed && _channel != null) {
           await _repo.trackPresence(_channel!, isTyping: _isTyping);
-
-          _heartbeatTimer?.cancel();
-          _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-            if (_channel != null) {
-              _repo.trackPresence(_channel!, isTyping: _isTyping);
-            }
-          });
         }
       });
     }
   }
 
   Future<void> dispose() async {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
     if (_channel != null) {
       await SupabaseService.client.removeChannel(_channel!);
       _channel = null;

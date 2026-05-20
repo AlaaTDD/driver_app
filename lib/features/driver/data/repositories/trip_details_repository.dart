@@ -52,4 +52,20 @@ class TripDetailsRepository {
       params: {'p_trip_id': tripId, 'p_driver_id': driverId},
     );
   }
+
+  Future<void> cancelTrip({
+    required String tripId,
+    required String driverId,
+    String? cancelReason,
+  }) async {
+    await _client.rpc(
+      'cancel_trip',
+      params: {
+        'p_trip_id': tripId,
+        'p_user_id': driverId,
+        'p_cancelled_by': 'driver',
+        if (cancelReason != null) 'p_cancel_reason': cancelReason,
+      },
+    );
+  }
 }

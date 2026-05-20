@@ -12,7 +12,7 @@ abstract class AppException implements Exception {
 
 /// Thrown when a network request fails or the user is offline.
 class NetworkException extends AppException {
-  NetworkException([String message = 'No internet connection', String? code])
+  NetworkException([String message = 'errorNoInternet', String? code])
       : super(message, code: code ?? 'network_error');
 }
 

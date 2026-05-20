@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 import 'package:snapix/core/theme/app_radius.dart';
 import 'package:snapix/core/theme/app_spacing.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 enum AppBadgeVariant { primary, success, warning, error, info, neutral }
 
@@ -17,7 +18,7 @@ class AppBadge extends StatelessWidget {
     this.dot = false,
   });
 
-  (Color, Color) get _colors => switch (variant) {
+  (Color, Color) _colors(BuildContext context) => switch (variant) {
         AppBadgeVariant.primary => (
             AppColors.primarySurface,
             AppColors.primary
@@ -33,14 +34,14 @@ class AppBadge extends StatelessWidget {
         AppBadgeVariant.error => (AppColors.errorSurface, AppColors.error),
         AppBadgeVariant.info => (AppColors.primarySurface, AppColors.info),
         AppBadgeVariant.neutral => (
-            AppColors.darkElevated,
-            AppColors.darkTextSecondary
+            context.elevatedColor,
+            context.textSecondary
           ),
       };
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = _colors;
+    final (bg, fg) = _colors(context);
     return Container(
       padding: AppSpacing.chip,
       decoration: BoxDecoration(color: bg, borderRadius: AppRadius.xs_),

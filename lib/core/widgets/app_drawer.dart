@@ -12,6 +12,7 @@ import '../../features/auth/domain/entities/user_entity.dart';
 import '../../features/shared/presentation/messages/bloc/messages_cubit.dart';
 import '../../features/shared/presentation/messages/bloc/messages_state.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 class AppDrawer extends StatelessWidget {
   final UserEntity? user;
@@ -21,7 +22,10 @@ class AppDrawer extends StatelessWidget {
   final VoidCallback? onMessagesTap;
   final VoidCallback? onChatbotTap;
   final VoidCallback? onComplaintsTap;
+  final VoidCallback? onBonusTap;
   final VoidCallback? onRevisionTap;
+  final VoidCallback? onPrivacyTap;
+  final VoidCallback? onHelpTap;
   final VoidCallback? onLogout;
 
   const AppDrawer({
@@ -33,7 +37,10 @@ class AppDrawer extends StatelessWidget {
     this.onMessagesTap,
     this.onChatbotTap,
     this.onComplaintsTap,
+    this.onBonusTap,
     this.onRevisionTap,
+    this.onPrivacyTap,
+    this.onHelpTap,
     this.onLogout,
   });
 
@@ -69,6 +76,12 @@ class AppDrawer extends StatelessWidget {
                       label:
                           AppLocalizations.of(context)!.driverRevisionRequests,
                       onTap: onRevisionTap),
+                if (user?.role == 'driver' && onBonusTap != null)
+                  _NavItem(
+                      icon: Icons.emoji_events_rounded,
+                      tint: AppColors.warning,
+                      label: AppLocalizations.of(context)!.bonusRewards,
+                      onTap: onBonusTap),
                 _NavItem(
                     icon: Icons.route_rounded,
                     tint: AppColors.success,
@@ -105,13 +118,13 @@ class AppDrawer extends StatelessWidget {
                     icon: Icons.shield_outlined,
                     tint: AppColors.purple,
                     label: AppLocalizations.of(context)!.privacyPolicy,
-                    onTap: () {},
+                    onTap: onPrivacyTap,
                     small: true),
                 _NavItem(
                     icon: Icons.help_outline_rounded,
-                    tint: AppColors.textSecondary,
+                    tint: context.textSecondary,
                     label: AppLocalizations.of(context)!.helpAndSupport,
-                    onTap: () {},
+                    onTap: onHelpTap,
                     small: true),
               ],
             ),
@@ -520,23 +533,12 @@ class _LogoutBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: ElevatedButton.icon(
-          onPressed: onLogout,
-          icon: const Icon(Icons.logout_rounded, size: 18),
-          label: Text(AppLocalizations.of(context)!.logout),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: AppColors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-            textStyle:
-                const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-        ),
+      child: AppButton(
+        text: AppLocalizations.of(context)!.logout,
+        variant: AppButtonVariant.danger,
+        leadingIcon: Icons.logout_rounded,
+        size: AppButtonSize.md,
+        onPressed: onLogout,
       ),
     );
   }

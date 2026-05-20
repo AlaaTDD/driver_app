@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'supabase_service.dart';
 import '../core/utils/retry_helper.dart';
-import '../core/utils/geohash_helper.dart';
 
 class UserPresenceService with WidgetsBindingObserver {
   UserPresenceService._() {
@@ -11,20 +10,16 @@ class UserPresenceService with WidgetsBindingObserver {
   }
   static final UserPresenceService instance = UserPresenceService._();
 
-  Timer? _heartbeatTimer;
   double? _lastLat;
   double? _lastLng;
   double? _writtenLat;
   double? _writtenLng;
   bool _isBroadcasting = false;
-  bool _isPausedByLifecycle = false;
+  bool _pausedByLifecycle = false;
 
   /// Minimum distance in meters before we write a new presence row.
-  /// Prevents redundant DB writes when the driver is stationary.
-  static const double _minMovementMeters = 50.0;
-
-  /// Heartbeat interval — reduced from 20s to 60s to lower DB I/O.
-  static const Duration _heartbeatInterval = Duration(seconds: 60);
+  /// Prevents redundant DB writes when the user is stationary.
+  static const double _minMovementMeters = 20.0;
 
   bool get isBroadcasting => _isBroadcasting;
 
@@ -32,10 +27,10 @@ class UserPresenceService with WidgetsBindingObserver {
     final resolvedLat = lat ?? _lastLat;
     final resolvedLng = lng ?? _lastLng;
     _isBroadcasting = true;
+    _pausedByLifecycle = false;
 
     if (resolvedLat == null || resolvedLng == null) {
       debugPrint('📡 UserPresence: Waiting for GPS — not writing to DB');
-      // Set the timer anyway to keep polling once location updates
     } else {
       _lastLat = resolvedLat;
       _lastLng = resolvedLng;
@@ -43,17 +38,7 @@ class UserPresenceService with WidgetsBindingObserver {
       await _upsertPresence(_lastLat!, _lastLng!, force: true);
     }
 
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(
-      _heartbeatInterval,
-      (_) {
-        if (!_isBroadcasting || _lastLat == null || _lastLng == null) return;
-        _upsertPresence(_lastLat!, _lastLng!);
-      },
-    );
-
-    debugPrint(
-        '📡 UserPresence: Started broadcasting loop (${_heartbeatInterval.inSeconds}s interval)');
+    debugPrint('📡 UserPresence: Started event-driven broadcasting');
   }
 
   Future<void> updateLocation(double lat, double lng) async {
@@ -61,36 +46,44 @@ class UserPresenceService with WidgetsBindingObserver {
     _lastLng = lng;
 
     if (!_isBroadcasting) return;
+    if (_pausedByLifecycle) return;
 
-    _upsertPresence(lat, lng);
+    await _upsertPresence(lat, lng);
   }
 
   Future<void> stopBroadcasting() async {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
     _isBroadcasting = false;
-    _isPausedByLifecycle = false;
+    _pausedByLifecycle = false;
+    _writtenLat = null;
+    _writtenLng = null;
 
     await _deletePresence();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_isBroadcasting && !_isPausedByLifecycle) return;
-
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      debugPrint('📡 UserPresence: App backgrounded/killed, pausing broadcast');
-      _heartbeatTimer?.cancel();
-      _isPausedByLifecycle = true;
-      _deletePresence();
-    } else if (state == AppLifecycleState.resumed) {
-      if (_isPausedByLifecycle) {
-        debugPrint('📡 UserPresence: App resumed, restarting broadcast');
-        _isPausedByLifecycle = false;
-        startBroadcasting(lat: _lastLat, lng: _lastLng);
-      }
+    if (_isExitState(state)) {
+      if (!_isBroadcasting || _pausedByLifecycle) return;
+      _pausedByLifecycle = true;
+      _writtenLat = null;
+      _writtenLng = null;
+      debugPrint('📡 UserPresence: App left foreground, deleting presence');
+      unawaited(_deletePresence());
+      return;
     }
+
+    if (state == AppLifecycleState.resumed && _pausedByLifecycle) {
+      _pausedByLifecycle = false;
+      if (!_isBroadcasting || _lastLat == null || _lastLng == null) return;
+      debugPrint('📡 UserPresence: App resumed, restoring presence');
+      unawaited(_upsertPresence(_lastLat!, _lastLng!, force: true));
+    }
+  }
+
+  bool _isExitState(AppLifecycleState state) {
+    return state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden;
   }
 
   Future<void> _deletePresence() async {
@@ -114,7 +107,7 @@ class UserPresenceService with WidgetsBindingObserver {
     final user = SupabaseService.currentUser;
     if (user == null) return;
 
-    // Skip write if the driver hasn't moved significantly
+    // Skip write if the user hasn't moved significantly.
     if (!force && _writtenLat != null && _writtenLng != null) {
       if (_haversineMeters(_writtenLat!, _writtenLng!, lat, lng) <
           _minMovementMeters) {

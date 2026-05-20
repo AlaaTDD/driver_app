@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/features/shared/data/repositories/complaints_repository.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});
@@ -313,9 +315,7 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
     final l = AppLocalizations.of(context)!;
     if (_titleController.text.trim().isEmpty ||
         _descController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.pleaseFillAllFields)),
-      );
+      AppToast.error(l.pleaseFillAllFields);
       return;
     }
 
@@ -328,23 +328,11 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l.successComplaintSent),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.success(l.successComplaintSent);
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l.errorSendComplaint),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.error(l.errorSendComplaint);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -436,34 +424,10 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
                 ),
               ),
               const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: _isSubmitting ? null : _submitComplaint,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                              color: AppColors.white, strokeWidth: 2),
-                        )
-                      : Text(
-                          l.send,
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
+              AppButton(
+                text: l.send,
+                onPressed: _isSubmitting ? null : _submitComplaint,
+                isLoading: _isSubmitting,
               ),
             ],
           ),

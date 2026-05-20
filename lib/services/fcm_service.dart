@@ -2,23 +2,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/widgets.dart';
 
 import 'dart:developer' as developer;
 import 'dart:io';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
-import '../core/constants/env_constants.dart';
-import '../../firebase_options.dart';
 import '../core/router/app_router.dart';
 import '../core/constants/app_routes.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  developer
-      .log('🔥 FCM BACKGROUND: Message received! ID: ${message.messageId}');
+  developer.log('FCM BACKGROUND: Message received! ID: ${message.messageId}');
   // Do not initialize Supabase or UI in background isolate
 }
 
@@ -26,6 +20,12 @@ class FCMService {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
   FCMService._internal();
+
+  // Channel configuration
+  static const String channelId = 'high_importance_channel';
+  static const String channelName = 'Snapix Notifications';
+  static const String channelDescription =
+      'Important app notifications and updates.';
 
   Future<void> Function(Map<String, dynamic>)? _onRideOffer;
   void setRideOfferHandler(Future<void> Function(Map<String, dynamic>) h) =>
@@ -62,9 +62,9 @@ class FCMService {
         InitializationSettings(android: androidInit, iOS: darwinInit);
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
+      channelId,
+      channelName,
+      description: channelDescription,
       importance: Importance.high,
     );
 
@@ -81,14 +81,14 @@ class FCMService {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       developer
-          .log('🔥 FCM FOREGROUND: Message received! ID: ${message.messageId}');
-      developer.log('🔥 FCM FOREGROUND: Data payload: ${message.data}');
+          .log('FCM FOREGROUND: Message received! ID: ${message.messageId}');
+      developer.log('FCM FOREGROUND: Data payload: ${message.data}');
       _handleForegroundMessage(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       developer
-          .log('🔥 FCM OPENED APP: Message clicked! ID: ${message.messageId}');
+          .log('FCM OPENED APP: Message clicked! ID: ${message.messageId}');
       _handleMessageOpen(message);
     });
 
@@ -108,12 +108,12 @@ class FCMService {
       }
 
       final token = await _messaging.getToken();
-      developer.log('🔥 FCM INITIAL TOKEN: $token');
+      developer.log('FCM INITIAL TOKEN: $token');
       if (token != null) {
         await _onTokenRefresh(token);
       }
     } catch (e) {
-      developer.log('🔥 FCM INITIAL TOKEN ERROR: $e');
+      developer.log('FCM INITIAL TOKEN ERROR: $e');
     }
   }
 
@@ -159,8 +159,7 @@ class FCMService {
     final messageId = message.messageId;
     if (messageId != null) {
       if (_handledMessageIds.contains(messageId)) {
-        developer
-            .log('🔥 FCM FOREGROUND: Duplicate message ignored: $messageId');
+        developer.log('FCM FOREGROUND: Duplicate message ignored: $messageId');
         return;
       }
       if (_handledMessageIds.length >= 100) {
@@ -253,8 +252,9 @@ class FCMService {
     if (notification == null) return;
 
     const androidDetails = AndroidNotificationDetails(
-      'taxi_app_channel',
-      'Taxi App Notifications',
+      channelId,
+      channelName,
+      channelDescription: channelDescription,
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',

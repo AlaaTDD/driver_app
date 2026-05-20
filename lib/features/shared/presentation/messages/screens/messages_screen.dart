@@ -8,12 +8,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/theme_extensions.dart';
+import '../../../../../core/utils/app_toast.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import '../../../../../core/models/message_model.dart';
 import '../../../../../services/supabase_service.dart';
 import '../bloc/messages_cubit.dart';
 import '../bloc/messages_state.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
@@ -140,10 +142,36 @@ class _MessagesViewState extends State<_MessagesView> {
       _cachedOtherUserId!,
       tripId: _cachedTripId,
       newMessageFrom: (name) => l10n.newMessageFrom(name),
+      imageAttachmentLabel: l10n.imageAttachment,
     );
     controller.clear();
     cubit.updateTyping(false);
     HapticFeedback.lightImpact();
+    _scrollToBottom();
+  }
+
+  Future<void> _pickAndSendImage(
+      BuildContext context, MessagesCubit cubit) async {
+    if (_cachedOtherUserId == null || _cachedOtherUserId!.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 78,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (image == null) return;
+
+    HapticFeedback.lightImpact();
+    await cubit.sendImage(
+      File(image.path),
+      _cachedOtherUserId!,
+      tripId: _cachedTripId,
+      newMessageFrom: (name) => l10n.newMessageFrom(name),
+      imageAttachmentLabel: l10n.imageAttachment,
+    );
     _scrollToBottom();
   }
 
@@ -233,16 +261,7 @@ class _MessagesViewState extends State<_MessagesView> {
     await cubit.deleteMessage(messageId, isSender: isMe);
     if (context.mounted) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.messageDeleted),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      AppToast.success(l10n.messageDeleted);
     }
   }
 
@@ -274,6 +293,7 @@ class _MessagesViewState extends State<_MessagesView> {
               onScrollToBottom: _scrollToBottom,
               onSendMessage: () =>
                   _sendMessage(context, _textController, cubit),
+              onPickImage: () => _pickAndSendImage(context, cubit),
               onShowMessageOptions: (msg, isMe) =>
                   _showMessageOptions(context, msg, isMe),
             );
@@ -331,22 +351,14 @@ class _MessagesViewState extends State<_MessagesView> {
                 ),
               ),
               const SizedBox(height: 20),
-              ElevatedButton.icon(
+              AppButton(
+                text: l.retry,
                 onPressed: () {
                   context.read<MessagesCubit>().loadConversations();
                   Navigator.of(context).pop();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 20),
-                label: Text(l.retry),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28)),
-                  elevation: 0,
-                ),
+                leadingIcon: Icons.refresh_rounded,
+                size: AppButtonSize.md,
               ),
             ],
           ),
@@ -366,6 +378,7 @@ class _ChatUI extends StatefulWidget {
   final TextEditingController textController;
   final VoidCallback onScrollToBottom;
   final VoidCallback? onSendMessage;
+  final VoidCallback? onPickImage;
   final void Function(MessageModel msg, bool isMe)? onShowMessageOptions;
 
   const _ChatUI({
@@ -375,6 +388,7 @@ class _ChatUI extends StatefulWidget {
     required this.textController,
     required this.onScrollToBottom,
     this.onSendMessage,
+    this.onPickImage,
     this.onShowMessageOptions,
   });
 
@@ -798,7 +812,16 @@ class _ChatUIState extends State<_ChatUI> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const SizedBox(width: 12),
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                            start: 4, bottom: 4),
+                        child: _InputIconButton(
+                          icon: Icons.image_outlined,
+                          tooltip: widget.l.imageAttachment,
+                          context: context,
+                          onTap: widget.onPickImage,
+                        ),
+                      ),
                       Expanded(
                         child: TextField(
                           controller: widget.textController,
@@ -1144,6 +1167,68 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final attachmentUrl = message.attachmentUrl;
+    if (message.type == 'image' &&
+        attachmentUrl != null &&
+        attachmentUrl.isNotEmpty) {
+      return Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.62,
+                maxHeight: 260,
+              ),
+              child: Image.network(
+                attachmentUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: MediaQuery.of(context).size.width * 0.58,
+                    height: 180,
+                    color: AppColors.black.withValues(alpha: 0.08),
+                    alignment: Alignment.center,
+                    child: const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: MediaQuery.of(context).size.width * 0.58,
+                  height: 160,
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  alignment: Alignment.center,
+                  child: Icon(Icons.broken_image_outlined,
+                      color: isMe ? AppColors.white : AppColors.error),
+                ),
+              ),
+            ),
+          ),
+          if (message.content.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              message.content,
+              style: TextStyle(
+                color: isMe ? AppColors.white : context.textPrimary,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return Text(
       message.content,
       style: TextStyle(

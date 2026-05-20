@@ -20,6 +20,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
     on<RejectTrip>(_onRejectTrip);
     on<StartTrip>(_onStartTrip);
     on<CompleteTrip>(_onCompleteTrip);
+    on<CancelTrip>(_onCancelTrip);
   }
 
   void _manageLocationTracking(String? status) {
@@ -154,6 +155,31 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
       debugPrint('❌ CompleteTrip failed: $e');
       debugPrint(stackTrace.toString());
       emit(TripDetailsError('errorCompleteTrip'));
+    }
+  }
+
+  Future<void> _onCancelTrip(
+    CancelTrip event,
+    Emitter<TripDetailsState> emit,
+  ) async {
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) {
+        emit(TripDetailsError('errorNotLoggedIn'));
+        return;
+      }
+
+      await _repository.cancelTrip(
+        tripId: event.tripId,
+        driverId: userId,
+        cancelReason: event.cancelReason,
+      );
+
+      _manageLocationTracking('cancelled');
+      emit(const TripCancelled());
+    } catch (e) {
+      debugPrint('❌ TripDetailsBloc: CancelTrip failed: $e');
+      emit(TripDetailsError('errorCancelTrip'));
     }
   }
 

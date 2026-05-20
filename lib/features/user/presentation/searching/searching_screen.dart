@@ -6,11 +6,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'bloc/searching_bloc.dart';
 import 'bloc/searching_event.dart';
 import 'bloc/searching_state.dart';
-import '../../../../core/constants/map_styles.dart';
+import '../../../../core/map/app_map.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../services/directions_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
@@ -50,7 +51,16 @@ class _SearchingScreenState extends State<SearchingScreen>
   @override
   void initState() {
     super.initState();
-    context.read<SearchingBloc>().add(StartSearching(widget.tripId));
+    Future.microtask(() {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        context.read<SearchingBloc>().add(StartSearching(
+          widget.tripId,
+          title: l10n.newTripTitle,
+          body: l10n.newTripBody,
+        ));
+      }
+    });
     _routeCubit = TripRouteCubit()..watchTripRoutes(widget.tripId);
     _pulseCtrl =
         AnimationController(vsync: this, duration: const Duration(seconds: 2))
@@ -199,7 +209,7 @@ class _SearchingScreenState extends State<SearchingScreen>
             target: LatLng(widget.originLat!, widget.originLng!), zoom: 13)
         : CameraPosition(target: AppConstants.defaultMapCenter, zoom: 13);
 
-    return GoogleMap(
+    return AppGoogleMap(
       initialCameraPosition: initPos,
       onMapCreated: (ctrl) {
         if (!_mapCtrl.isCompleted) {
@@ -217,9 +227,6 @@ class _SearchingScreenState extends State<SearchingScreen>
       },
       markers: markers,
       polylines: polylines,
-      myLocationEnabled: false,
-      zoomControlsEnabled: false,
-      style: isDark ? kDarkMapStyle : kLightMapStyle,
       padding: const EdgeInsets.only(bottom: 300),
     );
   }
@@ -279,7 +286,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                 height: 7,
                 decoration: const BoxDecoration(
                     shape: BoxShape.circle, color: AppColors.success)),
-            Container(width: 1, height: 10, color: AppColors.textSecondary),
+            Container(width: 1, height: 10, color: context.textSecondary),
             Container(
                 width: 7,
                 height: 7,
@@ -553,20 +560,16 @@ class _SearchingScreenState extends State<SearchingScreen>
                           ],
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: () => context
-                            .read<SearchingBloc>()
-                            .add(AcceptDriverOffer(offer['id'])),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                      SizedBox(
+                        height: 36,
+                        child: AppButton(
+                          text: l.acceptBtn,
+                          onPressed: () => context
+                              .read<SearchingBloc>()
+                              .add(AcceptDriverOffer(offer['id'])),
+                          size: AppButtonSize.sm,
+                          width: null,
                         ),
-                        child: Text(l.acceptBtn),
                       ),
                     ],
                   ),
@@ -666,19 +669,17 @@ class _SearchingScreenState extends State<SearchingScreen>
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: ElevatedButton(
+            child: AppButton(
+              text: AppLocalizations.of(context)!.retry,
               onPressed: () {
                 context
                     .read<SearchingBloc>()
-                    .add(StartSearching(widget.tripId));
+                    .add(StartSearching(
+                      widget.tripId,
+                      title: AppLocalizations.of(context)!.newTripTitle,
+                      body: AppLocalizations.of(context)!.newTripBody,
+                    ));
               },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  elevation: 0),
-              child: Text(AppLocalizations.of(context)!.retry),
             ),
           ),
         ]),
@@ -712,16 +713,9 @@ class _SearchingScreenState extends State<SearchingScreen>
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: ElevatedButton(
+          child: AppButton(
+            text: AppLocalizations.of(context)!.backToHome,
             onPressed: () => context.go(AppRoutes.userHome),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                elevation: 0),
-            child: Text(AppLocalizations.of(context)!.backToHome,
-                style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ),
       ],
@@ -766,17 +760,15 @@ class _SearchingScreenState extends State<SearchingScreen>
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: ElevatedButton(
+            child: AppButton(
+              text: AppLocalizations.of(context)!.retry,
               onPressed: () => context
                   .read<SearchingBloc>()
-                  .add(StartSearching(widget.tripId)),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  elevation: 0),
-              child: Text(AppLocalizations.of(context)!.retry),
+                  .add(StartSearching(
+                    widget.tripId,
+                    title: AppLocalizations.of(context)!.newTripTitle,
+                    body: AppLocalizations.of(context)!.newTripBody,
+                  )),
             ),
           ),
         ]),

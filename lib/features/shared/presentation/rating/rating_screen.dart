@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 import 'package:go_router/go_router.dart';
 import 'bloc/rating_bloc.dart';
 import 'bloc/rating_event.dart';
@@ -38,6 +39,15 @@ class _RatingScreenState extends State<RatingScreen> {
       appBar: AppBar(
         backgroundColor: context.bgColor,
         title: Text(AppLocalizations.of(context)!.rateTrip),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () {
+            final authState = context.read<AuthBloc>().state;
+            final isDriver = authState is AuthAuthenticated &&
+                authState.user.role == 'driver';
+            context.go(isDriver ? AppRoutes.driverHome : AppRoutes.userHome);
+          },
+        ),
       ),
       body: BlocConsumer<RatingBloc, RatingState>(
         listener: (context, state) {
@@ -88,11 +98,10 @@ class _RatingScreenState extends State<RatingScreen> {
                   Text(ErrorMapper.getErrorMessage(context, state.message),
                       style: TextStyle(color: context.textPrimary)),
                   const SizedBox(height: 16),
-                  ElevatedButton(
+                  AppButton(
+                    text: AppLocalizations.of(context)!.retry,
                     onPressed: () => setState(() => _rating = 0),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary),
-                    child: Text(AppLocalizations.of(context)!.retry),
+                    size: AppButtonSize.sm,
                   ),
                 ],
               ),
@@ -151,7 +160,8 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
+          AppButton(
+            text: AppLocalizations.of(context)!.submitRating,
             onPressed: _rating > 0
                 ? () {
                     context.read<RatingBloc>().add(SubmitRating(
@@ -163,11 +173,7 @@ class _RatingScreenState extends State<RatingScreen> {
                         ));
                   }
                 : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              minimumSize: const Size.fromHeight(52),
-            ),
-            child: Text(AppLocalizations.of(context)!.submitRating),
+            isDisabled: _rating <= 0,
           ),
         ],
       ),

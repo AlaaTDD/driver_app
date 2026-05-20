@@ -1689,4 +1689,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errorRemoveStopover => 'فشل حذف المحطة';
+
+  @override
+  String get confirm => 'تأكيد';
+
+  @override
+  String get youPrefix => 'أنت: ';
+
+  @override
+  String get emailExample => 'example@email.com';
+
+  @override
+  String get promoCodeExample => 'PROMO20';
+
+  @override
+  String get notAvailable => 'غير متاح';
+
+  @override
+  String get noData => '—';
 }

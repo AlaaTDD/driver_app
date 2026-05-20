@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 // ─────────────────────────────────────────────
 //  DATA MODEL
@@ -27,7 +28,7 @@ class CustomAnimatedBottomNav extends StatelessWidget {
   /// Widget displayed in the FAB notch (optional)
   final Widget? floatingActionButton;
 
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final Color itemColor;
   final Color notchColor;
   final double height;
@@ -42,7 +43,7 @@ class CustomAnimatedBottomNav extends StatelessWidget {
     required this.items,
     required this.onTap,
     this.floatingActionButton,
-    this.backgroundColor = AppColors.white,
+    this.backgroundColor,
     this.itemColor = AppColors.textSecondary,
     this.notchColor = AppColors.purple,
     this.height = 72,
@@ -53,7 +54,6 @@ class CustomAnimatedBottomNav extends StatelessWidget {
     this.elevation = 12,
   }) : assert(
           items.length >= 2 && items.length <= 5,
-          'Items must be between 2 and 5',
         );
 
   bool get _hasFab => floatingActionButton != null;
@@ -78,7 +78,7 @@ class CustomAnimatedBottomNav extends StatelessWidget {
               color: AppColors.transparent,
               child: CustomPaint(
                 painter: _NotchPainter(
-                  color: backgroundColor,
+                  color: backgroundColor ?? context.cardColor,
                   notchRadius: _hasFab ? notchRadius : 0,
                   gapWidth: _hasFab ? gapWidth : 0,
                 ),

@@ -3308,6 +3308,42 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'فشل حذف المحطة'**
   String get errorRemoveStopover;
+
+  /// No description provided for @confirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد'**
+  String get confirm;
+
+  /// No description provided for @youPrefix.
+  ///
+  /// In ar, this message translates to:
+  /// **'أنت: '**
+  String get youPrefix;
+
+  /// No description provided for @emailExample.
+  ///
+  /// In ar, this message translates to:
+  /// **'example@email.com'**
+  String get emailExample;
+
+  /// No description provided for @promoCodeExample.
+  ///
+  /// In ar, this message translates to:
+  /// **'PROMO20'**
+  String get promoCodeExample;
+
+  /// No description provided for @notAvailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متاح'**
+  String get notAvailable;
+
+  /// No description provided for @noData.
+  ///
+  /// In ar, this message translates to:
+  /// **'—'**
+  String get noData;
 }
 
 class _AppLocalizationsDelegate

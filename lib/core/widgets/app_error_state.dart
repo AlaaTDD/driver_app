@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 import 'package:snapix/core/theme/app_spacing.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
+import 'package:snapix/core/widgets/app_button.dart';
+import '../localization/generated/app_localizations.dart';
 
 class AppErrorState extends StatelessWidget {
   final String? message;
   final VoidCallback? onRetry;
-  final String retryLabel;
+  final String? retryLabel;
 
   const AppErrorState({
     super.key,
     this.message,
     this.onRetry,
-    this.retryLabel = 'إعادة المحاولة',
+    this.retryLabel,
   });
 
   @override
@@ -33,7 +35,7 @@ class AppErrorState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              message ?? 'حدث خطأ غير متوقع',
+              message ?? AppLocalizations.of(context)?.errorUnexpected ?? '',
               style: TextStyle(
                   color: context.textPrimary,
                   fontSize: 15,
@@ -42,10 +44,12 @@ class AppErrorState extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              OutlinedButton.icon(
+              AppButton(
+                text: retryLabel ?? AppLocalizations.of(context)?.retry ?? '',
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text(retryLabel),
+                variant: AppButtonVariant.outlined,
+                size: AppButtonSize.md,
+                leadingIcon: Icons.refresh_rounded,
               ),
             ],
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 class SegmentedControl extends StatelessWidget {
   final int selectedIndex;
@@ -21,7 +22,7 @@ class SegmentedControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const elevated = AppColors.surfaceElevated;
+    final elevated = context.elevatedColor;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -79,8 +80,8 @@ class _SegmentButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const blue = AppColors.primary;
-    const card = AppColors.surface;
-    const t2 = AppColors.textSecondary;
+    final card = context.cardColor;
+    final t2 = context.textSecondary;
 
     return Expanded(
       child: GestureDetector(

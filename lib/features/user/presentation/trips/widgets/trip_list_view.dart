@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import 'animated_trip_card.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 class TripListView extends StatelessWidget {
   final List<Map<String, dynamic>> trips;
@@ -66,7 +67,7 @@ class TripDateSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const t2 = AppColors.textSecondary;
+    final t2 = context.textSecondary;
     const blue = AppColors.primary;
 
     return Column(
@@ -81,13 +82,17 @@ class TripDateSection extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: blue, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 8),
-            Text(
-              dateLabel,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: t2,
-                letterSpacing: 0.5,
+            Expanded(
+              child: Text(
+                dateLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: t2,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ]),
@@ -112,8 +117,8 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     const blue = AppColors.primary;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
 
     return Center(
       child: Column(
@@ -135,13 +140,13 @@ class EmptyState extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             l.noTrips,
-            style: const TextStyle(
+            style: TextStyle(
                 color: t1, fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
             isActive ? l.noActiveTrips : l.tripsWillAppearHere,
-            style: const TextStyle(color: t2, fontSize: 14),
+            style: TextStyle(color: t2, fontSize: 14),
           ),
           if (isActive) ...[
             const SizedBox(height: 28),

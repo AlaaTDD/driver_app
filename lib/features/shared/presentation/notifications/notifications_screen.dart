@@ -8,6 +8,7 @@ import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_routes.dart';
 import 'package:snapix/features/shared/data/repositories/notifications_repository.dart';
 import 'package:snapix/services/supabase_service.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -132,14 +133,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final isDriver = await _isDriver();
       final route =
           isDriver ? AppRoutes.driverMessages : AppRoutes.userMessages;
-      if (mounted) context.go('$route?otherUserId=${notif.referenceId}');
+      if (mounted) context.push('$route?otherUserId=${notif.referenceId}');
     } else if (notif.type == 'trip' &&
         notif.referenceId != null &&
         notif.referenceId!.isNotEmpty) {
       final isDriver = await _isDriver();
       final route =
           isDriver ? AppRoutes.driverTripDetails : AppRoutes.userTripDetails;
-      if (mounted) context.go('$route?tripId=${notif.referenceId}');
+      if (mounted) context.push('$route?tripId=${notif.referenceId}');
     }
   }
 
@@ -165,14 +166,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       Text(_error!,
                           style: TextStyle(color: context.textPrimary)),
                       const SizedBox(height: 16),
-                      ElevatedButton(
+                      AppButton(
+                        text: l.retry,
                         onPressed: () {
                           _sub?.cancel();
                           _subscribeToStream();
                         },
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary),
-                        child: Text(l.retry),
+                        size: AppButtonSize.sm,
                       ),
                     ],
                   ),

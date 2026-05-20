@@ -11,6 +11,7 @@ import '../../../../core/utils/app_toast.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/widgets/stat_card.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../services/r2_storage_service.dart';
 import '../../../../services/supabase_service.dart';
@@ -28,6 +29,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   final _plateController = TextEditingController();
   bool _populated = false;
   bool _uploadingAvatar = false;
+  File? _localAvatarFile;
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           if (state is DriverProfileLoaded) {
             final wasPopulated = _populated;
             _populate(state.driver);
+            _localAvatarFile = null;
             if (wasPopulated) {
               AppToast.success(AppLocalizations.of(context)!.changesSaved);
             }
@@ -83,13 +86,12 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   Text(state.message,
                       style: TextStyle(color: context.textPrimary)),
                   const SizedBox(height: 16),
-                  ElevatedButton(
+                  AppButton(
+                    text: AppLocalizations.of(context)!.retry,
                     onPressed: () => context
                         .read<DriverProfileBloc>()
                         .add(const LoadDriverProfile()),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary),
-                    child: Text(AppLocalizations.of(context)!.retry),
+                    size: AppButtonSize.sm,
                   ),
                 ],
               ),
@@ -108,6 +110,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       DriverProfileState state) {
     final l = AppLocalizations.of(context)!;
     final avatarUrl = driver['avatar_url'] as String?;
+    final ImageProvider<Object>? avatarImage;
+    if (_localAvatarFile != null) {
+      avatarImage = FileImage(_localAvatarFile!);
+    } else if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      avatarImage = NetworkImage(avatarUrl);
+    } else {
+      avatarImage = null;
+    }
     final rating = driver['rating'] as num?;
     final totalTrips = driver['total_trips'] as num?;
     final isVerified = driver['is_verified'] as bool? ?? false;
@@ -116,6 +126,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     final vehicleModel = driver['vehicle_model'] as String?;
     final vehicleYear = driver['vehicle_year'];
     final vehicleColor = driver['vehicle_color'] as String?;
+    final vehiclePlate = driver['vehicle_plate'] as String?;
     final vehicleImageUrl = driver['vehicle_image_url'] as String?;
 
     return CustomScrollView(
@@ -192,13 +203,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               child: CircleAvatar(
                                 radius: 52,
                                 backgroundColor: context.primaryTint,
-                                backgroundImage: avatarUrl != null
-                                    ? NetworkImage(avatarUrl)
-                                    : null,
+                                backgroundImage: avatarImage,
                                 child: _uploadingAvatar
                                     ? const CircularProgressIndicator(
                                         color: AppColors.white, strokeWidth: 2)
-                                    : avatarUrl == null
+                                    : avatarImage == null
                                         ? const Icon(Icons.person_rounded,
                                             size: 52, color: AppColors.primary)
                                         : null,
@@ -350,6 +359,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           value: vehicleColor,
                         ),
                       ],
+                      if (vehiclePlate != null && vehiclePlate.isNotEmpty) ...[
+                        Divider(color: context.divColor, height: 20),
+                        _DetailRow(
+                          icon: Icons.confirmation_number_outlined,
+                          label: l.plateNumber,
+                          value: vehiclePlate,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -422,7 +439,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                ElevatedButton(
+                AppButton(
+                  text: l.saveChanges,
+                  isLoading: state is DriverProfileLoading,
                   onPressed: state is DriverProfileLoading
                       ? null
                       : () => context
@@ -432,17 +451,6 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             'phone': _phoneController.text.trim(),
                             'vehicle_plate': _plateController.text.trim(),
                           })),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: state is DriverProfileLoading
-                      ? const CircularProgressIndicator(color: AppColors.white)
-                      : Text(l.saveChanges,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -454,19 +462,31 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   }
 
   Future<void> _pickAndUploadAvatar() async {
+    final source = await _chooseAvatarSource();
+    if (source == null) return;
+
     final picker = ImagePicker();
-    final XFile? image =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 82,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
     if (image == null) return;
 
-    setState(() => _uploadingAvatar = true);
+    setState(() {
+      _localAvatarFile = File(image.path);
+      _uploadingAvatar = true;
+    });
     try {
       final uid = SupabaseService.currentUser?.id;
       if (uid == null) throw AuthException('errorNotLoggedIn');
       final r2 = R2StorageService();
+      final ext = _imageExtension(image.path);
+      final stamp = DateTime.now().millisecondsSinceEpoch;
       final url = await r2.uploadFile(
         file: File(image.path),
-        path: 'avatars/driver_$uid.${image.path.split('.').last}',
+        path: 'avatars/driver_${uid}_$stamp.$ext',
       );
       // Persist via bloc (UpdateDriverProfile allows avatar_url)
       if (mounted) {
@@ -475,10 +495,57 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             .add(UpdateDriverProfile({'avatar_url': url}));
       }
     } catch (e) {
-      if (mounted) AppToast.error('فشل رفع الصورة: $e');
+      if (mounted) {
+        setState(() => _localAvatarFile = null);
+        final message = e is AppException ? e.message : 'errorUploadFailed';
+        AppToast.error(ErrorMapper.getErrorMessage(context, message));
+      }
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
     }
+  }
+
+  String _imageExtension(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => 'jpg',
+      'png' => 'png',
+      'webp' => 'webp',
+      _ => 'jpg',
+    };
+  }
+
+  Future<ImageSource?> _chooseAvatarSource() {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded,
+                    color: AppColors.primary),
+                title: Text(isAr ? 'المعرض' : 'Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_rounded,
+                    color: AppColors.primary),
+                title: Text(isAr ? 'الكاميرا' : 'Camera'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   String _vehicleLabel(String type) {
@@ -553,12 +620,17 @@ class _DetailRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            color: context.textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: context.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

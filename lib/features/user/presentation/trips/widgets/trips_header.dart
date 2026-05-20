@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 class TripsHeader extends StatelessWidget {
   final int total;
@@ -21,15 +22,15 @@ class TripsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    const card = AppColors.surface;
-    const elevated = AppColors.surfaceElevated;
-    const border = AppColors.divider;
+    final card = context.cardColor;
+    final elevated = context.elevatedColor;
+    final border = context.divColor;
     const blue = AppColors.primary;
     const emerald = AppColors.secondary;
     const rose = AppColors.error;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
-    const t3 = AppColors.textDisabled;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
+    final t3 = context.textDisabled;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -62,7 +63,7 @@ class TripsHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: border, width: 1),
                 ),
-                child: const Icon(Icons.arrow_back_ios_new_rounded,
+                child: Icon(Icons.arrow_back_ios_new_rounded,
                     color: t1, size: 16),
               ),
             ),
@@ -72,14 +73,14 @@ class TripsHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(l.myTrips,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: t1,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           height: 1.2)),
                   const SizedBox(height: 2),
                   Text(l.totalTripsLabel(total),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: t2, fontSize: 12, height: 1.2)),
                 ])),
             GestureDetector(
@@ -158,10 +159,10 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const elevated = AppColors.surfaceElevated;
-    const border = AppColors.divider;
-    const t1 = AppColors.textPrimary;
-    const t2 = AppColors.textSecondary;
+    final elevated = context.elevatedColor;
+    final border = context.divColor;
+    final t1 = context.textPrimary;
+    final t2 = context.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -185,13 +186,13 @@ class _StatChip extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   color: t1,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   height: 1.2)),
           Text(label,
-              style: const TextStyle(color: t2, fontSize: 11, height: 1.2)),
+              style: TextStyle(color: t2, fontSize: 11, height: 1.2)),
         ])),
       ]),
     );

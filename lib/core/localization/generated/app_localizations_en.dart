@@ -1712,4 +1712,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorRemoveStopover => 'Failed to remove stopover';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get youPrefix => 'You: ';
+
+  @override
+  String get emailExample => 'example@email.com';
+
+  @override
+  String get promoCodeExample => 'PROMO20';
+
+  @override
+  String get notAvailable => 'N/A';
+
+  @override
+  String get noData => '—';
 }

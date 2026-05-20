@@ -16,7 +16,7 @@ import 'package:geocoding/geocoding.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/constants/map_styles.dart';
+import '../../../../core/map/app_map.dart';
 import '../../../../services/directions_service.dart';
 import '../../../../services/location_service.dart';
 import '../../../../core/constants/env_constants.dart';
@@ -24,26 +24,10 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:ui' as ui;
 import 'package:snapix/core/theme/app_colors.dart';
 import '../../../../core/utils/map_camera_utils.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
+import 'package:snapix/core/utils/app_toast.dart';
 
-// ─── Design Tokens (shared palette) ──────────────────────────────────────────
-class _C {
-  static const bg = AppColors.background;
-  static const sheet = AppColors.primarySurface;
-  static const card = AppColors.surface;
-  static const elevated = AppColors.surfaceElevated;
-  static const border = AppColors.divider;
-
-  static const blue = AppColors.primary;
-  static final blueGlow = AppColors.primary.withValues(alpha: 0.25);
-  static const emerald = AppColors.secondary;
-  static const rose = AppColors.error;
-  static const amber = AppColors.warning;
-  static const violet = AppColors.purple;
-
-  static const t1 = AppColors.textPrimary;
-  static const t2 = AppColors.textSecondary;
-  static const t3 = AppColors.textDisabled;
-}
+// _C palette removed
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 class DriverTripDetailsScreen extends StatefulWidget {
@@ -62,6 +46,15 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   List<LatLng> _routePoints = [];
   bool _routeFetchRequested = false;
   String _lastStopoversHash = '';
+  CameraPosition? _lastCameraPosition;
+  List<LatLng> _driverApproachRoutePoints = const [];
+  String? _lastDriverApproachRouteHash;
+  DateTime? _lastDriverApproachRouteRequestAt;
+  bool _driverApproachRouteLoading = false;
+  String? _completedDriverApproachTargetHash;
+  final Map<String, BitmapDescriptor> _routeMarkerIcons = {};
+  final Set<String> _pendingRouteMarkerIcons = {};
+  String? _routeMarkerLocaleCode;
   bool _is3DMode = false;
   Map<String, dynamic>? _trip;
 
@@ -115,10 +108,21 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   BitmapDescriptor? _destIcon;
   BitmapDescriptor? _waypointIcon;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final localeCode = Localizations.localeOf(context).languageCode;
+    if (_routeMarkerLocaleCode != localeCode) {
+      _routeMarkerLocaleCode = localeCode;
+      _routeMarkerIcons.clear();
+      _pendingRouteMarkerIcons.clear();
+    }
+  }
+
   Future<void> _loadCircleIcons() async {
-    _pickupIcon = await _createCircleMarker(_C.emerald);
-    _destIcon = await _createCircleMarker(_C.rose);
-    _waypointIcon = await _createCircleMarker(_C.amber);
+    _pickupIcon = await _createCircleMarker(AppColors.success);
+    _destIcon = await _createCircleMarker(AppColors.error);
+    _waypointIcon = await _createCircleMarker(AppColors.warning);
     if (mounted) setState(() {});
   }
 
@@ -177,8 +181,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             ctrl.animateCamera(CameraUpdate.newCameraPosition(
               CameraPosition(
                 target: _driverLocation!,
-                zoom: _is3DMode ? 18 : 16,
-                tilt: _is3DMode ? 60 : 0,
+                zoom: _is3DMode ? 17.2 : 16,
+                tilt: _is3DMode ? 48 : 0,
                 bearing: _driverHeading,
               ),
             ));
@@ -210,7 +214,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
           BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       anchor: const Offset(0.5, 0.5),
       flat: true,
-      zIndex: 2,
+      zIndexInt: 2,
     );
   }
 
@@ -248,7 +252,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         anchor: const Offset(0.5, 0.5),
         flat: true,
-        zIndex: 2,
+        zIndexInt: 2,
       );
     });
     _animationTicker?.start();
@@ -268,7 +272,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     setState(() => _routePoints = result.points);
     if (_mapController.isCompleted) {
       final ctrl = await _mapController.future;
-      if (!mounted || _cameraFollowing) return;
+      if (!mounted || _cameraFollowing || _is3DMode) return;
       _fitMapBounds(ctrl, const <Marker>{});
     }
   }
@@ -292,9 +296,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: _C.bg,
+        backgroundColor: context.bgColor,
         body: BlocConsumer<TripDetailsBloc, TripDetailsState>(
           listener: (ctx, state) {
             if (state is TripDetailsLoaded) {
@@ -308,27 +314,19 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                 });
                 return;
               }
-              // snap camera to pickup
-              final pLat = (state.trip['pickup_lat'] as num?)?.toDouble();
-              final pLng = (state.trip['pickup_lng'] as num?)?.toDouble();
-              if (pLat != null && _mapController.isCompleted) {
-                _mapController.future.then((c) {
-                  if (ctx.mounted) {
-                    try {
-                      c.animateCamera(
-                          CameraUpdate.newLatLng(LatLng(pLat, pLng!)));
-                    } catch (e) {
-                      debugPrint('animateCamera error: $e');
-                    }
-                  }
-                });
-              }
               if (!_animationTriggered) {
                 _animationTriggered = true;
                 _sheetCtrl.forward(from: 0);
               }
             } else if (state is TripDetailsError) {
               _toast(ctx, state.message, ok: false);
+            } else if (state is TripCancelled) {
+              _toast(ctx, AppLocalizations.of(ctx)!.cancelTrip, ok: true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (ctx.mounted) {
+                  ctx.go(AppRoutes.driverHome);
+                }
+              });
             }
           },
           builder: (ctx, state) {
@@ -349,22 +347,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   }
 
   void _toast(BuildContext ctx, String msg, {required bool ok}) {
-    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-      content: Row(children: [
-        Icon(ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-            color: AppColors.white, size: 18),
-        const SizedBox(width: 10),
-        Expanded(
-            child: Text(msg,
-                style: const TextStyle(fontSize: 13, color: AppColors.white))),
-      ]),
-      backgroundColor: ok ? _C.emerald : _C.rose,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      duration: const Duration(seconds: 2),
-      elevation: 0,
-    ));
+    if (ok) {
+      AppToast.success(msg);
+    } else {
+      AppToast.error(msg);
+    }
   }
 
   // ══════════════════════════════════════════════════════════
@@ -376,14 +363,14 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         animation: _shimCtrl,
         builder: (_, __) {
           final t = (_shimCtrl.value * 2 - 1).abs();
-          Color sh(Color b) => Color.lerp(b, _C.elevated, t)!;
+          Color sh(Color b) => Color.lerp(b, context.elevatedColor, t)!;
           return Column(children: [
             Container(
                 height: MediaQuery.of(context).size.height * 0.45,
-                color: sh(_C.card)),
+                color: sh(context.cardColor)),
             Expanded(
               child: Container(
-                color: _C.sheet,
+                color: context.cardColor,
                 padding: const EdgeInsets.all(20),
                 child: Column(children: [
                   const SizedBox(height: 8),
@@ -412,7 +399,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
           height: h,
           width: w,
           decoration: BoxDecoration(
-              color: sh(_C.card), borderRadius: BorderRadius.circular(14)));
+              color: sh(context.cardColor),
+              borderRadius: BorderRadius.circular(14)));
 
   // ══════════════════════════════════════════════════════════
   // ERROR
@@ -429,20 +417,22 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
           height: 88,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: _C.rose.withValues(alpha: 0.3)),
-            color: _C.rose.withValues(alpha: 0.08),
+            border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+            color: AppColors.error.withValues(alpha: 0.08),
           ),
-          child: const Icon(Icons.cloud_off_rounded, size: 40, color: _C.rose),
+          child:
+              Icon(Icons.cloud_off_rounded, size: 40, color: AppColors.error),
         ),
         const SizedBox(height: 24),
         Text(msg,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: _C.t2, fontSize: 14, height: 1.6)),
+            style: TextStyle(
+                color: context.textSecondary, fontSize: 14, height: 1.6)),
         const SizedBox(height: 32),
         _Btn(
           label: l.retry,
           icon: Icons.refresh_rounded,
-          color: _C.blue,
+          color: AppColors.primary,
           onTap: () => context
               .read<TripDetailsBloc>()
               .add(LoadTripDetails(widget.tripId)),
@@ -497,26 +487,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                 ),
                 _MapCircleBtn(
                   icon: _is3DMode ? Icons.view_in_ar : Icons.map_outlined,
-                  onTap: () async {
-                    setState(() => _is3DMode = !_is3DMode);
-                    if (_mapController.isCompleted) {
-                      final ctrl = await _mapController.future;
-                      final currentPos = _driverLocation ??
-                          (pLat != null && pLng != null
-                              ? LatLng(pLat, pLng)
-                              : const LatLng(0, 0));
-                      await ctrl.animateCamera(
-                        CameraUpdate.newCameraPosition(
-                          CameraPosition(
-                            target: currentPos,
-                            zoom: _is3DMode ? 18 : 15,
-                            tilt: _is3DMode ? 60 : 0,
-                            bearing: _driverHeading,
-                          ),
-                        ),
-                      );
-                    }
-                  },
+                  onTap: _toggle3DMode,
                 ),
               ],
             ),
@@ -542,8 +513,9 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                   ctrl.animateCamera(CameraUpdate.newCameraPosition(
                     CameraPosition(
                         target: _driverLocation!,
-                        zoom: 16,
-                        bearing: _driverHeading),
+                        zoom: _is3DMode ? 17.2 : 16,
+                        tilt: _is3DMode ? 48 : 0,
+                        bearing: _is3DMode ? _driverHeading : 0),
                   ));
                 } catch (e) {
                   debugPrint('animateCamera error: $e');
@@ -567,8 +539,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
           child: FadeTransition(
             opacity: _fadeAnim,
             child: Container(
-              decoration: const BoxDecoration(
-                color: _C.sheet,
+              decoration: BoxDecoration(
+                color: context.cardColor,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: Column(children: [
@@ -578,7 +550,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                      color: _C.border, borderRadius: BorderRadius.circular(2)),
+                      color: context.divColor,
+                      borderRadius: BorderRadius.circular(2)),
                 ),
                 Expanded(
                     child: SingleChildScrollView(
@@ -605,10 +578,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                                 if (routeState.waypoints.isNotEmpty)
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: _C.card,
+                                      color: context.cardColor,
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                          color: _C.border, width: 1),
+                                          color: context.divColor, width: 1),
                                     ),
                                     padding: const EdgeInsets.all(16),
                                     child: WaypointsTimeline(
@@ -651,7 +624,13 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                         // Timeline
                         _HTimeline(trip: trip),
 
-                        SizedBox(height: hasAction ? 90 : 20),
+                        SizedBox(
+                            height: !hasAction
+                                ? 20
+                                : (status == 'accepted' ||
+                                        status == 'in_progress')
+                                    ? 150
+                                    : 90),
                       ]),
                 )),
               ]),
@@ -677,6 +656,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
               onStart: () =>
                   context.read<TripDetailsBloc>().add(StartTrip(widget.tripId)),
               onComplete: () => _completeDialog(),
+              onCancel: () => _cancelDialog(),
             ),
           ),
         ),
@@ -693,23 +673,82 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     final markers = <Marker>{};
     final polylines = <Polyline>{};
     final l = AppLocalizations.of(context)!;
+    final tripStatus = trip['status'] as String?;
+    final pickupPoint = _tripPoint(trip, 'pickup_lat', 'pickup_lng');
+    final meetingPoint = _tripPoint(trip, 'meeting_lat', 'meeting_lng');
+    final destinationPoint =
+        _tripPoint(trip, 'destination_lat', 'destination_lng');
+    final separateMeetingPoint = meetingPoint != null &&
+            pickupPoint != null &&
+            !_samePoint(meetingPoint, pickupPoint)
+        ? meetingPoint
+        : null;
+    final routeStart =
+        separateMeetingPoint ?? (pickupPoint ?? AppConstants.defaultMapCenter);
+    final routeWaypoints = <LatLng>[
+      if (separateMeetingPoint != null && pickupPoint != null) pickupPoint,
+      ...stopovers.map((w) => LatLng(w.lat, w.lng)),
+    ];
+    final driverApproachTarget = separateMeetingPoint ?? pickupPoint;
+    final showDriverApproach = _shouldShowDriverApproachRoute(
+      status: tripStatus,
+      driverPoint: _driverLocation,
+      targetPoint: driverApproachTarget,
+    );
+    _syncDriverApproachRoute(
+      status: tripStatus,
+      driverPoint: _driverLocation,
+      targetPoint: driverApproachTarget,
+    );
+    final driverApproachPoints =
+        showDriverApproach ? _driverApproachRoutePoints : const <LatLng>[];
 
-    if (pLat != null && pLng != null) {
+    if (separateMeetingPoint != null) {
       markers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: LatLng(pLat, pLng),
-        icon: _pickupIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(
-            title: trip['pickup_address'] as String? ?? l.meetingPointLabel),
+        markerId: const MarkerId('meeting'),
+        position: separateMeetingPoint,
+        icon: _routeMarkerIcon(
+          cacheKey: 'meeting',
+          label: l.meetingPointLabel,
+          color: AppColors.primary,
+          fallback: _pickupIcon,
+          icon: Icons.groups_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 4,
+        infoWindow: InfoWindow(title: l.meetingPointLabel),
       ));
     }
-    if (dLat != null && dLng != null) {
+    if (pickupPoint != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: pickupPoint,
+        icon: _routeMarkerIcon(
+          cacheKey: 'pickup',
+          label: l.pickupPoint,
+          color: AppColors.success,
+          fallback: _pickupIcon,
+          icon: Icons.trip_origin_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 3,
+        infoWindow: InfoWindow(
+            title: trip['pickup_address'] as String? ?? l.pickupPoint),
+      ));
+    }
+    if (destinationPoint != null) {
       markers.add(Marker(
         markerId: const MarkerId('dest'),
-        position: LatLng(dLat, dLng),
-        icon: _destIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        position: destinationPoint,
+        icon: _routeMarkerIcon(
+          cacheKey: 'destination',
+          label: l.destination,
+          color: AppColors.error,
+          fallback: _destIcon,
+          icon: Icons.flag_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 3,
         infoWindow: InfoWindow(
             title: trip['destination_address'] as String? ?? l.destination),
       ));
@@ -717,50 +756,79 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     // ── Waypoint / Stopover markers ──
     for (int i = 0; i < stopovers.length; i++) {
       final wp = stopovers[i];
+      final label = l.stopoverNumber(i + 1);
       markers.add(Marker(
         markerId: MarkerId('wp_$i'),
         position: LatLng(wp.lat, wp.lng),
-        icon: _waypointIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-        anchor: const Offset(0.5, 0.5),
-        zIndex: 1,
-        infoWindow: InfoWindow(title: wp.address ?? l.stopoverNumber(i + 1)),
+        icon: _routeMarkerIcon(
+          cacheKey: 'stopover_$i',
+          label: label,
+          color: AppColors.warning,
+          fallback: _waypointIcon,
+          icon: Icons.location_on_rounded,
+        ),
+        anchor: const Offset(0.5, 0.78),
+        zIndexInt: 2,
+        infoWindow: InfoWindow(title: wp.address ?? label),
       ));
     }
 
-    // fetch route once or when waypoints change (hash covers count AND position changes)
-    if (pLat != null && pLng != null && dLat != null && dLng != null) {
-      final wpHash = stopovers
-          .map((w) => '${w.lat.toStringAsFixed(5)},${w.lng.toStringAsFixed(5)}')
+    // fetch route once or when route points change.
+    if (destinationPoint != null) {
+      final routeHash = [
+        routeStart,
+        ...routeWaypoints,
+        destinationPoint,
+      ]
+          .map((p) =>
+              '${p.latitude.toStringAsFixed(5)},${p.longitude.toStringAsFixed(5)}')
           .join('|');
-      if (!_routeFetchRequested || _lastStopoversHash != wpHash) {
+      if (!_routeFetchRequested || _lastStopoversHash != routeHash) {
         _routeFetchRequested = true;
-        _lastStopoversHash = wpHash;
-        final wpLatLngs = stopovers.map((w) => LatLng(w.lat, w.lng)).toList();
+        _lastStopoversHash = routeHash;
         WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _fetchRoute(pLat, pLng, dLat, dLng, wpLatLngs));
+          (_) => _fetchRoute(
+            routeStart.latitude,
+            routeStart.longitude,
+            destinationPoint.latitude,
+            destinationPoint.longitude,
+            routeWaypoints,
+          ),
+        );
       }
+    }
+    if (driverApproachPoints.length >= 2) {
+      polylines.add(Polyline(
+        polylineId: const PolylineId('driver_to_meeting'),
+        points: driverApproachPoints,
+        color: AppColors.success.withValues(alpha: 0.78),
+        width: 4,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 1,
+      ));
     }
     if (_routePoints.isNotEmpty) {
       polylines.add(Polyline(
         polylineId: const PolylineId('route_bg'),
         points: _routePoints,
-        color: _C.blue.withValues(alpha: 0.25),
+        color: AppColors.primary.withValues(alpha: 0.25),
         width: 12,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
-        zIndex: 0,
+        zIndex: 2,
       ));
       polylines.add(Polyline(
         polylineId: const PolylineId('route_fg'),
         points: _routePoints,
-        color: _C.blue,
+        color: AppColors.primary,
         width: 5,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
-        zIndex: 1,
+        zIndex: 3,
       ));
     }
 
@@ -775,9 +843,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
           final allMarkers = Set<Marker>.from(markers);
           if (driverMarker != null) allMarkers.add(driverMarker);
           return ExcludeSemantics(
-              child: GoogleMap(
+              child: AppGoogleMap(
             initialCameraPosition: CameraPosition(target: initTarget, zoom: 15),
-            style: kDarkMapStyle,
+            mapStyle: AppMapStyle.auto,
+            buildingsEnabled: false,
             minMaxZoomPreference: const MinMaxZoomPreference(10, 20),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 70,
@@ -789,21 +858,18 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                 ctrl.animateCamera(CameraUpdate.newCameraPosition(
                   CameraPosition(
                       target: _driverLocation!,
-                      zoom: 16,
-                      bearing: _driverHeading),
+                      zoom: _is3DMode ? 17.2 : 16,
+                      tilt: _is3DMode ? 48 : 0,
+                      bearing: _is3DMode ? _driverHeading : 0),
                 ));
               } else {
                 _fitMapBounds(ctrl, markers);
               }
             },
+            onCameraMove: (position) => _lastCameraPosition = position,
             onCameraMoveStarted: () => setState(() => _cameraFollowing = false),
             markers: allMarkers,
             polylines: polylines,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-            myLocationEnabled: false,
-            myLocationButtonEnabled: false,
-            compassEnabled: false,
           ));
         },
       ),
@@ -816,7 +882,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         child: DecoratedBox(
             decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.transparent, _C.bg.withValues(alpha: 0.88)],
+            colors: [
+              AppColors.transparent,
+              context.bgColor.withValues(alpha: 0.88)
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -830,11 +899,6 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         .map((m) => m.position)
         .where((p) => p.latitude != 0.0 && p.longitude != 0.0)
         .toList();
-    if (_driverLocation != null &&
-        _driverLocation!.latitude != 0.0 &&
-        _driverLocation!.longitude != 0.0) {
-      pts.add(_driverLocation!);
-    }
     pts.addAll(_routePoints.where(
       (p) => p.latitude != 0.0 && p.longitude != 0.0,
     ));
@@ -842,9 +906,230 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     MapCameraUtils.fitCameraToPoints(
       ctrl,
       pts,
-      padding: 96,
-      delay: const Duration(milliseconds: 400),
+      padding: 42,
+      minimumLatSpan: 0.0007,
+      minimumLngSpan: 0.0007,
     );
+  }
+
+  LatLng? _tripPoint(Map<String, dynamic> trip, String latKey, String lngKey) {
+    final lat = (trip[latKey] as num?)?.toDouble();
+    final lng = (trip[lngKey] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+    if (lat == 0.0 && lng == 0.0) return null;
+    if (!lat.isFinite || !lng.isFinite) return null;
+    return LatLng(lat, lng);
+  }
+
+  bool _samePoint(LatLng a, LatLng b) {
+    return (a.latitude - b.latitude).abs() < 0.00005 &&
+        (a.longitude - b.longitude).abs() < 0.00005;
+  }
+
+  void _syncDriverApproachRoute({
+    required String? status,
+    required LatLng? driverPoint,
+    required LatLng? targetPoint,
+  }) {
+    if (!_shouldShowDriverApproachRoute(
+      status: status,
+      driverPoint: driverPoint,
+      targetPoint: targetPoint,
+    )) {
+      _clearDriverApproachRoute();
+      return;
+    }
+
+    final hash = _driverApproachRouteHash(driverPoint!, targetPoint!);
+    final now = DateTime.now();
+    final lastRequestAt = _lastDriverApproachRouteRequestAt;
+    final recentlyRequested = lastRequestAt != null &&
+        now.difference(lastRequestAt) < const Duration(seconds: 18);
+
+    if (_lastDriverApproachRouteHash == hash &&
+        _driverApproachRoutePoints.length >= 2) {
+      return;
+    }
+    if (recentlyRequested) return;
+    if (_driverApproachRouteLoading) return;
+
+    _driverApproachRouteLoading = true;
+    _lastDriverApproachRouteHash = hash;
+    _lastDriverApproachRouteRequestAt = now;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _lastDriverApproachRouteHash != hash) return;
+
+      final result = await DirectionsService.getRoute(
+        originLat: driverPoint.latitude,
+        originLng: driverPoint.longitude,
+        destLat: targetPoint.latitude,
+        destLng: targetPoint.longitude,
+        apiKey: EnvConstants.googleMapsApiKey,
+      );
+      if (!mounted || _lastDriverApproachRouteHash != hash) {
+        _driverApproachRouteLoading = false;
+        return;
+      }
+
+      final points = result != null && result.points.length >= 2
+          ? result.points
+          : const <LatLng>[];
+      setState(() {
+        _driverApproachRouteLoading = false;
+        _driverApproachRoutePoints = points;
+      });
+    });
+  }
+
+  bool _shouldShowDriverApproachRoute({
+    required String? status,
+    required LatLng? driverPoint,
+    required LatLng? targetPoint,
+  }) {
+    if (driverPoint == null || targetPoint == null) return false;
+    final normalizedStatus = status?.trim().toLowerCase();
+    if ({
+      'arrived',
+      'picked_up',
+      'in_progress',
+      'completed',
+      'cancelled',
+      'rejected',
+    }.contains(normalizedStatus)) {
+      return false;
+    }
+
+    final targetHash = _driverApproachTargetHash(targetPoint);
+    if (_completedDriverApproachTargetHash == targetHash) return false;
+    if (_samePoint(driverPoint, targetPoint) ||
+        _distanceMeters(driverPoint, targetPoint) <= 55) {
+      _completedDriverApproachTargetHash = targetHash;
+      return false;
+    }
+    return true;
+  }
+
+  void _clearDriverApproachRoute() {
+    if (_driverApproachRoutePoints.isEmpty &&
+        _lastDriverApproachRouteHash == null &&
+        !_driverApproachRouteLoading) {
+      return;
+    }
+
+    _lastDriverApproachRouteHash = null;
+    _lastDriverApproachRouteRequestAt = null;
+    _driverApproachRouteLoading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _driverApproachRoutePoints.isEmpty) return;
+      setState(() => _driverApproachRoutePoints = const []);
+    });
+  }
+
+  String _driverApproachRouteHash(LatLng driverPoint, LatLng targetPoint) {
+    return '${driverPoint.latitude.toStringAsFixed(4)},'
+        '${driverPoint.longitude.toStringAsFixed(4)}>'
+        '${_driverApproachTargetHash(targetPoint)}';
+  }
+
+  String _driverApproachTargetHash(LatLng targetPoint) {
+    return '${targetPoint.latitude.toStringAsFixed(4)},'
+        '${targetPoint.longitude.toStringAsFixed(4)}';
+  }
+
+  double _distanceMeters(LatLng a, LatLng b) {
+    const earthRadiusMeters = 6371000.0;
+    final dLat = (b.latitude - a.latitude) * math.pi / 180;
+    final dLng = (b.longitude - a.longitude) * math.pi / 180;
+    final lat1 = a.latitude * math.pi / 180;
+    final lat2 = b.latitude * math.pi / 180;
+    final h = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return earthRadiusMeters * 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
+  }
+
+  Future<void> _toggle3DMode() async {
+    if (!_mapController.isCompleted) return;
+    final ctrl = await _mapController.future;
+
+    final enable3D = !_is3DMode;
+    setState(() => _is3DMode = enable3D);
+
+    if (!enable3D) {
+      final current = await _currentCameraPosition(ctrl);
+      await ctrl.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: current.target,
+            zoom: current.zoom,
+            tilt: 0,
+            bearing: 0,
+          ),
+        ),
+      );
+      _fitMapBounds(ctrl, const <Marker>{});
+      return;
+    }
+
+    final current = await _currentCameraPosition(ctrl);
+    await ctrl.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: current.target,
+          zoom: current.zoom,
+          tilt: 48,
+          bearing: _driverHeading,
+        ),
+      ),
+    );
+  }
+
+  Future<CameraPosition> _currentCameraPosition(
+    GoogleMapController ctrl,
+  ) async {
+    final cached = _lastCameraPosition;
+    if (cached != null) return cached;
+
+    try {
+      final bounds = await ctrl.getVisibleRegion();
+      final zoom = await ctrl.getZoomLevel();
+      return CameraPosition(
+          target: MapCameraUtils.centerOf(bounds), zoom: zoom);
+    } catch (_) {
+      return CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
+    }
+  }
+
+  BitmapDescriptor _routeMarkerIcon({
+    required String cacheKey,
+    required String label,
+    required Color color,
+    required IconData icon,
+    BitmapDescriptor? fallback,
+  }) {
+    final key = '${_routeMarkerLocaleCode ?? ''}|$cacheKey|$label';
+    final cached = _routeMarkerIcons[key];
+    if (cached != null) return cached;
+    if (!_pendingRouteMarkerIcons.contains(key)) {
+      _pendingRouteMarkerIcons.add(key);
+      AppMapMarkerFactory.labeledPin(
+        label: label,
+        color: color,
+        icon: icon,
+        textDirection: Directionality.of(context),
+      ).then((descriptor) {
+        if (!mounted) return;
+        setState(() {
+          _routeMarkerIcons[key] = descriptor;
+          _pendingRouteMarkerIcons.remove(key);
+        });
+      });
+    }
+    return fallback ??
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
   }
 
   // ── Status pill ────────────────────────────────────────────────────────────
@@ -860,7 +1145,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
           decoration: BoxDecoration(
-            color: _C.sheet.withValues(alpha: 0.95),
+            color: context.cardColor.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(32),
             border: Border.all(color: color.withValues(alpha: 0.4), width: 1.2),
             boxShadow: [
@@ -907,17 +1192,39 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   }
 
   // ── Dialogs ────────────────────────────────────────────────────────────────
+  void _cancelDialog() {
+    final l = AppLocalizations.of(context)!;
+    showDialog(
+        context: context,
+        builder: (_) => _NightDialog(
+              icon: Icons.cancel_outlined,
+              iconColor: AppColors.error,
+              title: l.cancelTrip,
+              body: l.areYouSureCancelTrip,
+              confirmLabel: l.yesCancel,
+              confirmColor: AppColors.error,
+              cancelLabel: l.cancel,
+              onConfirm: () {
+                final bloc = context.read<TripDetailsBloc>();
+                context.pop();
+                Future.delayed(const Duration(milliseconds: 150), () {
+                  bloc.add(CancelTrip(widget.tripId));
+                });
+              },
+            ));
+  }
+
   void _rejectDialog() {
     final l = AppLocalizations.of(context)!;
     showDialog(
         context: context,
         builder: (_) => _NightDialog(
               icon: Icons.cancel_outlined,
-              iconColor: _C.rose,
+              iconColor: AppColors.error,
               title: l.reject,
               body: l.areYouSureRejectTrip,
               confirmLabel: l.reject,
-              confirmColor: _C.rose,
+              confirmColor: AppColors.error,
               cancelLabel: l.cancel,
               onConfirm: () {
                 final bloc = context.read<TripDetailsBloc>();
@@ -935,11 +1242,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         context: context,
         builder: (_) => _NightDialog(
               icon: Icons.check_circle_outline_rounded,
-              iconColor: _C.emerald,
+              iconColor: AppColors.success,
               title: l.completeTrip,
               body: l.areYouSureCompleteTrip,
               confirmLabel: l.completeTrip,
-              confirmColor: _C.emerald,
+              confirmColor: AppColors.success,
               cancelLabel: l.cancel,
               onConfirm: () {
                 final bloc = context.read<TripDetailsBloc>();
@@ -955,11 +1262,11 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   Color _statusColor(String? s) => switch (s) {
-        'completed' => _C.emerald,
-        'cancelled' => _C.rose,
-        'in_progress' || 'accepted' => _C.blue,
-        'searching' || 'pending' => _C.amber,
-        _ => _C.t2,
+        'completed' => AppColors.success,
+        'cancelled' => AppColors.error,
+        'in_progress' || 'accepted' => AppColors.primary,
+        'searching' || 'pending' => AppColors.warning,
+        _ => context.textSecondary,
       };
 
   IconData _statusIcon(String? s) => switch (s) {
@@ -1001,16 +1308,16 @@ class _MapCircleBtn extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: _C.sheet.withValues(alpha: 0.9),
+            color: context.cardColor.withValues(alpha: 0.9),
             shape: BoxShape.circle,
-            border: Border.all(color: _C.border, width: 1),
+            border: Border.all(color: context.divColor, width: 1),
             boxShadow: [
               BoxShadow(
                   color: AppColors.black.withValues(alpha: 0.38),
                   blurRadius: 10)
             ],
           ),
-          child: Icon(icon, color: _C.t1, size: 18),
+          child: Icon(icon, color: context.textPrimary, size: 18),
         ),
       );
 }
@@ -1031,32 +1338,32 @@ class _UserStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
       child: Row(children: [
         // Avatar
         Stack(children: [
           Container(
             padding: const EdgeInsets.all(2.5),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [_C.violet, AppColors.purpleDark],
+                colors: [AppColors.purple, AppColors.purpleDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
             child: CircleAvatar(
               radius: 25,
-              backgroundColor: _C.elevated,
+              backgroundColor: context.elevatedColor,
               backgroundImage:
                   avatarUrl != null ? NetworkImage(avatarUrl) : null,
               child: avatarUrl == null
                   ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                      style: const TextStyle(
-                          color: _C.violet,
+                      style: TextStyle(
+                          color: AppColors.purple,
                           fontSize: 18,
                           fontWeight: FontWeight.w800))
                   : null,
@@ -1069,9 +1376,9 @@ class _UserStrip extends StatelessWidget {
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: _C.emerald,
+                    color: AppColors.success,
                     shape: BoxShape.circle,
-                    border: Border.all(color: _C.card, width: 2),
+                    border: Border.all(color: context.cardColor, width: 2),
                   ))),
         ]),
         const SizedBox(width: 12),
@@ -1081,28 +1388,31 @@ class _UserStrip extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name,
-              style: const TextStyle(
-                  color: _C.t1, fontSize: 14, fontWeight: FontWeight.w700)),
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Row(children: [
-            const Icon(Icons.star_rounded, color: _C.amber, size: 13),
+            const Icon(Icons.star_rounded, color: AppColors.warning, size: 13),
             const SizedBox(width: 3),
             Text(rating,
-                style: const TextStyle(
-                    color: _C.amber,
+                style: TextStyle(
+                    color: AppColors.warning,
                     fontSize: 11,
                     fontWeight: FontWeight.w700)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: _C.violet.withValues(alpha: 0.1),
+                color: AppColors.purple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _C.violet.withValues(alpha: 0.25)),
+                border:
+                    Border.all(color: AppColors.purple.withValues(alpha: 0.25)),
               ),
               child: Text(l.passenger,
-                  style: const TextStyle(
-                      color: _C.violet,
+                  style: TextStyle(
+                      color: AppColors.purple,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.0)),
@@ -1113,7 +1423,7 @@ class _UserStrip extends StatelessWidget {
         // Chat icon
         _CircleAction(
           icon: Icons.chat_bubble_rounded,
-          color: _C.blue,
+          color: AppColors.primary,
           onTap: () {
             final uId = user['id'] as String?;
             if (uId != null) {
@@ -1165,9 +1475,9 @@ class _RouteTicket extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: _C.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
       child: Stack(children: [
         Positioned(
@@ -1178,8 +1488,8 @@ class _RouteTicket extends StatelessWidget {
                 child: Container(
                     width: 5,
                     height: 28,
-                    decoration: const BoxDecoration(
-                        color: _C.sheet,
+                    decoration: BoxDecoration(
+                        color: context.cardColor,
                         borderRadius: BorderRadius.only(
                             topRight: Radius.circular(8),
                             bottomRight: Radius.circular(8)))))),
@@ -1191,8 +1501,8 @@ class _RouteTicket extends StatelessWidget {
                 child: Container(
                     width: 5,
                     height: 28,
-                    decoration: const BoxDecoration(
-                        color: _C.sheet,
+                    decoration: BoxDecoration(
+                        color: context.cardColor,
                         borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(8),
                             bottomLeft: Radius.circular(8)))))),
@@ -1209,17 +1519,17 @@ class _RouteTicket extends StatelessWidget {
                         height: 9,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _C.emerald,
+                          color: AppColors.success,
                           boxShadow: [
                             BoxShadow(
-                                color: _C.emerald.withValues(alpha: 0.5),
+                                color: AppColors.success.withValues(alpha: 0.5),
                                 blurRadius: 6)
                           ],
                         )),
                     const SizedBox(width: 7),
                     Text(l.meetingPointLabel.toUpperCase(),
-                        style: const TextStyle(
-                            color: _C.emerald,
+                        style: TextStyle(
+                            color: AppColors.success,
                             fontSize: 8,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.5)),
@@ -1228,8 +1538,8 @@ class _RouteTicket extends StatelessWidget {
                   Text(pickup,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: _C.t1,
+                      style: TextStyle(
+                          color: context.textPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           height: 1.35)),
@@ -1244,11 +1554,13 @@ class _RouteTicket extends StatelessWidget {
                         height: 3,
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         decoration: BoxDecoration(
-                          color: i.isEven ? _C.border : AppColors.transparent,
+                          color: i.isEven
+                              ? context.divColor
+                              : AppColors.transparent,
                           shape: BoxShape.circle,
                         ))),
                 const SizedBox(height: 4),
-                const Icon(Icons.east_rounded, color: _C.t3, size: 14),
+                Icon(Icons.east_rounded, color: context.textDisabled, size: 14),
               ]),
             ),
             Expanded(
@@ -1257,8 +1569,8 @@ class _RouteTicket extends StatelessWidget {
                     children: [
                   Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     Text(l.destination.toUpperCase(),
-                        style: const TextStyle(
-                            color: _C.blue,
+                        style: TextStyle(
+                            color: AppColors.primary,
                             fontSize: 8,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.5)),
@@ -1268,9 +1580,12 @@ class _RouteTicket extends StatelessWidget {
                         height: 9,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _C.blue,
+                          color: AppColors.primary,
                           boxShadow: [
-                            BoxShadow(color: _C.blueGlow, blurRadius: 6)
+                            BoxShadow(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.25),
+                                blurRadius: 6)
                           ],
                         )),
                   ]),
@@ -1279,8 +1594,8 @@ class _RouteTicket extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.end,
-                      style: const TextStyle(
-                          color: _C.t1,
+                      style: TextStyle(
+                          color: context.textPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           height: 1.35)),
@@ -1312,14 +1627,14 @@ class _PriceBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(l.fareDetails.toUpperCase(),
-            style: const TextStyle(
-                color: _C.t3,
+            style: TextStyle(
+                color: context.textDisabled,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.8)),
@@ -1334,16 +1649,18 @@ class _PriceBox extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(price.toStringAsFixed(0),
-                  style: const TextStyle(
-                      color: _C.t1,
+                  style: TextStyle(
+                      color: context.textPrimary,
                       fontSize: 44,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -2,
                       height: 1)),
               const SizedBox(width: 5),
               Text(l.currencySar,
-                  style: const TextStyle(
-                      color: _C.t2, fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -1354,18 +1671,20 @@ class _PriceBox extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: _C.violet.withValues(alpha: 0.1),
+              color: AppColors.purple.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _C.violet.withValues(alpha: 0.25)),
+              border:
+                  Border.all(color: AppColors.purple.withValues(alpha: 0.25)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.local_offer_rounded, color: _C.violet, size: 12),
+              const Icon(Icons.local_offer_rounded,
+                  color: AppColors.purple, size: 12),
               const SizedBox(width: 5),
               Flexible(
                 child: Text(
-                  '${l.discount}: -${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
-                  style: const TextStyle(
-                      color: _C.violet,
+                  '${l.discount}: -${l.priceWithCurrency(couponDiscount.toStringAsFixed(0), l.currencySar)}',
+                  style: TextStyle(
+                      color: AppColors.purple,
                       fontSize: 10,
                       fontWeight: FontWeight.w700),
                   overflow: TextOverflow.ellipsis,
@@ -1379,27 +1698,29 @@ class _PriceBox extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: _C.emerald.withValues(alpha: 0.06),
+              color: AppColors.success.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _C.emerald.withValues(alpha: 0.2)),
+              border:
+                  Border.all(color: AppColors.success.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               Icon(Icons.verified_rounded,
-                  color: _C.emerald.withValues(alpha: 0.8), size: 11),
+                  color: AppColors.success.withValues(alpha: 0.8), size: 11),
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   l.platformCoveredCoupon,
                   style: TextStyle(
-                      color: _C.emerald.withValues(alpha: 0.8),
+                      color: AppColors.success.withValues(alpha: 0.8),
                       fontSize: 9,
                       fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text('+${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
+              Text(
+                  '+${l.priceWithCurrency(couponDiscount.toStringAsFixed(0), l.currencySar)}',
                   style: TextStyle(
-                      color: _C.emerald.withValues(alpha: 0.9),
+                      color: AppColors.success.withValues(alpha: 0.9),
                       fontSize: 10,
                       fontWeight: FontWeight.w800),
                   textDirection: TextDirection.ltr),
@@ -1414,24 +1735,27 @@ class _PriceBox extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: _C.blue.withValues(alpha: 0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _C.blue.withValues(alpha: 0.2)),
+              border:
+                  Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
             child: Row(children: [
               const Icon(Icons.account_balance_wallet_rounded,
-                  color: _C.blue, size: 13),
+                  color: AppColors.primary, size: 13),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(l.yourEarnings,
-                    style: const TextStyle(
-                        color: _C.t2,
+                    style: TextStyle(
+                        color: context.textSecondary,
                         fontSize: 10,
                         fontWeight: FontWeight.w600)),
               ),
-              Text('${driverEarnings.toStringAsFixed(2)} ${l.currencySar}',
-                  style: const TextStyle(
-                      color: _C.blue,
+              Text(
+                  l.priceWithCurrency(
+                      driverEarnings.toStringAsFixed(2), l.currencySar),
+                  style: TextStyle(
+                      color: AppColors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w800),
                   textDirection: TextDirection.ltr),
@@ -1445,18 +1769,23 @@ class _PriceBox extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Row(children: [
-              Icon(Icons.receipt_long_rounded, color: _C.t3, size: 10),
+              Icon(Icons.receipt_long_rounded,
+                  color: context.textDisabled, size: 10),
               const SizedBox(width: 5),
               Expanded(
                 child: Text(l.commission,
                     style: TextStyle(
-                        color: _C.t3,
+                        color: context.textDisabled,
                         fontSize: 9,
                         fontWeight: FontWeight.w500)),
               ),
-              Text('${platformCommission.toStringAsFixed(2)} ${l.currencySar}',
+              Text(
+                  l.priceWithCurrency(
+                      platformCommission.toStringAsFixed(2), l.currencySar),
                   style: TextStyle(
-                      color: _C.t3, fontSize: 9, fontWeight: FontWeight.w600),
+                      color: context.textDisabled,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600),
                   textDirection: TextDirection.ltr),
             ]),
           ),
@@ -1469,25 +1798,25 @@ class _PriceBox extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isPaid
-                ? _C.emerald.withValues(alpha: 0.1)
-                : _C.amber.withValues(alpha: 0.1),
+                ? AppColors.success.withValues(alpha: 0.1)
+                : AppColors.warning.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
                 color: isPaid
-                    ? _C.emerald.withValues(alpha: 0.28)
-                    : _C.amber.withValues(alpha: 0.28)),
+                    ? AppColors.success.withValues(alpha: 0.28)
+                    : AppColors.warning.withValues(alpha: 0.28)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(
                 width: 6,
                 height: 6,
                 decoration: BoxDecoration(
-                    color: isPaid ? _C.emerald : _C.amber,
+                    color: isPaid ? AppColors.success : AppColors.warning,
                     shape: BoxShape.circle)),
             const SizedBox(width: 6),
             Text(isPaid ? l.paid : l.unpaid,
                 style: TextStyle(
-                    color: isPaid ? _C.emerald : _C.amber,
+                    color: isPaid ? AppColors.success : AppColors.warning,
                     fontSize: 11,
                     fontWeight: FontWeight.w700)),
           ]),
@@ -1521,31 +1850,33 @@ class _StatsBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(l.tripDetails.toUpperCase(),
-            style: const TextStyle(
-                color: _C.t3,
+            style: TextStyle(
+                color: context.textDisabled,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.8)),
         const SizedBox(height: 14),
         _StatRow(
             icon: Icons.straighten_rounded,
-            color: _C.blue,
-            label: '$dist ${l.km}'),
+            color: AppColors.primary,
+            label: l.distanceWithKm(dist)),
         const SizedBox(height: 10),
         _StatRow(
-            icon: Icons.directions_car_rounded, color: _C.violet, label: vName),
+            icon: Icons.directions_car_rounded,
+            color: AppColors.purple,
+            label: vName),
         const SizedBox(height: 10),
         _StatRow(
           icon: pay == 'cash'
               ? Icons.payments_rounded
               : Icons.credit_card_rounded,
-          color: _C.amber,
+          color: AppColors.warning,
           label: pay == 'cash' ? l.cash : l.bankCard,
         ),
       ]),
@@ -1573,8 +1904,10 @@ class _StatRow extends StatelessWidget {
         const SizedBox(width: 10),
         Flexible(
             child: Text(label,
-                style: const TextStyle(
-                    color: _C.t1, fontSize: 12, fontWeight: FontWeight.w600))),
+                style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600))),
       ]);
 }
 
@@ -1596,14 +1929,14 @@ class _HTimeline extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _C.card,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border, width: 1),
+        border: Border.all(color: context.divColor, width: 1),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(l.timeline.toUpperCase(),
-            style: const TextStyle(
-                color: _C.t3,
+            style: TextStyle(
+                color: context.textDisabled,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.8)),
@@ -1635,13 +1968,14 @@ class _HTimeline extends StatelessWidget {
                   height: 18,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: done ? _C.emerald : _C.elevated,
-                    border:
-                        done ? null : Border.all(color: _C.border, width: 1.5),
+                    color: done ? AppColors.success : context.elevatedColor,
+                    border: done
+                        ? null
+                        : Border.all(color: context.divColor, width: 1.5),
                     boxShadow: done
                         ? [
                             BoxShadow(
-                                color: _C.emerald.withValues(alpha: 0.4),
+                                color: AppColors.success.withValues(alpha: 0.4),
                                 blurRadius: 8)
                           ]
                         : null,
@@ -1656,7 +1990,7 @@ class _HTimeline extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     style: TextStyle(
-                      color: done ? _C.t1 : _C.t3,
+                      color: done ? context.textPrimary : context.textDisabled,
                       fontSize: 9.5,
                       fontWeight: done ? FontWeight.w600 : FontWeight.w400,
                       height: 1.3,
@@ -1664,8 +1998,8 @@ class _HTimeline extends StatelessWidget {
                 if (t.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(t,
-                      style: const TextStyle(
-                          color: _C.emerald,
+                      style: TextStyle(
+                          color: AppColors.success,
                           fontSize: 9.5,
                           fontWeight: FontWeight.w700)),
                 ],
@@ -1678,8 +2012,11 @@ class _HTimeline extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: done
-                          ? [_C.emerald.withValues(alpha: 0.45), _C.border]
-                          : [_C.border, _C.border],
+                          ? [
+                              AppColors.success.withValues(alpha: 0.45),
+                              context.divColor
+                            ]
+                          : [context.divColor, context.divColor],
                     ),
                   ),
                 )),
@@ -1694,13 +2031,14 @@ class _HTimeline extends StatelessWidget {
 // ── Sticky action bar ─────────────────────────────────────────────────────────
 class _ActionBar extends StatelessWidget {
   final String? status;
-  final VoidCallback onAccept, onReject, onStart, onComplete;
+  final VoidCallback onAccept, onReject, onStart, onComplete, onCancel;
   const _ActionBar({
     required this.status,
     required this.onAccept,
     required this.onReject,
     required this.onStart,
     required this.onComplete,
+    required this.onCancel,
   });
 
   @override
@@ -1715,29 +2053,57 @@ class _ActionBar extends StatelessWidget {
             child: _Btn(
                 label: l.acceptTrip,
                 icon: Icons.check_rounded,
-                color: _C.emerald,
+                color: AppColors.success,
                 onTap: onAccept)),
         const SizedBox(width: 10),
         Expanded(
             child: _Btn(
                 label: l.reject,
                 icon: Icons.close_rounded,
-                color: _C.rose,
+                color: AppColors.error,
                 outlined: true,
                 onTap: onReject)),
       ]);
     } else if (status == 'accepted') {
-      content = _Btn(
-          label: l.startTrip,
-          icon: Icons.play_arrow_rounded,
-          color: _C.blue,
-          onTap: onStart);
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Btn(
+              label: l.startTrip,
+              icon: Icons.play_arrow_rounded,
+              color: AppColors.primary,
+              onTap: onStart),
+          const SizedBox(height: 12),
+          _Btn(
+              label: l.cancelTrip,
+              icon: Icons.cancel_outlined,
+              color: AppColors.error,
+              outlined: true,
+              compact: true,
+              onTap: onCancel),
+        ],
+      );
     } else if (status == 'in_progress') {
-      content = _Btn(
-          label: l.completeTrip,
-          icon: Icons.flag_rounded,
-          color: _C.emerald,
-          onTap: onComplete);
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Btn(
+              label: l.completeTrip,
+              icon: Icons.flag_rounded,
+              color: AppColors.success,
+              onTap: onComplete),
+          const SizedBox(height: 12),
+          _Btn(
+              label: l.cancelTrip,
+              icon: Icons.cancel_outlined,
+              color: AppColors.error,
+              outlined: true,
+              compact: true,
+              onTap: onCancel),
+        ],
+      );
     } else {
       content = const SizedBox.shrink();
     }
@@ -1745,8 +2111,8 @@ class _ActionBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(18, 12, 18, 12 + bottom),
       decoration: BoxDecoration(
-        color: _C.sheet,
-        border: const Border(top: BorderSide(color: _C.border, width: 1)),
+        color: context.cardColor,
+        border: Border(top: BorderSide(color: context.divColor, width: 1)),
         boxShadow: [
           BoxShadow(
               color: AppColors.black.withValues(alpha: 0.45),
@@ -1841,7 +2207,7 @@ class _NightDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Dialog(
-        backgroundColor: _C.card,
+        backgroundColor: context.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -1860,22 +2226,25 @@ class _NightDialog extends StatelessWidget {
                       child: Icon(icon, color: iconColor, size: 20)),
                   const SizedBox(width: 14),
                   Text(title,
-                      style: const TextStyle(
-                          color: _C.t1,
+                      style: TextStyle(
+                          color: context.textPrimary,
                           fontSize: 17,
                           fontWeight: FontWeight.w800)),
                 ]),
                 const SizedBox(height: 14),
                 Text(body,
-                    style: const TextStyle(
-                        color: _C.t2, fontSize: 14, height: 1.6)),
+                    style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 14,
+                        height: 1.6)),
                 const SizedBox(height: 24),
                 Row(children: [
                   TextButton(
                     onPressed: () => context.pop(),
                     child: Text(cancelLabel,
-                        style: const TextStyle(
-                            color: _C.t2, fontWeight: FontWeight.w600)),
+                        style: TextStyle(
+                            color: context.textSecondary,
+                            fontWeight: FontWeight.w600)),
                   ),
                   const Spacer(),
                   SizedBox(
@@ -1921,9 +2290,7 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
       final locations = await locationFromAddress(query);
       if (locations.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l.placeNotFoundDetailed)),
-          );
+          AppToast.error(l.placeNotFoundDetailed);
         }
         return;
       }
@@ -1937,14 +2304,10 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
       );
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.stopoverAddedSuccessfully)),
-      );
+      AppToast.success(l.stopoverAddedSuccessfully);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l.errorWithDetails(e.toString()))),
-        );
+        AppToast.error(l.errorWithDetails(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -1955,10 +2318,10 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return AlertDialog(
-      backgroundColor: _C.sheet,
+      backgroundColor: context.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(l.addStopover,
-          style: const TextStyle(
+          style: TextStyle(
               color: AppColors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold)),
@@ -1967,12 +2330,12 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
         children: [
           TextField(
             controller: _addressCtrl,
-            style: const TextStyle(color: AppColors.white),
+            style: TextStyle(color: AppColors.white),
             decoration: InputDecoration(
               hintText: l.searchPlaceHint,
-              hintStyle: const TextStyle(color: _C.t2),
+              hintStyle: TextStyle(color: context.textSecondary),
               filled: true,
-              fillColor: _C.card,
+              fillColor: context.cardColor,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none),
@@ -1983,7 +2346,7 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(l.cancel, style: const TextStyle(color: _C.t2)),
+          child: Text(l.cancel, style: TextStyle(color: context.textSecondary)),
         ),
         if (_isLoading)
           const Padding(
@@ -1991,15 +2354,15 @@ class _AddStopoverDialogState extends State<_AddStopoverDialog> {
             child: SizedBox(
                 width: 20,
                 height: 20,
-                child:
-                    CircularProgressIndicator(strokeWidth: 2, color: _C.blue)),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.primary)),
           )
         else
           TextButton(
             onPressed: _searchAndAdd,
             child: Text(l.addStopover,
-                style: const TextStyle(
-                    color: _C.blue, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
       ],
     );

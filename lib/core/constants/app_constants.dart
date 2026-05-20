@@ -32,4 +32,24 @@ class AppConstants {
     'accepted',
     'in_progress',
   ];
+
+  // === Timeouts ===
+  static const Duration apiTimeout = Duration(seconds: 30);
+  static const Duration locationTimeout = Duration(seconds: 10);
+  static const Duration socketTimeout = Duration(seconds: 15);
+
+  // === Animation Durations ===
+  static const Duration animShort = Duration(milliseconds: 150);
+  static const Duration animNormal = Duration(milliseconds: 300);
+  static const Duration animLong = Duration(milliseconds: 500);
+  static const Duration animPage = Duration(milliseconds: 350);
+
+  // === Pagination ===
+  static const int pageSize = 20;
+  static const int chatPageSize = 30;
+
+  // === File Limits ===
+  static const int maxImageSizeMB = 5;
+  static const int maxFileSizeMB = 10;
 }
+

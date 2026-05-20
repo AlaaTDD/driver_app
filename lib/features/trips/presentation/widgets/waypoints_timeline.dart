@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 /// A vertical timeline widget that displays multi-route waypoints (stopovers)
 /// between the pickup and destination points.
@@ -227,9 +228,7 @@ class _WaypointRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.textPrimary
-                          : AppColors.surface,
+                      color: context.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -242,21 +241,19 @@ class _WaypointRow extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(
                         children: [
-                          if (waypoint.legDistanceKm != null)
-                            _MetaChip(
-                              icon: Icons.straighten_rounded,
-                              text:
-                                  '${waypoint.legDistanceKm!.toStringAsFixed(1)} كم',
-                            ),
+                            if (waypoint.legDistanceKm != null)
+                              _MetaChip(
+                                icon: Icons.straighten_rounded,
+                                text: l.distanceWithKm(waypoint.legDistanceKm!.toStringAsFixed(1)),
+                              ),
                           if (waypoint.legDistanceKm != null &&
                               waypoint.legDurationMin != null)
                             const SizedBox(width: 8),
-                          if (waypoint.legDurationMin != null)
-                            _MetaChip(
-                              icon: Icons.schedule_rounded,
-                              text:
-                                  '${waypoint.legDurationMin!.toStringAsFixed(0)} د',
-                            ),
+                            if (waypoint.legDurationMin != null)
+                              _MetaChip(
+                                icon: Icons.schedule_rounded,
+                                text: '${waypoint.legDurationMin!.toStringAsFixed(0)} ${l.minute}',
+                              ),
                         ],
                       ),
                     ),
@@ -329,14 +326,14 @@ class _MetaChip extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.textSecondary),
+          Icon(icon, size: 12, color: context.textSecondary),
           const SizedBox(width: 3),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.textSecondary,
             ),
           ),
         ],

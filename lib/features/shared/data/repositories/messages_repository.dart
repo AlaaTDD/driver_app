@@ -254,6 +254,7 @@ class MessagesRepository {
     required String text,
     required String senderName,
     required String Function(String name) newMessageFrom,
+    required String imageAttachmentLabel,
     String? defaultUserName,
     String type = 'text',
     String? attachmentUrl,
@@ -281,7 +282,7 @@ class MessagesRepository {
     await _sendFcmPush(
       userId: receiverId,
       title: title,
-      body: type == 'image' ? '📷 صورة' : text,
+      body: type == 'image' ? imageAttachmentLabel : text,
       data: {
         'type': 'new_message',
         'senderId': userId,
@@ -415,6 +416,7 @@ class MessagesRepository {
     required String text,
     required String senderName,
     required String Function(String name) newMessageFrom,
+    required String imageAttachmentLabel,
     String? defaultDriverName,
     String type = 'text',
     String? attachmentUrl,
@@ -444,7 +446,7 @@ class MessagesRepository {
     await _sendFcmPush(
       userId: receiverId,
       title: title,
-      body: type == 'image' ? '📷 صورة' : text,
+      body: type == 'image' ? imageAttachmentLabel : text,
       data: {
         'type': 'new_message',
         'tripId': tripId,

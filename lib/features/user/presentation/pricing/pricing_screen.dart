@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:snapix/core/map/app_map.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 import 'bloc/pricing_bloc.dart';
 import 'bloc/pricing_event.dart';
 import 'bloc/pricing_state.dart';
@@ -65,7 +67,13 @@ class _PricingScreenState extends State<PricingScreen>
     super.initState();
     _drawCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200))
-      ..addListener(_onDrawFrame);
+      ..addListener(_onDrawFrame)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          _drawThrottle?.cancel();
+          setState(() => _visiblePoints = []);
+        }
+      });
 
     context.read<PricingBloc>().add(const LoadVehicleTypes());
     _fetchRouteAndDistance();
@@ -89,6 +97,7 @@ class _PricingScreenState extends State<PricingScreen>
     setState(() {
       _distanceKm = km;
       _routePoints = result?.points ?? [];
+      _visiblePoints = [];
     });
     await _fitMapToRoute();
     if (!mounted) return;
@@ -127,10 +136,11 @@ class _PricingScreenState extends State<PricingScreen>
 
   void _onDrawFrame() {
     if (_routePoints.isEmpty || _drawCtrl == null) return;
-    final count = (_drawCtrl!.value * _routePoints.length)
+    final end = (_drawCtrl!.value * _routePoints.length)
         .ceil()
-        .clamp(2, _routePoints.length);
-    _visiblePoints = _routePoints.sublist(0, count);
+        .clamp(2, _routePoints.length)
+        .toInt();
+    _visiblePoints = _routePoints.sublist(0, end);
 
     _drawThrottle?.cancel();
     _drawThrottle = Timer(const Duration(milliseconds: 50), () {
@@ -176,6 +186,7 @@ class _PricingScreenState extends State<PricingScreen>
 
   @override
   void dispose() {
+    _drawThrottle?.cancel();
     _drawCtrl?.dispose();
     _couponCtrl.dispose();
     super.dispose();
@@ -206,8 +217,7 @@ class _PricingScreenState extends State<PricingScreen>
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color:
-                              isDark ? AppColors.background : AppColors.white,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -278,34 +288,45 @@ class _PricingScreenState extends State<PricingScreen>
           ));
         }
       }
-      if (_visiblePoints.length >= 2) {
+      if (_routePoints.length >= 2) {
         polylines.add(Polyline(
-          polylineId: const PolylineId('route_halo'),
-          points: _visiblePoints,
-          color: AppColors.primary.withValues(alpha: 0.10),
-          width: 18,
+          polylineId: const PolylineId('route_base_halo'),
+          points: _routePoints,
+          color: AppColors.primary.withValues(alpha: 0.12),
+          width: 16,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
           jointType: JointType.round,
         ));
         polylines.add(Polyline(
-          polylineId: const PolylineId('route_glow'),
-          points: _visiblePoints,
-          color: AppColors.primary.withValues(alpha: 0.28),
-          width: 10,
-          startCap: Cap.roundCap,
-          endCap: Cap.roundCap,
-          jointType: JointType.round,
-        ));
-        polylines.add(Polyline(
-          polylineId: const PolylineId('route'),
-          points: _visiblePoints,
-          color: AppColors.primary,
+          polylineId: const PolylineId('route_base'),
+          points: _routePoints,
+          color: AppColors.primary.withValues(alpha: 0.68),
           width: 4,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
           jointType: JointType.round,
         ));
+        if (_visiblePoints.length >= 2) {
+          polylines.add(Polyline(
+            polylineId: const PolylineId('route_glow'),
+            points: _visiblePoints,
+            color: AppColors.primary.withValues(alpha: 0.34),
+            width: 11,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            jointType: JointType.round,
+          ));
+          polylines.add(Polyline(
+            polylineId: const PolylineId('route_light'),
+            points: _visiblePoints,
+            color: AppColors.primary,
+            width: 4,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            jointType: JointType.round,
+          ));
+        }
       }
     }
     final initPos = args?.originLat != null
@@ -313,7 +334,7 @@ class _PricingScreenState extends State<PricingScreen>
             target: LatLng(args!.originLat!, args.originLng!), zoom: 13)
         : CameraPosition(target: AppConstants.defaultMapCenter, zoom: 13);
 
-    return GoogleMap(
+    return AppGoogleMap(
       initialCameraPosition: initPos,
       onMapCreated: (ctrl) {
         if (!_mapCtrl.isCompleted) {
@@ -327,9 +348,6 @@ class _PricingScreenState extends State<PricingScreen>
       },
       markers: markers,
       polylines: polylines,
-      myLocationEnabled: false,
-      zoomControlsEnabled: false,
-      style: isDark ? kDarkMapStyle : kLightMapStyle,
       padding: EdgeInsets.only(bottom: _sheetHeight, top: 110),
     );
   }
@@ -391,7 +409,7 @@ class _PricingScreenState extends State<PricingScreen>
               label: _localizedVehicleName(v.name, context),
               icon: _iconFromName(v.icon),
               basePrice:
-                  '${v.baseFare.toStringAsFixed(0)} ${AppLocalizations.of(context)!.currencySar}',
+                  AppLocalizations.of(context)!.priceWithCurrency(v.baseFare.toStringAsFixed(0), AppLocalizations.of(context)!.currencySar),
               selected: _selectedVehicle == v.name,
               onTap: () => _selectVehicle(v.name),
             ),
@@ -407,7 +425,7 @@ class _PricingScreenState extends State<PricingScreen>
     return Container(
       constraints: BoxConstraints(maxHeight: _sheetHeight),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.background : AppColors.white,
+        color: context.cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
@@ -606,31 +624,36 @@ class _PricingScreenState extends State<PricingScreen>
                       const SizedBox(width: 8),
                       SizedBox(
                         height: 44,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_couponCtrl.text.isNotEmpty &&
-                                state is PricingCalculated) {
-                              context.read<PricingBloc>().add(ApplyCoupon(
-                                  _couponCtrl.text, state.finalPrice));
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: Size.zero,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            backgroundColor: state is CouponApplied
-                                ? AppColors.success
-                                : AppColors.primary,
-                            foregroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
+                        child: Material(
+                          color: state is CouponApplied
+                              ? AppColors.success
+                              : AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              if (_couponCtrl.text.isNotEmpty &&
+                                  state is PricingCalculated) {
+                                context.read<PricingBloc>().add(ApplyCoupon(
+                                    _couponCtrl.text, state.finalPrice));
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Center(
+                                child: state is CouponApplied
+                                    ? const Icon(Icons.check_rounded,
+                                        size: 20, color: AppColors.white)
+                                    : Text(
+                                        AppLocalizations.of(context)!.apply,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.white),
+                                      ),
+                              ),
+                            ),
                           ),
-                          child: state is CouponApplied
-                              ? const Icon(Icons.check_rounded, size: 20)
-                              : Text(AppLocalizations.of(context)!.apply,
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
                         ),
                       ),
                     ]),
@@ -649,7 +672,9 @@ class _PricingScreenState extends State<PricingScreen>
                     SizedBox(
                       width: double.infinity,
                       height: 52,
-                      child: ElevatedButton(
+                      child: AppButton(
+                        text: AppLocalizations.of(context)!.selectMeetingPoint,
+                        leadingIcon: Icons.place_rounded,
                         onPressed: () {
                           if (state is CouponApplied) {
                             _goToMeetingPoint(state.finalPrice, state);
@@ -657,26 +682,6 @@ class _PricingScreenState extends State<PricingScreen>
                             _goToMeetingPoint(state.finalPrice, state);
                           }
                         },
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
-                            elevation: 6,
-                            shadowColor:
-                                AppColors.primary.withValues(alpha: 0.4)),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.place_rounded, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                  AppLocalizations.of(context)!
-                                      .selectMeetingPoint,
-                                  style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700)),
-                            ]),
                       ),
                     ),
                   ] else
@@ -849,7 +854,7 @@ class _TripRouteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.background : AppColors.white,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1093,7 +1098,7 @@ class _PriceRow extends StatelessWidget {
                 fontSize: isTotal ? 15 : 13,
                 fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400)),
         Text(
-            '${isDiscount && value < 0 ? "-" : ""}${value.abs().toStringAsFixed(2)} ${AppLocalizations.of(context)!.currencySar}',
+            '${isDiscount && value < 0 ? "-" : ""}${AppLocalizations.of(context)!.priceWithCurrency(value.abs().toStringAsFixed(2), AppLocalizations.of(context)!.currencySar)}',
             style: TextStyle(
                 color: color,
                 fontSize: isTotal ? 16 : 13,

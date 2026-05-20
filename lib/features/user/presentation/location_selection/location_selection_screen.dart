@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:snapix/core/map/app_map.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../../../../services/directions_service.dart';
@@ -21,6 +22,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/map_camera_utils.dart';
+import 'package:snapix/core/widgets/app_button.dart';
 
 enum _PickMode { none, origin, destination, waypoint }
 
@@ -48,48 +50,7 @@ class _WaypointModel {
   }
 }
 
-const String kDarkMapStyle = '''
-[
-  {"elementType":"geometry","stylers":[{"color":"#0B1120"}]},
-  {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
-  {"elementType":"labels.text.fill","stylers":[{"color":"#6B8DB0"}]},
-  {"elementType":"labels.text.stroke","stylers":[{"color":"#060C18"}]},
-  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#1A2E4A"}]},
-  {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#0D1E35"}]},
-  {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#1E3A60"}]},
-  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#253E5C"}]},
-  {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#182C44"}]},
-  {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#7490B0"}]},
-  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#051020"}]},
-  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3A5A7A"}]},
-  {"featureType":"poi","stylers":[{"visibility":"off"}]},
-  {"featureType":"transit","stylers":[{"visibility":"off"}]},
-  {"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#1A2E4A"}]},
-  {"featureType":"administrative.land_parcel","stylers":[{"visibility":"off"}]},
-  {"featureType":"landscape.natural","elementType":"geometry","stylers":[{"color":"#0D1A2A"}]}
-]
-''';
 
-const String kLightMapStyle = '''
-[
-  {"elementType":"geometry","stylers":[{"color":"#EEF2F7"}]},
-  {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
-  {"elementType":"labels.text.fill","stylers":[{"color":"#4A6080"}]},
-  {"elementType":"labels.text.stroke","stylers":[{"color":"#FFFFFF"}]},
-  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#FFFFFF"}]},
-  {"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#DCE6F0"}]},
-  {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#F5F8FC"}]},
-  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#E4EDF8"}]},
-  {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#C8D8E8"}]},
-  {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#7A8FA8"}]},
-  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#B4D0E8"}]},
-  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#6A8FAA"}]},
-  {"featureType":"poi","stylers":[{"visibility":"off"}]},
-  {"featureType":"transit","stylers":[{"visibility":"off"}]},
-  {"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#C4D4E4"}]},
-  {"featureType":"landscape.natural","elementType":"geometry","stylers":[{"color":"#E0EAF2"}]}
-]
-''';
 
 class LocationSelectionScreen extends StatefulWidget {
   final LocationSelectionArgs? extra;
@@ -161,7 +122,12 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     );
     _drawCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200))
-      ..addListener(_onDrawFrame);
+      ..addListener(_onDrawFrame)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          setState(() => _visiblePoints = []);
+        }
+      });
     if (widget.extra?.originLat != null) {
       _originLat = widget.extra!.originLat;
       _originLng = widget.extra!.originLng;
@@ -327,10 +293,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   void _onDrawFrame() {
     if (_routePoints.isEmpty || _drawCtrl == null) return;
-    final count = (_drawCtrl!.value * _routePoints.length)
+    final end = (_drawCtrl!.value * _routePoints.length)
         .ceil()
-        .clamp(2, _routePoints.length);
-    setState(() => _visiblePoints = _routePoints.sublist(0, count));
+        .clamp(2, _routePoints.length)
+        .toInt();
+    setState(() => _visiblePoints = _routePoints.sublist(0, end));
   }
 
   Future<void> _fitMapToBothPoints() async {
@@ -920,46 +887,13 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
 
   Widget _buildConfirmButton(bool isDark) {
     final canConfirm = _originLat != null && _destLat != null;
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton(
-        onPressed: canConfirm ? _confirm : null,
-        style: ElevatedButton.styleFrom(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          elevation: canConfirm ? 12 : 0,
-          shadowColor: AppColors.primary.withValues(alpha: 0.50),
-          backgroundColor: canConfirm
-              ? AppColors.primary
-              : (isDark ? AppColors.divider : AppColors.textPrimary),
-          foregroundColor: canConfirm
-              ? AppColors.white
-              : (isDark
-                  ? AppColors.white.withValues(alpha: 0.38)
-                  : AppColors.black.withValues(alpha: 0.38)),
-          disabledBackgroundColor:
-              isDark ? AppColors.divider : AppColors.textPrimary,
-          disabledForegroundColor: isDark
-              ? AppColors.white.withValues(alpha: 0.38)
-              : AppColors.black.withValues(alpha: 0.38),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              canConfirm
-                  ? AppLocalizations.of(context)!.confirmAndCalculate
-                  : AppLocalizations.of(context)!.selectOriginAndDest,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
-            if (canConfirm) ...[
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 13),
-            ],
-          ],
-        ),
-      ),
+    return AppButton(
+      text: canConfirm
+          ? AppLocalizations.of(context)!.confirmAndCalculate
+          : AppLocalizations.of(context)!.selectOriginAndDest,
+      isDisabled: !canConfirm,
+      trailingIcon: canConfirm ? Icons.arrow_forward_ios_rounded : null,
+      onPressed: canConfirm ? _confirm : null,
     );
   }
 
@@ -1046,9 +980,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 decoration: BoxDecoration(
                   color: _couponExpanded
                       ? AppColors.primary.withValues(alpha: 0.09)
-                      : (isDark
-                          ? AppColors.background.withValues(alpha: 0.90)
-                          : AppColors.white.withValues(alpha: 0.90)),
+                      : context.cardColor.withValues(alpha: 0.90),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _couponExpanded
@@ -1120,9 +1052,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.background.withValues(alpha: 0.90)
-                                  : AppColors.white.withValues(alpha: 0.90),
+                              color: context.cardColor.withValues(alpha: 0.90),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                   color: isDark
@@ -1159,7 +1089,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: 1.8),
                                       decoration: InputDecoration(
-                                        hintText: 'PROMO20',
+                                        hintText: AppLocalizations.of(context)!.promoCodeExample,
                                         hintStyle: TextStyle(
                                             color: context.textSecondary
                                                 .withValues(alpha: 0.35),
@@ -1226,33 +1156,36 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                                 const SizedBox(width: 8),
                                 SizedBox(
                                   height: 42,
-                                  child: ElevatedButton(
-                                    onPressed: _couponValidating
-                                        ? null
-                                        : _validateCoupon,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: AppColors.white,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16),
-                                      minimumSize: Size.zero,
+                                  child: Material(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: InkWell(
+                                      onTap: _couponValidating
+                                          ? null
+                                          : _validateCoupon,
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16),
+                                        child: Center(
+                                          child: _couponValidating
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(
+                                                      color: AppColors.white,
+                                                      strokeWidth: 2))
+                                              : Text(
+                                                  AppLocalizations.of(context)!
+                                                      .apply,
+                                                  style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: AppColors.white)),
+                                        ),
+                                      ),
                                     ),
-                                    child: _couponValidating
-                                        ? const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                                color: AppColors.white,
-                                                strokeWidth: 2))
-                                        : Text(
-                                            AppLocalizations.of(context)!.apply,
-                                            style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700)),
                                   ),
                                 ),
                               ],
@@ -1322,8 +1255,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               height: 52,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.background : AppColors.white)
-                    .withValues(alpha: 0.92),
+                color: context.bgColor.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                     color: color.withValues(alpha: 0.35), width: 1.2),
@@ -1400,7 +1332,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.background : AppColors.white,
+        color: context.bgColor,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark
@@ -1596,36 +1528,47 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
             title: _destAddress ?? AppLocalizations.of(context)!.destination),
       ));
     }
-    if (_originLat != null && _destLat != null && _visiblePoints.length >= 2) {
+    if (_originLat != null && _destLat != null && _routePoints.length >= 2) {
       polylines.add(Polyline(
-        polylineId: const PolylineId('route_halo'),
-        points: _visiblePoints,
-        color: AppColors.primary.withValues(alpha: 0.10),
-        width: 18,
+        polylineId: const PolylineId('route_base_halo'),
+        points: _routePoints,
+        color: AppColors.primary.withValues(alpha: 0.12),
+        width: 16,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
       ));
       polylines.add(Polyline(
-        polylineId: const PolylineId('route_glow'),
-        points: _visiblePoints,
-        color: AppColors.primary.withValues(alpha: 0.28),
-        width: 10,
-        startCap: Cap.roundCap,
-        endCap: Cap.roundCap,
-        jointType: JointType.round,
-      ));
-      polylines.add(Polyline(
-        polylineId: const PolylineId('route'),
-        points: _visiblePoints,
-        color: AppColors.primary,
+        polylineId: const PolylineId('route_base'),
+        points: _routePoints,
+        color: AppColors.primary.withValues(alpha: 0.68),
         width: 4,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
       ));
+      if (_visiblePoints.length >= 2) {
+        polylines.add(Polyline(
+          polylineId: const PolylineId('route_glow'),
+          points: _visiblePoints,
+          color: AppColors.primary.withValues(alpha: 0.34),
+          width: 11,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ));
+        polylines.add(Polyline(
+          polylineId: const PolylineId('route_light'),
+          points: _visiblePoints,
+          color: AppColors.primary,
+          width: 4,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ));
+      }
     }
-    return GoogleMap(
+    return AppGoogleMap(
       initialCameraPosition: _defaultCamera,
       onMapCreated: (ctrl) {
         if (!_mapCtrl.isCompleted) _mapCtrl.complete(ctrl);
@@ -1680,12 +1623,9 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
             }
           : null,
       myLocationEnabled: true,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
       markers: markers,
       polylines: polylines,
       padding: const EdgeInsets.only(top: 180, bottom: 80),
-      style: isDark ? kDarkMapStyle : kLightMapStyle,
     );
   }
 
@@ -1771,8 +1711,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           decoration: BoxDecoration(
-            color: (isDark ? AppColors.background : AppColors.white)
-                .withValues(alpha: 0.94),
+            color: context.bgColor.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isDark
@@ -1901,38 +1840,15 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 const SizedBox(width: 10),
                 Expanded(
                   flex: 2,
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed:
-                          _isPickConfirming ? null : _confirmPickLocation,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: color,
-                        foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        elevation: 6,
-                        shadowColor: color.withValues(alpha: 0.45),
-                      ),
-                      child: _isPickConfirming
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  color: AppColors.white, strokeWidth: 2.5),
-                            )
-                          : Text(
-                              isOrigin
-                                  ? AppLocalizations.of(context)!.confirmOrigin
-                                  : (isWaypoint
-                                      ? AppLocalizations.of(context)!
-                                          .confirmStopover
-                                      : AppLocalizations.of(context)!
-                                          .confirmDest),
-                              style: const TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.w700),
-                            ),
-                    ),
+                  child: AppButton(
+                    onPressed: _isPickConfirming ? null : _confirmPickLocation,
+                    isLoading: _isPickConfirming,
+                    text: isOrigin
+                        ? AppLocalizations.of(context)!.confirmOrigin
+                        : (isWaypoint
+                            ? AppLocalizations.of(context)!.confirmStopover
+                            : AppLocalizations.of(context)!.confirmDest),
+                    size: AppButtonSize.md,
                   ),
                 ),
               ]),
@@ -1958,7 +1874,7 @@ class _PremiumBackButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.background : AppColors.white,
+          color: context.bgColor,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -2001,9 +1917,7 @@ class _PremiumCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDark
-              ? [AppColors.background, AppColors.background]
-              : [AppColors.white, AppColors.textPrimary],
+          colors: [context.cardColor, context.cardColor],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
@@ -2057,7 +1971,7 @@ class _SwapDivider extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.divider : AppColors.textPrimary,
+                color: context.divColor,
                 shape: BoxShape.circle,
                 border: Border.all(color: context.divColor, width: 1),
               ),
@@ -2264,7 +2178,9 @@ class _TimelinePainter extends CustomPainter {
     const originColor = AppColors.success; // green
     const waypointColor = AppColors.warning; // orange
     const destColor = AppColors.error; // red
-    final lineColor = isDark ? AppColors.divider : AppColors.divider;
+    final lineColor = isDark
+        ? AppColors.white.withValues(alpha: 0.15)
+        : AppColors.black.withValues(alpha: 0.12);
 
     // Draw connecting lines between dots
     final linePaint = Paint()

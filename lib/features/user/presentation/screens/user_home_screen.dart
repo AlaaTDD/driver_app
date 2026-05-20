@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/constants/map_styles.dart';
+import '../../../../core/map/app_map.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
@@ -25,7 +25,6 @@ import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../services/cell_subscription_service.dart';
 import '../../../../services/supabase_service.dart';
 import '../../data/repositories/coupon_repository.dart';
-import '../location_selection/location_selection_args.dart';
 import '../home/bloc/user_home_bloc.dart';
 import '../home/bloc/user_home_event.dart';
 import '../home/bloc/user_home_state.dart';
@@ -58,8 +57,8 @@ class _UserHomeScreenState extends State<UserHomeScreen>
 
   BitmapDescriptor? _carIcon;
 
-  static const double _compactBottomSheetHeight = 236;
-  static const double _couponBottomSheetHeight = 348;
+  static const double _compactBottomSheetHeight = 190;
+  static const double _couponBottomSheetHeight = 310;
   static const double _mapButtonSize = 48.0;
   static const double _mapButtonRadius = 14.0;
   static const double _topBarHorizontalPadding = 18.0;
@@ -399,7 +398,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         return ValueListenableBuilder<Set<Marker>>(
           valueListenable: _markersNotifier,
           builder: (context, markers, child) {
-            return GoogleMap(
+            return AppGoogleMap(
               key: const ValueKey('user_home_map'),
               initialCameraPosition: CameraPosition(
                 target: _initialPosition!,
@@ -418,14 +417,8 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                 }
               },
               myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              mapType: MapType.normal,
               markers: markers,
               padding: EdgeInsets.only(bottom: sheetHeight + 8),
-              style: Theme.of(context).brightness == Brightness.dark
-                  ? kDarkMapStyle
-                  : kLightMapStyle,
             );
           },
         );
@@ -533,26 +526,15 @@ class _UserHomeScreenState extends State<UserHomeScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  AppLocalizations.of(context)!.whereToGo,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: context.textPrimary,
-                    letterSpacing: -0.3,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 14),
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => context.push(AppRoutes.userLocationSelect),
                   child: Container(
-                    height: 52,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: context.elevatedColor,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: context.divColor, width: 1),
                     ),
                     child: Row(
@@ -560,14 +542,14 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                         Icon(
                           Icons.search_rounded,
                           color: context.textSecondary,
-                          size: 21,
+                          size: 20,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Text(
                           AppLocalizations.of(context)!.searchDestination,
                           style: TextStyle(
                             color: context.textSecondary,
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w400,
                             letterSpacing: 0.1,
                           ),
@@ -576,7 +558,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 BlocBuilder<UserHomeBloc, UserHomeState>(
                   builder: (context, state) {
                     if (state is UserHomeLoaded && state.coupons.isNotEmpty) {
@@ -588,6 +570,8 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _CouponBanner(coupon: coupon),
+                            const SizedBox(height: 12),
+                            const _PromoBanner(),
                           ],
                         );
                       }
@@ -631,6 +615,14 @@ class _UserHomeScreenState extends State<UserHomeScreen>
       onComplaintsTap: () {
         Navigator.pop(context);
         context.push(AppRoutes.userComplaints);
+      },
+      onPrivacyTap: () {
+        Navigator.pop(context);
+        context.push(AppRoutes.privacyPolicy);
+      },
+      onHelpTap: () {
+        Navigator.pop(context);
+        context.push(AppRoutes.helpSupport);
       },
       onLogout: () {
         Navigator.pop(context);
@@ -685,41 +677,14 @@ class _CouponBannerState extends State<_CouponBanner> {
         : discountVal.toStringAsFixed(0);
 
     final bool isDark = context.isDark;
-    final cardColor = isDark ? const Color(0xFF151A2B) : AppColors.white;
-    final cardBorder =
-        isDark ? const Color(0xFF28324A) : const Color(0xFFE8EDF5);
-    final titleColor = isDark ? AppColors.white : const Color(0xFF111827);
-    final subtitleColor =
-        isDark ? const Color(0xFFA5AEC3) : const Color(0xFF6B7280);
-    final mutedColor =
-        isDark ? const Color(0xFF8D96AB) : const Color(0xFF6B7280);
-    final codeBorder = isDark
-        ? const Color(0xFF6863FF).withValues(alpha: 0.58)
-        : const Color(0xFF8F85E8).withValues(alpha: 0.54);
-    final codeTextColor =
-        isDark ? const Color(0xFF817BFF) : const Color(0xFF4B55D9);
-    final codeFill = isDark ? const Color(0xFF11162A) : const Color(0xFFFBFBFF);
-    final dividerColor =
-        isDark ? const Color(0xFF262D42) : const Color(0xFFE9EDF4);
-    final badgeBg = isDark ? const Color(0xFF3A2C14) : const Color(0xFFFFF1D6);
-    final badgeText =
-        isDark ? const Color(0xFFFFB545) : const Color(0xFFE69A00);
-    final ticketGradient = isDark
-        ? const [Color(0xFFB86B00), Color(0xFFD48A00)]
-        : const [Color(0xFFFFC329), Color(0xFFFF9F0A)];
-    final buttonGradient = isDark
-        ? const [Color(0xFF6E63FF), Color(0xFF463CE8)]
-        : const [Color(0xFF5C54F5), Color(0xFF4238DD)];
-
-    void openLocationSelection() {
-      context.push(
-        AppRoutes.userLocationSelect,
-        extra: LocationSelectionArgs(
-          initialCouponCode: code,
-          initialCouponDiscount: discountVal.toDouble(),
-        ),
-      );
-    }
+    final titleColor = context.textPrimary;
+    final subtitleColor = context.textSecondary;
+    final codeBorder = AppColors.primary.withValues(alpha: isDark ? 0.58 : 0.54);
+    final codeTextColor = AppColors.primary;
+    final codeFill = context.elevatedColor;
+    final badgeBg = AppColors.warning.withValues(alpha: isDark ? 0.2 : 0.1);
+    final badgeText = AppColors.warning;
+    final ticketGradient = [AppColors.warning, AppColors.warning.withValues(alpha: 0.8)];
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -736,25 +701,15 @@ class _CouponBannerState extends State<_CouponBanner> {
         textDirection: TextDirection.ltr,
         child: Container(
           decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: cardBorder, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withValues(alpha: isDark ? 0.34 : 0.10),
-                blurRadius: 26,
-                offset: const Offset(0, 12),
-              ),
-              BoxShadow(
-                color: AppColors.black.withValues(alpha: isDark ? 0.18 : 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: isDark ? AppColors.white.withValues(alpha: 0.04) : AppColors.black.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? AppColors.white.withValues(alpha: 0.08) : AppColors.black.withValues(alpha: 0.05),
+              width: 1,
+            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            child: Column(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
@@ -768,26 +723,26 @@ class _CouponBannerState extends State<_CouponBanner> {
                             alignment: Alignment.centerLeft,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
+                                horizontal: 10,
+                                vertical: 2,
                               ),
                               decoration: BoxDecoration(
                                 color: badgeBg,
-                                borderRadius: BorderRadius.circular(11),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
                                 l.discountLimited,
                                 textDirection: textDirection,
                                 style: TextStyle(
                                   color: badgeText,
-                                  fontSize: 11,
+                                  fontSize: 9.8,
                                   fontWeight: FontWeight.w700,
                                   height: 1.15,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           SizedBox(
                             width: double.infinity,
                             child: FittedBox(
@@ -799,14 +754,14 @@ class _CouponBannerState extends State<_CouponBanner> {
                                 maxLines: 1,
                                 style: TextStyle(
                                   color: titleColor,
-                                  fontSize: 18.5,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w900,
                                   height: 1.15,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 1),
                           SizedBox(
                             width: double.infinity,
                             child: FittedBox(
@@ -818,14 +773,14 @@ class _CouponBannerState extends State<_CouponBanner> {
                                 maxLines: 1,
                                 style: TextStyle(
                                   color: subtitleColor,
-                                  fontSize: 11.5,
+                                  fontSize: 9.6,
                                   fontWeight: FontWeight.w500,
                                   height: 1.25,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 5),
                           CustomPaint(
                             painter: _DashedBorderPainter(
                               color: codeBorder,
@@ -841,10 +796,10 @@ class _CouponBannerState extends State<_CouponBanner> {
                                 borderRadius: BorderRadius.circular(12),
                                 onTap: () => _copyCode(code, l),
                                 child: SizedBox(
-                                  height: 38,
+                                  height: 30,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
+                                      horizontal: 12,
                                     ),
                                     child: Row(
                                       textDirection: TextDirection.ltr,
@@ -855,13 +810,13 @@ class _CouponBannerState extends State<_CouponBanner> {
                                             _copied
                                                 ? Icons.check_circle_rounded
                                                 : Icons.copy_rounded,
-                                            size: 20,
+                                            size: 18,
                                             color: _copied
                                                 ? AppColors.success
                                                 : codeTextColor,
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 10),
                                         Expanded(
                                           child: Center(
                                             child: FittedBox(
@@ -871,16 +826,16 @@ class _CouponBannerState extends State<_CouponBanner> {
                                                 maxLines: 1,
                                                 style: TextStyle(
                                                   color: codeTextColor,
-                                                  fontSize: 17,
+                                                  fontSize: 14.5,
                                                   fontWeight: FontWeight.w900,
-                                                  letterSpacing: 5,
+                                                  letterSpacing: 3.2,
                                                   height: 1.1,
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 32),
+                                        const SizedBox(width: 28),
                                       ],
                                     ),
                                   ),
@@ -891,12 +846,12 @@ class _CouponBannerState extends State<_CouponBanner> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 9),
                     ClipPath(
                       clipper: const _CouponTicketClipper(),
                       child: Container(
-                        width: 86,
-                        height: 92,
+                        width: 70,
+                        height: 72,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: ticketGradient,
@@ -912,12 +867,12 @@ class _CouponBannerState extends State<_CouponBanner> {
                               textDirection: textDirection,
                               style: const TextStyle(
                                 color: AppColors.white,
-                                fontSize: 12,
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
                                 height: 1.2,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
@@ -925,16 +880,16 @@ class _CouponBannerState extends State<_CouponBanner> {
                                 maxLines: 1,
                                 style: const TextStyle(
                                   color: AppColors.white,
-                                  fontSize: 31,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.w900,
                                   height: 1,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 5),
+                            const SizedBox(height: 2),
                             Padding(
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
+                                  const EdgeInsets.symmetric(horizontal: 7),
                               child: Text(
                                 l.discountOnAllTrips,
                                 textAlign: TextAlign.center,
@@ -943,95 +898,9 @@ class _CouponBannerState extends State<_CouponBanner> {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: AppColors.white,
-                                  fontSize: 10,
+                                  fontSize: 8.8,
                                   fontWeight: FontWeight.w600,
                                   height: 1.15,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 9),
-                Divider(height: 1, thickness: 1, color: dividerColor),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.verified_user_outlined,
-                        color: AppColors.success,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'سفرك محمي وآمن مع كل رحلة',
-                            textDirection: TextDirection.rtl,
-                            maxLines: 1,
-                            style: TextStyle(
-                              color: mutedColor,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: openLocationSelection,
-                      child: Container(
-                        height: 38,
-                        width: 116,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: buttonGradient,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(13),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF5147F7)
-                                  .withValues(alpha: 0.24),
-                              blurRadius: 12,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.chevron_left_rounded,
-                              color: AppColors.white,
-                              size: 21,
-                            ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                AppLocalizations.of(context)!.bookNow,
-                                textDirection: textDirection,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: AppColors.white,
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.2,
                                 ),
                               ),
                             ),
@@ -1045,7 +914,6 @@ class _CouponBannerState extends State<_CouponBanner> {
             ),
           ),
         ),
-      ),
     );
   }
 }
@@ -1363,7 +1231,7 @@ class _PromoBannerState extends State<_PromoBanner> {
                               letterSpacing: 1.5,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'PROMO20',
+                              hintText: AppLocalizations.of(context)!.promoCodeExample,
                               hintStyle: TextStyle(
                                 color: context.textSecondary
                                     .withValues(alpha: 0.4),
@@ -1417,37 +1285,37 @@ class _PromoBannerState extends State<_PromoBanner> {
                       const SizedBox(width: 8),
                       SizedBox(
                         height: 42,
-                        width:
-                            72, // explicit width — prevents infinite-width crash
-                        child: ElevatedButton(
-                          onPressed: _isValidating ? null : _validateAndApply,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isValid == true
-                                ? AppColors.success
-                                : AppColors.primary,
-                            foregroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            elevation: 0,
-                            padding: EdgeInsets.zero,
+                        width: 72, // explicit width — prevents infinite-width crash
+                        child: Material(
+                          color: _isValid == true
+                              ? AppColors.success
+                              : (_isValidating ? AppColors.grey : AppColors.primary),
+                          borderRadius: BorderRadius.circular(10),
+                          child: InkWell(
+                            onTap: _isValidating ? null : _validateAndApply,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Center(
+                              child: _isValidating
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        color: AppColors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : _isValid == true
+                                      ? const Icon(Icons.check_rounded,
+                                          size: 20, color: AppColors.white)
+                                      : Text(
+                                          AppLocalizations.of(context)!.apply,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.white),
+                                        ),
+                            ),
                           ),
-                          child: _isValidating
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : _isValid == true
-                                  ? const Icon(Icons.check_rounded, size: 20)
-                                  : Text(
-                                      AppLocalizations.of(context)!.apply,
-                                      style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700),
-                                    ),
                         ),
                       ),
                     ],

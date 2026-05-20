@@ -215,6 +215,7 @@ class MessagesCubit extends Cubit<MessagesState> {
           messages: messages,
           otherName: current.otherName,
           otherUserId: current.otherUserId,
+          tripId: current.tripId,
           otherAvatarUrl: current.otherAvatarUrl,
           isOtherOnline: current.isOtherOnline,
           isOtherTyping: current.isOtherTyping,
@@ -231,7 +232,10 @@ class MessagesCubit extends Cubit<MessagesState> {
     String text,
     String otherUserId, {
     String? tripId,
+    String type = 'text',
+    String? attachmentUrl,
     required String Function(String name) newMessageFrom,
+    required String imageAttachmentLabel,
   }) async {
     if (state is! MessagesChatLoaded) return;
     final current = state as MessagesChatLoaded;
@@ -253,7 +257,10 @@ class MessagesCubit extends Cubit<MessagesState> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       senderId: userId,
       receiverId: otherUserId,
+      tripId: normalizedTripId,
       content: text,
+      type: type,
+      attachmentUrl: attachmentUrl,
       createdAt: DateTime.now(),
       isRead: false,
     );
@@ -276,6 +283,9 @@ class MessagesCubit extends Cubit<MessagesState> {
           text: text,
           senderName: await _repo.fetchCurrentUserName() ?? 'User',
           newMessageFrom: newMessageFrom,
+          imageAttachmentLabel: imageAttachmentLabel,
+          type: type,
+          attachmentUrl: attachmentUrl,
         );
       } else {
         await _repo.sendDirectMessage(
@@ -283,6 +293,9 @@ class MessagesCubit extends Cubit<MessagesState> {
           text: text,
           senderName: await _repo.fetchCurrentUserName() ?? 'User',
           newMessageFrom: newMessageFrom,
+          imageAttachmentLabel: imageAttachmentLabel,
+          type: type,
+          attachmentUrl: attachmentUrl,
         );
       }
       // Stream will pick up the real message and replace the optimistic one.
@@ -290,6 +303,36 @@ class MessagesCubit extends Cubit<MessagesState> {
       if (isClosed) return;
       debugPrint('MessagesCubit: sendMessage failed: $e');
       emit(MessagesError('failedSendMessage'));
+    }
+  }
+
+  Future<void> sendImage(
+    File file,
+    String otherUserId, {
+    String? tripId,
+    required String Function(String name) newMessageFrom,
+    required String imageAttachmentLabel,
+  }) async {
+    if (state is! MessagesChatLoaded) return;
+    final current = state as MessagesChatLoaded;
+    if (current.canSend == false) return;
+
+    try {
+      final url = await _repo.uploadAttachment(file);
+      if (isClosed) return;
+      await sendMessage(
+        imageAttachmentLabel,
+        otherUserId,
+        tripId: tripId,
+        type: 'image',
+        attachmentUrl: url,
+        newMessageFrom: newMessageFrom,
+        imageAttachmentLabel: imageAttachmentLabel,
+      );
+    } catch (e) {
+      if (isClosed) return;
+      debugPrint('MessagesCubit: sendImage failed: $e');
+      emit(const MessagesError('failedSendMessage'));
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/features/shared/data/repositories/chatbot_repository.dart';
 
@@ -37,7 +38,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> _loadMessages() async {
     try {
       final data = await _repository.loadMessages();
+      if (!mounted) return;
       setState(() {
+        _messages.clear();
         for (final row in data) {
           _messages.add(ChatMessage(
             text: row['message'] as String? ?? '',
@@ -49,7 +52,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       _scrollToBottom();
     } catch (e) {
       debugPrint('❌ ChatbotScreen loadMessages: $e');
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -70,9 +73,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     if (text.isEmpty || _isSending) return;
     if (_lastSentAt != null &&
         DateTime.now().difference(_lastSentAt!) < const Duration(seconds: 2)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.errorRateLimit)),
-      );
+      AppToast.error(AppLocalizations.of(context)!.errorRateLimit);
       return;
     }
     _lastSentAt = DateTime.now();
@@ -105,7 +106,42 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       backgroundColor: context.bgColor,
       appBar: AppBar(
         backgroundColor: context.bgColor,
-        title: Text(AppLocalizations.of(context)!.supportAssistant),
+        elevation: 0,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.22)),
+              ),
+              child: const Icon(Icons.smart_toy_outlined,
+                  color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(AppLocalizations.of(context)!.supportAssistant),
+                  Text(
+                    AppLocalizations.of(context)!.online,
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -142,45 +178,89 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                     : ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) => _messages[index],
+                        itemCount: _messages.length + (_isSending ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (_isSending && index == _messages.length) {
+                            return const ChatMessage(
+                              text: '...',
+                              isUser: false,
+                              isTyping: true,
+                            );
+                          }
+                          return _messages[index];
+                        },
                       ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: context.elevatedColor,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    style: TextStyle(color: context.textPrimary),
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.typeMessage,
-                      hintStyle: TextStyle(color: context.textSecondary),
-                      border: const OutlineInputBorder(),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              decoration: BoxDecoration(
+                color: context.cardColor,
+                border: Border(top: BorderSide(color: context.divColor)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.elevatedColor,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                            color: context.divColor.withValues(alpha: 0.65)),
+                      ),
+                      child: TextField(
+                        controller: _controller,
+                        style: TextStyle(color: context.textPrimary),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(),
+                        minLines: 1,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)!.typeMessage,
+                          hintStyle: TextStyle(color: context.textSecondary),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 13),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                _isSending
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.primary),
-                        ),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.send_rounded,
-                            color: AppColors.primary),
-                        onPressed: _sendMessage,
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.28),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-              ],
+                      child: IconButton(
+                        icon: _isSending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.white,
+                                ),
+                              )
+                            : const Icon(Icons.send_rounded,
+                                color: AppColors.white),
+                        onPressed: _isSending ? null : _sendMessage,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -192,29 +272,62 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 class ChatMessage extends StatelessWidget {
   final String text;
   final bool isUser;
+  final bool isTyping;
 
   const ChatMessage({
     super.key,
     required this.text,
     required this.isUser,
+    this.isTyping = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bubbleChild = isTyping
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              3,
+              (index) => Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary
+                      .withValues(alpha: index == 1 ? 0.75 : 0.4),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          )
+        : Text(
+            text,
+            style: TextStyle(
+              color: isUser ? AppColors.white : context.textPrimary,
+              fontSize: 15,
+              height: 1.42,
+            ),
+          );
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isUser ? AppColors.primary : context.elevatedColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser ? AppColors.white : context.textPrimary,
+      child: ConstrainedBox(
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * .78),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: isUser ? AppColors.primary : context.elevatedColor,
+            borderRadius: BorderRadiusDirectional.only(
+              topStart: const Radius.circular(18),
+              topEnd: const Radius.circular(18),
+              bottomStart: Radius.circular(isUser ? 18 : 5),
+              bottomEnd: Radius.circular(isUser ? 5 : 18),
+            ),
+            border: isUser ? null : Border.all(color: context.divColor),
           ),
+          child: bubbleChild,
         ),
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../../services/supabase_service.dart';
-import '../../../../../core/constants/env_constants.dart';
 
 class ChatbotRepository {
   Future<List<Map<String, dynamic>>> loadMessages() async {
@@ -95,6 +94,10 @@ class ChatbotRepository {
           response.data != null &&
           response.data is Map) {
         final data = Map<String, dynamic>.from(response.data as Map);
+        final directContent = data['content'] ?? data['reply'];
+        if (directContent is String && directContent.trim().isNotEmpty) {
+          return directContent.trim();
+        }
         final choices = data['choices'] as List?;
         if (choices != null && choices.isNotEmpty) {
           final choice = choices[0];

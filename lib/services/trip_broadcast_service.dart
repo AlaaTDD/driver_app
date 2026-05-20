@@ -15,6 +15,8 @@ class TripBroadcastService {
     required double originLat,
     required double originLng,
     required String vehicleType,
+    required String title,
+    required String body,
     Set<String> excludedDriverIds = const {},
   }) async {
     _log(
@@ -57,8 +59,8 @@ class TripBroadcastService {
           try {
             await SupabaseService.client.functions.invoke('send-fcm', body: {
               'user_id': driverId,
-              'title': 'رحلة جديدة',
-              'body': 'لديك طلب رحلة جديد بالقرب منك',
+              'title': title,
+              'body': body,
               'data': {
                 'type': 'ride_offer',
                 'trip_id': tripId,

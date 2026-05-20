@@ -2,12 +2,14 @@ import 'dart:developer' as developer;
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'dart:io' show Platform;
 
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/widgets/app_button.dart';
 import '../../../services/supabase_service.dart';
 import '../bloc/ride_offer_bloc.dart';
 import '../bloc/ride_offer_event.dart';
@@ -30,15 +32,17 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
     );
     await plugin.initialize(initSettings);
 
+    final l10n = lookupAppLocalizations(ui.PlatformDispatcher.instance.locale);
+
     if (Platform.isAndroid) {
       final androidPlugin = plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(
-          const AndroidNotificationChannel(
+          AndroidNotificationChannel(
             'ride_offer_channel',
-            'Ride Requests',
-            description: 'New ride request notifications',
+            l10n.rideRequests,
+            description: l10n.newRideRequestNotifications,
             importance: Importance.max,
             playSound: true,
             enableVibration: true,
@@ -47,9 +51,9 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
       }
     }
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'ride_offer_channel',
-      'Ride Requests',
+      l10n.rideRequests,
       importance: Importance.max,
       priority: Priority.max,
       icon: '@mipmap/ic_launcher',
@@ -66,7 +70,7 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
       presentBadge: true,
       presentSound: true,
     );
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
     );
@@ -75,14 +79,20 @@ Future<void> _fireRideNotification(RideOfferModel offer) async {
 
     await plugin.show(
       notificationId,
-      '🚖 New ride available!',
-      '${offer.pickupAddress} → ${offer.destinationAddress}\n💰 ${offer.estimatedPrice.toStringAsFixed(0)} EGP  ·  📍 ${offer.distance.toStringAsFixed(1)} km',
+      l10n.newRideAvailableAlert,
+      l10n.newRideDetails(
+        offer.pickupAddress,
+        offer.destinationAddress,
+        offer.estimatedPrice.toStringAsFixed(0),
+        l10n.currencySar,
+        offer.distance.toStringAsFixed(1),
+      ),
       details,
     );
     developer
-        .log('showRideOfferOverlay: ✅ Notification shown (id=$notificationId)');
+        .log('showRideOfferOverlay: Notification shown (id=$notificationId)');
   } catch (e) {
-    developer.log('showRideOfferOverlay: ❌ Notification failed: $e');
+    developer.log('showRideOfferOverlay: Notification failed: $e');
   }
 }
 
@@ -175,10 +185,12 @@ Future<void> handleRideOfferNotification(Map<String, dynamic> data) async {
       } catch (dbError) {
         developer.log(
             'handleRideOfferNotification: Supabase fallback failed: $dbError');
+        final l10n =
+            lookupAppLocalizations(ui.PlatformDispatcher.instance.locale);
         offer = RideOfferModel(
           id: tripId,
           passengerName: '',
-          pickupAddress: data['title'] as String? ?? 'New Ride Request',
+          pickupAddress: data['title'] as String? ?? l10n.newRideRequest,
           destinationAddress: data['body'] as String? ?? '',
           distance: 0.0,
           estimatedPrice: 0.0,
@@ -335,7 +347,7 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
                   icon: Icons.attach_money,
                   value: AppLocalizations.of(context)!.priceWithCurrency(
                       widget.offer.estimatedPrice.toStringAsFixed(0),
-                      AppLocalizations.of(context)!.egp),
+                      AppLocalizations.of(context)!.currencySar),
                   color: AppColors.success,
                 ),
                 _InfoChip(
@@ -350,50 +362,28 @@ class _RideOfferDialogState extends State<_RideOfferDialog> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: AppButton(
+                    text: AppLocalizations.of(context)!.rejectBtn,
+                    variant: AppButtonVariant.danger,
                     onPressed: () {
                       context
                           .read<RideOfferBloc>()
                           .add(RideOfferDeclined(widget.offer.id));
                       Navigator.of(context).pop();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(AppLocalizations.of(context)!.rejectBtn,
-                        style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton(
+                  child: AppButton(
+                    text: AppLocalizations.of(context)!.acceptBtn,
+                    variant: AppButtonVariant.secondary,
                     onPressed: () {
                       context
                           .read<RideOfferBloc>()
                           .add(RideOfferAccepted(widget.offer.id));
                       Navigator.of(context).pop();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor:
-                          isDark ? context.cardColor : context.bgColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.acceptBtn,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ),
               ],
@@ -428,8 +418,7 @@ class _AddressRow extends StatelessWidget {
         Expanded(
           child: Text(
             '$label: $address',
-            style: TextStyle(
-                color: AppColors.white.withValues(alpha: 0.7), fontSize: 14),
+            style: TextStyle(color: context.textSecondary, fontSize: 14),
           ),
         ),
       ],

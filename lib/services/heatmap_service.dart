@@ -1,21 +1,16 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 
-class HeatmapService with WidgetsBindingObserver {
-  HeatmapService._() {
-    WidgetsBinding.instance.addObserver(this);
-  }
+class HeatmapService {
+  HeatmapService._();
   static final HeatmapService instance = HeatmapService._();
 
   static const double hexRadiusMeters = 300.0;
 
-  static const Duration _staleDuration = Duration(seconds: 45);
-
-  Timer? _staleCleanupTimer;
-  Timer? _pollingTimer;
+  RealtimeChannel? _presenceChannel;
   bool _isDisposed = false;
 
   final _heatmapController = StreamController<List<HeatmapCell>>.broadcast();
@@ -30,19 +25,26 @@ class HeatmapService with WidgetsBindingObserver {
 
   Future<void> startRealtimeUpdates() async {
     _isDisposed = false; // Allow restarting after sign-out
-    if (_pollingTimer != null) return;
 
+    if (_presenceChannel != null) {
+      if (!_heatmapController.isClosed) {
+        _heatmapController.add(List.unmodifiable(_currentCells));
+      }
+      debugPrint(
+          '🔥 Heatmap: Already connected — pushed ${_currentCells.length} cells to new subscriber');
+      return;
+    }
+
+    _subscribeToPresenceChanges();
     await _fetchAllPresence();
-    _pollingTimer =
-        Timer.periodic(const Duration(seconds: 30), (_) => _fetchAllPresence());
-    _startStaleCleanup();
   }
 
   void stopRealtimeUpdates() {
-    _staleCleanupTimer?.cancel();
-    _staleCleanupTimer = null;
-    _pollingTimer?.cancel();
-    _pollingTimer = null;
+    final channel = _presenceChannel;
+    _presenceChannel = null;
+    if (channel != null) {
+      SupabaseService.client.removeChannel(channel);
+    }
     _presenceMap.clear();
     _currentCells = [];
     if (!_heatmapController.isClosed) {
@@ -52,7 +54,6 @@ class HeatmapService with WidgetsBindingObserver {
 
   void dispose() {
     _isDisposed = true;
-    // WidgetsBinding.instance.removeObserver(this); // Singleton stays alive
     stopRealtimeUpdates();
     // Do NOT close _heatmapController because this is a Singleton.
     // If user signs out and signs back in, the stream must still be open.
@@ -61,28 +62,11 @@ class HeatmapService with WidgetsBindingObserver {
     }
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      stopRealtimeUpdates();
-    } else if (state == AppLifecycleState.resumed) {
-      if (!_isDisposed) {
-        startRealtimeUpdates();
-      }
-    }
-  }
-
   Future<void> _fetchAllPresence() async {
     try {
-      final cutoff =
-          DateTime.now().toUtc().subtract(_staleDuration).toIso8601String();
-
       final data = await SupabaseService.client
           .from('user_presence')
-          .select('user_id, lat, lng, last_seen')
-          .gte('last_seen', cutoff);
+          .select('user_id, lat, lng');
 
       _presenceMap.clear();
 
@@ -94,56 +78,65 @@ class HeatmapService with WidgetsBindingObserver {
 
         final lat = (row['lat'] as num?)?.toDouble();
         final lng = (row['lng'] as num?)?.toDouble();
-        final lastSeen = DateTime.tryParse(row['last_seen'] as String? ?? '');
 
-        if (lat == null || lng == null || lastSeen == null) continue;
+        if (lat == null || lng == null) continue;
 
         _presenceMap[userId] = _UserPresenceEntry(
           lat: lat,
           lng: lng,
-          lastSeen: lastSeen,
         );
       }
 
       _rebuildHexCells();
-      debugPrint('🔥 Heatmap: Fetched ${_presenceMap.length} active users');
+      debugPrint('🔥 Heatmap: Loaded ${_presenceMap.length} presence rows');
     } catch (e) {
       debugPrint('❌ Heatmap: Failed to fetch presence: $e');
     }
   }
 
-  // RT methods removed
-
-  void _startStaleCleanup() {
-    _staleCleanupTimer?.cancel();
-    _staleCleanupTimer = Timer.periodic(
-      const Duration(seconds: 60),
-      (_) => _cleanupStaleEntries(),
-    );
-  }
-
-  void _cleanupStaleEntries() {
-    final cutoff = DateTime.now().toUtc().subtract(_staleDuration);
-    final staleUserIds = <String>[];
-
-    _presenceMap.forEach((userId, entry) {
-      if (entry.lastSeen.isBefore(cutoff)) {
-        staleUserIds.add(userId);
-      }
+  void _subscribeToPresenceChanges() {
+    final channel = SupabaseService.client
+        .channel('heatmap-user-presence')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'user_presence',
+          callback: _handlePresencePayload,
+        )
+        .subscribe((status, [error]) {
+      debugPrint('🔥 Heatmap: Realtime status=$status error=$error');
     });
 
-    if (staleUserIds.isEmpty) return;
-
-    for (final id in staleUserIds) {
-      _presenceMap.remove(id);
-    }
-
-    _rebuildHexCells();
-    debugPrint('🔥 Heatmap: Cleaned ${staleUserIds.length} stale users, '
-        '${_presenceMap.length} remaining');
+    _presenceChannel = channel;
   }
 
-  Timer? _rebuildDebounce;
+  void _handlePresencePayload(PostgresChangePayload payload) {
+    if (_isDisposed) return;
+
+    if (payload.eventType == PostgresChangeEvent.delete) {
+      final userId = payload.oldRecord['user_id'] as String?;
+      if (userId != null && _presenceMap.remove(userId) != null) {
+        _rebuildHexCells();
+      }
+      return;
+    }
+
+    final row = payload.newRecord;
+    final userId = row['user_id'] as String?;
+    if (userId == null) return;
+
+    if (userId == SupabaseService.currentUser?.id) {
+      if (_presenceMap.remove(userId) != null) _rebuildHexCells();
+      return;
+    }
+
+    final lat = (row['lat'] as num?)?.toDouble();
+    final lng = (row['lng'] as num?)?.toDouble();
+    if (lat == null || lng == null) return;
+
+    _presenceMap[userId] = _UserPresenceEntry(lat: lat, lng: lng);
+    _rebuildHexCells();
+  }
 
   void _rebuildHexCells() {
     if (_presenceMap.isEmpty) {
@@ -152,12 +145,6 @@ class HeatmapService with WidgetsBindingObserver {
       return;
     }
 
-    _rebuildDebounce?.cancel();
-    _rebuildDebounce =
-        Timer(const Duration(milliseconds: 100), _computeHexCells);
-  }
-
-  void _computeHexCells() {
     if (_isDisposed) return;
 
     final cellCounts = <String, _HexCellAccumulator>{};
@@ -232,12 +219,10 @@ class HeatmapService with WidgetsBindingObserver {
 class _UserPresenceEntry {
   final double lat;
   final double lng;
-  final DateTime lastSeen;
 
   const _UserPresenceEntry({
     required this.lat,
     required this.lng,
-    required this.lastSeen,
   });
 }
 

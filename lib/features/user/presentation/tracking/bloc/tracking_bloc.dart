@@ -81,45 +81,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
         }
       }
 
-      // ─── Fetch Route Points ──────────────────────────────────────────────────
-      List<LatLng> routePoints = const [];
-      final pickupLat = tripData['pickup_lat'];
-      final pickupLng = tripData['pickup_lng'];
-      final destLat = tripData['destination_lat'];
-      final destLng = tripData['destination_lng'];
-
-      try {
-        if (tripData['status'] == 'accepted' &&
-            initialDriverLocation != null &&
-            pickupLat != null &&
-            pickupLng != null) {
-          // Driver is heading to pickup, so show route from driver to pickup
-          final result = await DirectionsService.getRoute(
-            originLat: initialDriverLocation.latitude,
-            originLng: initialDriverLocation.longitude,
-            destLat: (pickupLat as num).toDouble(),
-            destLng: (pickupLng as num).toDouble(),
-            apiKey: EnvConstants.googleMapsApiKey,
-          );
-          if (result != null) routePoints = result.points;
-        } else if (pickupLat != null &&
-            pickupLng != null &&
-            destLat != null &&
-            destLng != null) {
-          // Trip is in progress or searching, show route from pickup to destination
-          final result = await DirectionsService.getRoute(
-            originLat: (pickupLat as num).toDouble(),
-            originLng: (pickupLng as num).toDouble(),
-            destLat: (destLat as num).toDouble(),
-            destLng: (destLng as num).toDouble(),
-            apiKey: EnvConstants.googleMapsApiKey,
-          );
-          if (result != null) routePoints = result.points;
-        }
-      } catch (e) {
-        debugPrint('⚠️ TrackingBloc: Directions fetch failed: $e');
-      }
-      // ────────────────────────────────────────────────────────────────────────
+      final routePoints = await _loadTripRoutePoints(event.tripId, tripData);
 
       emit(TrackingLoaded(
         trip: Map<String, dynamic>.from(tripData),
@@ -167,9 +129,11 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       final updatedTrip = Map<String, dynamic>.from(current.trip)
         ..['status'] = 'completed';
       emit(TrackingLoaded(
-          trip: updatedTrip,
-          driver: current.driver,
-          driverLocation: current.driverLocation));
+        trip: updatedTrip,
+        driver: current.driver,
+        driverLocation: current.driverLocation,
+        routePoints: current.routePoints,
+      ));
 
       // Start broadcasting again once trip is over
       LocationService.instance.getCurrentLocation().then((loc) {
@@ -187,63 +151,7 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     final current = state as TrackingLoaded;
     final tripData = current.trip;
 
-    List<LatLng> routePoints = const [];
-    final pickupLat = tripData['pickup_lat'];
-    final pickupLng = tripData['pickup_lng'];
-    final destLat = tripData['destination_lat'];
-    final destLng = tripData['destination_lng'];
-
-    if (pickupLat != null &&
-        pickupLng != null &&
-        destLat != null &&
-        destLng != null) {
-      // ─── Fetch active waypoints from trip_route_waypoints ──────────────────
-      List<LatLng> stopovers = [];
-      try {
-        final plans = await SupabaseService.client
-            .from('trip_route_plans')
-            .select('id')
-            .eq('trip_id', event.tripId)
-            .eq('is_active', true)
-            .maybeSingle();
-
-        if (plans != null) {
-          final wps = await SupabaseService.client
-              .from('trip_route_waypoints')
-              .select('lat, lng, seq_order')
-              .eq('route_plan_id', plans['id'] as String)
-              .eq('role', 'stopover')
-              .order('seq_order');
-          stopovers = (wps as List)
-              .map((w) => LatLng(
-                    (w['lat'] as num).toDouble(),
-                    (w['lng'] as num).toDouble(),
-                  ))
-              .toList();
-          debugPrint(
-              '📍 TrackingBloc: RecalculateRoute found ${stopovers.length} stopovers');
-        }
-      } catch (e) {
-        debugPrint('⚠️ TrackingBloc: Waypoints fetch failed: $e');
-      }
-      // ───────────────────────────────────────────────────────────────────────
-
-      try {
-        final result = await DirectionsService.getRoute(
-          originLat: (pickupLat as num).toDouble(),
-          originLng: (pickupLng as num).toDouble(),
-          destLat: (destLat as num).toDouble(),
-          destLng: (destLng as num).toDouble(),
-          waypoints:
-              stopovers.isNotEmpty ? stopovers : null, // ✅ pass stopovers
-          apiKey: EnvConstants.googleMapsApiKey,
-        );
-        if (result != null) routePoints = result.points;
-      } catch (e) {
-        debugPrint(
-            '⚠️ TrackingBloc: RecalculateRoute directions fetch failed: $e');
-      }
-    }
+    final routePoints = await _loadTripRoutePoints(event.tripId, tripData);
 
     emit(TrackingLoaded(
       trip: current.trip,
@@ -251,6 +159,89 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
       driverLocation: current.driverLocation,
       routePoints: routePoints,
     ));
+  }
+
+  Future<List<LatLng>> _loadTripRoutePoints(
+    String tripId,
+    Map<String, dynamic> tripData,
+  ) async {
+    final pickup = _tripPoint(tripData, 'pickup_lat', 'pickup_lng');
+    final meeting = _tripPoint(tripData, 'meeting_lat', 'meeting_lng');
+    final destination =
+        _tripPoint(tripData, 'destination_lat', 'destination_lng');
+
+    if (pickup == null || destination == null) return const [];
+
+    final hasSeparateMeeting = meeting != null && !_samePoint(meeting, pickup);
+    final start = hasSeparateMeeting ? meeting : pickup;
+    final stopovers = await _loadStopovers(tripId);
+    final waypoints = <LatLng>[
+      if (hasSeparateMeeting) pickup,
+      ...stopovers,
+    ];
+    final fallback = <LatLng>[start, ...waypoints, destination];
+
+    try {
+      final result = await DirectionsService.getRoute(
+        originLat: start.latitude,
+        originLng: start.longitude,
+        destLat: destination.latitude,
+        destLng: destination.longitude,
+        waypoints: waypoints.isNotEmpty ? waypoints : null,
+        apiKey: EnvConstants.googleMapsApiKey,
+      );
+      if (result != null && result.points.length >= 2) return result.points;
+    } catch (e) {
+      debugPrint('⚠️ TrackingBloc: Directions fetch failed: $e');
+    }
+
+    return fallback;
+  }
+
+  Future<List<LatLng>> _loadStopovers(String tripId) async {
+    try {
+      final plan = await SupabaseService.client
+          .from('trip_route_plans')
+          .select('id')
+          .eq('trip_id', tripId)
+          .eq('status', 'active')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (plan == null) return const [];
+
+      final rows = await SupabaseService.client
+          .from('trip_route_waypoints')
+          .select('lat, lng, seq_order')
+          .eq('route_plan_id', plan['id'] as String)
+          .eq('role', 'stopover')
+          .order('seq_order');
+
+      return (rows as List)
+          .map((row) => LatLng(
+                (row['lat'] as num).toDouble(),
+                (row['lng'] as num).toDouble(),
+              ))
+          .toList();
+    } catch (e) {
+      debugPrint('⚠️ TrackingBloc: stopovers fetch failed: $e');
+      return const [];
+    }
+  }
+
+  LatLng? _tripPoint(Map<String, dynamic> trip, String latKey, String lngKey) {
+    final lat = (trip[latKey] as num?)?.toDouble();
+    final lng = (trip[lngKey] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+    if (lat == 0.0 && lng == 0.0) return null;
+    if (!lat.isFinite || !lng.isFinite) return null;
+    return LatLng(lat, lng);
+  }
+
+  bool _samePoint(LatLng a, LatLng b) {
+    return (a.latitude - b.latitude).abs() < 0.00005 &&
+        (a.longitude - b.longitude).abs() < 0.00005;
   }
 
   Future<void> _onCancelTrip(

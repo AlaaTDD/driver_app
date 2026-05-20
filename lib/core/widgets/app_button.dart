@@ -18,6 +18,7 @@ class AppButton extends StatelessWidget {
   final AppButtonSize size;
   final IconData? leadingIcon;
   final IconData? trailingIcon;
+  final double? width;
 
   const AppButton({
     super.key,
@@ -29,6 +30,7 @@ class AppButton extends StatelessWidget {
     this.size = AppButtonSize.lg,
     this.leadingIcon,
     this.trailingIcon,
+    this.width = double.infinity,
   });
 
   double get _height => switch (size) {
@@ -86,7 +88,7 @@ class AppButton extends StatelessWidget {
     };
 
     return Container(
-      width: double.infinity,
+      width: width,
       height: _height,
       decoration: BoxDecoration(
         gradient: inactive ? null : gradient,
@@ -110,37 +112,40 @@ class AppButton extends StatelessWidget {
                   onPressed?.call();
                 },
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation(AppColors.white)),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (leadingIcon != null) ...[
-                        Icon(leadingIcon,
-                            size: _fontSize + 2,
-                            color: inactive ? context.textDisabled : fg),
-                        const SizedBox(width: 6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          valueColor: AlwaysStoppedAnimation(AppColors.white)),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (leadingIcon != null) ...[
+                          Icon(leadingIcon,
+                              size: _fontSize + 2,
+                              color: inactive ? context.textDisabled : fg),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(text,
+                            style: TextStyle(
+                                fontSize: _fontSize,
+                                fontWeight: FontWeight.w700,
+                                color: inactive ? context.textDisabled : fg)),
+                        if (trailingIcon != null) ...[
+                          const SizedBox(width: 6),
+                          Icon(trailingIcon,
+                              size: _fontSize + 2,
+                              color: inactive ? context.textDisabled : fg),
+                        ],
                       ],
-                      Text(text,
-                          style: TextStyle(
-                              fontSize: _fontSize,
-                              fontWeight: FontWeight.w700,
-                              color: inactive ? context.textDisabled : fg)),
-                      if (trailingIcon != null) ...[
-                        const SizedBox(width: 6),
-                        Icon(trailingIcon,
-                            size: _fontSize + 2,
-                            color: inactive ? context.textDisabled : fg),
-                      ],
-                    ],
-                  ),
+                    ),
+            ),
           ),
         ),
       ),

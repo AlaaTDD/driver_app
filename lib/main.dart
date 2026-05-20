@@ -28,8 +28,14 @@ import 'core/services/connectivity_service.dart';
 import 'firebase_options.dart';
 import 'core/repositories/app_config_repository.dart';
 
+final RegExp _terminalIconPattern = RegExp(
+  r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]',
+  unicode: true,
+);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _installPlainTerminalLogs();
   await dotenv.load(fileName: '.env');
   await Supabase.initialize(
     url: EnvConstants.supabaseUrl,
@@ -76,7 +82,11 @@ void main() async {
   });
 
   final prefs = await SharedPreferences.getInstance();
-  final isDark = prefs.getBool('app_theme_dark') ?? true;
+  final isDarkOpt = prefs.getBool('app_theme_dark');
+  final isSystemDark =
+      WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+          Brightness.dark;
+  final isDark = isDarkOpt ?? isSystemDark;
   final initialTheme = isDark ? ThemeDark() : ThemeLight();
 
   Bloc.observer = AppBlocObserver();
@@ -92,6 +102,20 @@ void main() async {
     authBloc: authBloc,
     initialTheme: initialTheme,
   ));
+}
+
+void _installPlainTerminalLogs() {
+  final previousDebugPrint = debugPrint;
+  debugPrint = (String? message, {int? wrapWidth}) {
+    previousDebugPrint(
+      message == null ? null : _stripTerminalIcons(message),
+      wrapWidth: wrapWidth,
+    );
+  };
+}
+
+String _stripTerminalIcons(String message) {
+  return message.replaceAll(_terminalIconPattern, '').trimLeft();
 }
 
 class MyApp extends StatefulWidget {

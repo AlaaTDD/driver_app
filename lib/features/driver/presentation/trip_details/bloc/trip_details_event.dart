@@ -52,6 +52,16 @@ class CompleteTrip extends TripDetailsEvent {
   List<Object?> get props => [tripId];
 }
 
+class CancelTrip extends TripDetailsEvent {
+  final String tripId;
+  final String? cancelReason;
+
+  const CancelTrip(this.tripId, {this.cancelReason});
+
+  @override
+  List<Object?> get props => [tripId, cancelReason];
+}
+
 class UpdateDriverLocation extends TripDetailsEvent {
   final double lat;
   final double lng;

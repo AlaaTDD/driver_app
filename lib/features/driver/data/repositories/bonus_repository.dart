@@ -8,12 +8,9 @@ class BonusRepository {
 
   /// Get the current driver's bonus progress for today.
   /// Uses the `get_my_bonus_progress` RPC.
-  Future<Map<String, dynamic>> getMyBonusProgress(String driverId) async {
+  Future<Map<String, dynamic>> getMyBonusProgress([String? driverId]) async {
     try {
-      final result = await _client.rpc(
-        'get_my_bonus_progress',
-        params: {'p_driver_id': driverId},
-      );
+      final result = await _client.rpc('get_my_bonus_progress');
       if (result is List && result.isNotEmpty) {
         return Map<String, dynamic>.from(result.first);
       }
@@ -22,6 +19,23 @@ class BonusRepository {
       }
       return {};
     } catch (e) {
+      if (driverId != null) {
+        try {
+          final result = await _client.rpc(
+            'get_my_bonus_progress',
+            params: {'p_driver_id': driverId},
+          );
+          if (result is List && result.isNotEmpty) {
+            return Map<String, dynamic>.from(result.first);
+          }
+          if (result is Map) {
+            return Map<String, dynamic>.from(result);
+          }
+        } catch (fallbackError) {
+          debugPrint(
+              '❌ BonusRepository.getMyBonusProgress fallback: $fallbackError');
+        }
+      }
       debugPrint('❌ BonusRepository.getMyBonusProgress: $e');
       return {};
     }

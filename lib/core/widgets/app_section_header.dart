@@ -19,11 +19,15 @@ class AppSectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title,
-            style: TextStyle(
-                color: context.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
+        Expanded(
+          child: Text(title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700)),
+        ),
         if (actionLabel != null && onAction != null)
           GestureDetector(
             onTap: onAction,

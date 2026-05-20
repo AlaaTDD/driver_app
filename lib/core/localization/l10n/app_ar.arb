@@ -766,5 +766,11 @@
   "confirmDeparture": "تأكيد المغادرة",
   "failedCreateLegacyRoutePlan": "فشل إنشاء مسار الرحلة القديم",
   "errorAddStopover": "فشل إضافة المحطة",
-  "errorRemoveStopover": "فشل حذف المحطة"
+  "errorRemoveStopover": "فشل حذف المحطة",
+  "confirm": "تأكيد",
+  "youPrefix": "أنت: ",
+  "emailExample": "example@email.com",
+  "promoCodeExample": "PROMO20",
+  "notAvailable": "غير متاح",
+  "noData": "—"
 }

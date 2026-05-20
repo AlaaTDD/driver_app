@@ -11,7 +11,9 @@ class CellSubscriptionService {
   String? _currentCenterCell;
   List<String> _subscribedCells = [];
   List<String> _subscribedCells5 = []; // precision-5 prefixes for DB filter
-  Timer? _boundaryDebounceTimer;
+  RealtimeChannel? _driversChannel;
+  int _channelGeneration = 0;
+  bool _isRealtimeSubscribed = false;
   final _driverUpdatesController =
       StreamController<Map<String, DriverLocation>>.broadcast();
 
@@ -24,41 +26,33 @@ class CellSubscriptionService {
       Map.unmodifiable(_driversMap);
 
   /// Subscribe to cells around the user's position.
-  /// First call subscribes immediately; subsequent cell changes are debounced.
+  /// The initial RPC is a one-shot snapshot; subsequent changes arrive through
+  /// Supabase Realtime and update [_driversMap] in place.
   Future<void> subscribeToCells(double lat, double lng) async {
     final centerCell = GeohashHelper.encode(lat, lng, precision: 6);
 
-    // Same cell — skip entirely
-    if (centerCell == _currentCenterCell) return;
-
-    // First time? Subscribe immediately without debounce
-    if (_currentCenterCell == null) {
-      await _performSubscription(lat, lng, centerCell);
+    if (centerCell == _currentCenterCell) {
+      final wasDisconnected = _driversChannel == null;
+      _ensureRealtimeSubscription();
+      if (wasDisconnected) {
+        await _fetchInitialDrivers();
+      }
+      _emitDrivers();
       return;
     }
 
-    // Subsequent cell changes — debounce to avoid rapid re-subscriptions
-    _boundaryDebounceTimer?.cancel();
-    _boundaryDebounceTimer = Timer(const Duration(seconds: 2), () async {
-      await _performSubscription(lat, lng, centerCell);
-    });
+    await _performSubscription(centerCell);
   }
 
   Future<void> refresh() async {
     if (_currentCenterCell == null || _subscribedCells.isEmpty) return;
-    debugPrint('📍 CellSystem: Forcing refresh and realtime reconnect...');
+    debugPrint('📍 CellSystem: Refreshing driver snapshot...');
 
-    // First: quickly fetch fresh data from DB (fast path)
+    _ensureRealtimeSubscription();
     await _fetchInitialDrivers();
-
-    // Then: restart polling timer
-    _subscribeToRealtimeChanges();
   }
 
-  Future<void> _performSubscription(
-      double lat, double lng, String centerCell) async {
-    await _unsubscribeAll();
-
+  Future<void> _performSubscription(String centerCell) async {
     _currentCenterCell = centerCell;
     _subscribedCells = [
       centerCell,
@@ -74,9 +68,8 @@ class CellSubscriptionService {
     debugPrint(
         '📍 CellSystem: Subscribing to ${_subscribedCells.length} cells around $centerCell');
 
+    _ensureRealtimeSubscription();
     await _fetchInitialDrivers();
-    _subscribeToRealtimeChanges();
-    _startStaleCleanup();
   }
 
   Future<void> _fetchInitialDrivers() async {
@@ -106,10 +99,9 @@ class CellSubscriptionService {
           }
         }
 
-        if (now.difference(lastUpdated).inMinutes > 2) continue;
-
-        final driverLat = (row['current_lat'] as num).toDouble();
-        final driverLng = (row['current_lng'] as num).toDouble();
+        final driverLat = (row['current_lat'] as num?)?.toDouble();
+        final driverLng = (row['current_lng'] as num?)?.toDouble();
+        if (driverLat == null || driverLng == null) continue;
 
         newDrivers[driverId] = DriverLocation(
           driverId: driverId,
@@ -123,63 +115,166 @@ class CellSubscriptionService {
       _driversMap.clear();
       _driversMap.addAll(newDrivers);
 
-      if (!_driverUpdatesController.isClosed) {
-        _driverUpdatesController.add(Map.from(_driversMap));
-      }
+      _emitDrivers();
     } catch (e) {
       debugPrint('❌ CellSystem: Failed to fetch drivers: $e');
     }
   }
 
-  Timer? _pollingTimer;
+  void _ensureRealtimeSubscription() {
+    if (_driversChannel != null) return;
+    _subscribeToRealtimeChanges();
+  }
 
   void _subscribeToRealtimeChanges() {
-    // Instead of subscribing to Realtime which requires permissive RLS (and exposes national_id),
-    // we poll the secure RPC every 5 seconds. This is more secure and reliable.
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _fetchInitialDrivers();
+    final generation = ++_channelGeneration;
+    final channel =
+        SupabaseService.client.channel('nearby-drivers-profile-live');
+
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'drivers_profile',
+      callback: (payload) {
+        if (generation != _channelGeneration) return;
+        _handleDriverPayload(payload);
+      },
+    );
+
+    _driversChannel = channel;
+    channel.subscribe((status, [error]) {
+      _handleRealtimeStatus(generation, status, error);
     });
   }
 
-  /// Unsubscribe everything (channels + timers)
-  Future<void> _unsubscribeAll() async {
-    _staleCleanupTimer?.cancel();
-    _staleCleanupTimer = null;
-    _pollingTimer?.cancel();
-    _pollingTimer = null;
-    _driversMap.clear();
-    if (!_driverUpdatesController.isClosed) {
-      _driverUpdatesController.add({});
+  void _handleRealtimeStatus(
+    int generation,
+    RealtimeSubscribeStatus status,
+    Object? error,
+  ) {
+    if (generation != _channelGeneration) return;
+
+    if (status == RealtimeSubscribeStatus.subscribed) {
+      if (!_isRealtimeSubscribed) {
+        debugPrint('📍 CellSystem: Realtime subscribed');
+      }
+      _isRealtimeSubscribed = true;
+      return;
+    }
+
+    if (status == RealtimeSubscribeStatus.closed) {
+      _isRealtimeSubscribed = false;
+      _driversChannel = null;
+      debugPrint('📍 CellSystem: Realtime closed');
+      return;
+    }
+
+    final errorText = error?.toString() ?? '';
+    final isAutoReconnectNoise =
+        status == RealtimeSubscribeStatus.channelError &&
+            (error == null || errorText.contains('code: 1006'));
+    if (isAutoReconnectNoise) return;
+
+    _dropRealtimeChannel();
+    debugPrint('📍 CellSystem: Realtime status=$status error=$error');
+  }
+
+  void _dropRealtimeChannel() {
+    final channel = _driversChannel;
+    _driversChannel = null;
+    _isRealtimeSubscribed = false;
+    if (channel != null) {
+      unawaited(SupabaseService.client.removeChannel(channel));
     }
   }
 
-  Timer? _staleCleanupTimer;
+  /// Unsubscribe realtime channels.
+  /// Intentionally keeps _driversMap intact so old car markers stay visible
+  /// on the map until _fetchInitialDrivers() atomically replaces them.
+  /// This prevents the flash where all cars disappear on cell resubscription.
+  Future<void> _unsubscribeAll() async {
+    _channelGeneration++;
+    final channel = _driversChannel;
+    _driversChannel = null;
+    _isRealtimeSubscribed = false;
+    if (channel != null) {
+      await SupabaseService.client.removeChannel(channel);
+    }
+    // Do NOT clear _driversMap here — old data stays visible until replaced.
+    // Atomic replacement happens inside _fetchInitialDrivers().
+  }
 
-  /// Stale cleanup every 15 seconds — removes drivers not updated in 2 minutes.
-  void _startStaleCleanup() {
-    _staleCleanupTimer?.cancel();
-    _staleCleanupTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      final cutoff =
-          DateTime.now().toUtc().subtract(const Duration(minutes: 2));
-      final stale = _driversMap.entries
-          .where((e) => e.value.lastUpdatedAt.isBefore(cutoff))
-          .map((e) => e.key)
-          .toList();
-      if (stale.isEmpty) return;
-      for (final id in stale) _driversMap.remove(id);
-      debugPrint('📍 CellSystem: Removed ${stale.length} stale drivers');
-      if (!_driverUpdatesController.isClosed) {
-        _driverUpdatesController.add(Map.from(_driversMap));
-      }
-    });
+  void _handleDriverPayload(PostgresChangePayload payload) {
+    final row = payload.eventType == PostgresChangeEvent.delete
+        ? payload.oldRecord
+        : payload.newRecord;
+    final driverId = row['id'] as String?;
+    if (driverId == null) return;
+
+    if (payload.eventType == PostgresChangeEvent.delete) {
+      _removeDriver(driverId);
+      return;
+    }
+
+    final location = _parseVisibleDriver(payload.newRecord);
+    if (location == null) {
+      _removeDriver(driverId);
+      return;
+    }
+
+    _driversMap[driverId] = location;
+    _emitDrivers();
+  }
+
+  DriverLocation? _parseVisibleDriver(Map<String, dynamic> row) {
+    final driverId = row['id'] as String?;
+    if (driverId == null || driverId == SupabaseService.currentUser?.id) {
+      return null;
+    }
+
+    if (row['is_available'] != true || row['is_verified'] != true) {
+      return null;
+    }
+
+    final lat = (row['current_lat'] as num?)?.toDouble();
+    final lng = (row['current_lng'] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+
+    final geohash5 = row['geohash5'] as String? ??
+        GeohashHelper.encode(lat, lng, precision: 5);
+    if (!_subscribedCells5.contains(geohash5)) return null;
+
+    return DriverLocation(
+      driverId: driverId,
+      lat: lat,
+      lng: lng,
+      vehicleType: row['vehicle_type'] as String? ?? 'car',
+      lastUpdatedAt:
+          _parseUpdatedAt(row['updated_at']) ?? DateTime.now().toUtc(),
+    );
+  }
+
+  DateTime? _parseUpdatedAt(Object? value) {
+    if (value is! String) return null;
+    return DateTime.tryParse(value)?.toUtc();
+  }
+
+  void _removeDriver(String driverId) {
+    if (_driversMap.remove(driverId) != null) {
+      _emitDrivers();
+    }
+  }
+
+  void _emitDrivers() {
+    if (!_driverUpdatesController.isClosed) {
+      _driverUpdatesController.add(Map.from(_driversMap));
+    }
   }
 
   Future<void> dispose() async {
-    _staleCleanupTimer?.cancel();
-    _staleCleanupTimer = null;
-    _boundaryDebounceTimer?.cancel();
     await _unsubscribeAll();
+    // Full reset on sign-out — _unsubscribeAll() no longer clears the map,
+    // so we do it explicitly here to ensure no stale data survives logout.
     _driversMap.clear();
     _currentCenterCell = null;
     _subscribedCells = [];

@@ -183,7 +183,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.email,
-                      hintText: 'example@email.com',
+                      hintText: AppLocalizations.of(context)!.emailExample,
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (v) {

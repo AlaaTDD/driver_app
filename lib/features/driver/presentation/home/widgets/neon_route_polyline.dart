@@ -38,51 +38,70 @@ class NeonRoutePolyline {
     int haloWidth = 22,
     double opacity = 1.0,
   }) {
-    final visiblePoints = pointsForProgress(points, progress);
-    if (visiblePoints.length < 2 || opacity <= 0) return const {};
+    final fullPoints = validPoints(points);
+    if (fullPoints.length < 2) return const {};
+
+    final visiblePoints = pointsForProgress(fullPoints, progress);
 
     final alpha = opacity.clamp(0.0, 1.0);
     return {
       Polyline(
-        polylineId: PolylineId('${idPrefix}_halo'),
-        points: visiblePoints,
-        color: color.withValues(alpha: 0.12 * alpha),
-        width: haloWidth,
+        polylineId: PolylineId('${idPrefix}_base_glow'),
+        points: fullPoints,
+        color: color.withValues(alpha: 0.18),
+        width: glowWidth,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
+        zIndex: 0,
+      ),
+      Polyline(
+        polylineId: PolylineId('${idPrefix}_base_core'),
+        points: fullPoints,
+        color: color.withValues(alpha: 0.70),
+        width: coreWidth,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
         zIndex: 1,
       ),
-      Polyline(
-        polylineId: PolylineId('${idPrefix}_glow'),
-        points: visiblePoints,
-        color: color.withValues(alpha: 0.34 * alpha),
-        width: glowWidth,
-        startCap: Cap.roundCap,
-        endCap: Cap.roundCap,
-        jointType: JointType.round,
-        zIndex: 2,
-      ),
-      Polyline(
-        polylineId: PolylineId('${idPrefix}_core'),
-        points: visiblePoints,
-        color: color.withValues(alpha: 0.96 * alpha),
-        width: coreWidth,
-        startCap: Cap.roundCap,
-        endCap: Cap.roundCap,
-        jointType: JointType.round,
-        zIndex: 3,
-      ),
+      if (visiblePoints.length >= 2 && opacity > 0) ...{
+        Polyline(
+          polylineId: PolylineId('${idPrefix}_halo'),
+          points: visiblePoints,
+          color: color.withValues(alpha: 0.12 * alpha),
+          width: haloWidth,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+          zIndex: 2,
+        ),
+        Polyline(
+          polylineId: PolylineId('${idPrefix}_glow'),
+          points: visiblePoints,
+          color: color.withValues(alpha: 0.34 * alpha),
+          width: glowWidth,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+          zIndex: 3,
+        ),
+        Polyline(
+          polylineId: PolylineId('${idPrefix}_core'),
+          points: visiblePoints,
+          color: color.withValues(alpha: 0.96 * alpha),
+          width: coreWidth,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+          zIndex: 4,
+        ),
+      },
     };
   }
 
   static List<LatLng> pointsForProgress(List<LatLng> points, double progress) {
-    final valid = points
-        .where((p) =>
-            p.latitude.isFinite &&
-            p.longitude.isFinite &&
-            !(p.latitude == 0 && p.longitude == 0))
-        .toList(growable: false);
+    final valid = validPoints(points);
     if (valid.length < 2) return valid;
 
     final clampedProgress = progress.clamp(0.0, 1.0);
@@ -119,6 +138,15 @@ class NeonRoutePolyline {
     }
 
     return visible;
+  }
+
+  static List<LatLng> validPoints(List<LatLng> points) {
+    return points
+        .where((p) =>
+            p.latitude.isFinite &&
+            p.longitude.isFinite &&
+            !(p.latitude == 0 && p.longitude == 0))
+        .toList(growable: false);
   }
 
   static LatLng _lerp(LatLng a, LatLng b, double t) {

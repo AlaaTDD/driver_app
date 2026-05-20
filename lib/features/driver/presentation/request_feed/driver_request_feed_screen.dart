@@ -7,21 +7,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 
-// ─── Design tokens (match driver palette) ────────────────────────────────────
-class _C {
-  static const bg = AppColors.background;
-  static const sheet = AppColors.primarySurface;
-  static const card = AppColors.surface;
-  static const elevated = AppColors.surfaceElevated;
-  static const border = AppColors.divider;
-  static const blue = AppColors.primary;
-  static const emerald = AppColors.secondary;
-  static const rose = AppColors.error;
-  static const amber = AppColors.warning;
-  static const t1 = AppColors.textPrimary;
-  static const t2 = AppColors.textSecondary;
-  static const t3 = AppColors.textDisabled;
-}
+import 'package:snapix/core/theme/theme_extensions.dart';
 
 class DriverRequestFeedScreen extends StatefulWidget {
   const DriverRequestFeedScreen({super.key});
@@ -96,9 +82,11 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: Theme.of(context).brightness == Brightness.dark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: _C.bg,
+        backgroundColor: context.bgColor,
         body: SafeArea(
           child: Column(children: [
             // ── Header ──────────────────────────────────────────────────────
@@ -111,12 +99,12 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: _C.sheet,
+                      color: context.cardColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: _C.border),
+                      border: Border.all(color: context.divColor),
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: _C.t1, size: 17),
+                    child: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: context.textPrimary, size: 17),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -125,8 +113,8 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(l.rideRequests,
-                            style: const TextStyle(
-                                color: _C.t1,
+                            style: TextStyle(
+                                color: context.textPrimary,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800)),
                         AnimatedSwitcher(
@@ -138,7 +126,7 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                                     ? l.noRideRequestsAvailableNow
                                     : l.availableRequestsCount(_offers.length),
                             key: ValueKey(_offers.length),
-                            style: const TextStyle(color: _C.t2, fontSize: 12),
+                            style: TextStyle(color: context.textSecondary, fontSize: 12),
                           ),
                         ),
                       ]),
@@ -149,13 +137,13 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: _offers.isEmpty ? _C.t3 : _C.emerald,
+                      color: _offers.isEmpty ? context.textDisabled : AppColors.success,
                       shape: BoxShape.circle,
                       boxShadow: _offers.isEmpty
                           ? null
                           : [
                               BoxShadow(
-                                  color: _C.emerald.withValues(alpha: 0.5),
+                                  color: AppColors.success.withValues(alpha: 0.5),
                                   blurRadius: 8),
                             ],
                     ),
@@ -167,8 +155,8 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
             Expanded(
                 child: _loading
                     ? const Center(
-                        child: CircularProgressIndicator(
-                            color: _C.blue, strokeWidth: 2))
+                        child: const CircularProgressIndicator(
+                            color: AppColors.primary, strokeWidth: 2))
                     : _offers.isEmpty
                         ? _buildEmpty(l)
                         : ListView.builder(
@@ -194,19 +182,19 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
           width: 88,
           height: 88,
           decoration: BoxDecoration(
-            color: _C.elevated,
+            color: context.elevatedColor,
             shape: BoxShape.circle,
-            border: Border.all(color: _C.border),
+            border: Border.all(color: context.divColor),
           ),
-          child: const Icon(Icons.inbox_rounded, color: _C.t3, size: 40),
+          child: Icon(Icons.inbox_rounded, color: context.textDisabled, size: 40),
         ),
         const SizedBox(height: 20),
         Text(l.noRideRequestsAvailable,
-            style: const TextStyle(
-                color: _C.t1, fontSize: 16, fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Text(l.rideRequestsWillAppearHere,
-            style: const TextStyle(color: _C.t2, fontSize: 13)),
+            style: TextStyle(color: context.textSecondary, fontSize: 13)),
       ]),
     );
   }
@@ -283,25 +271,25 @@ class _OfferCardState extends State<_OfferCard>
     final l = AppLocalizations.of(context)!;
     final offerId = widget.offer['id'] as String? ?? '';
     final tripId = widget.offer['trip_id'] as String? ?? '';
-    final pickup = widget.offer['pickup_address'] as String? ?? '---';
-    final dest = widget.offer['destination_address'] as String? ?? '---';
+    final pickup = widget.offer['pickup_address'] as String? ?? l.notAvailable;
+    final dest = widget.offer['destination_address'] as String? ?? l.notAvailable;
     final price = widget.offer['proposed_price'];
     final distance = (widget.offer['distance_km'] as num?)?.toStringAsFixed(1);
     final timerFraction = _seconds / 30.0;
     final timerColor = _seconds > 15
-        ? _C.emerald
+        ? AppColors.success
         : _seconds > 8
-            ? _C.amber
-            : _C.rose;
+            ? AppColors.warning
+            : AppColors.error;
 
     return SlideTransition(
       position: _slideAnim,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: _C.border),
+          border: Border.all(color: context.divColor),
           boxShadow: [
             BoxShadow(
                 color: AppColors.black.withValues(alpha: 0.26),
@@ -337,13 +325,13 @@ class _OfferCardState extends State<_OfferCard>
                           width: 10,
                           height: 10,
                           decoration: const BoxDecoration(
-                              color: _C.emerald, shape: BoxShape.circle)),
-                      Container(width: 1, height: 28, color: _C.border),
+                              color: AppColors.success, shape: BoxShape.circle)),
+                      Container(width: 1, height: 28, color: context.divColor),
                       Container(
                           width: 10,
                           height: 10,
                           decoration: const BoxDecoration(
-                              color: _C.rose, shape: BoxShape.circle)),
+                              color: AppColors.error, shape: BoxShape.circle)),
                     ]),
                     const SizedBox(width: 12),
                     Expanded(
@@ -351,16 +339,16 @@ class _OfferCardState extends State<_OfferCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(pickup,
-                            style: const TextStyle(
-                                color: _C.t1,
+                            style: TextStyle(
+                                color: context.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 14),
                         Text(dest,
-                            style: const TextStyle(
-                                color: _C.t1,
+                            style: TextStyle(
+                                color: context.textPrimary,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600),
                             maxLines: 1,
@@ -393,15 +381,15 @@ class _OfferCardState extends State<_OfferCard>
                     if (price != null)
                       _StatChip(
                         icon: Icons.attach_money_rounded,
-                        label: '$price ج.م',
-                        color: _C.amber,
+                        label: l.priceWithCurrency(price.toString(), l.currencySar),
+                        color: AppColors.warning,
                       ),
                     if (distance != null) ...[
                       const SizedBox(width: 8),
                       _StatChip(
                         icon: Icons.straighten_rounded,
-                        label: '$distance كم',
-                        color: _C.blue,
+                        label: l.distanceWithKm(distance.toString()),
+                        color: AppColors.primary,
                       ),
                     ],
                   ]),
@@ -425,18 +413,18 @@ class _OfferCardState extends State<_OfferCard>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                                color: _C.rose.withValues(alpha: 0.5)),
-                            color: _C.rose.withValues(alpha: 0.06),
+                                color: AppColors.error.withValues(alpha: 0.5)),
+                            color: AppColors.error.withValues(alpha: 0.06),
                           ),
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(Icons.close_rounded,
-                                    color: _C.rose, size: 18),
+                                    color: AppColors.error, size: 18),
                                 const SizedBox(width: 6),
                                 Text(l.rejectBtn,
                                     style: const TextStyle(
-                                        color: _C.rose,
+                                        color: AppColors.error,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700)),
                               ]),
@@ -463,17 +451,17 @@ class _OfferCardState extends State<_OfferCard>
                             gradient: _acting
                                 ? null
                                 : const LinearGradient(
-                                    colors: [_C.emerald, AppColors.success],
+                                    colors: [AppColors.success, AppColors.success],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                            color: _acting ? _C.elevated : null,
+                            color: _acting ? context.elevatedColor : null,
                             boxShadow: _acting
                                 ? null
                                 : [
                                     BoxShadow(
                                         color:
-                                            _C.emerald.withValues(alpha: 0.35),
+                                            AppColors.success.withValues(alpha: 0.35),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4)),
                                   ],

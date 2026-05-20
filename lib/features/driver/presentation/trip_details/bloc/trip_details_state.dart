@@ -28,3 +28,7 @@ class TripDetailsError extends TripDetailsState {
   @override
   List<Object?> get props => [message];
 }
+
+class TripCancelled extends TripDetailsState {
+  const TripCancelled();
+}

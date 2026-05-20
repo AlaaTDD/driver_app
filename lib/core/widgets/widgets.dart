@@ -16,3 +16,4 @@ export 'package:snapix/core/widgets/bottom_sheet_container.dart';
 export 'package:snapix/core/widgets/map_button.dart';
 export 'package:snapix/core/widgets/stat_card.dart';
 export 'package:snapix/core/widgets/app_drawer.dart';
+export 'package:snapix/core/widgets/app_shimmer.dart';

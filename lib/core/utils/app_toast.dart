@@ -32,8 +32,8 @@ class AppToast {
 
   static void info(String message) => Fluttertoast.showToast(
         msg: message,
-        backgroundColor: AppColors.darkElevated,
-        textColor: AppColors.darkTextSecondary,
+        backgroundColor: AppColors.surfaceElevated,
+        textColor: AppColors.textSecondary,
         gravity: ToastGravity.BOTTOM,
         toastLength: Toast.LENGTH_SHORT,
         fontSize: 14,

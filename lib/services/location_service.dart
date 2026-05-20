@@ -16,7 +16,6 @@ class LocationService {
   StreamSubscription<Position>? _tripTrackingSub;
   String? _activeTripDriverId;
   RealtimeChannel? _broadcastChannel;
-  Timer? _heartbeatTimer;
   double? _lastLat;
   double? _lastLng;
   double? _lastHeading;
@@ -139,25 +138,6 @@ class LocationService {
       }
     });
 
-    // Heartbeat: broadcast every 5s so any late subscriber gets the driver's position
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (_lastLat != null && _broadcastChannel != null) {
-        try {
-          _broadcastChannel!.sendBroadcastMessage(
-            event: 'location_update',
-            payload: {
-              'lat': _lastLat,
-              'lng': _lastLng,
-              'heading': _lastHeading ?? 0.0
-            },
-          );
-        } catch (e, st) {
-          debugPrint('⚠️ LocationService heartbeat broadcast failed: $e\n$st');
-        }
-      }
-    });
-
     // IMMEDIATELY fetch location so we don't wait for the stream (which has distance filter)
     try {
       final pos = await getCurrentLocation();
@@ -196,7 +176,7 @@ class LocationService {
     }
 
     _tripTrackingSub = getLocationStream().listen((pos) async {
-      // Save last known position for heartbeat
+      // Save last known position for immediate broadcasts to active subscribers.
       _lastLat = pos.latitude;
       _lastLng = pos.longitude;
       _lastHeading = pos.heading;
@@ -253,13 +233,13 @@ class LocationService {
       debugPrint('📍 LocationService: Stopping global trip tracking');
       _tripTrackingSub?.cancel();
       _tripTrackingSub = null;
-      _heartbeatTimer?.cancel();
       if (_broadcastChannel != null) {
         SupabaseService.client.removeChannel(_broadcastChannel!);
       }
       _broadcastChannel = null;
       _lastLat = null;
       _lastLng = null;
+      _lastHeading = null;
     }
   }
 

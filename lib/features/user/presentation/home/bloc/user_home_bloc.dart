@@ -49,14 +49,21 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
 
       debugPrint('📍 UserHome: User at ($lat, $lng) cell=$cellId');
 
-      await _cellService.subscribeToCells(lat, lng);
-
-      await _presenceService.startBroadcasting(lat: lat, lng: lng);
-
+      // 1. Subscribe FIRST to catch any emitted events from subscribeToCells
       _driverUpdatesSubscription?.cancel();
       _driverUpdatesSubscription = _cellService.driverUpdates.listen((drivers) {
         add(DriversRealtimeUpdate(drivers));
       });
+
+      // 2. If Singleton already has data (Hot Reload), push it immediately
+      if (_cellService.currentDrivers.isNotEmpty) {
+        add(DriversRealtimeUpdate(_cellService.currentDrivers));
+      }
+
+      // 3. THEN subscribe. The service loads one snapshot and keeps realtime open.
+      await _cellService.subscribeToCells(lat, lng);
+
+      await _presenceService.startBroadcasting(lat: lat, lng: lng);
 
       _locationStreamSubscription?.cancel();
       _locationStreamSubscription =
@@ -101,7 +108,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
       currentCellId: newCellId,
     ));
 
-    _presenceService.updateLocation(event.lat, event.lng);
+    await _presenceService.updateLocation(event.lat, event.lng);
   }
 
   void _onDriversUpdate(
@@ -195,8 +202,17 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
     _driverUpdatesSubscription?.cancel();
     _locationStreamSubscription?.cancel();
 
-    await _presenceService.stopBroadcasting();
-    await _cellService.dispose();
+    // UserPresenceService & CellSubscriptionService are Singletons.
+    // Their lifecycle is managed by:
+    //   • LogoutCoordinator (sign-out)
+    //   • TrackingBloc (stops presence when trip starts, restarts when done)
+    //
+    // Do NOT call stopBroadcasting() or dispose() here — this causes two bugs:
+    //   1. User disappears from the driver's heatmap the moment MeetingPoint
+    //      navigates to Searching (before any trip even starts).
+    //   2. Race Condition: GoRouter builds the new UserHomeScreen and the new
+    //      Bloc subscribes to the services BEFORE the old Bloc is disposed, so
+    //      old close() would kill the services the new Bloc just started.
 
     return super.close();
   }
