@@ -147,6 +147,7 @@ class UserHomeBloc extends Bloc<UserHomeEvent, UserHomeState> {
           publicData = await SupabaseService.client
               .from('coupons')
               .select()
+              .eq('is_active', true)
               .or('expires_at.is.null,expires_at.gt.$now')
               .order('created_at', ascending: false);
         } catch (e2) {

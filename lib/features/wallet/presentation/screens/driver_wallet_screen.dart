@@ -101,7 +101,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
           if (state is WithdrawalSuccess) {
             AppToast.success(AppLocalizations.of(context)!
                 .withdrawalSuccessMsg(state.amount.toString()));
-            _loadData(); // Refresh data
+            // Removed _loadData() to prevent UI flickering. watchWallet handles DB updates.
           }
           if (state is WithdrawalFailure) {
             AppToast.error(_localizedError(state.error, context));
@@ -149,7 +149,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SliverAppBar(
-      expandedHeight: 400,
+      expandedHeight: 420,
       pinned: true,
       stretch: true,
       backgroundColor: isDark
@@ -239,7 +239,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
               ),
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 70, 24, 20),
+                  padding: const EdgeInsets.fromLTRB(24, 50, 24, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -620,7 +620,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isCredit ? '+' : ''}${_getCurrencyFormat(context).format(txn.amount)}',
+                '${isCredit ? '+' : '-'}${_getCurrencyFormat(context).format(txn.amount.abs())}',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -963,6 +963,7 @@ class _WithdrawalSheet extends StatefulWidget {
 }
 
 class _WithdrawalSheetState extends State<_WithdrawalSheet> {
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -1003,7 +1004,7 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
+  void _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
@@ -1021,14 +1022,21 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
     final auth = context.read<AuthBloc>().state;
     if (auth is! AuthAuthenticated) return;
 
-    Navigator.pop(context);
+    setState(() => _isLoading = true);
 
-    context.read<WalletCubit>().requestWithdrawal(
+    final success = await context.read<WalletCubit>().requestWithdrawal(
           driverId: auth.user.id,
           amount: amount,
           paymentMethod: _selectedMethod,
           accountDetails: accountDetails,
         );
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (success) {
+        Navigator.pop(context);
+      }
+    }
   }
 
   @override
@@ -1185,7 +1193,9 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
                       Icons.phone_android_rounded,
                       context),
                   validator: (v) {
-                    if (v == null || v.length < 11)
+                    if (v == null || v.isEmpty)
+                      return AppLocalizations.of(context)!.invalidMobileNumber;
+                    if (!RegExp(r'^01[0125]\d{8}$').hasMatch(v))
                       return AppLocalizations.of(context)!.invalidMobileNumber;
                     return null;
                   },
@@ -1219,7 +1229,8 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
 
               AppButton(
                 text: AppLocalizations.of(context)!.confirmWithdrawalRequest,
-                onPressed: () => _submit(context),
+                onPressed: _isLoading ? null : () => _submit(context),
+                isLoading: _isLoading,
                 leadingIcon: Icons.send_rounded,
               ),
             ],

@@ -16,8 +16,10 @@ enum WithdrawalMethod {
         return WithdrawalMethod.vodafoneCash;
       case 'instapay':
         return WithdrawalMethod.instapay;
-      default:
+      case 'orange_money':
         return WithdrawalMethod.orangeMoney;
+      default:
+        throw ArgumentError('Unknown WithdrawalMethod: $s');
     }
   }
 

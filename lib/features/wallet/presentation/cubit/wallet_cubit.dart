@@ -73,9 +73,10 @@ class WithdrawalFailure extends WalletState {
 // ─── Cubit ───────────────────────────────────────────────────────────────────
 
 class WalletCubit extends Cubit<WalletState> {
-  WalletCubit() : super(WalletInitial());
-
-  final _repo = WalletRepository();
+  WalletCubit({WalletRepository? repository})
+      : _repo = repository ?? WalletRepository(),
+        super(WalletInitial());
+  final WalletRepository _repo;
 
   Future<void> load(String driverId) async {
     emit(WalletLoading());
@@ -93,19 +94,20 @@ class WalletCubit extends Cubit<WalletState> {
         withdrawals: withdrawals,
       ));
 
-      watchWallet(driverId);
+      if (!isClosed) watchWallet(driverId);
     } catch (e) {
       emit(WalletError('failedLoadWallet'));
     }
   }
 
-  Future<void> requestWithdrawal({
+  Future<bool> requestWithdrawal({
     required String driverId,
     required double amount,
     required String paymentMethod,
     required Map<String, dynamic> accountDetails,
   }) async {
-    emit(WithdrawalSubmitting());
+    // Note: We don't emit WithdrawalSubmitting to avoid overwriting WalletLoaded
+    // The UI handles its own loading state for the bottom sheet
     try {
       final result = await _repo.requestWithdrawal(
         driverId: driverId,
@@ -119,13 +121,17 @@ class WalletCubit extends Cubit<WalletState> {
           amount: amount,
           withdrawalId: result['withdrawal_id'].toString(),
         ));
-        await load(driverId);
+        // Removed `await load(driverId)` to fix BUG-05 & BUG-07 (triple load race condition).
+        // `watchWallet` will naturally pick up DB changes and silently update the balance.
+        return true;
       } else {
         final err = result['error'] as String? ?? 'unknown_error';
         emit(WithdrawalFailure(_mapError(err, result)));
+        return false;
       }
     } catch (e) {
       emit(WithdrawalFailure('errorOccurredWithDetails'));
+      return false;
     }
   }
 
@@ -184,9 +190,8 @@ class WalletCubit extends Cubit<WalletState> {
       } catch (e, st) {
         debugPrint(
             '⚠️ WalletCubit: failed to refresh wallet side data: $e\n$st');
-        if (!isClosed) {
-          emit(const WalletError('failedLoadWallet'));
-        }
+        // Removed emit(WalletError) to prevent UI flashing (BUG-05/BUG-11)
+        // We just keep the current WalletLoaded state
       }
     });
   }

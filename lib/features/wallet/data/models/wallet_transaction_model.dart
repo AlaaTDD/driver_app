@@ -144,16 +144,8 @@ class WalletTransactionModel extends Equatable {
   }
 
   /// Is this a credit (money in) or debit (money out)?
-  bool get isCredit => [
-        WalletTransactionType.tripEarning,
-        WalletTransactionType.topUp,
-        WalletTransactionType.refund,
-        WalletTransactionType.bonus,
-        WalletTransactionType.couponSubsidy,
-        WalletTransactionType.withdrawalRefund,
-      ].contains(type);
-
-  bool get isDebit => !isCredit;
+  bool get isCredit => amount > 0;
+  bool get isDebit => amount < 0;
 
   @override
   List<Object?> get props => [

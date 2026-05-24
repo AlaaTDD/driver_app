@@ -20,6 +20,8 @@ class UserPresenceService with WidgetsBindingObserver {
   /// Minimum distance in meters before we write a new presence row.
   /// Prevents redundant DB writes when the user is stationary.
   static const double _minMovementMeters = 20.0;
+  DateTime? _lastPresenceWrite;
+  static const Duration _minWriteInterval = Duration(seconds: 10);
 
   bool get isBroadcasting => _isBroadcasting;
 
@@ -114,6 +116,14 @@ class UserPresenceService with WidgetsBindingObserver {
         return;
       }
     }
+
+    final now = DateTime.now();
+    if (!force &&
+        _lastPresenceWrite != null &&
+        now.difference(_lastPresenceWrite!) < _minWriteInterval) {
+      return;
+    }
+    _lastPresenceWrite = now;
 
     try {
       await withRetry(
