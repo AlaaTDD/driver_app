@@ -339,6 +339,16 @@ Color _statusColor(String status) => switch (status) {
       _ => AppColors.textDisabled,
     };
 
+/// Icon matching each complaint status
+IconData _statusIcon(String status) => switch (status) {
+      'pending' || 'open' => Icons.hourglass_top_rounded,
+      'in_progress' => Icons.sync_rounded,
+      'info_needed' => Icons.help_outline_rounded,
+      'resolved' => Icons.check_circle_rounded,
+      'closed' => Icons.lock_rounded,
+      _ => Icons.support_agent_rounded,
+    };
+
 String _formatDate(String? iso) {
   if (iso == null) return '';
   try {
@@ -349,6 +359,41 @@ String _formatDate(String? iso) {
     AppLogger.debug(st.toString());
     return iso;
   }
+}
+
+/// Short time format for chat bubbles (e.g. "3:45 PM")
+String _formatTime(String? iso) {
+  if (iso == null) return '';
+  try {
+    return DateFormat('h:mm a')
+        .format(DateTime.parse(iso).toLocal());
+  } catch (e) {
+    return '';
+  }
+}
+
+/// Day label for date separators (e.g. "اليوم", "أمس", "12 يونيو")
+String _formatDayLabel(String? iso, bool isAr) {
+  if (iso == null) return '';
+  try {
+    final date = DateTime.parse(iso).toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDay = DateTime(date.year, date.month, date.day);
+
+    if (msgDay == today) return isAr ? 'اليوم' : 'Today';
+    if (msgDay == yesterday) return isAr ? 'أمس' : 'Yesterday';
+    return DateFormat(isAr ? 'd MMMM' : 'MMM d').format(date);
+  } catch (e) {
+    return '';
+  }
+}
+
+/// Check if two dates fall on the same calendar day
+bool _sameDay(DateTime? a, DateTime? b) {
+  if (a == null || b == null) return false;
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -543,6 +588,56 @@ class _ComplaintCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  Date Separator (between message groups)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DateSeparator extends StatelessWidget {
+  final String label;
+  const _DateSeparator({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    if (label.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 1,
+              color: context.divColor,
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: context.elevatedColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.divColor, width: 1),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: context.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: context.divColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  Status Chip
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -665,12 +760,12 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 400), () {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(
           _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
         );
       }
     });
@@ -736,6 +831,7 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
       ),
       child: Column(
         children: [
+          // ── Grab handle ───────────────────────────────────────────
           const SizedBox(height: 12),
           Center(
             child: Container(
@@ -747,13 +843,44 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
 
-          // ── Title + Status ──────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+          // ── Header card with status accent ───────────────────────
+          Container(
+            margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            decoration: BoxDecoration(
+              color: context.elevatedColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _statusColor(status).withValues(alpha: 0.25),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _statusColor(status).withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Row(
               children: [
+                // Status icon
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: _statusColor(status).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    _statusIcon(status),
+                    color: _statusColor(status),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Title + date
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -761,23 +888,38 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                       Text(
                         _complaint.title,
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: context.textPrimary,
+                          height: 1.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        _formatDate(_complaint.createdAt?.toIso8601String()),
-                        style: TextStyle(
-                            fontSize: 11, color: context.textDisabled),
+                      Row(
+                        children: [
+                          Icon(Icons.schedule_rounded,
+                              size: 11, color: context.textDisabled),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _formatDate(
+                                  _complaint.createdAt?.toIso8601String()),
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.textDisabled,
+                                  fontWeight: FontWeight.w500),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 _StatusChip(status: status),
               ],
             ),
@@ -834,8 +976,35 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                         controller: _scrollCtrl,
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                         itemCount: _thread.length,
-                        itemBuilder: (_, i) =>
-                            _MessageBubble(msg: _thread[i]),
+                        itemBuilder: (_, i) {
+                          final msg = _thread[i];
+                          // Show date separator when the day changes
+                          final showSeparator = i == 0 ||
+                              !_sameDay(
+                                msg.createdAt,
+                                _thread[i - 1].createdAt,
+                              );
+                          // Hide avatar when previous message is from the
+                          // same sender (grouping consecutive messages)
+                          final showAvatar = i == 0 ||
+                              _thread[i - 1].senderType != msg.senderType ||
+                              showSeparator;
+                          return Column(
+                            children: [
+                              if (showSeparator)
+                                _DateSeparator(
+                                  label: _formatDayLabel(
+                                    msg.createdAt?.toIso8601String(),
+                                    isAr,
+                                  ),
+                                ),
+                              _MessageBubble(
+                                msg: msg,
+                                showAvatar: showAvatar,
+                              ),
+                            ],
+                          );
+                        },
                       ),
           ),
 
@@ -880,85 +1049,183 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
           if (!isClosed)
             Container(
               padding: EdgeInsets.only(
-                  left: 10, right: 10, top: 10, bottom: bottomPadding + 14),
+                  left: 10, right: 10, top: 8, bottom: bottomPadding + 10),
               decoration: BoxDecoration(
                 color: context.elevatedColor,
-                border: Border(top: BorderSide(color: context.divColor)),
+                border: Border(
+                  top: BorderSide(
+                    color: context.divColor,
+                    width: 1,
+                  ),
+                ),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  // Close button (rounded icon style)
                   if (status != 'pending' && status != 'open')
-                    IconButton(
-                      icon: Icon(Icons.check_circle_outline_rounded,
-                          color: context.textDisabled, size: 22),
-                      onPressed: () => setState(() => _showCloseConfirm = true),
-                      tooltip: isAr ? 'إغلاق الشكوى' : 'Close complaint',
-                    ),
-                  Expanded(
-                    child: TextField(
-                      controller: _ctrl,
-                      minLines: 1,
-                      maxLines: 4,
-                      style:
-                          TextStyle(fontSize: 14, color: context.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: isAr ? 'اكتب ردك...' : 'Type your reply...',
-                        hintStyle: TextStyle(
-                            color: context.textDisabled, fontSize: 14),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: context.bgColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: context.divColor),
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.check_circle_outline_rounded,
+                            color: context.textSecondary, size: 20),
+                        onPressed: _sending
+                            ? null
+                            : () => setState(() => _showCloseConfirm = true),
+                        tooltip: isAr ? 'إغلاق الشكوى' : 'Close complaint',
+                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(
+                          minWidth: 42,
+                          minHeight: 42,
                         ),
-                        filled: true,
-                        fillColor: context.bgColor,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        isDense: true,
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  const SizedBox(width: 6),
+                  // Text input — grows with content
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      decoration: BoxDecoration(
+                        color: context.bgColor,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: _ctrl.text.trim().isNotEmpty
+                              ? AppColors.primary.withValues(alpha: 0.4)
+                              : context.divColor,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _ctrl,
+                        builder: (context, value, child) {
+                          return TextField(
+                            controller: _ctrl,
+                            minLines: 1,
+                            maxLines: 4,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendReply(),
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: context.textPrimary,
+                              height: 1.4,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: isAr
+                                  ? 'اكتب رسالتك...'
+                                  : 'Type your message...',
+                              hintStyle: TextStyle(
+                                color: context.textDisabled,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 11,
+                              ),
+                              isDense: true,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _sending ? null : _sendReply,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: _sending
-                            ? null
-                            : const LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.primaryDark
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                        color: _sending
-                            ? AppColors.primary.withValues(alpha: 0.4)
-                            : null,
-                        shape: BoxShape.circle,
-                      ),
-                      child: _sending
-                          ? const Padding(
-                              padding: EdgeInsets.all(11),
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send_rounded,
-                              color: Colors.white, size: 20),
-                    ),
+                  // Send button — animated, enlarges when there's text
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _ctrl,
+                    builder: (context, value, child) {
+                      final hasText = value.text.trim().isNotEmpty;
+                      return GestureDetector(
+                        onTap: (_sending || !hasText) ? null : _sendReply,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutBack,
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            gradient: _sending || !hasText
+                                ? null
+                                : const LinearGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      AppColors.primaryDark
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                            color: _sending
+                                ? AppColors.primary.withValues(alpha: 0.5)
+                                : !hasText
+                                    ? context.bgColor
+                                    : null,
+                            shape: BoxShape.circle,
+                            border: _sending || hasText
+                                ? null
+                                : Border.all(color: context.divColor),
+                            boxShadow: _sending || !hasText
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                          ),
+                          child: _sending
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.2,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.send_rounded,
+                                  color: hasText
+                                      ? AppColors.white
+                                      : context.textDisabled,
+                                  size: 20,
+                                ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
             )
           else
-            Padding(
-              padding: EdgeInsets.only(bottom: bottomPadding + 14, top: 12),
-              child: Text(
-                isAr ? '🔒 هذه الشكوى مغلقة' : '🔒 This complaint is closed',
-                style: TextStyle(fontSize: 13, color: context.textDisabled),
+            Container(
+              padding: EdgeInsets.only(
+                  left: 16, right: 16, bottom: bottomPadding + 14, top: 14),
+              decoration: BoxDecoration(
+                color: context.elevatedColor,
+                border: Border(
+                  top: BorderSide(color: context.divColor, width: 1),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock_rounded,
+                      size: 14, color: context.textDisabled),
+                  const SizedBox(width: 6),
+                  Text(
+                    isAr ? 'هذه الشكوى مغلقة' : 'This complaint is closed',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.textDisabled,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -973,91 +1240,289 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
 
 class _MessageBubble extends StatelessWidget {
   final ComplaintMessageModel msg;
-  const _MessageBubble({required this.msg});
+  final bool showAvatar;
+  const _MessageBubble({required this.msg, this.showAvatar = true});
 
   @override
   Widget build(BuildContext context) {
     final isMe = msg.senderType == 'user';
     final isOriginal = msg.isOriginal;
     final message = msg.message;
-    final dateStr = _formatDate(msg.createdAt?.toIso8601String());
+    final timeStr = _formatTime(msg.createdAt?.toIso8601String());
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(
+        bottom: isOriginal ? 24 : 14,
+        top: isOriginal ? 8 : 0,
+      ),
       child: Row(
         mainAxisAlignment:
-            isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (isMe) ...[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.14),
-              child: const Icon(Icons.person_rounded,
-                  color: AppColors.primary, size: 15),
-            ),
-            const SizedBox(width: 8),
+          // ── Avatar (left for admin) ──────────────
+          if (!isMe) ...[
+            if (showAvatar)
+              const _Avatar(isMe: false, isOriginal: false)
+            else
+              const SizedBox(width: 36),
+            const SizedBox(width: 10),
           ],
+
+          // ── Bubble + label column ─────────────────────────────────
           Flexible(
             child: Column(
               crossAxisAlignment:
                   isMe ? CrossAxisAlignment.start : CrossAxisAlignment.end,
               children: [
-                if (isOriginal)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      Localizations.localeOf(context).languageCode == 'ar'
-                          ? '📝 الشكوى الأصلية'
-                          : '📝 Original complaint',
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: context.textDisabled,
-                          fontWeight: FontWeight.w600),
+                // Original complaint card — special style
+                if (isOriginal) ...[
+                  Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.82,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.warning.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                      color: AppColors.warning.withValues(alpha: 0.06),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.1),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(18)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.flag_rounded,
+                                  size: 14, color: AppColors.warning),
+                              const SizedBox(width: 6),
+                              Text(
+                                isAr
+                                    ? 'الشكوى الأصلية'
+                                    : 'Original Complaint',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.warning,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (timeStr.isNotEmpty)
+                                Text(
+                                  timeStr,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: context.textDisabled,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        // Body
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: Text(
+                            message,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: context.textPrimary,
+                              height: 1.55,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isMe
-                        ? AppColors.primary.withValues(alpha: 0.1)
-                        : AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: Radius.circular(isMe ? 4 : 18),
-                      bottomRight: Radius.circular(isMe ? 18 : 4),
+                ] else ...[
+                  // Regular chat bubble
+                  Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.74,
                     ),
-                    border: Border.all(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 15, vertical: 11),
+                    decoration: BoxDecoration(
+                      // Admin → solid gradient; User → soft tinted
+                      gradient: isMe
+                          ? null
+                          : const LinearGradient(
+                              colors: [AppColors.secondary, AppColors.secondaryDark],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                       color: isMe
-                          ? AppColors.primary.withValues(alpha: 0.18)
-                          : AppColors.success.withValues(alpha: 0.18),
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : null,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        // isMe = user (right side): sharp corner bottom-right
+                        // !isMe = admin (left side): sharp corner bottom-left
+                        bottomLeft: Radius.circular(isMe ? 20 : 6),
+                        bottomRight: Radius.circular(isMe ? 6 : 20),
+                      ),
+                      border: isMe
+                          ? Border.all(
+                              color:
+                                  AppColors.primary.withValues(alpha: 0.18),
+                              width: 1.2,
+                            )
+                          : null,
+                      boxShadow: isMe
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: AppColors.secondary
+                                    .withValues(alpha: 0.18),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Sender name
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            isMe
+                                ? (isAr ? 'أنت' : 'You')
+                                : (isAr ? 'فريق الدعم' : 'Support'),
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: isMe
+                                  ? AppColors.primary
+                                  : AppColors.white.withValues(alpha: 0.85),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                        // Message text
+                        Text(
+                          message,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: isMe
+                                ? context.textPrimary
+                                : AppColors.white,
+                            height: 1.5,
+                          ),
+                        ),
+                        // Timestamp
+                        if (timeStr.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_rounded,
+                                  size: 11,
+                                  color: isMe
+                                      ? context.textDisabled
+                                      : AppColors.white.withValues(alpha: 0.6),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  timeStr,
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    color: isMe
+                                        ? context.textDisabled
+                                        : AppColors.white
+                                            .withValues(alpha: 0.65),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                        fontSize: 14, color: context.textPrimary, height: 1.45),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(dateStr,
-                    style:
-                        TextStyle(fontSize: 10, color: context.textDisabled)),
+                ],
               ],
             ),
           ),
-          if (!isMe) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: AppColors.success.withValues(alpha: 0.14),
-              child: const Icon(Icons.support_agent_rounded,
-                  color: AppColors.success, size: 15),
-            ),
+
+          // ── Avatar (right for user) ──────────────────────────────
+          if (isMe) ...[
+            const SizedBox(width: 10),
+            if (showAvatar)
+              _Avatar(
+                isMe: true,
+                isOriginal: isOriginal,
+              )
+            else
+              const SizedBox(width: 36),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Avatar (gradient circle for user / admin)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _Avatar extends StatelessWidget {
+  final bool isMe;
+  final bool isOriginal;
+  const _Avatar({required this.isMe, required this.isOriginal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        gradient: isMe
+            ? const LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : const LinearGradient(
+                colors: [AppColors.secondary, AppColors.secondaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: (isMe ? AppColors.primary : AppColors.secondary)
+                .withValues(alpha: 0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Icon(
+        isOriginal
+            ? Icons.flag_rounded
+            : isMe
+                ? Icons.person_rounded
+                : Icons.support_agent_rounded,
+        color: AppColors.white,
+        size: 17,
       ),
     );
   }

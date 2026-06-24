@@ -101,11 +101,42 @@ class ComplaintsRepository {
       isOriginal: true,
     ));
 
-    // Admin replies (stored in admin_reply as JSON array)
+    // All messages from admin_notes (contains BOTH admin + user replies).
+    // After the migration, resolve_complaint appends admin messages here
+    // alongside add_complaint_user_reply's user messages.
+    // Each message has its own sender_type field — respect it.
+    final notesRaw = data['admin_notes'];
+    if (notesRaw != null && notesRaw.toString().trim().isNotEmpty) {
+      try {
+        final parsed = jsonDecode(notesRaw) as List;
+        for (final msg in parsed) {
+          final msgMap = Map<String, dynamic>.from(msg as Map);
+          // Use the sender_type from the message itself (admin or user).
+          // Do NOT override it — the DB function sets it correctly.
+          thread.add(ComplaintMessageModel.fromJson(msgMap));
+        }
+      } catch (e, st) {
+        AppLogger.warning(
+            'ComplaintsRepository: admin_notes JSON parse failed: $e');
+        AppLogger.debug(st.toString());
+        // Legacy plain-text admin_notes — treat as a single user note
+        thread.add(ComplaintMessageModel(
+          id: 'legacy-notes',
+          senderType: 'user',
+          message: notesRaw.toString(),
+          createdAt: _date(data['replied_at'] ?? data['created_at']),
+        ));
+      }
+    }
+
+    // Legacy fallback: if admin_reply is plain text (not JSON) and
+    // no admin messages were found in admin_notes, add it as a single message.
     final adminReplyRaw = data['admin_reply'];
-    if (adminReplyRaw != null && adminReplyRaw.toString().trim().isNotEmpty) {
+    final hasAdminInNotes = thread.any((m) => m.senderType == 'admin' && !m.isOriginal);
+    if (adminReplyRaw != null && adminReplyRaw.toString().trim().isNotEmpty && !hasAdminInNotes) {
       try {
         final parsed = jsonDecode(adminReplyRaw) as List;
+        // It IS a JSON array — these are legacy admin messages stored before migration
         for (final msg in parsed) {
           final msgMap = Map<String, dynamic>.from(msg as Map);
           thread.add(ComplaintMessageModel.fromJson({
@@ -117,35 +148,11 @@ class ComplaintsRepository {
         AppLogger.warning(
             'ComplaintsRepository: admin_reply JSON parse failed: $e');
         AppLogger.debug(st.toString());
+        // Plain text admin_reply — single legacy reply
         thread.add(ComplaintMessageModel(
           id: 'legacy-admin',
           senderType: 'admin',
           message: adminReplyRaw.toString(),
-          createdAt: _date(data['replied_at'] ?? data['created_at']),
-        ));
-      }
-    }
-
-    // User follow-up replies (stored in admin_notes as JSON array)
-    final userNotesRaw = data['admin_notes'];
-    if (userNotesRaw != null && userNotesRaw.toString().trim().isNotEmpty) {
-      try {
-        final parsed = jsonDecode(userNotesRaw) as List;
-        for (final msg in parsed) {
-          final msgMap = Map<String, dynamic>.from(msg as Map);
-          thread.add(ComplaintMessageModel.fromJson({
-            ...msgMap,
-            'sender_type': 'user',
-          }));
-        }
-      } catch (e, st) {
-        AppLogger.warning(
-            'ComplaintsRepository: admin_notes JSON parse failed: $e');
-        AppLogger.debug(st.toString());
-        thread.add(ComplaintMessageModel(
-          id: 'legacy-user-notes',
-          senderType: 'user',
-          message: userNotesRaw.toString(),
           createdAt: _date(data['replied_at'] ?? data['created_at']),
         ));
       }
@@ -206,53 +213,59 @@ class ComplaintsRepository {
   /// Returns true if the last message in the thread is from admin
   /// (meaning the user hasn't yet seen/responded to it).
   bool hasUnreadAdminReply(ComplaintModel complaint) {
-    final adminReply = complaint.adminReply;
-    if (adminReply == null || adminReply.trim().isEmpty) return false;
+    // Build the full message list from admin_notes (has both admin + user)
+    // plus legacy admin_reply as fallback.
+    final allMsgs = <Map<String, dynamic>>[];
 
-    try {
-      final parsed = jsonDecode(adminReply) as List;
-      if (parsed.isEmpty) return false;
-
-      // Merge admin messages + user follow-up notes into one list
-      final allMsgs = <Map<String, dynamic>>[
-        ...parsed.map((e) => Map<String, dynamic>.from(e as Map)),
-      ];
-
-      final userNotesRaw = complaint.adminNotes;
-      if (userNotesRaw != null && userNotesRaw.trim().isNotEmpty) {
-        try {
-          final userParsed = jsonDecode(userNotesRaw) as List;
-          allMsgs.addAll(
-              userParsed.map((e) => Map<String, dynamic>.from(e as Map)));
-        } catch (e, st) {
-          AppLogger.debug(
-              '⚠️ ComplaintsRepository: unread admin_notes parse failed: $e');
-          AppLogger.debug(st.toString());
-          allMsgs.add(<String, dynamic>{
-            'sender_type': 'user',
-            'created_at': complaint.repliedAt?.toIso8601String() ??
-                complaint.createdAt?.toIso8601String(),
-          });
-        }
+    // 1) Messages from admin_notes (primary source after migration)
+    final notesRaw = complaint.adminNotes;
+    if (notesRaw != null && notesRaw.trim().isNotEmpty) {
+      try {
+        final parsed = jsonDecode(notesRaw) as List;
+        allMsgs.addAll(
+            parsed.map((e) => Map<String, dynamic>.from(e as Map)));
+      } catch (e, st) {
+        AppLogger.debug(
+            '⚠️ ComplaintsRepository: unread admin_notes parse failed: $e');
+        AppLogger.debug(st.toString());
       }
-
-      if (allMsgs.isEmpty) return false;
-
-      allMsgs.sort((a, b) {
-        final aTime = DateTime.tryParse(a['created_at'] as String? ?? '') ??
-            DateTime(2000);
-        final bTime = DateTime.tryParse(b['created_at'] as String? ?? '') ??
-            DateTime(2000);
-        return aTime.compareTo(bTime);
-      });
-
-      return allMsgs.last['sender_type'] == 'admin';
-    } catch (e, st) {
-      AppLogger.warning(
-          'ComplaintsRepository: unread admin_reply parse failed: $e');
-      AppLogger.debug(st.toString());
-      return adminReply.trim().isNotEmpty;
     }
+
+    // 2) Legacy admin_reply (only if no admin messages found above)
+    final hasAdminInNotes = allMsgs.any(
+        (m) => m['sender_type'] == 'admin');
+    final adminReply = complaint.adminReply;
+    if (adminReply != null && adminReply.trim().isNotEmpty && !hasAdminInNotes) {
+      try {
+        final parsed = jsonDecode(adminReply) as List;
+        allMsgs.addAll(
+            parsed.map((e) => Map<String, dynamic>.from(e as Map)));
+      } catch (e, st) {
+        AppLogger.debug(
+            '⚠️ ComplaintsRepository: unread admin_reply parse failed: $e');
+        AppLogger.debug(st.toString());
+        // Plain text — add as a single admin message
+        allMsgs.add({
+          'sender_type': 'admin',
+          'message': adminReply,
+          'created_at': complaint.repliedAt?.toIso8601String() ??
+              complaint.createdAt?.toIso8601String(),
+        });
+      }
+    }
+
+    if (allMsgs.isEmpty) return false;
+
+    // Sort chronologically and check the last message
+    allMsgs.sort((a, b) {
+      final aTime = DateTime.tryParse(a['created_at'] as String? ?? '') ??
+          DateTime(2000);
+      final bTime = DateTime.tryParse(b['created_at'] as String? ?? '') ??
+          DateTime(2000);
+      return aTime.compareTo(bTime);
+    });
+
+    return allMsgs.last['sender_type'] == 'admin';
   }
 
   /// Returns a short preview of the last message in the thread.
@@ -260,8 +273,27 @@ class ComplaintsRepository {
     try {
       final msgs = <Map<String, dynamic>>[];
 
+      // 1) Messages from admin_notes (primary source — has admin + user messages)
+      final notesRaw = complaint.adminNotes;
+      if (notesRaw != null && notesRaw.trim().isNotEmpty) {
+        try {
+          final parsed = jsonDecode(notesRaw) as List;
+          msgs.addAll(
+              parsed.map((e) => Map<String, dynamic>.from(e as Map)));
+        } catch (e, st) {
+          AppLogger.debug(
+              '⚠️ ComplaintsRepository: preview admin_notes parse failed: $e');
+          AppLogger.debug(st.toString());
+        }
+      }
+
+      // 2) Legacy admin_reply fallback (only if no admin msgs in notes)
+      final hasAdminInNotes =
+          msgs.any((m) => m['sender_type'] == 'admin');
       final adminReply = complaint.adminReply;
-      if (adminReply != null && adminReply.trim().isNotEmpty) {
+      if (adminReply != null &&
+          adminReply.trim().isNotEmpty &&
+          !hasAdminInNotes) {
         try {
           final parsed = jsonDecode(adminReply) as List;
           msgs.addAll(
@@ -278,26 +310,9 @@ class ComplaintsRepository {
         }
       }
 
-      final userNotes = complaint.adminNotes;
-      if (userNotes != null && userNotes.trim().isNotEmpty) {
-        try {
-          final parsed = jsonDecode(userNotes) as List;
-          msgs.addAll(
-              parsed.map((e) => Map<String, dynamic>.from(e as Map)));
-        } catch (e, st) {
-          AppLogger.debug(
-              '⚠️ ComplaintsRepository: preview admin_notes parse failed: $e');
-          AppLogger.debug(st.toString());
-          msgs.add(<String, dynamic>{
-            'message': userNotes,
-            'created_at': complaint.repliedAt?.toIso8601String() ??
-                complaint.createdAt?.toIso8601String(),
-          });
-        }
-      }
-
       if (msgs.isEmpty) return complaint.description;
 
+      // Sort chronologically and return the latest message text
       msgs.sort((a, b) {
         final aTime = DateTime.tryParse(a['created_at'] as String? ?? '') ??
             DateTime(2000);
