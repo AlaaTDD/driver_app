@@ -1274,7 +1274,7 @@ class _MessageBubble extends StatelessWidget {
           Flexible(
             child: Column(
               crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 // Original complaint card — special style
                 if (isOriginal) ...[
@@ -1370,10 +1370,10 @@ class _MessageBubble extends StatelessWidget {
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
-                        // isMe = user (right side): sharp corner bottom-right
-                        // !isMe = admin (left side): sharp corner bottom-left
-                        bottomLeft: Radius.circular(isMe ? 20 : 6),
-                        bottomRight: Radius.circular(isMe ? 6 : 20),
+                        // user is on the RIGHT → sharp tail at bottom-RIGHT
+                        // admin is on the LEFT  → sharp tail at bottom-LEFT
+                        bottomLeft:  Radius.circular(isMe ? 20 : 4),
+                        bottomRight: Radius.circular(isMe ? 4 : 20),
                       ),
                       border: isMe
                           ? Border.all(
@@ -1394,7 +1394,9 @@ class _MessageBubble extends StatelessWidget {
                             ],
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Sender name
