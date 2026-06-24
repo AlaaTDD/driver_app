@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import 'package:snapix/features/shared/data/repositories/rating_repository.dart';
 import 'rating_event.dart';
 import 'rating_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class RatingBloc extends Bloc<RatingEvent, RatingState> {
   final RatingRepository _repository = RatingRepository();
@@ -70,8 +70,8 @@ class RatingBloc extends Bloc<RatingEvent, RatingState> {
 
       emit(RatingSuccess());
     } catch (e, stackTrace) {
-      debugPrint('❌ RatingBloc: Failed to submit rating: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('RatingBloc: Failed to submit rating: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const RatingError('errorSubmitRating'));
     }
   }

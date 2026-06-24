@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 /// Thin wrapper around [GoogleMapController] that de-duplicates animate calls
 /// and provides common camera utilities.
@@ -32,7 +34,10 @@ class AppMapController {
           CameraPosition(target: LatLng(lat, lng), zoom: zoom),
         ),
       );
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.warning('AppMapController: animateCamera failed: $e');
+      if (kDebugMode) debugPrintStack(stackTrace: st);
+    }
   }
 
   /// Fit the camera to a set of points.

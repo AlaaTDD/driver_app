@@ -1,20 +1,26 @@
-import 'package:flutter/foundation.dart';
-import '../../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/trip_details_model.dart';
+import 'package:snapix/core/models/driver_info_model.dart';
+import 'package:snapix/features/trips/data/models/trip_model.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class TripsRepository {
   final _client = SupabaseService.client;
 
-  Future<List<Map<String, dynamic>>> loadUserTrips(String userId) async {
+  Future<List<TripModel>> loadUserTrips(String userId) async {
     final data = await _client
         .from('trips')
-        .select('*')
+        .select(
+            'id, user_id, driver_id, status, price, vehicle_type, pickup_address, destination_address, pickup_lat, pickup_lng, destination_lat, destination_lng, distance_km, duration_min, payment_method, cancel_reason, created_at, user_rating_to_driver, driver_rating_to_user')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
-    return (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
+    return (data as List)
+        .map((e) => TripModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
-  Future<Map<String, Map<String, dynamic>>> fetchDriverDetails(
+  Future<Map<String, DriverInfoModel>> fetchDriverDetails(
     List<String> driverIds,
   ) async {
     if (driverIds.isEmpty) return {};
@@ -34,31 +40,37 @@ class TripsRepository {
     final usersData = results[0] as List;
     final profilesData = results[1] as List;
 
-    final driversMap = <String, Map<String, dynamic>>{};
+    final mergedMap = <String, Map<String, dynamic>>{};
     for (final user in usersData) {
-      driversMap[user['id']] = Map<String, dynamic>.from(user);
+      mergedMap[user['id']] = Map<String, dynamic>.from(user);
     }
 
     for (final profile in profilesData) {
       final id = profile['id'] as String;
-      if (driversMap.containsKey(id)) {
-        driversMap[id]!['vehicle_type'] = profile['vehicle_type'];
-        driversMap[id]!['vehicle_plate'] = profile['vehicle_plate'];
-        driversMap[id]!['vehicle_model'] = profile['vehicle_model'];
-        driversMap[id]!['vehicle_color'] = profile['vehicle_color'];
+      if (mergedMap.containsKey(id)) {
+        mergedMap[id]!['vehicle_type'] = profile['vehicle_type'];
+        mergedMap[id]!['vehicle_plate'] = profile['vehicle_plate'];
+        mergedMap[id]!['vehicle_model'] = profile['vehicle_model'];
+        mergedMap[id]!['vehicle_color'] = profile['vehicle_color'];
       }
     }
 
-    return driversMap;
+    return mergedMap.map(
+      (id, json) => MapEntry(id, DriverInfoModel.fromJson(json)),
+    );
   }
 
-  Future<Map<String, dynamic>?> loadTripDetails(String tripId) async {
-    final data =
-        await _client.from('trips').select('*').eq('id', tripId).single();
-    return Map<String, dynamic>.from(data);
+  Future<TripDetailsModel?> loadTripDetails(String tripId) async {
+    final data = await _client
+        .from('trips')
+        .select(
+            'id, user_id, driver_id, status, price, vehicle_type, pickup_address, destination_address, pickup_lat, pickup_lng, destination_lat, destination_lng, distance_km, duration_min, payment_method, payment_source, cancel_reason, cancel_reason_category, cancelled_by, meeting_lat, meeting_lng, meeting_address, geohash, scheduled_at, created_at, user_rating_to_driver, driver_rating_to_user')
+        .eq('id', tripId)
+        .single();
+    return TripDetailsModel.fromJson(Map<String, dynamic>.from(data));
   }
 
-  Future<Map<String, dynamic>?> fetchSingleDriverDetails(
+  Future<DriverInfoModel?> fetchSingleDriverDetails(
       String driverId) async {
     try {
       final driverData = await _client
@@ -66,9 +78,9 @@ class TripsRepository {
           .select('id, name, avatar_url, phone, rating')
           .eq('id', driverId)
           .single();
-      return Map<String, dynamic>.from(driverData);
+      return DriverInfoModel.fromJson(Map<String, dynamic>.from(driverData));
     } catch (e) {
-      debugPrint('⚠️ TripsRepository: Could not fetch driver details: $e');
+      AppLogger.warning('TripsRepository: Could not fetch driver details: $e');
       return null;
     }
   }
@@ -81,7 +93,8 @@ class TripsRepository {
           .eq('id', tripId)
           .single();
     } catch (e) {
-      debugPrint('❌ TripsRepository: Failed to get trip for cancellation: $e');
+      AppLogger.error(
+          'TripsRepository: Failed to get trip for cancellation: $e');
       return null;
     }
   }
@@ -92,25 +105,52 @@ class TripsRepository {
     String? cancelReason,
     String? cancelReasonCategory,
   }) async {
+    bool cancelled = false;
+
+    // ── Attempt 1: RPC ──
     try {
       await _client.rpc(
         'cancel_trip',
         params: {
           'p_trip_id': tripId,
-          'p_user_id': SupabaseService.currentUser!.id,
+          'p_user_id': userId,
           'p_cancelled_by': 'user',
           if (cancelReason != null) 'p_cancel_reason': cancelReason,
+          if (cancelReasonCategory != null)
+            'p_cancel_reason_category': cancelReasonCategory,
         },
       );
+      cancelled = true;
+    } catch (e, st) {
+      AppLogger.debug(
+          '⚠️ TripsRepository: cancel_trip RPC failed ($e) — trying DB check');
+      AppLogger.debug(st.toString());
+    }
 
-      // Update structured category separately if provided
-      if (cancelReasonCategory != null) {
-        await _client.from('trips').update(
-            {'cancel_reason_category': cancelReasonCategory}).eq('id', tripId);
+    // ── Check DB Status ──
+    if (!cancelled) {
+      try {
+        final row = await _client
+            .from('trips')
+            .select('status')
+            .eq('id', tripId)
+            .maybeSingle();
+        if (row != null && row['status'] == 'cancelled') {
+          cancelled = true;
+        } else {
+          AppLogger.debug(
+              '⚠️ TripsRepository: DB check did not confirm cancellation for $tripId (status=${row?['status']})');
+        }
+      } catch (e, st) {
+        AppLogger.debug(
+            '❌ TripsRepository: DB cancellation verification failed for $tripId: $e');
+        AppLogger.debug(st.toString());
+        throw Exception('Failed to verify cancelled trip status');
       }
-    } catch (e) {
-      debugPrint('❌ TripsRepository: Failed to cancel trip: $e');
-      rethrow;
+    }
+
+    if (!cancelled) {
+      throw Exception('Failed to cancel trip: cancellation was not confirmed');
     }
   }
 

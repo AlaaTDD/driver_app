@@ -7,7 +7,9 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
+import '../../../../core/models/revision_request_model.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class PendingVerificationScreen extends StatefulWidget {
   const PendingVerificationScreen({super.key});
@@ -18,7 +20,7 @@ class PendingVerificationScreen extends StatefulWidget {
 }
 
 class _PendingVerificationScreenState extends State<PendingVerificationScreen> {
-  List<Map<String, dynamic>> _revisions = [];
+  List<RevisionRequestModel> _revisions = [];
   bool _loadingRevisions = true;
   StreamSubscription? _sub;
 
@@ -44,12 +46,12 @@ class _PendingVerificationScreenState extends State<PendingVerificationScreen> {
           (rows) {
             if (!mounted) return;
             setState(() {
-              _revisions = rows;
+              _revisions = rows.map((r) => RevisionRequestModel.fromJson(r)).toList();
               _loadingRevisions = false;
             });
           },
           onError: (e, st) {
-            debugPrint(
+            AppLogger.debug(
                 '❌ PendingVerificationScreen: revision stream failed: $e\n$st');
             if (mounted) setState(() => _loadingRevisions = false);
           },
@@ -171,16 +173,15 @@ class _PendingVerificationScreenState extends State<PendingVerificationScreen> {
 // ── Single revision card ──────────────────────────────────────────────────────
 
 class _RevisionCard extends StatelessWidget {
-  final Map<String, dynamic> revision;
+  final RevisionRequestModel revision;
   const _RevisionCard({required this.revision});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final fields = _fields(context);
-    final message = revision['message'] as String? ?? '';
-    final status = revision['status'] as String? ?? 'pending';
-    final isResolved = status == 'resolved';
+    final message = revision.message ?? '';
+    final isResolved = revision.isResolved;
 
     final statusColor = isResolved ? AppColors.success : AppColors.error;
     final statusLabel = isResolved ? l.completed : l.revisionNeedsAction;
@@ -260,12 +261,9 @@ class _RevisionCard extends StatelessWidget {
   }
 
   List<String> _fields(BuildContext context) {
-    final raw = revision['fields_requested'];
-    final values = raw is List
-        ? raw.map((field) => field.toString()).toList()
-        : <String>[];
-    if (values.isEmpty && revision['field_name'] != null) {
-      values.add(revision['field_name'].toString());
+    final values = List<String>.from(revision.fieldsRequested);
+    if (values.isEmpty && revision.fieldName != null) {
+      values.add(revision.fieldName!);
     }
     if (values.isEmpty) return [AppLocalizations.of(context)!.unspecified];
     return values.map((field) => _fieldLabel(context, field)).toList();

@@ -99,6 +99,8 @@ class SignUpDriverRequested extends AuthEvent {
 
 class SignOutRequested extends AuthEvent {}
 
+class ResetAuth extends AuthEvent {}
+
 class UpdateProfileRequested extends AuthEvent {
   final String userId;
   final String? name;

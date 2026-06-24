@@ -24,6 +24,7 @@ dependencies:
   # Firebase
   firebase_core: ^3.6.0
   firebase_messaging: ^15.1.3
+  firebase_crashlytics: ^4.1.0
   flutter_local_notifications: ^17.2.2
 
   # Maps & Location
@@ -31,9 +32,6 @@ dependencies:
   geolocator: ^13.0.1
   geocoding: ^3.0.0
   dart_geohash: ^2.0.1
-
-  # Background Location (للسائق)
-  flutter_background_service: ^5.0.5
 
   # Image
   cached_network_image: ^3.4.1
@@ -45,18 +43,14 @@ dependencies:
 
   # UI
   google_fonts: ^6.2.1
-
   # Toast — نظام الـ feedback الوحيد في التطبيق
   fluttertoast: ^8.2.10
 
   # Storage & Utils
-  flutter_dotenv: ^5.2.1
   shared_preferences: ^2.3.2
   dio: ^5.7.0
   path_provider: ^2.1.4
   connectivity_plus: ^6.0.5
-  minio: ^3.5.8
-
   # Localization
   flutter_localizations:
     sdk: flutter
@@ -67,6 +61,8 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^4.0.0
   flutter_native_splash: ^2.4.3
@@ -86,7 +82,12 @@ flutter:
   generate: true
   
   assets:
-    - .env
+    # ⚠️ [APP-C-01 FIXED] .env removed from assets — secrets must NOT be bundled in APK/IPA.
+    # Use --dart-define at build time:
+    #   flutter build apk \
+    #     --dart-define=SUPABASE_URL=<value> \
+    #     --dart-define=SUPABASE_ANON_KEY=<value> \
+    #     --dart-define=GOOGLE_MAPS_KEY=<value>
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see

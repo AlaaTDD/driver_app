@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import '../../../../trips/data/models/trip_model.dart';
 import 'driver_trips_event.dart';
 import 'driver_trips_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverTripsBloc extends Bloc<DriverTripsEvent, DriverTripsState> {
   DriverTripsBloc() : super(DriverTripsInitial()) {
@@ -33,8 +33,8 @@ class DriverTripsBloc extends Bloc<DriverTripsEvent, DriverTripsState> {
           .toList();
       emit(DriverTripsLoaded(trips));
     } catch (e, stackTrace) {
-      debugPrint('❌ DriverTripsBloc: Load failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('DriverTripsBloc: Load failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const DriverTripsError('errorLoadTrips'));
     }
   }

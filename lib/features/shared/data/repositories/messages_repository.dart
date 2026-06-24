@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
-import '../../../../../core/models/message_model.dart';
-import '../../../../../services/supabase_service.dart';
-import '../../../../../core/constants/app_constants.dart';
-import '../../../../../core/errors/exceptions.dart';
+import 'package:snapix/core/constants/app_constants.dart';
+import 'package:snapix/core/errors/exceptions.dart';
+import 'package:snapix/core/models/conversation_model.dart';
+import 'package:snapix/core/models/message_model.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/services/user_presence_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 /// Repository for direct user↔driver messaging (messages table)
 /// and trip-scoped chat.
@@ -17,7 +19,7 @@ class MessagesRepository {
   /// Each entry has: other_user_id, other_user_name, other_user_avatar,
   /// last_message, last_message_at, unread_count.
   /// Uses optimized RPC function to avoid n+1 queries.
-  Future<List<Map<String, dynamic>>> loadConversations() async {
+  Future<List<ConversationModel>> loadConversations() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
 
@@ -28,7 +30,7 @@ class MessagesRepository {
       if (data == null) return [];
 
       return (data as List).map((row) {
-        return {
+        return ConversationModel.fromJson({
           'other_user_id': row['other_user_id'],
           'other_user_name': row['other_user_name'] ?? '',
           'other_user_avatar': row['other_user_avatar'],
@@ -38,17 +40,17 @@ class MessagesRepository {
           'is_me_sender': row['is_me_sender'] ?? false,
           'is_read': row['is_read'] ?? true,
           'unread_count': row['unread_count'] ?? 0,
-        };
+        });
       }).toList();
     } catch (e) {
-      debugPrint('❌ MessagesRepository: loadConversations RPC failed: $e');
+      AppLogger.error('MessagesRepository: loadConversations RPC failed: $e');
       // Fallback to original method if RPC fails
       return _loadConversationsFallback();
     }
   }
 
   /// Fallback method for loading conversations if RPC fails.
-  Future<List<Map<String, dynamic>>> _loadConversationsFallback() async {
+  Future<List<ConversationModel>> _loadConversationsFallback() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return [];
 
@@ -100,28 +102,29 @@ class MessagesRepository {
           .select('id, name, avatar_url, role')
           .inFilter('id', otherIds);
 
-      final List<Map<String, dynamic>> result = [];
+      final List<ConversationModel> result = [];
       for (final user in users) {
         final uid = user['id'] as String;
         final conv = convMap[uid];
         if (conv == null) continue;
-        result.add({
+        result.add(ConversationModel.fromJson({
           ...conv,
           'other_user_name': user['name'] as String? ?? '',
           'other_user_avatar': user['avatar_url'],
           'other_user_role': user['role'] as String? ?? 'user',
-        });
+        }));
       }
 
       result.sort((a, b) {
-        final aTime = a['last_message_at'] as String? ?? '';
-        final bTime = b['last_message_at'] as String? ?? '';
+        final aTime = a.lastMessageAt ?? '';
+        final bTime = b.lastMessageAt ?? '';
         return bTime.compareTo(aTime);
       });
 
       return result;
     } catch (e) {
-      debugPrint('❌ MessagesRepository: loadConversations fallback failed: $e');
+      AppLogger.error(
+          'MessagesRepository: loadConversations fallback failed: $e');
       return [];
     }
   }
@@ -140,7 +143,8 @@ class MessagesRepository {
     try {
       final data = await SupabaseService.client
           .from(AppConstants.tableMessages)
-          .select('*')
+          .select(
+              'id, trip_id, sender_id, receiver_id, content, type, attachment_url, is_read, read_at, deleted_by_sender, deleted_by_receiver, created_at')
           .isFilter('trip_id', null)
           .or('and(sender_id.eq.$userId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$userId)')
           .or('and(sender_id.eq.$userId,deleted_by_sender.eq.false),and(receiver_id.eq.$userId,deleted_by_receiver.eq.false)')
@@ -156,7 +160,7 @@ class MessagesRepository {
           .reversed
           .toList();
     } catch (e) {
-      debugPrint('❌ MessagesRepository: loadDirectMessages failed: $e');
+      AppLogger.error('MessagesRepository: loadDirectMessages failed: $e');
       rethrow;
     }
   }
@@ -303,7 +307,8 @@ class MessagesRepository {
     try {
       final data = await SupabaseService.client
           .from(AppConstants.tableMessages)
-          .select('*')
+          .select(
+              'id, trip_id, sender_id, receiver_id, content, type, attachment_url, is_read, read_at, deleted_by_sender, deleted_by_receiver, created_at')
           .eq('trip_id', tripId)
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
@@ -314,7 +319,7 @@ class MessagesRepository {
           .reversed
           .toList();
     } catch (e) {
-      debugPrint('❌ MessagesRepository: loadTripMessages failed: $e');
+      AppLogger.error('MessagesRepository: loadTripMessages failed: $e');
       rethrow;
     }
   }
@@ -377,7 +382,7 @@ class MessagesRepository {
           }
         }
       } catch (e) {
-        debugPrint('⚠️ MessagesRepository: handlePayload error: $e');
+        AppLogger.warning('MessagesRepository: handlePayload error: $e');
       }
     }
 
@@ -476,7 +481,7 @@ class MessagesRepository {
           .from(AppConstants.chatMediaBucket)
           .getPublicUrl(path);
     } catch (e) {
-      debugPrint('❌ MessagesRepository: uploadAttachment failed: $e');
+      AppLogger.error('MessagesRepository: uploadAttachment failed: $e');
       rethrow;
     }
   }
@@ -505,7 +510,7 @@ class MessagesRepository {
 
       await query;
     } catch (e) {
-      debugPrint('⚠️ MessagesRepository: _markAsRead failed: $e');
+      AppLogger.warning('MessagesRepository: _markAsRead failed: $e');
     }
   }
 
@@ -519,7 +524,7 @@ class MessagesRepository {
           .from(AppConstants.tableMessages)
           .update({column: true}).eq('id', messageId);
     } catch (e) {
-      debugPrint('⚠️ MessagesRepository: deleteMessage failed: $e');
+      AppLogger.warning('MessagesRepository: deleteMessage failed: $e');
     }
   }
 
@@ -622,7 +627,7 @@ class MessagesRepository {
         'data': data,
       });
     } catch (e) {
-      debugPrint('⚠️ MessagesRepository: send-fcm failed: $e');
+      AppLogger.warning('MessagesRepository: send-fcm failed: $e');
     }
   }
 
@@ -658,7 +663,7 @@ class MessagesRepository {
         try {
           meta = p.payload as Map<String, dynamic>?;
         } catch (e, st) {
-          debugPrint(
+          AppLogger.debug(
               '⚠️ MessagesRepository: unable to read presence payload: $e\n$st');
           // Fallback if payload is not available
         }
@@ -680,21 +685,10 @@ class MessagesRepository {
   /// Updates last_seen for current user without lat/lng.
   /// Call every 10s while user is in a chat screen.
   Future<void> ensureMyPresence({double? lat, double? lng}) async {
-    final userId = SupabaseService.currentUser?.id;
-    if (userId == null) return;
     try {
-      final payload = <String, dynamic>{
-        'user_id': userId,
-        'last_seen': DateTime.now().toUtc().toIso8601String(),
-        'lat': lat ?? 0.0,
-        'lng': lng ?? 0.0,
-      };
-      await SupabaseService.client.from('user_presence').upsert(
-            payload,
-            onConflict: 'user_id',
-          );
+      await UserPresenceService.instance.touchPresence(lat: lat, lng: lng);
     } catch (e) {
-      debugPrint('⚠️ MessagesRepository: ensureMyPresence failed: $e');
+      AppLogger.warning('MessagesRepository: ensureMyPresence failed: $e');
     }
   }
 
@@ -711,28 +705,27 @@ class MessagesRepository {
         final now = DateTime.now().toUtc();
         return now.difference(lastSeen).inSeconds <= 30; // 30s threshold
       } catch (e, st) {
-        debugPrint(
+        AppLogger.debug(
             '⚠️ MessagesRepository: invalid last_seen "$lastSeenIso": $e\n$st');
         return false;
       }
     }
 
+    Future<bool> fetchOnlineStatus() async {
+      final result = await SupabaseService.client.rpc(
+        'get_user_online_status',
+        params: {'p_user_id': userId},
+      );
+      return result == true;
+    }
+
     controller = StreamController<bool>.broadcast(
       onListen: () {
-        // Initial fetch
-        SupabaseService.client
-            .from('user_presence')
-            .select('last_seen')
-            .eq('user_id', userId)
-            .maybeSingle()
-            .then((data) {
-          if (data != null && isRecent(data['last_seen'] as String?)) {
-            controller.add(true);
-          } else {
-            controller.add(false);
-          }
+        // Initial fetch goes through the RLS-safe RPC.
+        fetchOnlineStatus().then((isOnline) {
+          controller.add(isOnline);
         }).catchError((e, st) {
-          debugPrint(
+          AppLogger.debug(
               '⚠️ MessagesRepository: initial global presence fetch failed: $e\n$st');
           controller.add(false);
         });
@@ -766,19 +759,10 @@ class MessagesRepository {
 
         // Also run a local timer to auto-offline if no updates are received
         fallbackTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-          SupabaseService.client
-              .from('user_presence')
-              .select('last_seen')
-              .eq('user_id', userId)
-              .maybeSingle()
-              .then((data) {
-            if (data != null && isRecent(data['last_seen'] as String?)) {
-              controller.add(true);
-            } else {
-              controller.add(false);
-            }
+          fetchOnlineStatus().then((isOnline) {
+            controller.add(isOnline);
           }).catchError((e, st) {
-            debugPrint(
+            AppLogger.debug(
                 '⚠️ MessagesRepository: global presence fallback fetch failed: $e\n$st');
           });
         });
@@ -808,7 +792,7 @@ class MessagesRepository {
           .limit(1);
       return (result as List).isNotEmpty;
     } catch (e) {
-      debugPrint('⚠️ MessagesRepository: hasActiveTripWith failed: $e');
+      AppLogger.warning('MessagesRepository: hasActiveTripWith failed: $e');
       return false;
     }
   }

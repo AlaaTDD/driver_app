@@ -60,6 +60,7 @@ import '../../features/driver/presentation/home/bloc/driver_home_bloc.dart';
 import '../../features/shared/presentation/rating/bloc/rating_bloc.dart';
 import '../../core/bloc/location_permission_cubit.dart';
 import '../../features/trips/presentation/bloc/trip_route_cubit.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 Page<dynamic> _buildSlideTransition({required Widget child}) {
   return CustomTransitionPage(
@@ -81,7 +82,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
     notifyListeners();
     _subscription = stream.listen(
       (_) => notifyListeners(),
-      onError: (e) => debugPrint('GoRouterRefreshStream error: $e'),
+      onError: (e) => AppLogger.debug('GoRouterRefreshStream error: $e'),
     );
   }
   late final StreamSubscription _subscription;

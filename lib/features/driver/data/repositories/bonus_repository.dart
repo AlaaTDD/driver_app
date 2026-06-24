@@ -1,5 +1,7 @@
-import 'package:flutter/foundation.dart';
-import '../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/bonus_progress_model.dart';
+import 'package:snapix/core/models/bonus_rule_model.dart';
+import '../../../../core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 /// Repository for driver bonus/incentive system.
 /// Wraps the `bonus_rules`, `driver_bonus_ledger` tables and related RPCs.
@@ -8,16 +10,18 @@ class BonusRepository {
 
   /// Get the current driver's bonus progress for today.
   /// Uses the `get_my_bonus_progress` RPC.
-  Future<Map<String, dynamic>> getMyBonusProgress([String? driverId]) async {
+  Future<BonusProgressModel> getMyBonusProgress([String? driverId]) async {
     try {
       final result = await _client.rpc('get_my_bonus_progress');
       if (result is List && result.isNotEmpty) {
-        return Map<String, dynamic>.from(result.first);
+        return BonusProgressModel.fromJson(
+          Map<String, dynamic>.from(result.first as Map),
+        );
       }
       if (result is Map) {
-        return Map<String, dynamic>.from(result);
+        return BonusProgressModel.fromJson(Map<String, dynamic>.from(result));
       }
-      return {};
+      return const BonusProgressModel();
     } catch (e) {
       if (driverId != null) {
         try {
@@ -26,34 +30,45 @@ class BonusRepository {
             params: {'p_driver_id': driverId},
           );
           if (result is List && result.isNotEmpty) {
-            return Map<String, dynamic>.from(result.first);
+            return BonusProgressModel.fromJson(
+              Map<String, dynamic>.from(result.first as Map),
+            );
           }
           if (result is Map) {
-            return Map<String, dynamic>.from(result);
+            return BonusProgressModel.fromJson(
+              Map<String, dynamic>.from(result),
+            );
           }
         } catch (fallbackError) {
-          debugPrint(
+          AppLogger.debug(
               '❌ BonusRepository.getMyBonusProgress fallback: $fallbackError');
         }
       }
-      debugPrint('❌ BonusRepository.getMyBonusProgress: $e');
-      return {};
+      AppLogger.error('BonusRepository.getMyBonusProgress: $e');
+      return const BonusProgressModel();
     }
   }
 
   /// Get active bonus rules applicable to the driver.
-  Future<List<Map<String, dynamic>>> getActiveBonusRules({
+  Future<List<BonusRuleModel>> getActiveBonusRules({
     String? vehicleType,
     String? serviceAreaId,
   }) async {
     try {
-      var query = _client.from('bonus_rules').select('*').eq('is_active', true);
+      var query = _client
+          .from('bonus_rules')
+          .select(
+              'id, name, name_ar, trigger_type, threshold, bonus_amount, is_active, vehicle_types, service_area_id, starts_at, expires_at, created_at')
+          .eq('is_active', true);
 
       final data = await query.order('threshold', ascending: true);
 
-      return (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
+      return (data as List)
+          .whereType<Map>()
+          .map((e) => BonusRuleModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (e) {
-      debugPrint('❌ BonusRepository.getActiveBonusRules: $e');
+      AppLogger.error('BonusRepository.getActiveBonusRules: $e');
       return [];
     }
   }
@@ -72,7 +87,7 @@ class BonusRepository {
           .limit(limit);
       return (data as List).map((e) => Map<String, dynamic>.from(e)).toList();
     } catch (e) {
-      debugPrint('❌ BonusRepository.getBonusHistory: $e');
+      AppLogger.error('BonusRepository.getBonusHistory: $e');
       return [];
     }
   }

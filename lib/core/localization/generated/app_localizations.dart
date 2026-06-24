@@ -428,6 +428,12 @@ abstract class AppLocalizations {
   /// **'الوثائق المطلوبة'**
   String get requiredDocuments;
 
+  /// No description provided for @vehicleInformation.
+  ///
+  /// In ar, this message translates to:
+  /// **'معلومات المركبة'**
+  String get vehicleInformation;
+
   /// No description provided for @vehicleType.
   ///
   /// In ar, this message translates to:
@@ -1435,6 +1441,12 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'غير مرفوع'**
   String get notUploaded;
+
+  /// No description provided for @searchCountry.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابحث عن الدولة'**
+  String get searchCountry;
 
   /// No description provided for @invalidPhoneFormat.
   ///
@@ -3344,6 +3356,84 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'—'**
   String get noData;
+
+  /// No description provided for @errorCouponNotStarted.
+  ///
+  /// In ar, this message translates to:
+  /// **'الكوبون لم يبدأ بعد'**
+  String get errorCouponNotStarted;
+
+  /// No description provided for @errorCouponExpired.
+  ///
+  /// In ar, this message translates to:
+  /// **'انتهت صلاحية الكوبون'**
+  String get errorCouponExpired;
+
+  /// No description provided for @errorCouponMaxUsesReached.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الوصول للحد الأقصى لاستخدام الكوبون'**
+  String get errorCouponMaxUsesReached;
+
+  /// No description provided for @errorCouponMinTripPriceNotMet.
+  ///
+  /// In ar, this message translates to:
+  /// **'سعر الرحلة أقل من الحد الأدنى للكوبون'**
+  String get errorCouponMinTripPriceNotMet;
+
+  /// No description provided for @errorCouponBudgetExhausted.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم استنفاد ميزانية هذا الكوبون'**
+  String get errorCouponBudgetExhausted;
+
+  /// No description provided for @errorCouponFirstRideOnly.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الكوبون للرحلة الأولى فقط'**
+  String get errorCouponFirstRideOnly;
+
+  /// No description provided for @enterValidYear.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرجاء إدخال سنة صنع صحيحة (1990 - السنة الحالية)'**
+  String get enterValidYear;
+
+  /// No description provided for @errorDriverProfileIncomplete.
+  ///
+  /// In ar, this message translates to:
+  /// **'حساب السائق غير مكتمل. الرجاء التواصل مع الدعم.'**
+  String get errorDriverProfileIncomplete;
+
+  /// No description provided for @errorPhoneRegistered.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف مسجّل مسبقاً، الرجاء استخدام رقم آخر.'**
+  String get errorPhoneRegistered;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In ar, this message translates to:
+  /// **'نسيت كلمة المرور؟'**
+  String get forgotPassword;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'استعادة كلمة المرور'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.'**
+  String get forgotPasswordDesc;
+
+  /// No description provided for @forgotPasswordSent.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.'**
+  String get forgotPasswordSent;
 }
 
 class _AppLocalizationsDelegate

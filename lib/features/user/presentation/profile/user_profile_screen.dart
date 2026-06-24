@@ -11,8 +11,8 @@ import '../../../../core/utils/app_toast.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import '../../../../services/r2_storage_service.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/r2_storage_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import 'package:snapix/core/widgets/app_button.dart';
 
 class UserProfileScreen extends StatefulWidget {

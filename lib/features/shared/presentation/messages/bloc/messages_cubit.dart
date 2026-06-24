@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/constants/app_constants.dart';
-import '../../../../../services/presence_service.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/presence_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import '../../../data/repositories/messages_repository.dart';
 import '../../../../../core/models/message_model.dart';
 import 'messages_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class MessagesCubit extends Cubit<MessagesState> {
   final MessagesRepository _repo;
@@ -224,7 +224,7 @@ class MessagesCubit extends Cubit<MessagesState> {
         ));
       }
     } catch (e) {
-      debugPrint('MessagesCubit: deleteMessage failed: $e');
+      AppLogger.debug('MessagesCubit: deleteMessage failed: $e');
     }
   }
 
@@ -301,7 +301,7 @@ class MessagesCubit extends Cubit<MessagesState> {
       // Stream will pick up the real message and replace the optimistic one.
     } catch (e) {
       if (isClosed) return;
-      debugPrint('MessagesCubit: sendMessage failed: $e');
+      AppLogger.debug('MessagesCubit: sendMessage failed: $e');
       emit(MessagesError('failedSendMessage'));
     }
   }
@@ -331,7 +331,7 @@ class MessagesCubit extends Cubit<MessagesState> {
       );
     } catch (e) {
       if (isClosed) return;
-      debugPrint('MessagesCubit: sendImage failed: $e');
+      AppLogger.debug('MessagesCubit: sendImage failed: $e');
       emit(const MessagesError('failedSendMessage'));
     }
   }
@@ -363,7 +363,7 @@ class MessagesCubit extends Cubit<MessagesState> {
         ));
       }
     } catch (e) {
-      debugPrint('MessagesCubit: loadMoreMessages failed: $e');
+      AppLogger.debug('MessagesCubit: loadMoreMessages failed: $e');
     }
   }
 

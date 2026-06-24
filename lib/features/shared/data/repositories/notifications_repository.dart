@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../../core/models/notification_model.dart';
-import '../../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/notification_model.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class NotificationsRepository {
   Future<List<NotificationModel>> loadNotifications() async {
@@ -11,7 +11,7 @@ class NotificationsRepository {
 
     final data = await SupabaseService.client
         .from('notifications')
-        .select('*')
+        .select('id, user_id, title, body, type, is_read, data, created_at')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
@@ -90,7 +90,7 @@ class NotificationsRepository {
         final list = await loadNotifications();
         if (!controller.isClosed) controller.add(list);
       } catch (e, st) {
-        debugPrint('⚠️ NotificationsRepository: fetchAll failed: $e\n$st');
+        AppLogger.warning('NotificationsRepository: fetchAll failed: $e\n$st');
       }
     }
 

@@ -1,7 +1,9 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
 
-class VehicleTypesState {
+// [AUTH-28 FIX] Extend Equatable to prevent unnecessary BlocBuilder rebuilds
+class VehicleTypesState extends Equatable {
   final bool isLoading;
   final List<Map<String, dynamic>> vehicleTypes;
   final String? error;
@@ -11,6 +13,9 @@ class VehicleTypesState {
     this.vehicleTypes = const [],
     this.error,
   });
+
+  @override
+  List<Object?> get props => [isLoading, vehicleTypes, error];
 
   VehicleTypesState copyWith({
     bool? isLoading,
@@ -35,7 +40,8 @@ class VehicleTypesCubit extends Cubit<VehicleTypesState> {
           .from('vehicle_types')
           .select('name, display_name')
           .eq('is_active', true)
-          .order('sort_order', ascending: true);
+          .order('sort_order', ascending: true)
+          .timeout(const Duration(seconds: 15));
 
       emit(state.copyWith(
         isLoading: false,

@@ -1,4 +1,5 @@
-import 'package:snapix/services/supabase_service.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class CorridorData {
   final double? originLat;
@@ -55,7 +56,9 @@ class CorridorRepository {
         'p_origin_radius_km': data.originRadiusKm,
         'p_dest_radius_km': data.destRadiusKm,
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('CorridorRepository: set_driver_target_route RPC failed, using direct update: $e');
+      AppLogger.debug(st.toString());
       // Fallback: direct write if RPC not found / signature changed
       await SupabaseService.client.from('drivers_profile').update({
         'target_origin_lat': data.originLat,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:snapix/core/theme/app_colors.dart';
 import 'package:snapix/core/theme/app_spacing.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
 import 'package:snapix/core/widgets/app_button.dart';

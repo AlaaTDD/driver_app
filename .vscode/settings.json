@@ -1,0 +1,11 @@
+{
+  "dart.flutterRunAdditionalArgs": [
+    "--dart-define-from-file=${workspaceFolder}/dart_defines.json"
+  ],
+  "dart.flutterBuildAdditionalArgs": [
+    "--dart-define-from-file=${workspaceFolder}/dart_defines.json"
+  ],
+  "dart.flutterTestAdditionalArgs": [
+    "--dart-define-from-file=${workspaceFolder}/dart_defines.json"
+  ]
+}

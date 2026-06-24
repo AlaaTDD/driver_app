@@ -10,7 +10,6 @@ import 'bloc/meeting_bloc.dart';
 import 'bloc/meeting_event.dart';
 import 'bloc/meeting_state.dart';
 import 'meeting_point_args.dart';
-import '../location_selection/location_selection_screen.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
@@ -21,8 +20,10 @@ import 'package:snapix/features/user/data/repositories/meeting_point_repository.
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../trips/data/repositories/route_repository.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class MeetingPointScreen extends StatefulWidget {
   final MeetingPointArgs? extra;
@@ -91,7 +92,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
               SelectMeetingPoint(pos.latitude, pos.longitude, address),
             );
       } catch (e) {
-        debugPrint('❌ Error: $e');
+        AppLogger.error('Error: $e');
       }
     });
   }
@@ -122,7 +123,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
     try {
       final vehicleType =
           (args.vehicleType?.isNotEmpty ?? false) ? args.vehicleType! : 'sedan';
-      debugPrint(
+      AppLogger.debug(
           '🚗 MeetingPoint: inserting trip with vehicle_type=$vehicleType');
 
       final activeTripId = await _repository.getActiveTripId(authState.user.id);
@@ -158,7 +159,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
         final geohash = GeohashHelper.encode(finalLat, finalLng);
         tripData['geohash'] = geohash;
       } catch (e) {
-        debugPrint('⚠️ Failed to encode geohash: $e');
+        AppLogger.warning('Failed to encode geohash: $e');
       }
 
       final result = await _repository.createTrip(
@@ -216,7 +217,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             }
           }
         } catch (e) {
-          debugPrint('⚠️ Failed to add waypoints: $e');
+          AppLogger.warning('Failed to add waypoints: $e');
         }
       }
 
@@ -226,7 +227,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
       context.push(
           '${AppRoutes.userSearching}?tripId=${result['id']}$oParams$dParams');
     } catch (e) {
-      debugPrint('❌ Trip insert error: $e');
+      AppLogger.error('Trip insert error: $e');
       if (mounted)
         AppToast.error('${AppLocalizations.of(context)!.failedCreateTrip}: $e');
     } finally {
@@ -550,7 +551,8 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
                                     color: context.textSecondary,
                                     fontSize: 11)),
                             Text(
-                                '${args?.price?.toStringAsFixed(2) ?? '0'} ${AppLocalizations.of(context)!.currencySar}',
+                                PriceFormatter.displayWithCurrency(
+                                    context, args?.price ?? 0),
                                 style: const TextStyle(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w800,

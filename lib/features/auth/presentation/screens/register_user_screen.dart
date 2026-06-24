@@ -8,9 +8,9 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/errors/error_mapper.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
+import 'package:snapix/core/widgets/widgets.dart';
 
 class RegisterUserScreen extends StatefulWidget {
   const RegisterUserScreen({super.key});
@@ -22,17 +22,16 @@ class RegisterUserScreen extends StatefulWidget {
 class _RegisterUserScreenState extends State<RegisterUserScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String _fullPhone = ''; // رقم التليفون الكامل مع كود البلد
 
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -40,14 +39,14 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
   }
 
   void _submit() {
+    if (_fullPhone.isEmpty) {
+      AppToast.error(AppLocalizations.of(context)!.enterPhone);
+      return;
+    }
     if (_formKey.currentState!.validate()) {
-      if (_passwordController.text != _confirmPasswordController.text) {
-        AppToast.error(AppLocalizations.of(context)!.passwordsNotMatch);
-        return;
-      }
       context.read<AuthBloc>().add(SignUpUserRequested(
             name: _nameController.text.trim(),
-            phone: _phoneController.text.trim(),
+            phone: _fullPhone,
             email: _emailController.text.trim(),
             password: _passwordController.text,
           ));
@@ -143,38 +142,19 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.fullName,
-                      prefixIcon: Icon(Icons.person_outlined),
+                      prefixIcon: const Icon(Icons.person_outlined),
                     ),
                     validator: (v) => (v == null || v.isEmpty)
                         ? AppLocalizations.of(context)!.enterFullName
                         : null,
                   ),
                   const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.phone,
-                      prefixIcon: Icon(Icons.phone_outlined),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty)
-                        return AppLocalizations.of(context)!.enterPhone;
-
-                      final cleaned = v.replaceAll(RegExp(r'\D'), '');
-                      String normalized = cleaned;
-                      if (normalized.startsWith('00966'))
-                        normalized = normalized.substring(5);
-                      else if (normalized.startsWith('966'))
-                        normalized = normalized.substring(3);
-                      if (normalized.startsWith('0'))
-                        normalized = normalized.substring(1);
-                      if (!RegExp(r'^5\d{8}$').hasMatch(normalized)) {
-                        return AppLocalizations.of(context)!.invalidPhoneFormat;
-                      }
-                      return null;
+                  AppPhoneField(
+                    initialCountryCode: 'EG',
+                    onChanged: (number) {
+                      _fullPhone = number;
                     },
+                    textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
@@ -184,11 +164,12 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.email,
                       hintText: AppLocalizations.of(context)!.emailExample,
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return AppLocalizations.of(context)!.enterEmail;
+                      }
                       if (!RegExp(r'^[\w.-]+@[\w.-]+\.\w+$').hasMatch(v)) {
                         return AppLocalizations.of(context)!.invalidEmailFormat;
                       }
@@ -216,10 +197,12 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                       ),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return AppLocalizations.of(context)!.enterPassword;
-                      if (v.length < 6)
+                      }
+                      if (v.length < 6) {
                         return AppLocalizations.of(context)!.passwordMinLength;
+                      }
                       return null;
                     },
                   ),
@@ -243,9 +226,15 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                         ),
                       ),
                     ),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? AppLocalizations.of(context)!.pleaseConfirmPassword
-                        : null,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) {
+                        return AppLocalizations.of(context)!.pleaseConfirmPassword;
+                      }
+                      if (v != _passwordController.text) {
+                        return AppLocalizations.of(context)!.passwordsNotMatch;
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 36),
                   BlocBuilder<AuthBloc, AuthState>(

@@ -6,19 +6,21 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:snapix/core/map/app_map.dart';
 import 'package:snapix/core/widgets/app_button.dart';
+import '../../../../core/utils/app_toast.dart';
+import '../../../../core/errors/error_mapper.dart';
 import 'bloc/pricing_bloc.dart';
 import 'bloc/pricing_event.dart';
 import 'bloc/pricing_state.dart';
 import 'pricing_args.dart';
 import '../../../../core/constants/env_constants.dart';
-import '../../../../services/directions_service.dart';
+import '../../../../core/services/directions_service.dart';
 import '../meeting_point/meeting_point_args.dart';
-import '../location_selection/location_selection_screen.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/map_camera_utils.dart';
 
 enum _PaymentMethod { cash, card }
@@ -196,63 +198,73 @@ class _PricingScreenState extends State<PricingScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final args = widget.extra;
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: Stack(
-        children: [
-          Positioned.fill(child: _buildMap(isDark, args)),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: context.cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                                color: AppColors.black.withValues(alpha: 0.18),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2))
-                          ],
+    
+    return BlocListener<PricingBloc, PricingState>(
+      listener: (context, state) {
+        if (state is PricingError) {
+          AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
+        } else if (state is CouponApplyError) {
+          AppToast.error(ErrorMapper.getErrorMessage(context, state.errorMessage));
+        }
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            Positioned.fill(child: _buildMap(isDark, args)),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => context.pop(),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: context.cardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: AppColors.black.withValues(alpha: 0.18),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2))
+                            ],
+                          ),
+                          child: Icon(Icons.arrow_back_ios_new_rounded,
+                              size: 18, color: context.textPrimary),
                         ),
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 18, color: context.textPrimary),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _TripRouteCard(
-                        origin: args?.originAddress ?? '',
-                        destination: args?.destAddress ?? '',
-                        distanceKm: _distanceKm,
-                        isDark: isDark,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _TripRouteCard(
+                          origin: args?.originAddress ?? '',
+                          destination: args?.destAddress ?? '',
+                          distanceKm: _distanceKm,
+                          isDark: isDark,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: BlocBuilder<PricingBloc, PricingState>(
-              builder: (ctx, state) => _buildBottomSheet(ctx, state, isDark),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: BlocBuilder<PricingBloc, PricingState>(
+                builder: (ctx, state) => _buildBottomSheet(ctx, state, isDark),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -409,7 +421,7 @@ class _PricingScreenState extends State<PricingScreen>
               label: _localizedVehicleName(v.name, context),
               icon: _iconFromName(v.icon),
               basePrice:
-                  AppLocalizations.of(context)!.priceWithCurrency(v.baseFare.toStringAsFixed(0), AppLocalizations.of(context)!.currencySar),
+                  PriceFormatter.displayCompactWithCurrency(context, v.baseFare),
               selected: _selectedVehicle == v.name,
               onTap: () => _selectVehicle(v.name),
             ),
@@ -1098,7 +1110,7 @@ class _PriceRow extends StatelessWidget {
                 fontSize: isTotal ? 15 : 13,
                 fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400)),
         Text(
-            '${isDiscount && value < 0 ? "-" : ""}${AppLocalizations.of(context)!.priceWithCurrency(value.abs().toStringAsFixed(2), AppLocalizations.of(context)!.currencySar)}',
+            '${isDiscount && value < 0 ? "-" : ""}${PriceFormatter.displayFixedWithCurrency(context, value.abs())}',
             style: TextStyle(
                 color: color,
                 fontSize: isTotal ? 16 : 13,

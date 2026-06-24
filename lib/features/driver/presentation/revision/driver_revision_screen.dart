@@ -10,6 +10,7 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import 'bloc/driver_revision_cubit.dart';
 import 'bloc/driver_revision_state.dart';
+import '../../../../core/models/revision_request_model.dart';
 
 class DriverRevisionScreen extends StatelessWidget {
   const DriverRevisionScreen({super.key});
@@ -73,7 +74,7 @@ class _DriverRevisionView extends StatelessWidget {
 }
 
 class _RevisionRequestCard extends StatelessWidget {
-  final Map<String, dynamic> revision;
+  final RevisionRequestModel revision;
 
   const _RevisionRequestCard({required this.revision});
 
@@ -81,11 +82,9 @@ class _RevisionRequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final fields = _fields(context);
-    final message = revision['message'] as String? ?? '';
-    final status = revision['status'] as String? ?? 'pending';
-    final createdAt = _formatDate(revision['created_at'] as String?);
-    final resolvedAt = _formatDate(revision['resolved_at'] as String?);
-    final resolved = status == 'resolved';
+    final message = revision.message ?? '';
+    final createdAt = _formatDate(revision.createdAt);
+    final resolved = revision.isResolved;
     final statusColor = resolved ? AppColors.success : AppColors.warning;
 
     return Container(
@@ -186,25 +185,7 @@ class _RevisionRequestCard extends StatelessWidget {
               ),
             ],
           ),
-          if (resolvedAt != null) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.done_all_rounded,
-                    size: 14, color: AppColors.success),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    l.revisionResolvedAt(resolvedAt),
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+
           if (!resolved) ...[
             const SizedBox(height: 16),
             SizedBox(
@@ -222,12 +203,9 @@ class _RevisionRequestCard extends StatelessWidget {
   }
 
   List<String> _fields(BuildContext context) {
-    final raw = revision['fields_requested'];
-    final values = raw is List
-        ? raw.map((field) => field.toString()).toList()
-        : <String>[];
-    if (values.isEmpty && revision['field_name'] != null) {
-      values.add(revision['field_name'].toString());
+    final values = List<String>.from(revision.fieldsRequested);
+    if (values.isEmpty && revision.fieldName != null) {
+      values.add(revision.fieldName!);
     }
     if (values.isEmpty) return [AppLocalizations.of(context)!.unspecified];
     return values.map((field) => _fieldLabel(context, field)).toList();
@@ -250,15 +228,10 @@ class _RevisionRequestCard extends StatelessWidget {
     };
   }
 
-  String? _formatDate(String? value) {
-    if (value == null || value.isEmpty) return null;
-    try {
-      final date = DateTime.parse(value).toLocal();
-      return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')} '
-          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } catch (e, st) {
-      debugPrint('⚠️ DriverRevisionScreen: invalid date "$value": $e\n$st');
-      return null;
-    }
+  String? _formatDate(DateTime? value) {
+    if (value == null) return null;
+    final date = value.toLocal();
+    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')} '
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

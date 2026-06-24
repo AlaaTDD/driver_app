@@ -4,11 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/models/complaint_message_model.dart';
+import '../../../../core/models/complaint_model.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../../shared/data/repositories/complaints_repository.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Main Screen
@@ -24,14 +27,12 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
   final _repo = ComplaintsRepository();
   final _pageSize = 10;
 
-  // Local state
-  List<Map<String, dynamic>> _complaints = [];
+  List<ComplaintModel> _complaints = [];
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
   int _page = 0;
 
-  // Realtime
   RealtimeChannel? _channel;
   bool _hasNewActivity = false;
 
@@ -50,9 +51,14 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
 
   // ── Initial Load ───────────────────────────────────────────────────
   Future<void> _initialLoad() async {
-    setState(() { _loading = true; _page = 0; _hasMore = true; });
+    setState(() {
+      _loading = true;
+      _page = 0;
+      _hasMore = true;
+    });
     try {
-      final data = await _repo.getMyComplaintsPaged(page: 0, pageSize: _pageSize);
+      final data =
+          await _repo.getMyComplaintsPaged(page: 0, pageSize: _pageSize);
       if (mounted) {
         setState(() {
           _complaints = data;
@@ -71,17 +77,20 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     setState(() => _loadingMore = true);
     try {
       final nextPage = _page + 1;
-      final data = await _repo.getMyComplaintsPaged(page: nextPage, pageSize: _pageSize);
+      final data =
+          await _repo.getMyComplaintsPaged(page: nextPage, pageSize: _pageSize);
       if (mounted) {
         setState(() {
           _page = nextPage;
-          final existingIds = _complaints.map((c) => c['id']).toSet();
-          _complaints.addAll(data.where((c) => !existingIds.contains(c['id'])));
+          final existingIds = _complaints.map((c) => c.id).toSet();
+          _complaints.addAll(data.where((c) => !existingIds.contains(c.id)));
           _hasMore = data.length == _pageSize;
           _loadingMore = false;
         });
       }
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('ComplaintsScreen: load more failed: $e');
+      AppLogger.debug(st.toString());
       if (mounted) setState(() => _loadingMore = false);
     }
   }
@@ -123,9 +132,11 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     if (newRecord.isEmpty) return;
     if (mounted) {
       setState(() {
-        // Insert at top (newest first)
-        _complaints.insert(0, Map<String, dynamic>.from(newRecord));
-        _hasNewActivity = false; // it's already added
+        _complaints.insert(
+          0,
+          ComplaintModel.fromJson(Map<String, dynamic>.from(newRecord)),
+        );
+        _hasNewActivity = false;
       });
     }
   }
@@ -133,14 +144,14 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
   void _onRealtimeUpdate(PostgresChangePayload payload) {
     final updated = payload.newRecord;
     if (updated.isEmpty) return;
-    final id = updated['id'];
+    final id = updated['id'] as String?;
     if (mounted) {
       setState(() {
-        final idx = _complaints.indexWhere((c) => c['id'] == id);
+        final idx = _complaints.indexWhere((c) => c.id == id);
         if (idx != -1) {
-          _complaints[idx] = Map<String, dynamic>.from(updated);
+          _complaints[idx] =
+              ComplaintModel.fromJson(Map<String, dynamic>.from(updated));
         }
-        // Show "new activity" badge if admin replied
         final adminReply = updated['admin_reply'];
         if (adminReply != null && adminReply.toString().trim().isNotEmpty) {
           _hasNewActivity = true;
@@ -186,7 +197,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
         iconTheme: IconThemeData(color: context.textPrimary),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary))
           : RefreshIndicator(
               onRefresh: _initialLoad,
               color: AppColors.primary,
@@ -215,15 +227,15 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                             );
                           }
                           return _ComplaintCard(
-                            key: ValueKey(_complaints[i]['id']),
+                            key: ValueKey(_complaints[i].id),
                             complaint: _complaints[i],
                             repo: _repo,
                             onRefresh: _initialLoad,
                             onComplaintUpdated: (updated) {
                               if (mounted) {
                                 setState(() {
-                                  final idx = _complaints.indexWhere(
-                                      (c) => c['id'] == updated['id']);
+                                  final idx = _complaints
+                                      .indexWhere((c) => c.id == updated.id);
                                   if (idx != -1) _complaints[idx] = updated;
                                 });
                               }
@@ -240,7 +252,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: Text(
           l.submitComplaint,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -270,7 +283,9 @@ class _LoadMoreIndicator extends StatelessWidget {
     if (loading) {
       return const Padding(
         padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+        child: Center(
+            child: CircularProgressIndicator(
+                color: AppColors.primary, strokeWidth: 2)),
       );
     }
     return Padding(
@@ -306,29 +321,34 @@ class _LoadMoreIndicator extends StatelessWidget {
 String _statusLabel(String status, BuildContext ctx) {
   final isAr = Localizations.localeOf(ctx).languageCode == 'ar';
   return switch (status) {
-    'pending'     => isAr ? 'قيد الانتظار' : 'Pending',
-    'open'        => isAr ? 'مفتوحة' : 'Open',
+    'pending' => isAr ? 'قيد الانتظار' : 'Pending',
+    'open' => isAr ? 'مفتوحة' : 'Open',
     'in_progress' => isAr ? 'قيد المعالجة' : 'In Progress',
     'info_needed' => isAr ? 'يحتاج معلومات' : 'Info Needed',
-    'resolved'    => isAr ? 'محلولة' : 'Resolved',
-    'closed'      => isAr ? 'مغلقة' : 'Closed',
-    _             => status,
+    'resolved' => isAr ? 'محلولة' : 'Resolved',
+    'closed' => isAr ? 'مغلقة' : 'Closed',
+    _ => status,
   };
 }
 
 Color _statusColor(String status) => switch (status) {
-  'pending' || 'open' => AppColors.warning,
-  'in_progress'       => AppColors.info,
-  'info_needed'       => AppColors.error,
-  'resolved' || 'closed' => AppColors.success,
-  _                   => AppColors.textDisabled,
-};
+      'pending' || 'open' => AppColors.warning,
+      'in_progress' => AppColors.info,
+      'info_needed' => AppColors.error,
+      'resolved' || 'closed' => AppColors.success,
+      _ => AppColors.textDisabled,
+    };
 
 String _formatDate(String? iso) {
   if (iso == null) return '';
   try {
-    return DateFormat('dd/MM/yyyy – hh:mm a').format(DateTime.parse(iso).toLocal());
-  } catch (_) { return iso; }
+    return DateFormat('dd/MM/yyyy – hh:mm a')
+        .format(DateTime.parse(iso).toLocal());
+  } catch (e, st) {
+    AppLogger.warning('ComplaintsScreen: invalid date "$iso": $e');
+    AppLogger.debug(st.toString());
+    return iso;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -336,10 +356,10 @@ String _formatDate(String? iso) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ComplaintCard extends StatelessWidget {
-  final Map<String, dynamic> complaint;
+  final ComplaintModel complaint;
   final ComplaintsRepository repo;
   final VoidCallback onRefresh;
-  final void Function(Map<String, dynamic>) onComplaintUpdated;
+  final void Function(ComplaintModel) onComplaintUpdated;
 
   const _ComplaintCard({
     super.key,
@@ -351,7 +371,7 @@ class _ComplaintCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = complaint['status'] ?? 'pending';
+    final status = complaint.status;
     final color = _statusColor(status);
     final hasReply = repo.hasUnreadAdminReply(complaint);
     final lastMsg = repo.getLastMessagePreview(complaint);
@@ -374,7 +394,11 @@ class _ComplaintCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isInfoNeeded ? AppColors.error : hasReply ? AppColors.info : AppColors.black)
+              color: (isInfoNeeded
+                      ? AppColors.error
+                      : hasReply
+                          ? AppColors.info
+                          : AppColors.black)
                   .withValues(alpha: isInfoNeeded || hasReply ? 0.08 : 0.03),
               blurRadius: 16,
               offset: const Offset(0, 4),
@@ -409,7 +433,7 @@ class _ComplaintCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          complaint['title'] ?? '',
+                          complaint.title,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -420,8 +444,9 @@ class _ComplaintCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          _formatDate(complaint['created_at']),
-                          style: TextStyle(fontSize: 11, color: context.textDisabled),
+                          _formatDate(complaint.createdAt?.toIso8601String()),
+                          style: TextStyle(
+                              fontSize: 11, color: context.textDisabled),
                         ),
                       ],
                     ),
@@ -439,7 +464,8 @@ class _ComplaintCard extends StatelessWidget {
                 lastMsg,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, color: context.textSecondary, height: 1.4),
+                style: TextStyle(
+                    fontSize: 13, color: context.textSecondary, height: 1.4),
               ),
             ),
 
@@ -451,38 +477,47 @@ class _ComplaintCard extends StatelessWidget {
                     : hasReply
                         ? AppColors.info.withValues(alpha: 0.06)
                         : AppColors.primary.withValues(alpha: 0.03),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(18)),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               child: Row(
                 children: [
                   if (isInfoNeeded) ...[
-                    const Icon(Icons.info_outline_rounded, size: 13, color: AppColors.error),
+                    const Icon(Icons.info_outline_rounded,
+                        size: 13, color: AppColors.error),
                     const SizedBox(width: 6),
-                    Text(
+                    const Text(
                       'يحتاج معلومات منك',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700),
                     ),
                   ] else if (hasReply) ...[
                     Container(
                       width: 7,
                       height: 7,
-                      decoration: const BoxDecoration(color: AppColors.info, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(
+                          color: AppColors.info, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 6),
                     const Text(
                       'رد جديد من الدعم',
                       style: TextStyle(
-                          fontSize: 12, color: AppColors.info, fontWeight: FontWeight.w700),
+                          fontSize: 12,
+                          color: AppColors.info,
+                          fontWeight: FontWeight.w700),
                     ),
                   ] else
                     Text(
                       'اضغط لعرض المحادثة',
-                      style: TextStyle(fontSize: 12, color: context.textSecondary),
+                      style:
+                          TextStyle(fontSize: 12, color: context.textSecondary),
                     ),
                   const Spacer(),
-                  const Icon(Icons.chevron_left_rounded, color: AppColors.primary, size: 18),
+                  const Icon(Icons.chevron_left_rounded,
+                      color: AppColors.primary, size: 18),
                 ],
               ),
             ),
@@ -527,20 +562,21 @@ class _StatusChip extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700, color: color)),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Thread Sheet  (Real-time inside the conversation too)
+//  Thread Sheet
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ComplaintThreadSheet extends StatefulWidget {
-  final Map<String, dynamic> complaint;
+  final ComplaintModel complaint;
   final ComplaintsRepository repo;
   final VoidCallback onRefresh;
-  final void Function(Map<String, dynamic>) onComplaintUpdated;
+  final void Function(ComplaintModel) onComplaintUpdated;
 
   const _ComplaintThreadSheet({
     required this.complaint,
@@ -559,16 +595,16 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
   bool _sending = false;
   bool _showCloseConfirm = false;
 
-  List<Map<String, dynamic>> _thread = [];
+  List<ComplaintMessageModel> _thread = [];
   bool _threadLoading = true;
-  late Map<String, dynamic> _complaint;
+  late ComplaintModel _complaint;
 
   RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
-    _complaint = Map<String, dynamic>.from(widget.complaint);
+    _complaint = widget.complaint;
     _loadThread();
     _subscribeRealtime();
   }
@@ -584,7 +620,7 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
   Future<void> _loadThread() async {
     setState(() => _threadLoading = true);
     try {
-      final thread = await widget.repo.getComplaintThread(_complaint['id'].toString());
+      final thread = await widget.repo.getComplaintThread(_complaint.id);
       if (mounted) {
         setState(() {
           _thread = thread;
@@ -592,13 +628,15 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
         });
         _scrollToBottom();
       }
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('ComplaintDetail: load thread failed: $e');
+      AppLogger.debug(st.toString());
       if (mounted) setState(() => _threadLoading = false);
     }
   }
 
   void _subscribeRealtime() {
-    final complaintId = _complaint['id'].toString();
+    final complaintId = _complaint.id;
     _channel = SupabaseService.client
         .channel('complaint-thread-$complaintId')
         .onPostgresChanges(
@@ -615,10 +653,11 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
             if (updated.isEmpty) return;
             if (mounted) {
               setState(() {
-                _complaint = Map<String, dynamic>.from(updated);
+                _complaint =
+                    ComplaintModel.fromJson(Map<String, dynamic>.from(updated));
               });
               widget.onComplaintUpdated(_complaint);
-              _loadThread(); // reload thread when complaint is updated
+              _loadThread();
             }
           },
         )
@@ -643,7 +682,7 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
     setState(() => _sending = true);
     try {
       await widget.repo.submitUserReply(
-        complaintId: _complaint['id'].toString(),
+        complaintId: _complaint.id,
         message: msg,
       );
       _ctrl.clear();
@@ -660,7 +699,7 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
     setState(() => _sending = true);
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     try {
-      await widget.repo.closeComplaint(_complaint['id'].toString());
+      await widget.repo.closeComplaint(_complaint.id);
       widget.onRefresh();
       if (mounted) {
         Navigator.pop(context);
@@ -676,7 +715,7 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final status = _complaint['status'] ?? 'pending';
+    final status = _complaint.status;
     final isClosed = status == 'closed';
     final needsInfo = status == 'info_needed';
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
@@ -697,7 +736,6 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
       ),
       child: Column(
         children: [
-          // ── Handle ─────────────────────────────────────────────────
           const SizedBox(height: 12),
           Center(
             child: Container(
@@ -721,7 +759,7 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _complaint['title'] ?? '',
+                        _complaint.title,
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
@@ -732,8 +770,9 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        _formatDate(_complaint['created_at']),
-                        style: TextStyle(fontSize: 11, color: context.textDisabled),
+                        _formatDate(_complaint.createdAt?.toIso8601String()),
+                        style: TextStyle(
+                            fontSize: 11, color: context.textDisabled),
                       ),
                     ],
                   ),
@@ -752,11 +791,13 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
               decoration: BoxDecoration(
                 color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 16),
+                  const Icon(Icons.info_outline_rounded,
+                      color: AppColors.warning, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -764,7 +805,9 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                           ? 'فريق الدعم يحتاج معلومات إضافية منك — ردّ عليهم'
                           : 'Support needs more info from you — please reply',
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.w600),
+                          fontSize: 12,
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -777,7 +820,9 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
           // ── Thread ──────────────────────────────────────────────────
           Expanded(
             child: _threadLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary, strokeWidth: 2))
                 : _thread.isEmpty
                     ? Center(
                         child: Text(
@@ -789,7 +834,8 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                         controller: _scrollCtrl,
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                         itemCount: _thread.length,
-                        itemBuilder: (_, i) => _MessageBubble(msg: _thread[i]),
+                        itemBuilder: (_, i) =>
+                            _MessageBubble(msg: _thread[i]),
                       ),
           ),
 
@@ -802,7 +848,9 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      isAr ? 'إغلاق الشكوى نهائياً؟' : 'Close this complaint permanently?',
+                      isAr
+                          ? 'إغلاق الشكوى نهائياً؟'
+                          : 'Close this complaint permanently?',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -820,7 +868,8 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                         backgroundColor: AppColors.error,
                         foregroundColor: Colors.white,
                         minimumSize: const Size(0, 40),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8)),
                     child: Text(isAr ? 'نعم، أغلق' : 'Yes, Close'),
                   ),
                 ],
@@ -838,7 +887,6 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
               ),
               child: Row(
                 children: [
-                  // Close button
                   if (status != 'pending' && status != 'open')
                     IconButton(
                       icon: Icon(Icons.check_circle_outline_rounded,
@@ -846,17 +894,17 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                       onPressed: () => setState(() => _showCloseConfirm = true),
                       tooltip: isAr ? 'إغلاق الشكوى' : 'Close complaint',
                     ),
-
-                  // Text field
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
                       minLines: 1,
                       maxLines: 4,
-                      style: TextStyle(fontSize: 14, color: context.textPrimary),
+                      style:
+                          TextStyle(fontSize: 14, color: context.textPrimary),
                       decoration: InputDecoration(
                         hintText: isAr ? 'اكتب ردك...' : 'Type your reply...',
-                        hintStyle: TextStyle(color: context.textDisabled, fontSize: 14),
+                        hintStyle: TextStyle(
+                            color: context.textDisabled, fontSize: 14),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide.none,
@@ -870,8 +918,6 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                     ),
                   ),
                   const SizedBox(width: 8),
-
-                  // Send button
                   GestureDetector(
                     onTap: _sending ? null : _sendReply,
                     child: AnimatedContainer(
@@ -882,11 +928,16 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                         gradient: _sending
                             ? null
                             : const LinearGradient(
-                                colors: [AppColors.primary, AppColors.primaryDark],
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primaryDark
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                        color: _sending ? AppColors.primary.withValues(alpha: 0.4) : null,
+                        color: _sending
+                            ? AppColors.primary.withValues(alpha: 0.4)
+                            : null,
                         shape: BoxShape.circle,
                       ),
                       child: _sending
@@ -895,7 +946,8 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
                               child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2),
                             )
-                          : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                          : const Icon(Icons.send_rounded,
+                              color: Colors.white, size: 20),
                     ),
                   ),
                 ],
@@ -920,27 +972,29 @@ class _ComplaintThreadSheetState extends State<_ComplaintThreadSheet> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MessageBubble extends StatelessWidget {
-  final Map<String, dynamic> msg;
+  final ComplaintMessageModel msg;
   const _MessageBubble({required this.msg});
 
   @override
   Widget build(BuildContext context) {
-    final isMe = msg['sender_type'] == 'user';
-    final isOriginal = msg['is_original'] == true;
-    final message = msg['message'] ?? '';
-    final dateStr = _formatDate(msg['created_at']);
+    final isMe = msg.senderType == 'user';
+    final isOriginal = msg.isOriginal;
+    final message = msg.message;
+    final dateStr = _formatDate(msg.createdAt?.toIso8601String());
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
+        mainAxisAlignment:
+            isMe ? MainAxisAlignment.start : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (isMe) ...[
             CircleAvatar(
               radius: 14,
               backgroundColor: AppColors.primary.withValues(alpha: 0.14),
-              child: const Icon(Icons.person_rounded, color: AppColors.primary, size: 15),
+              child: const Icon(Icons.person_rounded,
+                  color: AppColors.primary, size: 15),
             ),
             const SizedBox(width: 8),
           ],
@@ -963,7 +1017,8 @@ class _MessageBubble extends StatelessWidget {
                     ),
                   ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: isMe
                         ? AppColors.primary.withValues(alpha: 0.1)
@@ -988,7 +1043,8 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(dateStr,
-                    style: TextStyle(fontSize: 10, color: context.textDisabled)),
+                    style:
+                        TextStyle(fontSize: 10, color: context.textDisabled)),
               ],
             ),
           ),
@@ -1056,7 +1112,10 @@ class _EmptyState extends StatelessWidget {
           style: TextStyle(fontSize: 14, color: context.textSecondary),
         ),
         const SizedBox(height: 32),
-        AppButton(text: l.submitComplaint, leadingIcon: Icons.add_rounded, onPressed: onAdd),
+        AppButton(
+            text: l.submitComplaint,
+            leadingIcon: Icons.add_rounded,
+            onPressed: onAdd),
       ],
     );
   }
@@ -1163,14 +1222,16 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
                 return GestureDetector(
                   onTap: () => setState(() => _category = cat.$1),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primary.withValues(alpha: 0.12)
                           : context.elevatedColor,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : context.divColor,
+                        color:
+                            isSelected ? AppColors.primary : context.divColor,
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
@@ -1179,14 +1240,18 @@ class _NewComplaintSheetState extends State<_NewComplaintSheet> {
                       children: [
                         Icon(cat.$3,
                             size: 14,
-                            color: isSelected ? AppColors.primary : context.textSecondary),
+                            color: isSelected
+                                ? AppColors.primary
+                                : context.textSecondary),
                         const SizedBox(width: 5),
                         Text(
                           cat.$2,
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? AppColors.primary : context.textSecondary,
+                            color: isSelected
+                                ? AppColors.primary
+                                : context.textSecondary,
                           ),
                         ),
                       ],

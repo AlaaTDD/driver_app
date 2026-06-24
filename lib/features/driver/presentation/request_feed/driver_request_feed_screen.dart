@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/price_formatter.dart';
+import '../../../../core/models/trip_offer_model.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 
 import 'package:snapix/core/theme/theme_extensions.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverRequestFeedScreen extends StatefulWidget {
   const DriverRequestFeedScreen({super.key});
@@ -19,7 +22,7 @@ class DriverRequestFeedScreen extends StatefulWidget {
 
 class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
   StreamSubscription? _sub;
-  List<Map<String, dynamic>> _offers = [];
+  List<TripOfferModel> _offers = [];
   bool _loading = true;
 
   @override
@@ -39,9 +42,15 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
         .listen((rows) {
           if (!mounted) return;
           // Only show pending offers; realtime removes the card when status changes
-          final pending = rows.where((r) => r['status'] == 'pending').toList()
-            ..sort((a, b) => DateTime.parse(a['created_at'] as String)
-                .compareTo(DateTime.parse(b['created_at'] as String)));
+          final pending = rows
+              .where((r) => r['status'] == 'pending')
+              .map((r) => TripOfferModel.fromJson(r))
+              .toList()
+            ..sort((a, b) {
+              final aDate = a.createdAt ?? DateTime(1970);
+              final bDate = b.createdAt ?? DateTime(1970);
+              return aDate.compareTo(bDate);
+            });
           setState(() {
             _offers = pending;
             _loading = false;
@@ -63,18 +72,17 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
         context.push('${AppRoutes.driverTripDetails}?tripId=$tripId');
       }
     } catch (e) {
-      debugPrint('RequestFeed: accept failed — $e');
+      AppLogger.debug('RequestFeed: accept failed — $e');
     }
   }
 
-  Future<void> _reject(String offerId) async {
+  Future<void> _reject(String _, String tripId) async {
     try {
       await SupabaseService.client
-          .from('trip_offers')
-          .update({'status': 'rejected'}).eq('id', offerId);
+          .rpc('driver_reject_trip', params: {'p_trip_id': tripId});
       // Realtime stream will remove the card automatically
     } catch (e) {
-      debugPrint('RequestFeed: reject failed — $e');
+      AppLogger.debug('RequestFeed: reject failed — $e');
     }
   }
 
@@ -126,7 +134,8 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                                     ? l.noRideRequestsAvailableNow
                                     : l.availableRequestsCount(_offers.length),
                             key: ValueKey(_offers.length),
-                            style: TextStyle(color: context.textSecondary, fontSize: 12),
+                            style: TextStyle(
+                                color: context.textSecondary, fontSize: 12),
                           ),
                         ),
                       ]),
@@ -137,13 +146,16 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: _offers.isEmpty ? context.textDisabled : AppColors.success,
+                      color: _offers.isEmpty
+                          ? context.textDisabled
+                          : AppColors.success,
                       shape: BoxShape.circle,
                       boxShadow: _offers.isEmpty
                           ? null
                           : [
                               BoxShadow(
-                                  color: AppColors.success.withValues(alpha: 0.5),
+                                  color:
+                                      AppColors.success.withValues(alpha: 0.5),
                                   blurRadius: 8),
                             ],
                     ),
@@ -163,7 +175,7 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                             itemCount: _offers.length,
                             itemBuilder: (_, i) => _OfferCard(
-                              key: ValueKey(_offers[i]['id']),
+                              key: ValueKey(_offers[i].id),
                               offer: _offers[i],
                               onAccept: _accept,
                               onReject: _reject,
@@ -186,12 +198,15 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
             shape: BoxShape.circle,
             border: Border.all(color: context.divColor),
           ),
-          child: Icon(Icons.inbox_rounded, color: context.textDisabled, size: 40),
+          child:
+              Icon(Icons.inbox_rounded, color: context.textDisabled, size: 40),
         ),
         const SizedBox(height: 20),
         Text(l.noRideRequestsAvailable,
             style: TextStyle(
-                color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                color: context.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Text(l.rideRequestsWillAppearHere,
             style: TextStyle(color: context.textSecondary, fontSize: 13)),
@@ -202,9 +217,9 @@ class _DriverRequestFeedScreenState extends State<DriverRequestFeedScreen> {
 
 // ─── Single offer card with countdown timer ───────────────────────────────────
 class _OfferCard extends StatefulWidget {
-  final Map<String, dynamic> offer;
+  final TripOfferModel offer;
   final Future<void> Function(String offerId, String tripId) onAccept;
-  final Future<void> Function(String offerId) onReject;
+  final Future<void> Function(String offerId, String tripId) onReject;
 
   const _OfferCard({
     super.key,
@@ -236,8 +251,7 @@ class _OfferCardState extends State<_OfferCard>
     _slideCtrl.forward();
 
     // Compute remaining seconds from created_at + 30s window
-    final createdAt =
-        DateTime.tryParse(widget.offer['created_at'] as String? ?? '');
+    final createdAt = widget.offer.createdAt;
     if (createdAt != null) {
       final elapsed = DateTime.now().difference(createdAt).inSeconds;
       _seconds = (30 - elapsed).clamp(0, 30);
@@ -252,7 +266,7 @@ class _OfferCardState extends State<_OfferCard>
       if (_seconds <= 1) {
         _timer?.cancel();
         // Auto-expire: reject silently
-        widget.onReject(widget.offer['id'] as String);
+        widget.onReject(widget.offer.id, widget.offer.tripId);
         return;
       }
       setState(() => _seconds--);
@@ -269,12 +283,12 @@ class _OfferCardState extends State<_OfferCard>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final offerId = widget.offer['id'] as String? ?? '';
-    final tripId = widget.offer['trip_id'] as String? ?? '';
-    final pickup = widget.offer['pickup_address'] as String? ?? l.notAvailable;
-    final dest = widget.offer['destination_address'] as String? ?? l.notAvailable;
-    final price = widget.offer['proposed_price'];
-    final distance = (widget.offer['distance_km'] as num?)?.toStringAsFixed(1);
+    final offerId = widget.offer.id;
+    final tripId = widget.offer.tripId;
+    final pickup = widget.offer.pickupAddress ?? l.notAvailable;
+    final dest = widget.offer.destinationAddress ?? l.notAvailable;
+    final price = widget.offer.proposedPrice;
+    final distance = widget.offer.distanceKm?.toStringAsFixed(1);
     final timerFraction = _seconds / 30.0;
     final timerColor = _seconds > 15
         ? AppColors.success
@@ -325,7 +339,8 @@ class _OfferCardState extends State<_OfferCard>
                           width: 10,
                           height: 10,
                           decoration: const BoxDecoration(
-                              color: AppColors.success, shape: BoxShape.circle)),
+                              color: AppColors.success,
+                              shape: BoxShape.circle)),
                       Container(width: 1, height: 28, color: context.divColor),
                       Container(
                           width: 10,
@@ -381,7 +396,8 @@ class _OfferCardState extends State<_OfferCard>
                     if (price != null)
                       _StatChip(
                         icon: Icons.attach_money_rounded,
-                        label: l.priceWithCurrency(price.toString(), l.currencySar),
+                        label:
+                            PriceFormatter.displayCompactWithCurrency(context, price),
                         color: AppColors.warning,
                       ),
                     if (distance != null) ...[
@@ -406,7 +422,7 @@ class _OfferCardState extends State<_OfferCard>
                             : () async {
                                 setState(() => _acting = true);
                                 _timer?.cancel();
-                                await widget.onReject(offerId);
+                                await widget.onReject(offerId, tripId);
                               },
                         child: Container(
                           height: 46,
@@ -451,7 +467,10 @@ class _OfferCardState extends State<_OfferCard>
                             gradient: _acting
                                 ? null
                                 : const LinearGradient(
-                                    colors: [AppColors.success, AppColors.success],
+                                    colors: [
+                                      AppColors.success,
+                                      AppColors.success
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -460,8 +479,8 @@ class _OfferCardState extends State<_OfferCard>
                                 ? null
                                 : [
                                     BoxShadow(
-                                        color:
-                                            AppColors.success.withValues(alpha: 0.35),
+                                        color: AppColors.success
+                                            .withValues(alpha: 0.35),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4)),
                                   ],

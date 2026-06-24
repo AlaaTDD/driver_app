@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import 'package:snapix/features/driver/data/repositories/driver_profile_repository.dart';
 import 'driver_profile_event.dart';
 import 'driver_profile_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverProfileBloc extends Bloc<DriverProfileEvent, DriverProfileState> {
   final DriverProfileRepository _repository = DriverProfileRepository();
@@ -32,8 +32,8 @@ class DriverProfileBloc extends Bloc<DriverProfileEvent, DriverProfileState> {
       }
       emit(DriverProfileLoaded(profile));
     } catch (e, stackTrace) {
-      debugPrint('❌ DriverProfileBloc: Load failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('DriverProfileBloc: Load failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const DriverProfileError('errorLoadProfile'));
     }
   }
@@ -52,8 +52,8 @@ class DriverProfileBloc extends Bloc<DriverProfileEvent, DriverProfileState> {
         emit(DriverProfileLoaded(profile));
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ DriverProfileBloc: Update failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('DriverProfileBloc: Update failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const DriverProfileError('errorUpdateProfile'));
     }
   }

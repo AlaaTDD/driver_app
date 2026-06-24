@@ -50,3 +50,6 @@ app.*.map.json
 .env.*
 
 # Firebase — run: flutterfire configure (to generate firebase_options.dart)
+
+# dart-define secrets file — never commit, mirrors .env
+dart_defines.json

@@ -22,13 +22,13 @@ import '../../../../core/bloc/location_permission_cubit.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../../services/cell_subscription_service.dart';
-import '../../../../services/supabase_service.dart';
-import '../../data/repositories/coupon_repository.dart';
+import '../../../../core/services/cell_subscription_service.dart';
 import '../home/bloc/user_home_bloc.dart';
 import '../home/bloc/user_home_event.dart';
 import '../home/bloc/user_home_state.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import 'auto_scroll_coupons.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -102,8 +102,12 @@ class _UserHomeScreenState extends State<UserHomeScreen>
       if (needsUpdate && mounted) {
         _markersNotifier.value = _buildDriverMarkers();
       }
+      // وقف الـ Ticker لما لا يوجد حركة لتخفيف الحمل على الـ CPU
+      if (!needsUpdate) {
+        _animationTicker?.stop();
+      }
     });
-    _animationTicker?.start();
+    // لا تبدأ الـ Ticker فوراً — يبدأ عند وصول بيانات سائقين عبر _updateDriverPositions
   }
 
   double _calculateBearing(LatLng start, LatLng end) {
@@ -150,6 +154,13 @@ class _UserHomeScreenState extends State<UserHomeScreen>
       }
     }
 
+    // ابدأ الـ Ticker لو كان واقف وعندنا سائقين لتحريكهم
+    if (_targetDriverPositions.isNotEmpty &&
+        _animationTicker != null &&
+        !_animationTicker!.isTicking) {
+      _animationTicker!.start();
+    }
+
     if (mounted) {
       _markersNotifier.value = _buildDriverMarkers();
     }
@@ -189,7 +200,9 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         _lastAnimatedLng = null;
         _animateTo(loaded.userLat, loaded.userLng);
 
-        // Force a refresh of the websocket and initial drivers to fix "getting stuck"
+        // Refresh immediately — no delay needed.
+        // CellSubscriptionService now re-fetches the snapshot on first Realtime
+        // connect, so drivers who went online are already captured.
         CellSubscriptionService.instance.refresh();
       }
     }
@@ -209,7 +222,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         });
       }
     } catch (e) {
-      debugPrint('⚠️ Failed to load car icon: $e');
+      AppLogger.warning('Failed to load car icon: $e');
       if (mounted) {
         setState(() {
           _carIcon =
@@ -232,7 +245,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
           });
           _updateDriverPositions(loaded.nearbyDrivers);
         }
-        debugPrint('📍 UserHome: Already loaded — skipping re-init');
+        AppLogger.info('UserHome: Already loaded — skipping re-init');
         return;
       }
 
@@ -259,7 +272,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
           });
         }
       } catch (e) {
-        debugPrint('⚠️ UserHomeScreen: Location timeout: $e');
+        AppLogger.warning('UserHomeScreen: Location timeout: $e');
 
         if (mounted) {
           setState(() {
@@ -269,7 +282,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         }
       }
     } catch (e) {
-      debugPrint('❌ UserHomeScreen: Failed to load initial location — $e');
+      AppLogger.error('UserHomeScreen: Failed to load initial location — $e');
       if (mounted) {
         setState(() {
           _initialPosition = AppConstants.defaultMapCenter;
@@ -291,7 +304,7 @@ class _UserHomeScreenState extends State<UserHomeScreen>
         ),
       );
     } catch (e) {
-      debugPrint('⚠️ UserHome: animateCamera failed: $e');
+      AppLogger.warning('UserHome: animateCamera failed: $e');
     }
   }
 
@@ -560,16 +573,31 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                 ),
                 const SizedBox(height: 12),
                 BlocBuilder<UserHomeBloc, UserHomeState>(
+                  buildWhen: (prev, curr) {
+                    // يُبنى فقط عند تغيير الكوبونات — ليس عند كل update للسائقين
+                    if (prev is UserHomeLoaded && curr is UserHomeLoaded) {
+                      return prev.coupons != curr.coupons;
+                    }
+                    return prev.runtimeType != curr.runtimeType;
+                  },
                   builder: (context, state) {
                     if (state is UserHomeLoaded && state.coupons.isNotEmpty) {
-                      final userCoupon = state.coupons.first;
-                      final coupon =
-                          userCoupon['coupons'] as Map<String, dynamic>?;
-                      if (coupon != null) {
+                      final validCoupons = state.coupons
+                          .map((uc) => uc['coupons'] as Map<String, dynamic>?)
+                          .whereType<Map<String, dynamic>>()
+                          .toList();
+
+                      if (validCoupons.isNotEmpty) {
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _CouponBanner(coupon: coupon),
+                            if (validCoupons.length == 1)
+                              _CouponBanner(coupon: validCoupons.first)
+                            else
+                              AutoScrollCoupons(
+                                coupons: validCoupons,
+                                itemBuilder: (coupon) => _CouponBanner(coupon: coupon),
+                              ),
                             const SizedBox(height: 12),
                             const _PromoBanner(),
                           ],
@@ -680,10 +708,10 @@ class _CouponBannerState extends State<_CouponBanner> {
     final titleColor = context.textPrimary;
     final subtitleColor = context.textSecondary;
     final codeBorder = AppColors.primary.withValues(alpha: isDark ? 0.58 : 0.54);
-    final codeTextColor = AppColors.primary;
+    const codeTextColor = AppColors.primary;
     final codeFill = context.elevatedColor;
     final badgeBg = AppColors.warning.withValues(alpha: isDark ? 0.2 : 0.1);
-    final badgeText = AppColors.warning;
+    const badgeText = AppColors.warning;
     final ticketGradient = [AppColors.warning, AppColors.warning.withValues(alpha: 0.8)];
 
     return TweenAnimationBuilder<double>(
@@ -733,12 +761,12 @@ class _CouponBannerState extends State<_CouponBanner> {
                               child: Text(
                                 l.discountLimited,
                                 textDirection: textDirection,
-                                style: TextStyle(
-                                  color: badgeText,
-                                  fontSize: 9.8,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.15,
-                                ),
+                                                                                style: const TextStyle(
+                                                  color: badgeText,
+                                                  fontSize: 9.8,
+                                                  fontWeight: FontWeight.w700,
+                                                  height: 1.15,
+                                                ),
                               ),
                             ),
                           ),
@@ -824,7 +852,7 @@ class _CouponBannerState extends State<_CouponBanner> {
                                               child: Text(
                                                 code,
                                                 maxLines: 1,
-                                                style: TextStyle(
+                                                style: const TextStyle(
                                                   color: codeTextColor,
                                                   fontSize: 14.5,
                                                   fontWeight: FontWeight.w900,
@@ -997,420 +1025,67 @@ class _DashedBorderPainter extends CustomPainter {
       dashGap != old.dashGap;
 }
 
-class _PromoBanner extends StatefulWidget {
+class _PromoBanner extends StatelessWidget {
   const _PromoBanner();
 
   @override
-  State<_PromoBanner> createState() => _PromoBannerState();
-}
-
-class _PromoBannerState extends State<_PromoBanner> {
-  bool _showCouponInput = false;
-  final _codeController = TextEditingController();
-
-  // Validation state
-  bool _isValidating = false;
-  bool? _isValid; // null = not checked, true = valid, false = invalid
-  String? _validatedCode;
-  double? _validatedDiscount;
-  String? _errorMessage;
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
-  }
-
-  void _toggleCouponInput() {
-    setState(() {
-      _showCouponInput = !_showCouponInput;
-      if (!_showCouponInput) {
-        // Reset validation state when closing
-        _isValid = null;
-        _errorMessage = null;
-      }
-    });
-  }
-
-  Future<void> _validateAndApply() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) return;
-
-    setState(() {
-      _isValidating = true;
-      _isValid = null;
-      _errorMessage = null;
-    });
-
-    try {
-      final userId = SupabaseService.currentUser?.id;
-      if (userId == null) {
-        setState(() {
-          _isValidating = false;
-          _isValid = false;
-          _errorMessage = AppLocalizations.of(context)!.errorApplyCoupon;
-        });
-        return;
-      }
-
-      final repo = CouponRepository();
-      // Validate against a reasonable trip price to check basic validity
-      final result = await repo.validateCoupon(
-        couponCode: code,
-        originalPrice: 100, // Dummy price for validation check
-        userId: userId,
-      );
-
-      if (!mounted) return;
-
-      if (result.isSuccess) {
-        setState(() {
-          _isValidating = false;
-          _isValid = true;
-          _validatedCode = result.couponCode;
-          _validatedDiscount = result.discount;
-        });
-      } else {
-        setState(() {
-          _isValidating = false;
-          _isValid = false;
-          _errorMessage = _mapErrorKey(result.errorKey);
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isValidating = false;
-        _isValid = false;
-        _errorMessage = AppLocalizations.of(context)!.errorApplyCoupon;
-      });
-    }
-  }
-
-  String _mapErrorKey(String? key) {
-    final l = AppLocalizations.of(context)!;
-    return switch (key) {
-      'errorInvalidCoupon' => l.errorInvalidCoupon,
-      'errorCouponDepleted' => l.errorCouponDepleted,
-      'errorCouponUsed' => l.errorCouponUsed,
-      'errorApplyCoupon' => l.errorApplyCoupon,
-      _ => l.invalidCouponCode,
-    };
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Main promo / coupon toggle banner
-        GestureDetector(
-          onTap: _toggleCouponInput,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              color: _showCouponInput
-                  ? AppColors.primary.withValues(alpha: 0.06)
-                  : context.elevatedColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _showCouponInput
-                    ? AppColors.primary.withValues(alpha: 0.3)
-                    : context.divColor,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _showCouponInput
-                        ? AppColors.primary.withValues(alpha: 0.12)
-                        : context.primaryTint,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    _showCouponInput
-                        ? Icons.local_offer_rounded
-                        : Icons.local_taxi_rounded,
-                    color: AppColors.primary,
-                    size: 19,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _showCouponInput
-                            ? AppLocalizations.of(context)!.haveDiscountCoupon
-                            : AppLocalizations.of(context)!.rideSafely,
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _showCouponInput
-                            ? AppLocalizations.of(context)!.enterDiscountCode
-                            : AppLocalizations.of(context)!.bookNowEnjoy,
-                        style: TextStyle(
-                          color: context.textSecondary,
-                          fontSize: 11,
-                          height: 1.4,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                AnimatedRotation(
-                  turns: _showCouponInput ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    _showCouponInput
-                        ? Icons.close_rounded
-                        : Icons.confirmation_number_outlined,
-                    color: _showCouponInput
-                        ? context.textSecondary
-                        : AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: context.elevatedColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.divColor,
+          width: 1,
         ),
-
-        // ── Expandable coupon input ──────────────────────────────────────
-        // NO AnimatedSize / AnimatedCrossFade / SizeTransition here.
-        // All of them internally use AnimatedSize which puts children in an
-        // unconstrained Stack — this gives ElevatedButton infinite width and
-        // crashes layout. A plain `if` is the only safe pattern in a BottomSheet.
-        if (_showCouponInput)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: context.primaryTint,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.local_taxi_rounded,
+              color: AppColors.primary,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.elevatedColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.divColor, width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 42,
-                          child: TextField(
-                            controller: _codeController,
-                            textCapitalization: TextCapitalization.characters,
-                            onChanged: (_) {
-                              if (_isValid != null) {
-                                setState(() {
-                                  _isValid = null;
-                                  _errorMessage = null;
-                                });
-                              }
-                            },
-                            style: TextStyle(
-                              color: context.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.5,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.promoCodeExample,
-                              hintStyle: TextStyle(
-                                color: context.textSecondary
-                                    .withValues(alpha: 0.4),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 1.5,
-                              ),
-                              filled: true,
-                              fillColor: context.bgColor,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(
-                                    color: _isValid == true
-                                        ? AppColors.success
-                                            .withValues(alpha: 0.5)
-                                        : _isValid == false
-                                            ? AppColors.error
-                                                .withValues(alpha: 0.5)
-                                            : context.divColor,
-                                    width: _isValid != null ? 1.5 : 0.8),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(
-                                    color: AppColors.primary, width: 1.2),
-                              ),
-                              prefixIcon: Icon(Icons.local_offer_rounded,
-                                  color: _isValid == true
-                                      ? AppColors.success
-                                      : _isValid == false
-                                          ? AppColors.error
-                                          : context.textSecondary,
-                                  size: 16),
-                              suffixIcon: _isValid == true
-                                  ? const Icon(Icons.check_circle_rounded,
-                                      color: AppColors.success, size: 18)
-                                  : _isValid == false
-                                      ? const Icon(Icons.error_outline_rounded,
-                                          color: AppColors.error, size: 18)
-                                      : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        height: 42,
-                        width: 72, // explicit width — prevents infinite-width crash
-                        child: Material(
-                          color: _isValid == true
-                              ? AppColors.success
-                              : (_isValidating ? AppColors.grey : AppColors.primary),
-                          borderRadius: BorderRadius.circular(10),
-                          child: InkWell(
-                            onTap: _isValidating ? null : _validateAndApply,
-                            borderRadius: BorderRadius.circular(10),
-                            child: Center(
-                              child: _isValidating
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : _isValid == true
-                                      ? const Icon(Icons.check_rounded,
-                                          size: 20, color: AppColors.white)
-                                      : Text(
-                                          AppLocalizations.of(context)!.apply,
-                                          style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.white),
-                                        ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                Text(
+                  AppLocalizations.of(context)!.rideSafely,
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                    letterSpacing: 0.1,
                   ),
                 ),
-
-                // ── Validation feedback ─────────────────────────
-                if (_isValid == true)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle_rounded,
-                              color: AppColors.success, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              AppLocalizations.of(context)!.couponApplied,
-                              style: TextStyle(
-                                color: AppColors.success,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () =>
-                                context.push(AppRoutes.userLocationSelect),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: AppColors.success,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(context)!.bookNow,
-                                style: const TextStyle(
-                                  color: AppColors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else if (_isValid == false)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: AppColors.error.withValues(alpha: 0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline_rounded,
-                              color: AppColors.error, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage ??
-                                  AppLocalizations.of(context)!
-                                      .invalidCouponCode,
-                              style: const TextStyle(
-                                color: AppColors.error,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  AppLocalizations.of(context)!.bookNowEnjoy,
+                  style: TextStyle(
+                    color: context.textSecondary,
+                    fontSize: 11,
+                    height: 1.4,
+                    letterSpacing: 0.1,
                   ),
+                ),
               ],
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
+

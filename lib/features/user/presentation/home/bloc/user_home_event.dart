@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../../../services/cell_subscription_service.dart';
+import '../../../../../core/services/cell_subscription_service.dart';
 
 abstract class UserHomeEvent extends Equatable {
   const UserHomeEvent();

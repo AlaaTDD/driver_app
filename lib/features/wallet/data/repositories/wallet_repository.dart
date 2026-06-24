@@ -1,16 +1,17 @@
-import 'package:flutter/foundation.dart';
-import '../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/driver_earnings_model.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../models/wallet_transaction_model.dart';
 import '../models/withdrawal_request_model.dart';
 import '../models/user_wallet_model.dart';
 import '../models/driver_wallet_model.dart';
 import '../../../../core/utils/uuid_helper.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class WalletRepository {
   final _client = SupabaseService.client;
 
   /// جلب ملخص أرباح السائق (merged from view + detailed function)
-  Future<Map<String, dynamic>> getDriverEarningsSummary(String driverId) async {
+  Future<DriverEarningsModel> getDriverEarningsSummary(String driverId) async {
     try {
       // Fetch from both data sources in parallel
       final results = await Future.wait([
@@ -33,25 +34,22 @@ class WalletRepository {
       final summaryData = Map<String, dynamic>.from(results[0] as Map);
       final detailedData = results[1] as Map<String, dynamic>? ?? {};
 
-      // Merge: detailed function provides earnings_7d and earnings_30d
-      if (detailedData.containsKey('earnings_7d')) {
+      // Prefer the summary view because it is based on trips.driver_earnings.
+      // The legacy detailed RPC may return gross trip price, so only use it
+      // when the summary value is absent.
+      if (!summaryData.containsKey('earnings_7d') &&
+          detailedData.containsKey('earnings_7d')) {
         summaryData['earnings_7d'] = detailedData['earnings_7d'];
       }
-      if (detailedData.containsKey('earnings_30d') &&
-          !summaryData.containsKey('earnings_30d')) {
+      if (!summaryData.containsKey('earnings_30d') &&
+          detailedData.containsKey('earnings_30d')) {
         summaryData['earnings_30d'] = detailedData['earnings_30d'];
       }
 
-      return summaryData;
+      return DriverEarningsModel.fromJson(summaryData);
     } catch (e) {
-      debugPrint('❌ WalletRepository.getDriverEarningsSummary: $e');
-      return {
-        'total_earnings': 0.0,
-        'available_balance': 0.0,
-        'completed_trips': 0,
-        'earnings_7d': 0.0,
-        'earnings_30d': 0.0,
-      };
+      AppLogger.error('WalletRepository.getDriverEarningsSummary: $e');
+      return const DriverEarningsModel();
     }
   }
 
@@ -83,7 +81,7 @@ class WalletRepository {
               WalletTransactionModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      debugPrint('❌ WalletRepository.getTransactionHistory: $e');
+      AppLogger.error('WalletRepository.getTransactionHistory: $e');
       return [];
     }
   }
@@ -134,7 +132,7 @@ class WalletRepository {
               WithdrawalRequestModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      debugPrint('❌ WalletRepository.getWithdrawalRequests: $e');
+      AppLogger.error('WalletRepository.getWithdrawalRequests: $e');
       return [];
     }
   }
@@ -157,7 +155,7 @@ class WalletRepository {
           await _client.from('user_wallets').select().eq('id', userId).single();
       return UserWalletModel.fromJson(Map<String, dynamic>.from(data));
     } catch (e) {
-      debugPrint('❌ WalletRepository.getUserWallet: $e');
+      AppLogger.error('WalletRepository.getUserWallet: $e');
       return null;
     }
   }

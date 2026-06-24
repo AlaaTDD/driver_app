@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'bloc/driver_profile_bloc.dart';
 import 'bloc/driver_profile_state.dart';
 import 'bloc/driver_profile_event.dart';
+import '../../../../core/models/driver_profile_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
@@ -13,8 +14,9 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/widgets/stat_card.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
-import '../../../../services/r2_storage_service.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/utils/price_formatter.dart';
+import '../../../../core/services/r2_storage_service.dart';
+import '../../../../core/services/supabase_service.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -45,14 +47,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     super.dispose();
   }
 
-  void _populate(Map<String, dynamic> driver) {
+  void _populate(DriverProfileModel driver) {
     if (_populated) return;
-    _nameController.text =
-        driver['name'] as String? ?? driver['full_name'] as String? ?? '';
-    _phoneController.text = driver['phone'] as String? ?? '';
-    _plateController.text = driver['plate_number'] as String? ??
-        driver['vehicle_plate'] as String? ??
-        '';
+    _nameController.text = driver.name ?? '';
+    _phoneController.text = driver.phone ?? '';
+    _plateController.text = driver.vehiclePlate;
     _populated = true;
   }
 
@@ -99,17 +98,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           }
 
           final driver =
-              state is DriverProfileLoaded ? state.driver : <String, dynamic>{};
+              state is DriverProfileLoaded ? state.driver : const DriverProfileModel(id: '');
           return _buildContent(context, driver, state);
         },
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, Map<String, dynamic> driver,
+  Widget _buildContent(BuildContext context, DriverProfileModel driver,
       DriverProfileState state) {
     final l = AppLocalizations.of(context)!;
-    final avatarUrl = driver['avatar_url'] as String?;
+    final avatarUrl = driver.avatarUrl;
     final ImageProvider<Object>? avatarImage;
     if (_localAvatarFile != null) {
       avatarImage = FileImage(_localAvatarFile!);
@@ -118,16 +117,16 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     } else {
       avatarImage = null;
     }
-    final rating = driver['rating'] as num?;
-    final totalTrips = driver['total_trips'] as num?;
-    final isVerified = driver['is_verified'] as bool? ?? false;
-    final vehicleType = driver['vehicle_type'] as String?;
-    final vehicleBrand = driver['vehicle_brand'] as String?;
-    final vehicleModel = driver['vehicle_model'] as String?;
-    final vehicleYear = driver['vehicle_year'];
-    final vehicleColor = driver['vehicle_color'] as String?;
-    final vehiclePlate = driver['vehicle_plate'] as String?;
-    final vehicleImageUrl = driver['vehicle_image_url'] as String?;
+    final rating = driver.rating;
+    final totalTrips = driver.totalTrips;
+    final isVerified = driver.isVerified;
+    final vehicleType = driver.vehicleType.isNotEmpty ? driver.vehicleType : null;
+    final vehicleBrand = driver.vehicleBrand.isNotEmpty ? driver.vehicleBrand : null;
+    final vehicleModel = driver.vehicleModel.isNotEmpty ? driver.vehicleModel : null;
+    final vehicleYear = driver.vehicleYear;
+    final vehicleColor = driver.vehicleColor.isNotEmpty ? driver.vehicleColor : null;
+    final vehiclePlate = driver.vehiclePlate;
+    final vehicleImageUrl = driver.vehicleImageUrl.isNotEmpty ? driver.vehicleImageUrl : null;
 
     return CustomScrollView(
       slivers: [
@@ -277,7 +276,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       child: StatCard(
                         label: l.trips,
                         value:
-                            '${totalTrips ?? driver['completed_trips_wallet'] ?? 0}',
+                            '${totalTrips ?? driver.completedTripsWallet ?? 0}',
                         icon: Icons.directions_car_rounded,
                       ),
                     ),
@@ -293,8 +292,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     Expanded(
                       child: StatCard(
                         label: l.earnings,
-                        value:
-                            '${(driver['total_earnings'] as num?)?.toStringAsFixed(0) ?? 0}',
+                        value: PriceFormatter.displayCompactWithCurrency(
+                            context, driver.totalEarnings ?? 0),
                         icon: Icons.payments_rounded,
                       ),
                     ),
@@ -388,19 +387,19 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       _DocumentRow(
                         icon: Icons.badge_outlined,
                         label: l.nationalId,
-                        hasUrl: driver['national_id_image_url'] != null,
+                        hasUrl: driver.nationalIdImageUrl.isNotEmpty,
                       ),
                       Divider(color: context.divColor, height: 20),
                       _DocumentRow(
                         icon: Icons.card_membership_outlined,
                         label: l.driverLicense,
-                        hasUrl: driver['license_image_url'] != null,
+                        hasUrl: driver.licenseImageUrl.isNotEmpty,
                       ),
                       Divider(color: context.divColor, height: 20),
                       _DocumentRow(
                         icon: Icons.description_outlined,
                         label: l.criminalRecord,
-                        hasUrl: driver['criminal_record_url'] != null,
+                        hasUrl: driver.criminalRecordUrl.isNotEmpty,
                       ),
                     ],
                   ),

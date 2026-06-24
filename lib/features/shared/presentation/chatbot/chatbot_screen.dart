@@ -5,6 +5,7 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/features/shared/data/repositories/chatbot_repository.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
@@ -51,7 +52,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       });
       _scrollToBottom();
     } catch (e) {
-      debugPrint('❌ ChatbotScreen loadMessages: $e');
+      AppLogger.error('ChatbotScreen loadMessages: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }

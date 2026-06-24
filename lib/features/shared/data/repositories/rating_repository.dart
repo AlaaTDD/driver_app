@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
-import '../../../../../services/supabase_service.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class RatingRepository {
   final _client = SupabaseService.client;
@@ -14,7 +14,7 @@ class RatingRepository {
           .eq('id', tripId)
           .single();
     } catch (e) {
-      debugPrint('❌ RatingRepository: Failed to get trip data: $e');
+      AppLogger.error('RatingRepository: Failed to get trip data: $e');
       return null;
     }
   }
@@ -42,7 +42,7 @@ class RatingRepository {
         return existing != null;
       }
     } catch (e) {
-      debugPrint(
+      AppLogger.debug(
           '⚠️ RatingRepository: Failed to check existing rating table: $e');
       // Fallback to checking the trips table directly if the ratings tables fail or don't exist
       try {
@@ -101,7 +101,7 @@ class RatingRepository {
             .from('trips')
             .update({'user_rating_to_driver': rating}).eq('id', tripId);
       } catch (e) {
-        debugPrint(
+        AppLogger.debug(
             '⚠️ RatingRepository: Could not mark trip user_rating_to_driver field: $e');
       }
     }

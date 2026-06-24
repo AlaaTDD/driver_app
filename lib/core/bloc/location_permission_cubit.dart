@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import '../services/location_permission_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 // ── State ──
 
@@ -68,14 +68,14 @@ class LocationPermissionCubit extends Cubit<LocationPermissionState> {
   Future<void> check() async {
     emit(state.copyWith(isChecking: true));
     final status = await _service.checkStatus();
-    debugPrint('📍 LocationPermissionCubit: status = $status');
+    AppLogger.info('LocationPermissionCubit: status = $status');
     emit(LocationPermissionState(status: status, isChecking: false));
   }
 
   /// Re-check after returning from Settings (app resumed).
   Future<void> recheck() async {
     final status = await _service.checkStatus();
-    debugPrint('📍 LocationPermissionCubit: recheck → $status');
+    AppLogger.info('LocationPermissionCubit: recheck → $status');
     if (status != state.status) {
       emit(LocationPermissionState(status: status, isChecking: false));
     }

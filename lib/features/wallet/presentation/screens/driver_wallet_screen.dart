@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../cubit/wallet_cubit.dart';
@@ -13,24 +14,6 @@ import '../../data/models/driver_wallet_model.dart';
 import '../../data/models/wallet_transaction_model.dart';
 import '../../data/models/withdrawal_request_model.dart';
 import '../../../../core/widgets/app_button.dart';
-
-// ─── Number Formatter ─────────────────────────────────────────────────────────
-
-NumberFormat _getCurrencyFormat(BuildContext context) {
-  final l = AppLocalizations.of(context)!;
-  return NumberFormat.currency(
-      locale: Localizations.localeOf(context).languageCode,
-      symbol: l.currencySar,
-      decimalDigits: 2);
-}
-
-NumberFormat _getCompactCurrencyFormat(BuildContext context) {
-  final l = AppLocalizations.of(context)!;
-  return NumberFormat.currency(
-      locale: Localizations.localeOf(context).languageCode,
-      symbol: l.currencySar,
-      decimalDigits: 0);
-}
 
 class DriverWalletScreen extends StatefulWidget {
   const DriverWalletScreen({super.key});
@@ -137,7 +120,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            _buildTransactionsList(context, state.transactions),
+            _buildTransactionsList(context, state),
             _buildWithdrawalsList(context, state.withdrawals),
           ],
         ),
@@ -280,10 +263,8 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: Text(
-                                _getCurrencyFormat(context)
-                                    .format(wallet.balance)
-                                    .replaceAll(
-                                        AppLocalizations.of(context)!.currencySar, ''),
+                                PriceFormatter.displayFixed(
+                                    context, wallet.balance),
                                 style: const TextStyle(
                                   color: AppColors.white,
                                   fontSize: 52,
@@ -325,7 +306,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                                   color: AppColors.warningLight, size: 14),
                               const SizedBox(width: 6),
                               Text(
-                                '${AppLocalizations.of(context)!.pendingPrefix}${_getCompactCurrencyFormat(context).format(wallet.pendingWithdrawal)}',
+                                '${AppLocalizations.of(context)!.pendingPrefix}${PriceFormatter.displayCompactWithCurrency(context, wallet.pendingWithdrawal)}',
                                 style: const TextStyle(
                                     color: AppColors.warningLight,
                                     fontSize: 12,
@@ -340,15 +321,15 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                           _buildStatChip(
                             icon: Icons.trending_up_rounded,
                             label: AppLocalizations.of(context)!.thisWeek,
-                            value: _getCompactCurrencyFormat(context)
-                                .format(wallet.earningsLastWeek),
+                            value: PriceFormatter.displayCompactWithCurrency(
+                                context, wallet.earningsLastWeek),
                           ),
                           const SizedBox(width: 12),
                           _buildStatChip(
                             icon: Icons.calendar_month_rounded,
                             label: AppLocalizations.of(context)!.last30Days,
-                            value: _getCompactCurrencyFormat(context)
-                                .format(wallet.earningsLast30Days),
+                            value: PriceFormatter.displayCompactWithCurrency(
+                                context, wallet.earningsLast30Days),
                           ),
                           const SizedBox(width: 12),
                           _buildStatChip(
@@ -460,8 +441,8 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
     );
   }
 
-  Widget _buildTransactionsList(
-      BuildContext context, List<WalletTransactionModel> txns) {
+  Widget _buildTransactionsList(BuildContext context, WalletLoaded state) {
+    final txns = state.transactions;
     if (txns.isEmpty) {
       return _buildEmptyState(
           AppLocalizations.of(context)!.noTransactionsYet,
@@ -470,8 +451,32 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      itemCount: txns.length,
-      itemBuilder: (context, i) => _buildTransactionCard(context, txns[i]),
+      itemCount: txns.length + (state.hasMoreTransactions ? 1 : 0),
+      itemBuilder: (context, i) {
+        if (i < txns.length) return _buildTransactionCard(context, txns[i]);
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: AppButton(
+            text: Localizations.localeOf(context).languageCode == 'ar'
+                ? 'تحميل المزيد'
+                : 'Load more',
+            isLoading: state.isLoadingMore,
+            variant: AppButtonVariant.outlined,
+            size: AppButtonSize.md,
+            leadingIcon: Icons.expand_more_rounded,
+            onPressed: state.isLoadingMore
+                ? null
+                : () {
+                    final auth = context.read<AuthBloc>().state;
+                    if (auth is AuthAuthenticated) {
+                      context
+                          .read<WalletCubit>()
+                          .loadMoreTransactions(auth.user.id);
+                    }
+                  },
+          ),
+        );
+      },
     );
   }
 
@@ -620,7 +625,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isCredit ? '+' : '-'}${_getCurrencyFormat(context).format(txn.amount.abs())}',
+                '${isCredit ? '+' : '-'}${PriceFormatter.displayFixedWithCurrency(context, txn.amount.abs())}',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -636,7 +641,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${AppLocalizations.of(context)!.balancePrefix}${_getCompactCurrencyFormat(context).format(txn.balanceAfter)}',
+                  '${AppLocalizations.of(context)!.balancePrefix}${PriceFormatter.displayCompactWithCurrency(context, txn.balanceAfter)}',
                   style: TextStyle(
                       color: context.textSecondary,
                       fontSize: 10,
@@ -774,7 +779,7 @@ class _DriverWalletScreenState extends State<DriverWalletScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                _getCurrencyFormat(context).format(w.amount),
+                PriceFormatter.displayFixedWithCurrency(context, w.amount),
                 style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
@@ -1097,7 +1102,7 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
                                 letterSpacing: -0.5)),
                         const SizedBox(height: 4),
                         Text(
-                          '${AppLocalizations.of(context)!.balancePrefix}${_getCurrencyFormat(context).format(widget.wallet.balance)}',
+                          '${AppLocalizations.of(context)!.balancePrefix}${PriceFormatter.displayFixedWithCurrency(context, widget.wallet.balance)}',
                           style: const TextStyle(
                               color: AppColors.success,
                               fontWeight: FontWeight.w700,
@@ -1119,7 +1124,8 @@ class _WithdrawalSheetState extends State<_WithdrawalSheet> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _amountCtrl,
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,

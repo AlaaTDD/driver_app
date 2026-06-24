@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../../../services/heatmap_service.dart';
+import '../../../../../core/services/heatmap_service.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
 
 class DriverHomeState extends Equatable {

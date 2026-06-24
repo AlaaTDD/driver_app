@@ -1,16 +1,30 @@
 import 'dart:io';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../services/r2_storage_service.dart';
-import '../../../../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
+import '../../../../core/errors/exceptions.dart';
+import '../../../../core/services/r2_storage_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../models/user_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
-String _mapError(dynamic e) {
-  debugPrint('🔴 AUTH ERROR [${e.runtimeType}]: $e');
+String _mapError(Object e) {
+  // [APP-H-06 FIXED] Log only exception type + status code — never the full
+  // toString() which may include the user's email address or credentials.
+  final safeLog = e is AuthException
+      ? 'AuthException(code=${e.code})'
+      : e.runtimeType.toString();
+  AppLogger.error('AUTH ERROR [$safeLog]');
+  // [AUTH-APP-EX FIX] AppException subclasses (ServerException, ValidationException,
+  // StorageException, etc.) already carry a valid i18n error key in .message.
+  // Return it directly instead of trying to match toString() output.
+  if (e is AppException) return e.message;
   final msg = e.toString().toLowerCase();
+  // [AUTH-25 FIX] TimeoutException → treat as network error, not unexpected
+  if (msg.contains('timeoutexception') || msg.contains('future not completed')) {
+    return 'errorNoInternet';
+  }
   if (msg.contains('invalid login credentials') ||
       msg.contains('invalid_credentials')) {
     return 'errorInvalidCredentials';
@@ -36,6 +50,17 @@ String _mapError(dynamic e) {
   if (msg.contains('row not found') || msg.contains('pgrst116')) {
     return 'errorUserNotFound';
   }
+  if ((msg.contains('phone') || msg.contains('phone_number')) &&
+      (msg.contains('unique') || msg.contains('duplicate') || msg.contains('already'))) {
+    return 'errorPhoneRegistered';
+  }
+  // [AUTH-500 FIX] Supabase returns status=500 when the on-auth-user-created
+  // DB trigger fails (e.g. NOT NULL violation on users.phone or users.name).
+  // Map this to a clear error so the user gets a meaningful message.
+  if (msg.contains('status: 500') || msg.contains('status=500') ||
+      msg.contains('"status":500') || msg.contains('statuscode: 500')) {
+    return 'errorCreateAccountFailed';
+  }
   return 'errorUnexpected';
 }
 
@@ -50,10 +75,12 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final response = await SupabaseService.client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      final response = await SupabaseService.client.auth
+          .signInWithPassword(
+            email: email,
+            password: password,
+          )
+          .timeout(const Duration(seconds: 15));
 
       final user = response.user;
       if (user == null) {
@@ -67,7 +94,8 @@ class AuthRepositoryImpl implements AuthRepository {
             .select(
                 'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
             .eq('id', user.id)
-            .single();
+            .single()
+            .timeout(const Duration(seconds: 15));
       } on PostgrestException catch (pe) {
         if (pe.code == 'PGRST116') {
           // Auto-recovery: Create missing profile using auth metadata
@@ -91,7 +119,8 @@ class AuthRepositoryImpl implements AuthRepository {
                 'updated_at': DateTime.now().toIso8601String(),
               })
               .select()
-              .single();
+              .single()
+              .timeout(const Duration(seconds: 15));
         } else {
           rethrow;
         }
@@ -117,52 +146,87 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final response = await SupabaseService.client.auth.signUp(
-        email: email,
-        password: password,
-        data: {
-          'name': name,
-          'phone': phone,
-          'role': 'user',
-        },
-      );
+      final response = await SupabaseService.client.auth
+          .signUp(
+            email: email,
+            password: password,
+            data: {
+              'name': name,
+              'phone': phone,
+              'role': 'user',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       final user = response.user;
       if (user == null) {
         return const Left('errorCreateAccountFailed');
       }
 
+      // [APP-C-04 FIXED] The DB trigger `trg_auth_user_created` runs synchronously
+      // and inserts the user row (id, email, role) before signUp() returns.
+      // We must NOT upsert unconditionally — that risks overwriting trigger values
+      // with a concurrent write. Instead: UPDATE the trigger-created row with the
+      // app-specific fields (name, phone, language, etc.).
+      // If the UPDATE matches 0 rows (extremely rare edge case), fall back to upsert.
       Map<String, dynamic> userData;
       try {
-        userData = await SupabaseService.client
+        final updated = await SupabaseService.client
             .from('users')
-            .upsert({
-              'id': user.id,
+            .update({
               'name': name,
               'phone': phone,
-              'email': email,
-              'role': 'user',
+              'language': 'ar',
               'rating': 0.00,
               'total_trips': 0,
-              'language': 'ar',
               'is_active': true,
               'updated_at': DateTime.now().toIso8601String(),
             })
-            .select()
-            .single();
+            .eq('id', user.id)
+            .select(
+                'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+            .maybeSingle()
+            .timeout(const Duration(seconds: 15));
+
+        if (updated != null) {
+          userData = updated;
+        } else {
+          // Trigger row not yet visible (extremely rare) — fall back to upsert
+          AppLogger.warning(
+              'AuthRepositoryImpl: trigger row missing after signUp — falling back to upsert');
+          userData = await SupabaseService.client
+              .from('users')
+              .upsert({
+                'id': user.id,
+                'name': name,
+                'phone': phone,
+                'email': email,
+                'role': 'user',
+                'rating': 0.00,
+                'total_trips': 0,
+                'language': 'ar',
+                'is_active': true,
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .select(
+                  'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
+              .single()
+              .timeout(const Duration(seconds: 15));
+        }
       } catch (e) {
         try {
-          // Fallback if upsert still fails
+          // Final fallback: row may have been fully created by trigger
           userData = await SupabaseService.client
               .from('users')
               .select(
                   'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
               .eq('id', user.id)
-              .single();
-          debugPrint(
+              .single()
+              .timeout(const Duration(seconds: 15));
+          AppLogger.debug(
               'AuthRepositoryImpl: User already exists, fetched existing data');
         } catch (innerE) {
-          debugPrint('AuthRepositoryImpl: Fallback fetch failed: $innerE');
+          AppLogger.debug('AuthRepositoryImpl: Fallback fetch failed: $innerE');
           return const Left('errorCreateAccountFailed');
         }
       }
@@ -230,6 +294,10 @@ class AuthRepositoryImpl implements AuthRepository {
       });
 
       if (rpcResponse['success'] != true) {
+        // [AUTH-07 FIX] Cleanup orphaned auth account to prevent user lockout
+        try {
+          await SupabaseService.client.auth.signOut();
+        } catch (_) {}
         return Left(rpcResponse['error'] ?? 'errorCreateAccountFailed');
       }
 

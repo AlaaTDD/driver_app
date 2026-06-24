@@ -10,6 +10,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/services/supabase_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -58,6 +59,49 @@ class _LoginScreenState extends State<LoginScreen>
             password: _passwordController.text,
           ));
     }
+  }
+
+  void _showForgotPassword(BuildContext context) {
+    final emailCtrl = TextEditingController();
+    final l = AppLocalizations.of(context)!;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.forgotPasswordTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l.forgotPasswordDesc),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(hintText: l.emailExample),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              final email = emailCtrl.text.trim();
+              if (email.isEmpty) return;
+              Navigator.of(ctx).pop();
+              try {
+                await SupabaseService.client.auth.resetPasswordForEmail(email);
+                if (mounted) AppToast.success(l.forgotPasswordSent);
+              } catch (_) {
+                if (mounted) AppToast.error(l.errorUnexpected);
+              }
+            },
+            child: Text(l.send),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -198,6 +242,18 @@ class _LoginScreenState extends State<LoginScreen>
                               text: AppLocalizations.of(context)!.login,
                               onPressed: _submit,
                               isLoading: state is AuthLoading,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () => _showForgotPassword(context),
+                            child: Text(
+                              AppLocalizations.of(context)!.forgotPassword,
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 28),

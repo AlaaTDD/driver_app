@@ -1,6 +1,5 @@
-import 'package:flutter/foundation.dart';
-
-import '../../../../../services/supabase_service.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class ChatbotRepository {
   Future<List<Map<String, dynamic>>> loadMessages() async {
@@ -10,7 +9,8 @@ class ChatbotRepository {
     try {
       final data = await SupabaseService.client
           .from('support_messages')
-          .select('*')
+          .select(
+              'id, user_id, sender_id, sender_role, message, ticket_id, created_at')
           .eq('user_id', userId)
           .order('created_at', ascending: true)
           .limit(100);
@@ -28,7 +28,7 @@ class ChatbotRepository {
       }
       return messages;
     } catch (e) {
-      debugPrint('ChatbotRepository: loadMessages error: $e');
+      AppLogger.debug('ChatbotRepository: loadMessages error: $e');
       return [];
     }
   }
@@ -40,11 +40,13 @@ class ChatbotRepository {
     try {
       await SupabaseService.client.from('support_messages').insert({
         'user_id': userId,
+        'sender_id': userId,
         'message': text,
         'sender_role': 'user',
       });
     } catch (e) {
-      debugPrint('ChatbotRepository: saveUserMessage error: $e');
+      AppLogger.error('ChatbotRepository: saveUserMessage error: $e');
+      rethrow;
     }
   }
 
@@ -114,7 +116,7 @@ class ChatbotRepository {
       }
       return null;
     } catch (e) {
-      debugPrint('ChatbotRepository: fetchAiReply error: $e');
+      AppLogger.debug('ChatbotRepository: fetchAiReply error: $e');
       return null;
     }
   }
@@ -131,7 +133,8 @@ class ChatbotRepository {
         'sender_role': 'support',
       });
     } catch (e) {
-      debugPrint('ChatbotRepository: saveSupportReply error: $e');
+      AppLogger.error('ChatbotRepository: saveSupportReply error: $e');
+      rethrow;
     }
   }
 }

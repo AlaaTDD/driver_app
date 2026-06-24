@@ -7,8 +7,9 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_routes.dart';
 import 'package:snapix/features/shared/data/repositories/notifications_repository.dart';
-import 'package:snapix/services/supabase_service.dart';
+import 'package:snapix/core/services/supabase_service.dart';
 import 'package:snapix/core/widgets/app_button.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -47,7 +48,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         });
       },
       onError: (e) {
-        debugPrint('❌ NotificationsScreen stream error: $e');
+        AppLogger.error('NotificationsScreen stream error: $e');
         if (!mounted) return;
         setState(() {
           _error = AppLocalizations.of(context)!.failedLoadNotifications;
@@ -74,7 +75,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }).toList();
       });
     } catch (e) {
-      debugPrint('NotificationsScreen: markAsRead error — $e');
+      AppLogger.debug('NotificationsScreen: markAsRead error — $e');
     }
   }
 
@@ -117,7 +118,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           .maybeSingle();
       return row != null && row['role'] == 'driver';
     } catch (e, st) {
-      debugPrint(
+      AppLogger.debug(
           '⚠️ NotificationsScreen: failed to resolve current user role: $e\n$st');
       return false;
     }

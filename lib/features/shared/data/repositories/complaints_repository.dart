@@ -1,6 +1,9 @@
 import 'dart:convert';
-import '../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/complaint_message_model.dart';
+import 'package:snapix/core/models/complaint_model.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../../../core/errors/exceptions.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class ComplaintsRepository {
   // ─── Submit new complaint ──────────────────────────────────────────
@@ -13,21 +16,25 @@ class ComplaintsRepository {
     final user = SupabaseService.currentUser;
     if (user == null) throw AuthException('errorNotLoggedIn');
 
-    final response = await SupabaseService.client.from('complaints').insert({
-      'user_id': user.id,
-      if (tripId != null) 'trip_id': tripId,
-      'title': title.trim(),
-      'description': description.trim(),
-      'status': 'pending',
-      'category': category,
-      'created_at': DateTime.now().toIso8601String(),
-    }).select('id').single();
+    final response = await SupabaseService.client
+        .from('complaints')
+        .insert({
+          'user_id': user.id,
+          if (tripId != null) 'trip_id': tripId,
+          'title': title.trim(),
+          'description': description.trim(),
+          'status': 'pending',
+          'category': category,
+          'created_at': DateTime.now().toIso8601String(),
+        })
+        .select('id')
+        .single();
 
     return response['id'] as String;
   }
 
   // ─── Get my complaints list (paginated) ───────────────────────────
-  Future<List<Map<String, dynamic>>> getMyComplaintsPaged({
+  Future<List<ComplaintModel>> getMyComplaintsPaged({
     required int page,
     required int pageSize,
   }) async {
@@ -42,14 +49,17 @@ class ComplaintsRepository {
         .select(
             'id, title, description, status, category, priority, created_at, admin_reply, admin_notes, replied_at')
         .eq('user_id', user.id)
-        .order('created_at', ascending: false) // newest first
+        .order('created_at', ascending: false)
         .range(from, to);
 
-    return List<Map<String, dynamic>>.from(data);
+    return (data as List)
+        .whereType<Map>()
+        .map((e) => ComplaintModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   // ─── Get my complaints list (all — kept for fallback) ─────────────
-  Future<List<Map<String, dynamic>>> getMyComplaints() async {
+  Future<List<ComplaintModel>> getMyComplaints() async {
     final user = SupabaseService.currentUser;
     if (user == null) return [];
 
@@ -60,11 +70,14 @@ class ComplaintsRepository {
         .eq('user_id', user.id)
         .order('created_at', ascending: false);
 
-    return List<Map<String, dynamic>>.from(data);
+    return (data as List)
+        .whereType<Map>()
+        .map((e) => ComplaintModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   // ─── Get full complaint thread (merged, sorted) ────────────────────
-  Future<List<Map<String, dynamic>>> getComplaintThread(
+  Future<List<ComplaintMessageModel>> getComplaintThread(
       String complaintId) async {
     final user = SupabaseService.currentUser;
     if (user == null) return [];
@@ -77,62 +90,71 @@ class ComplaintsRepository {
         .eq('user_id', user.id)
         .single();
 
-    final thread = <Map<String, dynamic>>[];
+    final thread = <ComplaintMessageModel>[];
 
     // Original complaint message
-    thread.add({
-      'id': 'original',
-      'sender_type': 'user',
-      'message': data['description'],
-      'created_at': data['created_at'],
-      'is_original': true,
-    });
+    thread.add(ComplaintMessageModel(
+      id: 'original',
+      senderType: 'user',
+      message: data['description'] as String? ?? '',
+      createdAt: _date(data['created_at']),
+      isOriginal: true,
+    ));
 
-    // Parse admin replies (stored in admin_reply as JSON array)
+    // Admin replies (stored in admin_reply as JSON array)
     final adminReplyRaw = data['admin_reply'];
-    if (adminReplyRaw != null &&
-        adminReplyRaw.toString().trim().isNotEmpty) {
+    if (adminReplyRaw != null && adminReplyRaw.toString().trim().isNotEmpty) {
       try {
         final parsed = jsonDecode(adminReplyRaw) as List;
         for (final msg in parsed) {
-          thread.add({
-            ...Map<String, dynamic>.from(msg as Map),
+          final msgMap = Map<String, dynamic>.from(msg as Map);
+          thread.add(ComplaintMessageModel.fromJson({
+            ...msgMap,
             'sender_type': 'admin',
-          });
+          }));
         }
-      } catch (_) {
-        // Legacy plain-text fallback
-        thread.add({
-          'id': 'legacy-admin',
-          'sender_type': 'admin',
-          'message': adminReplyRaw,
-          'created_at': data['replied_at'] ?? data['created_at'],
-        });
+      } catch (e, st) {
+        AppLogger.warning(
+            'ComplaintsRepository: admin_reply JSON parse failed: $e');
+        AppLogger.debug(st.toString());
+        thread.add(ComplaintMessageModel(
+          id: 'legacy-admin',
+          senderType: 'admin',
+          message: adminReplyRaw.toString(),
+          createdAt: _date(data['replied_at'] ?? data['created_at']),
+        ));
       }
     }
 
-    // Parse user follow-up replies (stored in admin_notes as JSON array)
+    // User follow-up replies (stored in admin_notes as JSON array)
     final userNotesRaw = data['admin_notes'];
     if (userNotesRaw != null && userNotesRaw.toString().trim().isNotEmpty) {
       try {
         final parsed = jsonDecode(userNotesRaw) as List;
         for (final msg in parsed) {
-          thread.add({
-            ...Map<String, dynamic>.from(msg as Map),
+          final msgMap = Map<String, dynamic>.from(msg as Map);
+          thread.add(ComplaintMessageModel.fromJson({
+            ...msgMap,
             'sender_type': 'user',
-          });
+          }));
         }
-      } catch (e) {
-        // ignore parse error - admin_notes might not be valid JSON
+      } catch (e, st) {
+        AppLogger.warning(
+            'ComplaintsRepository: admin_notes JSON parse failed: $e');
+        AppLogger.debug(st.toString());
+        thread.add(ComplaintMessageModel(
+          id: 'legacy-user-notes',
+          senderType: 'user',
+          message: userNotesRaw.toString(),
+          createdAt: _date(data['replied_at'] ?? data['created_at']),
+        ));
       }
     }
 
-    // Sort all by created_at
+    // Sort all messages chronologically
     thread.sort((a, b) {
-      final aTime =
-          DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
-      final bTime =
-          DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
+      final aTime = a.createdAt ?? DateTime(2000);
+      final bTime = b.createdAt ?? DateTime(2000);
       return aTime.compareTo(bTime);
     });
 
@@ -175,75 +197,120 @@ class ComplaintsRepository {
 
   // ─── Helpers ───────────────────────────────────────────────────────
 
-  /// Returns true if last message in thread is from admin (user needs to see it)
-  bool hasUnreadAdminReply(Map<String, dynamic> complaint) {
-    final adminReply = complaint['admin_reply'];
-    if (adminReply == null || adminReply.toString().trim().isEmpty) {
-      return false;
-    }
+  static DateTime? _date(Object? value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
+  }
+
+  /// Returns true if the last message in the thread is from admin
+  /// (meaning the user hasn't yet seen/responded to it).
+  bool hasUnreadAdminReply(ComplaintModel complaint) {
+    final adminReply = complaint.adminReply;
+    if (adminReply == null || adminReply.trim().isEmpty) return false;
+
     try {
       final parsed = jsonDecode(adminReply) as List;
       if (parsed.isEmpty) return false;
 
-      // Get all messages
-      final allMsgs = [...parsed];
-      final userNotesRaw = complaint['admin_notes'];
-      if (userNotesRaw != null && userNotesRaw.toString().trim().isNotEmpty) {
+      // Merge admin messages + user follow-up notes into one list
+      final allMsgs = <Map<String, dynamic>>[
+        ...parsed.map((e) => Map<String, dynamic>.from(e as Map)),
+      ];
+
+      final userNotesRaw = complaint.adminNotes;
+      if (userNotesRaw != null && userNotesRaw.trim().isNotEmpty) {
         try {
           final userParsed = jsonDecode(userNotesRaw) as List;
-          allMsgs.addAll(userParsed);
-        } catch (_) {}
+          allMsgs.addAll(
+              userParsed.map((e) => Map<String, dynamic>.from(e as Map)));
+        } catch (e, st) {
+          AppLogger.debug(
+              '⚠️ ComplaintsRepository: unread admin_notes parse failed: $e');
+          AppLogger.debug(st.toString());
+          allMsgs.add(<String, dynamic>{
+            'sender_type': 'user',
+            'created_at': complaint.repliedAt?.toIso8601String() ??
+                complaint.createdAt?.toIso8601String(),
+          });
+        }
       }
 
       if (allMsgs.isEmpty) return false;
 
-      // Sort by created_at and check last
       allMsgs.sort((a, b) {
-        final aTime = DateTime.tryParse((a as Map)['created_at'] ?? '') ?? DateTime(2000);
-        final bTime = DateTime.tryParse((b as Map)['created_at'] ?? '') ?? DateTime(2000);
+        final aTime = DateTime.tryParse(a['created_at'] as String? ?? '') ??
+            DateTime(2000);
+        final bTime = DateTime.tryParse(b['created_at'] as String? ?? '') ??
+            DateTime(2000);
         return aTime.compareTo(bTime);
       });
 
-      final lastMsg = allMsgs.last as Map;
-      return lastMsg['sender_type'] == 'admin';
-    } catch (_) {
-      return adminReply.toString().trim().isNotEmpty;
+      return allMsgs.last['sender_type'] == 'admin';
+    } catch (e, st) {
+      AppLogger.warning(
+          'ComplaintsRepository: unread admin_reply parse failed: $e');
+      AppLogger.debug(st.toString());
+      return adminReply.trim().isNotEmpty;
     }
   }
 
-  /// Returns a short preview of the last message
-  String getLastMessagePreview(Map<String, dynamic> complaint) {
+  /// Returns a short preview of the last message in the thread.
+  String getLastMessagePreview(ComplaintModel complaint) {
     try {
-      final adminReply = complaint['admin_reply'];
-      final userNotes = complaint['admin_notes'];
-
       final msgs = <Map<String, dynamic>>[];
 
-      if (adminReply != null && adminReply.toString().trim().isNotEmpty) {
+      final adminReply = complaint.adminReply;
+      if (adminReply != null && adminReply.trim().isNotEmpty) {
         try {
           final parsed = jsonDecode(adminReply) as List;
-          msgs.addAll(parsed.map((e) => Map<String, dynamic>.from(e as Map)));
-        } catch (_) {}
+          msgs.addAll(
+              parsed.map((e) => Map<String, dynamic>.from(e as Map)));
+        } catch (e, st) {
+          AppLogger.debug(
+              '⚠️ ComplaintsRepository: preview admin_reply parse failed: $e');
+          AppLogger.debug(st.toString());
+          msgs.add(<String, dynamic>{
+            'message': adminReply,
+            'created_at': complaint.repliedAt?.toIso8601String() ??
+                complaint.createdAt?.toIso8601String(),
+          });
+        }
       }
 
-      if (userNotes != null && userNotes.toString().trim().isNotEmpty) {
+      final userNotes = complaint.adminNotes;
+      if (userNotes != null && userNotes.trim().isNotEmpty) {
         try {
           final parsed = jsonDecode(userNotes) as List;
-          msgs.addAll(parsed.map((e) => Map<String, dynamic>.from(e as Map)));
-        } catch (_) {}
+          msgs.addAll(
+              parsed.map((e) => Map<String, dynamic>.from(e as Map)));
+        } catch (e, st) {
+          AppLogger.debug(
+              '⚠️ ComplaintsRepository: preview admin_notes parse failed: $e');
+          AppLogger.debug(st.toString());
+          msgs.add(<String, dynamic>{
+            'message': userNotes,
+            'created_at': complaint.repliedAt?.toIso8601String() ??
+                complaint.createdAt?.toIso8601String(),
+          });
+        }
       }
 
-      if (msgs.isEmpty) return complaint['description'] ?? '';
+      if (msgs.isEmpty) return complaint.description;
 
       msgs.sort((a, b) {
-        final aTime = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
-        final bTime = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
+        final aTime = DateTime.tryParse(a['created_at'] as String? ?? '') ??
+            DateTime(2000);
+        final bTime = DateTime.tryParse(b['created_at'] as String? ?? '') ??
+            DateTime(2000);
         return aTime.compareTo(bTime);
       });
 
-      return msgs.last['message'] ?? complaint['description'] ?? '';
-    } catch (_) {
-      return complaint['description'] ?? '';
+      return (msgs.last['message'] as String?) ?? complaint.description;
+    } catch (e, st) {
+      AppLogger.warning('ComplaintsRepository: preview build failed: $e');
+      AppLogger.debug(st.toString());
+      return complaint.description;
     }
   }
 }

@@ -11,13 +11,14 @@ import 'package:snapix/core/utils/app_toast.dart';
 import 'package:snapix/core/utils/map_camera_utils.dart';
 import 'package:snapix/core/widgets/app_button.dart';
 import 'package:snapix/features/driver/data/repositories/corridor_repository.dart';
-import 'package:snapix/services/directions_service.dart';
-import 'package:snapix/services/supabase_service.dart';
+import 'package:snapix/core/services/directions_service.dart';
+import 'package:snapix/core/services/supabase_service.dart';
 import '../home/widgets/neon_route_polyline.dart';
 import 'widgets/corridor_hint_pill.dart';
 import 'widgets/point_chip.dart';
 import 'widgets/corridor_panel_action.dart';
 import 'widgets/radius_slider.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 /// Arguments needed to push the [CorridorPickerScreen].
 class CorridorPickerArgs {
@@ -145,14 +146,14 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
                   '${dMarks.first.street ?? ''}, ${dMarks.first.locality ?? ''}';
             }
           } catch (e) {
-            debugPrint('⚠️ CorridorPicker: reverse geocode failed: $e');
+            AppLogger.warning('CorridorPicker: reverse geocode failed: $e');
           }
 
           _fetchAndDrawRoute();
         }
       }
     } catch (e) {
-      debugPrint('Error loading corridor: $e');
+      AppLogger.debug('Error loading corridor: $e');
     } finally {
       if (mounted) setState(() => _isResolving = false);
     }
@@ -332,7 +333,7 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
         Navigator.pop<Map<String, LatLng>>(context, {'cleared': LatLng(0, 0)});
       }
     } catch (e) {
-      debugPrint('CorridorPicker: clear failed $e');
+      AppLogger.debug('CorridorPicker: clear failed $e');
     }
   }
 

@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:snapix/services/user_presence_service.dart';
-import 'package:snapix/services/cell_subscription_service.dart';
-import 'package:snapix/services/heatmap_service.dart';
-import 'package:snapix/services/location_service.dart';
-import 'package:snapix/services/directions_service.dart';
-import 'package:snapix/services/fcm_service.dart';
+import 'package:snapix/core/services/user_presence_service.dart';
+import 'package:snapix/core/services/cell_subscription_service.dart';
+import 'package:snapix/core/services/heatmap_service.dart';
+import 'package:snapix/core/services/location_service.dart';
+import 'package:snapix/core/services/directions_service.dart';
+import 'package:snapix/core/services/fcm_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class LogoutCoordinator {
   static final LogoutCoordinator instance = LogoutCoordinator._();
@@ -21,13 +21,13 @@ class LogoutCoordinator {
   Future<void> performLogout() async {
     await Future.wait([
       UserPresenceService.instance.stopBroadcasting().catchError((e) {
-        debugPrint('⚠️ LogoutCoordinator: presence cleanup failed — $e');
+        AppLogger.warning('LogoutCoordinator: presence cleanup failed — $e');
       }),
       CellSubscriptionService.instance.dispose().catchError((e) {
-        debugPrint('⚠️ LogoutCoordinator: cell cleanup failed — $e');
+        AppLogger.warning('LogoutCoordinator: cell cleanup failed — $e');
       }),
       FCMService().clearFcmToken().catchError((e) {
-        debugPrint('⚠️ LogoutCoordinator: FCM cleanup failed — $e');
+        AppLogger.warning('LogoutCoordinator: FCM cleanup failed — $e');
       }),
     ]);
 
@@ -37,10 +37,10 @@ class LogoutCoordinator {
 
     await Future.wait(
       _cleanupCallbacks.map((fn) => fn().catchError((e) {
-            debugPrint('⚠️ LogoutCoordinator: cleanup failed — $e');
+            AppLogger.warning('LogoutCoordinator: cleanup failed — $e');
           })),
     );
     _cleanupCallbacks.clear();
-    debugPrint('✅ LogoutCoordinator: all services cleaned up');
+    AppLogger.info('LogoutCoordinator: all services cleaned up');
   }
 }

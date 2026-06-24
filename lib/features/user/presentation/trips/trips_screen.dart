@@ -7,12 +7,14 @@ import 'bloc/trips_event.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/utils/app_toast.dart';
 import 'package:shimmer/shimmer.dart';
-import 'widgets/trips_header.dart';
-import 'widgets/segmented_control.dart';
-import 'widgets/trip_list_view.dart';
+
+// ── Shared widgets (Phase 3 refactor) ────────────────────────────────────────
+import '../../../trips/presentation/widgets/trip_widgets.dart';
 
 class UserTripsScreen extends StatefulWidget {
   const UserTripsScreen({super.key});
@@ -49,19 +51,18 @@ class _UserTripsScreenState extends State<UserTripsScreen>
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor:
-          context.bgColor, // Background matching trip_details
+      backgroundColor: context.bgColor,
       body: SafeArea(
         top: true,
         child: BlocConsumer<TripsBloc, TripsState>(
           listener: (context, state) {
             if (state is TripActionSuccess) {
-              _showToast(ErrorMapper.getErrorMessage(context, state.message),
-                  AppColors.success);
+              AppToast.success(
+                  ErrorMapper.getErrorMessage(context, state.message));
               context.read<TripsBloc>().add(const LoadUserTrips());
             } else if (state is TripsError) {
-              _showToast(ErrorMapper.getErrorMessage(context, state.message),
-                  AppColors.error);
+              AppToast.error(
+                  ErrorMapper.getErrorMessage(context, state.message));
             }
           },
           builder: (context, state) {
@@ -72,21 +73,21 @@ class _UserTripsScreenState extends State<UserTripsScreen>
             if (state is TripsLoaded) {
               final allTrips = state.trips;
               final inProgress = allTrips
-                  .where((t) =>
-                      t['status'] == 'searching' ||
-                      t['status'] == 'accepted' ||
-                      t['status'] == 'in_progress')
+                  .where((t) => AppConstants.activeTripStatuses
+                      .contains(t.status.toDbString()))
                   .toList();
-              final completed =
-                  allTrips.where((t) => t['status'] == 'completed').toList();
-              final cancelled =
-                  allTrips.where((t) => t['status'] == 'cancelled').toList();
+              final completed = allTrips
+                  .where((t) => t.status.toDbString() == 'completed')
+                  .toList();
+              final cancelled = allTrips
+                  .where((t) => t.status.toDbString() == 'cancelled')
+                  .toList();
 
               return CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: TripsHeader(
+                    child: SharedTripsHeader(
                       total: allTrips.length,
                       completed: completed.length,
                       cancelled: cancelled.length,
@@ -95,7 +96,7 @@ class _UserTripsScreenState extends State<UserTripsScreen>
                     ),
                   ),
                   SliverToBoxAdapter(
-                    child: SegmentedControl(
+                    child: SharedSegmentedControl(
                       selectedIndex: _selectedIndex,
                       onIndexChanged: (index) {
                         _tabController.animateTo(index);
@@ -111,9 +112,19 @@ class _UserTripsScreenState extends State<UserTripsScreen>
                       controller: _tabController,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        TripListView(trips: inProgress, isActive: true),
-                        TripListView(trips: completed),
-                        TripListView(trips: cancelled),
+                        SharedTripListView(
+                          trips: inProgress,
+                          isActive: true,
+                          detailsRoute: AppRoutes.userTripDetails,
+                        ),
+                        SharedTripListView(
+                          trips: completed,
+                          detailsRoute: AppRoutes.userTripDetails,
+                        ),
+                        SharedTripListView(
+                          trips: cancelled,
+                          detailsRoute: AppRoutes.userTripDetails,
+                        ),
                       ],
                     ),
                   ),
@@ -130,15 +141,6 @@ class _UserTripsScreenState extends State<UserTripsScreen>
         ),
       ),
     );
-  }
-
-  void _showToast(String message, Color color) {
-    final overlay = Overlay.of(context);
-    final entry = OverlayEntry(
-      builder: (context) => _ToastWidget(message: message, color: color),
-    );
-    overlay.insert(entry);
-    Future.delayed(const Duration(seconds: 2), entry.remove);
   }
 
   Widget _buildLoadingState() {
@@ -196,132 +198,39 @@ class _UserTripsScreenState extends State<UserTripsScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          _GradientButton(
-            onPressed: () =>
+          GestureDetector(
+            onTap: () =>
                 context.read<TripsBloc>().add(const LoadUserTrips()),
-            icon: Icons.refresh,
-            label: l.retry,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ToastWidget extends StatelessWidget {
-  final String message;
-  final Color color;
-
-  const _ToastWidget({required this.message, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: 60,
-      left: 16,
-      right: 16,
-      child: Material(
-        color: AppColors.transparent,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 300),
-          builder: (context, value, child) => Transform.translate(
-            offset: Offset(0, -20 * (1 - value)),
-            child: Opacity(
-              opacity: value,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
+            child: Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle,
-                        color: AppColors.white, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                      offset: const Offset(0, 4))
+                ],
               ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.refresh_rounded,
+                    color: AppColors.white, size: 17),
+                const SizedBox(width: 8),
+                Text(l.retry,
+                    style: const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700)),
+              ]),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GradientButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final IconData icon;
-  final String label;
-
-  const _GradientButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
           ),
         ],
-      ),
-      child: Material(
-        color: AppColors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: AppColors.white, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
-import '../../../../../services/location_service.dart';
+import '../../../../../core/services/location_service.dart';
 import 'location_event.dart';
 import 'location_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class LocationBloc extends Bloc<LocationEvent, LocationState> {
   final LocationService _locationService = LocationService.instance;
@@ -56,7 +56,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
           if (address == ',') address = 'currentLocation';
         }
       } catch (e) {
-        debugPrint('LocationBloc: geocoding failed — $e');
+        AppLogger.debug('LocationBloc: geocoding failed — $e');
       }
       emit(LocationSelected(
         lat: position.latitude,
@@ -64,8 +64,8 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
         address: address,
       ));
     } catch (e, stackTrace) {
-      debugPrint('❌ LocationBloc: SelectCurrentLocation failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('LocationBloc: SelectCurrentLocation failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const LocationSelectionError('errorGetLocation'));
     }
   }
@@ -93,7 +93,7 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
           if (address == ',') address = event.query;
         }
       } catch (e) {
-        debugPrint('LocationBloc: geocoding failed — $e');
+        AppLogger.debug('LocationBloc: geocoding failed — $e');
       }
       emit(LocationSelected(
         lat: loc.latitude,
@@ -101,8 +101,8 @@ class LocationBloc extends Bloc<LocationEvent, LocationState> {
         address: address,
       ));
     } catch (e, stackTrace) {
-      debugPrint('❌ LocationBloc: SearchLocation failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('LocationBloc: SearchLocation failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const LocationSelectionError('errorSearchLocation'));
     }
   }

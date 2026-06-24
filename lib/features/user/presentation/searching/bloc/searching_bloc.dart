@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../services/supabase_service.dart';
-import '../../../../../services/trip_broadcast_service.dart';
+import '../../../../../core/services/supabase_service.dart';
+import '../../../../../core/services/trip_broadcast_service.dart';
 import '../../../../../core/utils/retry_helper.dart';
 import 'searching_event.dart';
 import 'searching_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
   Timer? _countdownTimer;
@@ -33,7 +33,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     StartSearching event,
     Emitter<SearchingState> emit,
   ) async {
-    debugPrint('🔍 SearchingBloc: StartSearching for trip ${event.tripId}');
+    AppLogger.debug('🔍 SearchingBloc: StartSearching for trip ${event.tripId}');
     _broadcastedDriverIds.clear();
 
     _countdownTimer?.cancel();
@@ -58,7 +58,12 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         .stream(primaryKey: ['id'])
         .eq('id', event.tripId)
         .listen((rows) {
-          if (rows.isNotEmpty) {
+          if (rows.isEmpty) {
+            add(TripStatusChanged({
+              'id': event.tripId,
+              'status': 'cancelled',
+            }));
+          } else {
             add(TripStatusChanged(Map<String, dynamic>.from(rows.first)));
           }
         });
@@ -79,12 +84,14 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
 
     _rebroadcastTimer = Timer.periodic(
       const Duration(seconds: _rebroadcastIntervalSeconds),
-      (_) => add(RebroadcastTripOffers(event.tripId, title: event.title, body: event.body)),
+      (_) => add(RebroadcastTripOffers(event.tripId,
+          title: event.title, body: event.body)),
     );
   }
 
-  Future<void> _performBroadcast(String tripId, String title, String body) async {
-    debugPrint('🔍 SearchingBloc: Performing broadcast for trip $tripId');
+  Future<void> _performBroadcast(
+      String tripId, String title, String body) async {
+    AppLogger.debug('🔍 SearchingBloc: Performing broadcast for trip $tripId');
     try {
       final tripDetails = await SupabaseService.client
           .from('trips')
@@ -93,12 +100,12 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
           .single();
 
       if (tripDetails['status'] != 'searching') {
-        debugPrint(
+        AppLogger.debug(
             '🔍 SearchingBloc: Trip $tripId no longer searching, skipping broadcast');
         return;
       }
 
-      debugPrint(
+      AppLogger.debug(
           '🔍 SearchingBloc: Trip $tripId - lat=${tripDetails['pickup_lat']}, lng=${tripDetails['pickup_lng']}, vehicle=${tripDetails['vehicle_type']}');
 
       final notifiedDriverIds = await _broadcastService.findAndBroadcast(
@@ -113,12 +120,12 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       );
       _broadcastedDriverIds.addAll(notifiedDriverIds);
 
-      debugPrint(
+      AppLogger.debug(
         '🔍 SearchingBloc: Broadcast completed for trip $tripId '
         '(${notifiedDriverIds.length} new drivers)',
       );
     } catch (e) {
-      debugPrint('❌ SearchingBloc: Error broadcasting trip: $e');
+      AppLogger.error('SearchingBloc: Error broadcasting trip: $e');
     }
   }
 
@@ -157,10 +164,10 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
           ),
           maxAttempts: 2,
           onRetry: (e, attempt) =>
-              debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
+              AppLogger.debug('SearchingBloc: retry cancel #$attempt: $e'),
         );
       } catch (e) {
-        debugPrint('SearchingBloc: error cancelling trip on timeout — $e');
+        AppLogger.debug('SearchingBloc: error cancelling trip on timeout — $e');
       }
       emit(const SearchingNoDrivers());
     } else if (state is SearchingInProgress) {
@@ -176,7 +183,7 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     Emitter<SearchingState> emit,
   ) async {
     final status = event.trip['status'] as String?;
-    debugPrint('🔍 SearchingBloc: Trip status changed to: $status');
+    AppLogger.debug('🔍 SearchingBloc: Trip status changed to: $status');
     switch (status) {
       case 'accepted':
       case 'in_progress':
@@ -190,11 +197,11 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         emit(const SearchingNoDrivers());
         break;
       case 'searching':
-        debugPrint(
+        AppLogger.debug(
             '🔍 SearchingBloc: Trip is currently searching, waiting for driver...');
         break;
       default:
-        debugPrint('🔍 SearchingBloc: Unknown status: $status');
+        AppLogger.debug('🔍 SearchingBloc: Unknown status: $status');
         break;
     }
   }
@@ -220,10 +227,10 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
         ),
         maxAttempts: 2,
         onRetry: (e, attempt) =>
-            debugPrint('SearchingBloc: retry cancel #$attempt: $e'),
+            AppLogger.debug('SearchingBloc: retry cancel #$attempt: $e'),
       );
     } catch (e) {
-      debugPrint('SearchingBloc: error cancelling trip — $e');
+      AppLogger.debug('SearchingBloc: error cancelling trip — $e');
     }
     emit(const SearchingCancelled());
   }
@@ -246,9 +253,9 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
           await SupabaseService.client.rpc('user_accept_offer', params: {
         'p_offer_id': event.offerId,
       });
-      debugPrint('SearchingBloc: user_accept_offer result: $result');
+      AppLogger.debug('SearchingBloc: user_accept_offer result: $result');
     } catch (e) {
-      debugPrint('SearchingBloc: error accepting driver offer — $e');
+      AppLogger.debug('SearchingBloc: error accepting driver offer — $e');
     }
   }
 

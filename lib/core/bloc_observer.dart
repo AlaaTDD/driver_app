@@ -1,17 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class AppBlocObserver extends BlocObserver {
   @override
   void onEvent(Bloc<dynamic, dynamic> bloc, Object? event) {
     super.onEvent(bloc, event);
-    if (kDebugMode) debugPrint('Event: $event');
+    if (kDebugMode) AppLogger.debug('Event: $event');
   }
 
   @override
   void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
     super.onChange(bloc, change);
-    if (kDebugMode) debugPrint('Change: $change');
+    if (kDebugMode) AppLogger.debug('Change: $change');
   }
 
   @override
@@ -20,15 +21,15 @@ class AppBlocObserver extends BlocObserver {
     Transition<dynamic, dynamic> transition,
   ) {
     super.onTransition(bloc, transition);
-    if (kDebugMode) debugPrint('Transition: $transition');
+    if (kDebugMode) AppLogger.debug('Transition: $transition');
   }
 
   @override
   void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
     super.onError(bloc, error, stackTrace);
     if (kDebugMode) {
-      debugPrint('Error: $error');
-      debugPrint('StackTrace: $stackTrace');
+      AppLogger.debug('Error: $error');
+      AppLogger.debug('StackTrace: $stackTrace');
     }
   }
 }

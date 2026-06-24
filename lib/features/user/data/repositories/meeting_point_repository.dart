@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
-import '../../../../../services/supabase_service.dart';
-import '../../../../../core/utils/retry_helper.dart';
+import 'package:snapix/core/utils/retry_helper.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class MeetingPointRepository {
   final _client = SupabaseService.client;
@@ -10,20 +10,64 @@ class MeetingPointRepository {
         .from('trips')
         .select('id')
         .eq('user_id', userId)
-        .inFilter(
-            'status', ['searching', 'accepted', 'in_progress']).maybeSingle();
+        .inFilter('status', [
+      'scheduled',
+      'searching',
+      'accepted',
+      'driver_arriving',
+      'in_progress'
+    ]).maybeSingle();
     return activeTrip?['id'] as String?;
   }
 
   Future<void> cancelTrip(String tripId) async {
-    await _client.rpc(
-      'cancel_trip',
-      params: {
-        'p_trip_id': tripId,
-        'p_user_id': SupabaseService.currentUser!.id,
-        'p_cancelled_by': 'user',
-      },
-    );
+    final userId = SupabaseService.currentUser?.id;
+    if (userId == null) return;
+
+    bool cancelled = false;
+
+    // ── Attempt 1: RPC ──
+    try {
+      await _client.rpc(
+        'cancel_trip',
+        params: {
+          'p_trip_id': tripId,
+          'p_user_id': userId,
+          'p_cancelled_by': 'user',
+        },
+      );
+      cancelled = true;
+    } catch (e, st) {
+      AppLogger.debug(
+          '⚠️ MeetingPointRepository: cancel_trip RPC failed ($e) — trying DB check');
+      AppLogger.debug(st.toString());
+    }
+
+    // ── Check DB Status ──
+    if (!cancelled) {
+      try {
+        final row = await _client
+            .from('trips')
+            .select('status')
+            .eq('id', tripId)
+            .maybeSingle();
+        if (row != null && row['status'] == 'cancelled') {
+          cancelled = true;
+        } else {
+          AppLogger.debug(
+              '⚠️ MeetingPointRepository: DB check did not confirm cancellation for $tripId (status=${row?['status']})');
+        }
+      } catch (e, st) {
+        AppLogger.debug(
+            '❌ MeetingPointRepository: DB cancellation verification failed for $tripId: $e');
+        AppLogger.debug(st.toString());
+        throw Exception('Failed to verify cancelled trip status');
+      }
+    }
+
+    if (!cancelled) {
+      throw Exception('Failed to cancel trip: cancellation was not confirmed');
+    }
   }
 
   Future<Map<String, dynamic>> createTrip({
@@ -60,6 +104,7 @@ class MeetingPointRepository {
       'price': price,
       'vehicle_type': vehicleType,
       'payment_method': paymentMethod,
+      'payment_source': paymentMethod == 'wallet' ? 'wallet' : 'cash',
       'status': isScheduled ? 'scheduled' : 'searching',
       if (geohash != null) 'geohash': geohash,
       if (meetingLat != null) 'meeting_lat': meetingLat,
@@ -67,14 +112,14 @@ class MeetingPointRepository {
       if (meetingAddress != null) 'meeting_address': meetingAddress,
       if (estimatedDurationMin != null)
         'estimated_duration_min': estimatedDurationMin,
-      if (isScheduled) 'scheduled_at': scheduledAt!.toIso8601String(),
+      if (isScheduled) 'scheduled_at': scheduledAt.toIso8601String(),
     };
 
     final result = await withRetry<Map<String, dynamic>>(
       () => _client.from('trips').insert(tripData).select('id').single(),
       maxAttempts: 3,
       onRetry: (e, attempt) =>
-          debugPrint('Trip insert attempt $attempt failed: $e'),
+          AppLogger.debug('Trip insert attempt $attempt failed: $e'),
     );
 
     // Apply coupon to the trip ATOMICALLY — if the coupon was promised to the
@@ -88,16 +133,24 @@ class MeetingPointRepository {
           'p_user_id': userId,
           'p_original_price': price,
         });
-        debugPrint('🎫 Coupon applied: $couponResult');
+        AppLogger.debug('🎫 Coupon applied: $couponResult');
       } catch (e) {
-        debugPrint(
+        AppLogger.debug(
             '🚨 MeetingPointRepository: Coupon failed — rolling back trip: $e');
-        // Roll back: cancel the trip that was just created so the user
-        // is not charged full price while expecting a discount.
+        // Roll back through the same cancellation RPC so triggers and wallet
+        // side effects stay consistent.
         try {
-          await _client.from('trips').delete().eq('id', result['id']);
+          await _client.rpc(
+            'cancel_trip',
+            params: {
+              'p_trip_id': result['id'],
+              'p_user_id': userId,
+              'p_cancelled_by': 'user',
+              'p_cancel_reason': 'coupon_apply_failed',
+            },
+          );
         } catch (rollbackErr) {
-          debugPrint('⚠️ Rollback also failed: $rollbackErr');
+          AppLogger.warning('Rollback also failed: $rollbackErr');
         }
         // Rethrow so the calling Bloc/UI shows a user-friendly error
         // and the user can retry the trip creation.

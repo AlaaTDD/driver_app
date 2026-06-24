@@ -1,34 +1,17 @@
+import 'package:intl/intl.dart';
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../data/models/user_wallet_model.dart';
 import '../../data/models/wallet_transaction_model.dart';
 import '../cubit/user_wallet_cubit.dart';
 import '../../../../core/widgets/app_button.dart';
-
-// ─── Number Formatter ─────────────────────────────────────────────────────────
-
-NumberFormat _getCurrencyFormat(BuildContext context) {
-  final l = AppLocalizations.of(context)!;
-  return NumberFormat.currency(
-      locale: Localizations.localeOf(context).languageCode,
-      symbol: l.currencySar,
-      decimalDigits: 2);
-}
-
-NumberFormat _getCompactCurrencyFormat(BuildContext context) {
-  final l = AppLocalizations.of(context)!;
-  return NumberFormat.currency(
-      locale: Localizations.localeOf(context).languageCode,
-      symbol: l.currencySar,
-      decimalDigits: 0);
-}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -161,9 +144,39 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, i) =>
-                          _buildTransactionCard(context, s.transactions[i]),
-                      childCount: s.transactions.length,
+                      (ctx, i) {
+                        if (i < s.transactions.length) {
+                          return _buildTransactionCard(
+                              context, s.transactions[i]);
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: AppButton(
+                            text: Localizations.localeOf(context)
+                                        .languageCode ==
+                                    'ar'
+                                ? 'تحميل المزيد'
+                                : 'Load more',
+                            isLoading: s.isLoadingMore,
+                            variant: AppButtonVariant.outlined,
+                            size: AppButtonSize.md,
+                            leadingIcon: Icons.expand_more_rounded,
+                            onPressed: s.isLoadingMore
+                                ? null
+                                : () {
+                                    final auth =
+                                        context.read<AuthBloc>().state;
+                                    if (auth is AuthAuthenticated) {
+                                      context
+                                          .read<UserWalletCubit>()
+                                          .loadMoreTransactions(auth.user.id);
+                                    }
+                                  },
+                          ),
+                        );
+                      },
+                      childCount: s.transactions.length +
+                          (s.hasMoreTransactions ? 1 : 0),
                     ),
                   ),
                 ),
@@ -309,10 +322,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                               fit: BoxFit.scaleDown,
                               alignment: Alignment.centerRight,
                               child: Text(
-                                _getCurrencyFormat(context)
-                                    .format(wallet.balance)
-                                    .replaceAll(
-                                        AppLocalizations.of(context)!.currencySar, ''),
+                                PriceFormatter.displayFixed(
+                                    context, wallet.balance),
                                 style: const TextStyle(
                                   color: AppColors.white,
                                   fontSize: 52,
@@ -340,15 +351,15 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                           _buildStatChip(
                             icon: Icons.add_card_rounded,
                             label: AppLocalizations.of(context)!.totalTopUp,
-                            value: _getCompactCurrencyFormat(context)
-                                .format(wallet.totalToppedUp),
+                            value: PriceFormatter.displayCompactWithCurrency(
+                                context, wallet.totalToppedUp),
                           ),
                           const SizedBox(width: 12),
                           _buildStatChip(
                             icon: Icons.shopping_bag_rounded,
                             label: AppLocalizations.of(context)!.totalSpent,
-                            value: _getCompactCurrencyFormat(context)
-                                .format(wallet.totalSpent),
+                            value: PriceFormatter.displayCompactWithCurrency(
+                                context, wallet.totalSpent),
                           ),
                         ],
                       ),
@@ -565,7 +576,7 @@ class _UserWalletScreenState extends State<UserWalletScreen>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isCredit ? '+' : ''}${_getCurrencyFormat(context).format(txn.amount)}',
+                '${isCredit ? '+' : ''}${PriceFormatter.displayFixedWithCurrency(context, txn.amount)}',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -582,8 +593,8 @@ class _UserWalletScreenState extends State<UserWalletScreen>
                 ),
                 child: Text(
                   AppLocalizations.of(context)!.balanceAfterLabel(
-                      _getCompactCurrencyFormat(context)
-                          .format(txn.balanceAfter)),
+                      PriceFormatter.displayCompactWithCurrency(
+                          context, txn.balanceAfter)),
                   style: TextStyle(
                       color: context.textSecondary,
                       fontSize: 10,

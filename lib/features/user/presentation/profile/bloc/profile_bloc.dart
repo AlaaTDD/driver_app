@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ProfileBloc() : super(ProfileInitial()) {
@@ -25,7 +25,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       final results = await Future.wait([
         SupabaseService.client
             .from('users')
-            .select('*')
+            .select('id, name, email, phone, avatar_url, role, rating, total_trips, is_active, is_blocked, language, created_at, updated_at')
             .eq('id', userId)
             .single(),
         SupabaseService.client
@@ -49,8 +49,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       emit(ProfileLoaded(user));
     } catch (e, stackTrace) {
-      debugPrint('❌ ProfileBloc: Load failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('ProfileBloc: Load failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const ProfileError('errorLoadProfile'));
     }
   }
@@ -88,8 +88,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           .single();
       emit(ProfileLoaded(Map<String, dynamic>.from(updated)));
     } catch (e, stackTrace) {
-      debugPrint('❌ ProfileBloc: Update failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('ProfileBloc: Update failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(const ProfileError('errorUpdateProfile'));
     }
   }

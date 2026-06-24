@@ -1,12 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../services/user_presence_service.dart';
-import '../../../../services/fcm_service.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/user_presence_service.dart';
+import '../../../../core/services/fcm_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../../../core/services/logout_coordinator.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -18,6 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignUpDriverRequested>(_onSignUpDriverRequested);
     on<SignOutRequested>(_onSignOutRequested);
     on<UpdateProfileRequested>(_onUpdateProfileRequested);
+    on<ResetAuth>((_, emit) => emit(AuthUnauthenticated()));
   }
 
   Future<void> _onCheckAuthStatus(
@@ -28,7 +29,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     final result = await _authRepository.getCurrentUser();
     await result.fold(
-      (error) async => emit(AuthUnauthenticated()),
+      (error) async {
+        // [AUTH-10 FIX] Network error must NOT log the user out
+        if (error == 'errorNoInternet') {
+          emit(const AuthError('errorNoInternet'));
+        } else {
+          emit(AuthUnauthenticated());
+        }
+      },
       (user) async {
         if (user == null) {
           emit(AuthUnauthenticated());
@@ -36,18 +44,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           await _authRepository.signOut();
           emit(const AuthError('errorUserBlocked'));
         } else if (user.role == 'driver') {
-          final verifiedResult =
-              await _authRepository.getDriverIsVerified(user.id);
-          final isVerified = verifiedResult.getOrElse(() => false);
-          if (isVerified) {
-            await UserPresenceService.instance.startBroadcasting();
-            emit(AuthAuthenticated(user));
-          } else {
-            emit(AuthDriverPending(user));
+          try {
+            final verifiedResult =
+                await _authRepository.getDriverIsVerified(user.id);
+            final isVerified = verifiedResult.getOrElse(() => false);
+            if (isVerified) {
+              await UserPresenceService.instance.startBroadcasting();
+              emit(AuthAuthenticated(user));
+            } else {
+              emit(AuthDriverPending(user));
+            }
+          } catch (e, st) {
+            AppLogger.error('AuthBloc: checkAuth driver failed', tag: 'AuthBloc', error: e, stackTrace: st);
+            emit(const AuthError('errorUnexpected'));
           }
         } else {
-          await UserPresenceService.instance.startBroadcasting();
-          emit(AuthAuthenticated(user));
+          try {
+            await UserPresenceService.instance.startBroadcasting();
+            emit(AuthAuthenticated(user));
+          } catch (e, st) {
+            AppLogger.error('AuthBloc: checkAuth user failed', tag: 'AuthBloc', error: e, stackTrace: st);
+            emit(AuthAuthenticated(user)); // still auth even if presence fails
+          }
         }
       },
     );
@@ -66,20 +84,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await result.fold(
       (error) async => emit(AuthError(error)),
       (user) async {
-        await _storeFcmToken(user.id);
-        if (user.role == 'driver') {
-          final verifiedResult =
-              await _authRepository.getDriverIsVerified(user.id);
-          final isVerified = verifiedResult.getOrElse(() => false);
-          if (isVerified) {
+        // [AUTH-26 FIX] Check isActive after successful login
+        if (!user.isActive) {
+          await _authRepository.signOut();
+          emit(const AuthError('errorUserBlocked'));
+          return;
+        }
+        try {
+          await _storeFcmToken(user.id);
+          if (user.role == 'driver') {
+            final verifiedResult =
+                await _authRepository.getDriverIsVerified(user.id);
+            final isVerified = verifiedResult.getOrElse(() => false);
+            if (isVerified) {
+              await UserPresenceService.instance.startBroadcasting();
+              emit(AuthAuthenticated(user));
+            } else {
+              emit(AuthDriverPending(user));
+            }
+          } else {
             await UserPresenceService.instance.startBroadcasting();
             emit(AuthAuthenticated(user));
-          } else {
-            emit(AuthDriverPending(user));
           }
-        } else {
-          await UserPresenceService.instance.startBroadcasting();
-          emit(AuthAuthenticated(user));
+        } catch (e, st) {
+          AppLogger.error('AuthBloc: signIn post-login failed', tag: 'AuthBloc', error: e, stackTrace: st);
+          emit(const AuthError('errorUnexpected'));
         }
       },
     );
@@ -94,7 +123,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             .update({'fcm_token': token}).eq('id', userId);
       }
     } catch (e) {
-      debugPrint('AuthBloc: FCM token store failed — $e');
+      AppLogger.debug('AuthBloc: FCM token store failed — $e');
     }
   }
 
@@ -113,9 +142,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await result.fold(
       (error) async => emit(AuthError(error)),
       (user) async {
-        await _storeFcmToken(user.id);
-        await UserPresenceService.instance.startBroadcasting();
-        emit(AuthAuthenticated(user));
+        try {
+          await _storeFcmToken(user.id);
+          await UserPresenceService.instance.startBroadcasting();
+          emit(AuthAuthenticated(user));
+        } catch (e, st) {
+          AppLogger.error('AuthBloc: signUpUser post-register failed', tag: 'AuthBloc', error: e, stackTrace: st);
+          emit(AuthAuthenticated(user)); // still auth even if FCM/presence fails
+        }
       },
     );
   }
@@ -147,8 +181,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await result.fold(
       (error) async => emit(AuthError(error)),
       (user) async {
-        await _storeFcmToken(user.id);
-        emit(AuthDriverPending(user));
+        try {
+          await _storeFcmToken(user.id);
+          emit(AuthDriverPending(user));
+        } catch (e, st) {
+          AppLogger.error('AuthBloc: signUpDriver post-register failed', tag: 'AuthBloc', error: e, stackTrace: st);
+          emit(AuthDriverPending(user)); // still navigate even if FCM fails
+        }
       },
     );
   }

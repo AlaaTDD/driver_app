@@ -11,14 +11,15 @@ import 'bloc/trip_details_event.dart';
 import 'bloc/trip_details_state.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import '../../../trips/presentation/widgets/waypoints_timeline.dart';
+import '../../../../core/models/trip_details_model.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/map/app_map.dart';
-import '../../../../services/directions_service.dart';
-import '../../../../services/location_service.dart';
+import '../../../../core/services/directions_service.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../../core/constants/env_constants.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:ui' as ui;
@@ -26,6 +27,8 @@ import 'package:snapix/core/theme/app_colors.dart';
 import '../../../../core/utils/map_camera_utils.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
 import 'package:snapix/core/utils/app_toast.dart';
+import 'package:snapix/core/utils/app_logger.dart';
+import 'package:snapix/features/trips/presentation/widgets/trip_widgets.dart';
 
 // _C palette removed
 
@@ -56,7 +59,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   final Set<String> _pendingRouteMarkerIcons = {};
   String? _routeMarkerLocaleCode;
   bool _is3DMode = false;
-  Map<String, dynamic>? _trip;
+  TripDetailsModel? _trip;
 
   // driver location
   StreamSubscription<Position>? _locationSub;
@@ -120,28 +123,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   }
 
   Future<void> _loadCircleIcons() async {
-    _pickupIcon = await _createCircleMarker(AppColors.success);
-    _destIcon = await _createCircleMarker(AppColors.error);
-    _waypointIcon = await _createCircleMarker(AppColors.warning);
+    _pickupIcon = await createCircleMarker(AppColors.success);
+    _destIcon = await createCircleMarker(AppColors.error);
+    _waypointIcon = await createCircleMarker(AppColors.warning);
     if (mounted) setState(() {});
-  }
-
-  Future<BitmapDescriptor> _createCircleMarker(Color color) async {
-    final pictureRecorder = ui.PictureRecorder();
-    final canvas = Canvas(pictureRecorder);
-    final paint = Paint()..color = color;
-
-    final outerPaint = Paint()..color = color.withOpacity(0.2);
-    canvas.drawCircle(const Offset(20, 20), 18, outerPaint);
-    canvas.drawCircle(const Offset(20, 20), 10, paint);
-
-    final whitePaint = Paint()..color = AppColors.white;
-    canvas.drawCircle(const Offset(20, 20), 5, whitePaint);
-
-    final picture = pictureRecorder.endRecording();
-    final image = await picture.toImage(40, 40);
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
   }
 
   Future<void> _loadCarIcon() async {
@@ -160,7 +145,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         }
       }
     } catch (e) {
-      debugPrint('⚠️ car icon: $e');
+      AppLogger.warning('car icon: $e');
     }
   }
 
@@ -187,7 +172,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
               ),
             ));
           } catch (e) {
-            debugPrint('animateCamera error: $e');
+            AppLogger.debug('animateCamera error: $e');
           }
         }
       }
@@ -304,7 +289,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         body: BlocConsumer<TripDetailsBloc, TripDetailsState>(
           listener: (ctx, state) {
             if (state is TripDetailsLoaded) {
-              final status = state.trip['status'] as String?;
+              // ✅ FIX: use typed property instead of map bracket access
+              final status = state.trip.status;
               if (status == 'completed') {
                 _toast(ctx, AppLocalizations.of(ctx)!.tripCompleted, ok: true);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -429,7 +415,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             style: TextStyle(
                 color: context.textSecondary, fontSize: 14, height: 1.6)),
         const SizedBox(height: 32),
-        _Btn(
+        TripActionButton(
           label: l.retry,
           icon: Icons.refresh_rounded,
           color: AppColors.primary,
@@ -444,14 +430,15 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   // ══════════════════════════════════════════════════════════
   // MAIN BODY
   // ══════════════════════════════════════════════════════════
-  Widget _body(Map<String, dynamic> trip) {
-    final status = trip['status'] as String?;
+  Widget _body(TripDetailsModel trip) {
+    // ✅ FIX: all field accesses use typed properties
+    final status = trip.status;
     final screenH = MediaQuery.of(context).size.height;
     final mapH = screenH * 0.44;
-    final pLat = (trip['pickup_lat'] as num?)?.toDouble();
-    final pLng = (trip['pickup_lng'] as num?)?.toDouble();
-    final dLat = (trip['destination_lat'] as num?)?.toDouble();
-    final dLng = (trip['destination_lng'] as num?)?.toDouble();
+    final pLat = trip.pickupLat;
+    final pLng = trip.pickupLng;
+    final dLat = trip.destinationLat;
+    final dLng = trip.destinationLng;
     final hasAction = _hasAction(status);
 
     return Stack(children: [
@@ -479,13 +466,13 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _MapCircleBtn(
+                MapCircleButton(
                     icon: Icons.arrow_back_ios_new_rounded,
                     onTap: () => context.pop()),
                 Expanded(
                   child: Center(child: _statusPill(status)),
                 ),
-                _MapCircleBtn(
+                MapCircleButton(
                   icon: _is3DMode ? Icons.view_in_ar : Icons.map_outlined,
                   onTap: _toggle3DMode,
                 ),
@@ -500,7 +487,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         textDirection: Directionality.of(context),
         top: mapH - 70,
         end: 14,
-        child: _MapCircleBtn(
+        child: MapCircleButton(
           icon: _cameraFollowing
               ? Icons.my_location_rounded
               : Icons.location_searching_rounded,
@@ -518,7 +505,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                         bearing: _is3DMode ? _driverHeading : 0),
                   ));
                 } catch (e) {
-                  debugPrint('animateCamera error: $e');
+                  AppLogger.debug('animateCamera error: $e');
                 }
               }
             }
@@ -561,17 +548,20 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // User card
-                        if (trip['user'] != null) ...[
+                        // ✅ FIX: use trip.userData instead of trip['user']
+                        if (trip.userData != null) ...[
                           _UserStrip(
-                              user: trip['user'] as Map, tripId: widget.tripId),
+                              user: trip.userData!.toJson(),
+                              tripId: widget.tripId),
                           const SizedBox(height: 13),
                         ],
 
                         // Route ticket / Waypoints Timeline (driver = read-only, no add/remove)
                         BlocBuilder<TripRouteCubit, TripRouteState>(
                           builder: (context, routeState) {
-                            final isActive = trip['status'] == 'in_progress' ||
-                                trip['status'] == 'accepted';
+                            // ✅ FIX: use trip.status instead of trip['status']
+                            final isActive = trip.status == 'in_progress' ||
+                                trip.status == 'accepted';
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -614,15 +604,15 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                             child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(child: _PriceBox(trip: trip)),
+                            Expanded(child: TripPriceBox(trip: trip)),
                             const SizedBox(width: 12),
-                            Expanded(child: _StatsBox(trip: trip)),
+                            Expanded(child: TripStatsBox(trip: trip)),
                           ],
                         )),
                         const SizedBox(height: 13),
 
                         // Timeline
-                        _HTimeline(trip: trip),
+                        TripTimeline(trip: trip),
 
                         SizedBox(
                             height: !hasAction
@@ -667,17 +657,18 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       {'searching', 'pending', 'accepted', 'in_progress'}.contains(s);
 
   // ── Map ────────────────────────────────────────────────────────────────────
-  Widget _buildMap(Map<String, dynamic> trip, double? pLat, double? pLng,
+  Widget _buildMap(TripDetailsModel trip, double? pLat, double? pLng,
       double? dLat, double? dLng, double bottomPadding,
       [List<TripRouteWaypointModel> stopovers = const []]) {
     final markers = <Marker>{};
     final polylines = <Polyline>{};
     final l = AppLocalizations.of(context)!;
-    final tripStatus = trip['status'] as String?;
-    final pickupPoint = _tripPoint(trip, 'pickup_lat', 'pickup_lng');
-    final meetingPoint = _tripPoint(trip, 'meeting_lat', 'meeting_lng');
-    final destinationPoint =
-        _tripPoint(trip, 'destination_lat', 'destination_lng');
+    // ✅ FIX: use typed property
+    final tripStatus = trip.status;
+    // ✅ FIX: pass typed values directly to _tripPoint
+    final pickupPoint = _tripPoint(trip.pickupLat, trip.pickupLng);
+    final meetingPoint = _tripPoint(trip.meetingLat, trip.meetingLng);
+    final destinationPoint = _tripPoint(trip.destinationLat, trip.destinationLng);
     final separateMeetingPoint = meetingPoint != null &&
             pickupPoint != null &&
             !_samePoint(meetingPoint, pickupPoint)
@@ -732,8 +723,9 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         ),
         anchor: const Offset(0.5, 0.78),
         zIndexInt: 3,
+        // ✅ FIX: use typed property
         infoWindow: InfoWindow(
-            title: trip['pickup_address'] as String? ?? l.pickupPoint),
+            title: trip.pickupAddress ?? l.pickupPoint),
       ));
     }
     if (destinationPoint != null) {
@@ -749,8 +741,9 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         ),
         anchor: const Offset(0.5, 0.78),
         zIndexInt: 3,
+        // ✅ FIX: use typed property
         infoWindow: InfoWindow(
-            title: trip['destination_address'] as String? ?? l.destination),
+            title: trip.destinationAddress ?? l.destination),
       ));
     }
     // ── Waypoint / Stopover markers ──
@@ -912,9 +905,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     );
   }
 
-  LatLng? _tripPoint(Map<String, dynamic> trip, String latKey, String lngKey) {
-    final lat = (trip[latKey] as num?)?.toDouble();
-    final lng = (trip[lngKey] as num?)?.toDouble();
+  // ✅ FIX: Changed signature — accepts lat/lng doubles directly instead of map key strings
+  LatLng? _tripPoint(double? lat, double? lng) {
     if (lat == null || lng == null) return null;
     if (lat == 0.0 && lng == 0.0) return null;
     if (!lat.isFinite || !lng.isFinite) return null;
@@ -1098,7 +1090,10 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
       final zoom = await ctrl.getZoomLevel();
       return CameraPosition(
           target: MapCameraUtils.centerOf(bounds), zoom: zoom);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning(
+          'DriverTripDetails: failed to read current map camera: $e');
+      AppLogger.debug(st.toString());
       return CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
     }
   }
@@ -1196,7 +1191,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     final l = AppLocalizations.of(context)!;
     showDialog(
         context: context,
-        builder: (_) => _NightDialog(
+        builder: (_) => TripNightDialog(
               icon: Icons.cancel_outlined,
               iconColor: AppColors.error,
               title: l.cancelTrip,
@@ -1218,7 +1213,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     final l = AppLocalizations.of(context)!;
     showDialog(
         context: context,
-        builder: (_) => _NightDialog(
+        builder: (_) => TripNightDialog(
               icon: Icons.cancel_outlined,
               iconColor: AppColors.error,
               title: l.reject,
@@ -1240,7 +1235,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     final l = AppLocalizations.of(context)!;
     showDialog(
         context: context,
-        builder: (_) => _NightDialog(
+        builder: (_) => TripNightDialog(
               icon: Icons.check_circle_outline_rounded,
               iconColor: AppColors.success,
               title: l.completeTrip,
@@ -1291,38 +1286,9 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SUB-WIDGETS
-// ═══════════════════════════════════════════════════════════════════════════
-
-// ── Floating map button ───────────────────────────────────────────────────────
-class _MapCircleBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _MapCircleBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: context.cardColor.withValues(alpha: 0.9),
-            shape: BoxShape.circle,
-            border: Border.all(color: context.divColor, width: 1),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.38),
-                  blurRadius: 10)
-            ],
-          ),
-          child: Icon(icon, color: context.textPrimary, size: 18),
-        ),
-      );
-}
 
 // ── User strip (passenger info) ───────────────────────────────────────────────
+// Accepts Map<String, dynamic> (from DriverInfoModel.toJson())
 class _UserStrip extends StatelessWidget {
   final Map user;
   final String tripId;
@@ -1464,14 +1430,15 @@ class _CircleAction extends StatelessWidget {
 
 // ── Route Ticket ──────────────────────────────────────────────────────────────
 class _RouteTicket extends StatelessWidget {
-  final Map<String, dynamic> trip;
+  final TripDetailsModel trip;
   const _RouteTicket({required this.trip});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final pickup = trip['meeting_address'] ?? trip['pickup_address'] ?? '';
-    final dest = trip['destination_address'] ?? '';
+    // ✅ FIX: use typed properties
+    final pickup = trip.meetingAddress ?? trip.pickupAddress ?? '';
+    final dest = trip.destinationAddress ?? '';
 
     return Container(
       decoration: BoxDecoration(
@@ -1606,428 +1573,6 @@ class _RouteTicket extends StatelessWidget {
     );
   }
 }
-
-// ── Price Box (coupon-aware) ───────────────────────────────────────────────────
-class _PriceBox extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _PriceBox({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final price = (trip['price'] as num?)?.toDouble() ?? 0;
-    final couponDiscount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
-    final finalPrice = (trip['final_price'] as num?)?.toDouble() ?? price;
-    final driverEarnings = (trip['driver_earnings'] as num?)?.toDouble();
-    final platformCommission =
-        (trip['platform_commission'] as num?)?.toDouble();
-    final isPaid = trip['is_paid'] as bool? ?? false;
-    final hasCoupon = couponDiscount > 0;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l.fareDetails.toUpperCase(),
-            style: TextStyle(
-                color: context.textDisabled,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8)),
-        const SizedBox(height: 10),
-
-        // ── Original fare (large) ─────────────────
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(price.toStringAsFixed(0),
-                  style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 44,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -2,
-                      height: 1)),
-              const SizedBox(width: 5),
-              Text(l.currencySar,
-                  style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-
-        // ── Coupon discount badge ─────────────────
-        if (hasCoupon) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.purple.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppColors.purple.withValues(alpha: 0.25)),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.local_offer_rounded,
-                  color: AppColors.purple, size: 12),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  '${l.discount}: -${l.priceWithCurrency(couponDiscount.toStringAsFixed(0), l.currencySar)}',
-                  style: TextStyle(
-                      color: AppColors.purple,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 4),
-          // Platform subsidy credit
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppColors.success.withValues(alpha: 0.2)),
-            ),
-            child: Row(children: [
-              Icon(Icons.verified_rounded,
-                  color: AppColors.success.withValues(alpha: 0.8), size: 11),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  l.platformCoveredCoupon,
-                  style: TextStyle(
-                      color: AppColors.success.withValues(alpha: 0.8),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                  '+${l.priceWithCurrency(couponDiscount.toStringAsFixed(0), l.currencySar)}',
-                  style: TextStyle(
-                      color: AppColors.success.withValues(alpha: 0.9),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800),
-                  textDirection: TextDirection.ltr),
-            ]),
-          ),
-        ],
-
-        // ── Driver earnings row ───────────────────
-        if (driverEarnings != null && driverEarnings > 0) ...[
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-            ),
-            child: Row(children: [
-              const Icon(Icons.account_balance_wallet_rounded,
-                  color: AppColors.primary, size: 13),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(l.yourEarnings,
-                    style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600)),
-              ),
-              Text(
-                  l.priceWithCurrency(
-                      driverEarnings.toStringAsFixed(2), l.currencySar),
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800),
-                  textDirection: TextDirection.ltr),
-            ]),
-          ),
-        ],
-
-        // ── Platform commission row ───────────────
-        if (platformCommission != null && platformCommission > 0) ...[
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Row(children: [
-              Icon(Icons.receipt_long_rounded,
-                  color: context.textDisabled, size: 10),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(l.commission,
-                    style: TextStyle(
-                        color: context.textDisabled,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w500)),
-              ),
-              Text(
-                  l.priceWithCurrency(
-                      platformCommission.toStringAsFixed(2), l.currencySar),
-                  style: TextStyle(
-                      color: context.textDisabled,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600),
-                  textDirection: TextDirection.ltr),
-            ]),
-          ),
-        ],
-
-        const Spacer(),
-
-        // ── Paid / Unpaid badge ───────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isPaid
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.warning.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: isPaid
-                    ? AppColors.success.withValues(alpha: 0.28)
-                    : AppColors.warning.withValues(alpha: 0.28)),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                    color: isPaid ? AppColors.success : AppColors.warning,
-                    shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(isPaid ? l.paid : l.unpaid,
-                style: TextStyle(
-                    color: isPaid ? AppColors.success : AppColors.warning,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700)),
-          ]),
-        ),
-      ]),
-    );
-  }
-}
-
-// ── Stats Box ─────────────────────────────────────────────────────────────────
-class _StatsBox extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _StatsBox({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final dist = (trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0';
-    final vType = trip['vehicle_type'] as String? ?? 'car';
-    final pay = trip['payment_method'] as String? ?? 'cash';
-
-    final vName = switch (vType) {
-      'sedan' => l.sedan,
-      'suv' => l.suv,
-      'van' => l.van,
-      'minibus' => l.minibus,
-      'motorcycle' => l.motorcycle,
-      _ => l.car,
-    };
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l.tripDetails.toUpperCase(),
-            style: TextStyle(
-                color: context.textDisabled,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8)),
-        const SizedBox(height: 14),
-        _StatRow(
-            icon: Icons.straighten_rounded,
-            color: AppColors.primary,
-            label: l.distanceWithKm(dist)),
-        const SizedBox(height: 10),
-        _StatRow(
-            icon: Icons.directions_car_rounded,
-            color: AppColors.purple,
-            label: vName),
-        const SizedBox(height: 10),
-        _StatRow(
-          icon: pay == 'cash'
-              ? Icons.payments_rounded
-              : Icons.credit_card_rounded,
-          color: AppColors.warning,
-          label: pay == 'cash' ? l.cash : l.bankCard,
-        ),
-      ]),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  const _StatRow(
-      {required this.icon, required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Row(children: [
-        Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 14)),
-        const SizedBox(width: 10),
-        Flexible(
-            child: Text(label,
-                style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600))),
-      ]);
-}
-
-// ── Horizontal Timeline ───────────────────────────────────────────────────────
-class _HTimeline extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _HTimeline({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final steps = [
-      (l.tripRequest, trip['created_at'], true),
-      (l.acceptTrip, trip['accepted_at'], trip['accepted_at'] != null),
-      (l.startTrip, trip['started_at'], trip['started_at'] != null),
-      (l.completeTrip, trip['completed_at'], trip['completed_at'] != null),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l.timeline.toUpperCase(),
-            style: TextStyle(
-                color: context.textDisabled,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8)),
-        const SizedBox(height: 18),
-        Row(
-          children: steps.asMap().entries.map((e) {
-            final i = e.key;
-            final s = e.value;
-            final done = s.$3 as bool;
-            final isLast = i == steps.length - 1;
-            String t = '';
-            final raw = s.$2;
-            if (raw != null) {
-              try {
-                final dt = DateTime.parse(raw.toString()).toLocal();
-                t = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-              } catch (e, st) {
-                debugPrint(
-                    '⚠️ DriverTripDetailsScreen: invalid timeline timestamp "$raw": $e\n$st');
-              }
-            }
-
-            return Expanded(
-                child: Row(children: [
-              Expanded(
-                  child: Column(children: [
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: done ? AppColors.success : context.elevatedColor,
-                    border: done
-                        ? null
-                        : Border.all(color: context.divColor, width: 1.5),
-                    boxShadow: done
-                        ? [
-                            BoxShadow(
-                                color: AppColors.success.withValues(alpha: 0.4),
-                                blurRadius: 8)
-                          ]
-                        : null,
-                  ),
-                  child: done
-                      ? const Icon(Icons.check_rounded,
-                          color: AppColors.white, size: 11)
-                      : null,
-                ),
-                const SizedBox(height: 7),
-                Text(s.$1,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    style: TextStyle(
-                      color: done ? context.textPrimary : context.textDisabled,
-                      fontSize: 9.5,
-                      fontWeight: done ? FontWeight.w600 : FontWeight.w400,
-                      height: 1.3,
-                    )),
-                if (t.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(t,
-                      style: TextStyle(
-                          color: AppColors.success,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700)),
-                ],
-              ])),
-              if (!isLast)
-                Expanded(
-                    child: Container(
-                  height: 1.5,
-                  margin: const EdgeInsets.only(bottom: 28),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: done
-                          ? [
-                              AppColors.success.withValues(alpha: 0.45),
-                              context.divColor
-                            ]
-                          : [context.divColor, context.divColor],
-                    ),
-                  ),
-                )),
-            ]));
-          }).toList(),
-        ),
-      ]),
-    );
-  }
-}
-
 // ── Sticky action bar ─────────────────────────────────────────────────────────
 class _ActionBar extends StatelessWidget {
   final String? status;
@@ -2050,14 +1595,14 @@ class _ActionBar extends StatelessWidget {
     if (status == 'searching' || status == 'pending') {
       content = Row(children: [
         Expanded(
-            child: _Btn(
+            child: TripActionButton(
                 label: l.acceptTrip,
                 icon: Icons.check_rounded,
                 color: AppColors.success,
                 onTap: onAccept)),
         const SizedBox(width: 10),
         Expanded(
-            child: _Btn(
+            child: TripActionButton(
                 label: l.reject,
                 icon: Icons.close_rounded,
                 color: AppColors.error,
@@ -2069,13 +1614,13 @@ class _ActionBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Btn(
+          TripActionButton(
               label: l.startTrip,
               icon: Icons.play_arrow_rounded,
               color: AppColors.primary,
               onTap: onStart),
           const SizedBox(height: 12),
-          _Btn(
+          TripActionButton(
               label: l.cancelTrip,
               icon: Icons.cancel_outlined,
               color: AppColors.error,
@@ -2089,13 +1634,13 @@ class _ActionBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Btn(
+          TripActionButton(
               label: l.completeTrip,
               icon: Icons.flag_rounded,
               color: AppColors.success,
               onTap: onComplete),
           const SizedBox(height: 12),
-          _Btn(
+          TripActionButton(
               label: l.cancelTrip,
               icon: Icons.cancel_outlined,
               color: AppColors.error,
@@ -2126,141 +1671,6 @@ class _ActionBar extends StatelessWidget {
 }
 
 // ── Reusable button ───────────────────────────────────────────────────────────
-class _Btn extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool outlined;
-  final bool compact;
-  final VoidCallback onTap;
-  const _Btn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    this.outlined = false,
-    this.compact = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: compact ? 44 : 50,
-          decoration: BoxDecoration(
-            gradient: outlined
-                ? null
-                : LinearGradient(
-                    colors: [color, color.withValues(alpha: 0.75)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-            borderRadius: BorderRadius.circular(14),
-            border: outlined
-                ? Border.all(color: color.withValues(alpha: 0.5), width: 1.2)
-                : null,
-            boxShadow: outlined
-                ? null
-                : [
-                    BoxShadow(
-                        color: color.withValues(alpha: 0.26),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4))
-                  ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: outlined ? color : AppColors.white, size: 17),
-                const SizedBox(width: 7),
-                Text(label,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: outlined ? color : AppColors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    )),
-              ]),
-        ),
-      );
-}
-
-// ── Night dialog ──────────────────────────────────────────────────────────────
-class _NightDialog extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title, body, confirmLabel, cancelLabel;
-  final Color confirmColor;
-  final VoidCallback onConfirm;
-  const _NightDialog({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.body,
-    required this.confirmLabel,
-    required this.confirmColor,
-    required this.cancelLabel,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) => Dialog(
-        backgroundColor: context.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          color: iconColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: iconColor.withValues(alpha: 0.25))),
-                      child: Icon(icon, color: iconColor, size: 20)),
-                  const SizedBox(width: 14),
-                  Text(title,
-                      style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800)),
-                ]),
-                const SizedBox(height: 14),
-                Text(body,
-                    style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 14,
-                        height: 1.6)),
-                const SizedBox(height: 24),
-                Row(children: [
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: Text(cancelLabel,
-                        style: TextStyle(
-                            color: context.textSecondary,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 130,
-                    child: _Btn(
-                        label: confirmLabel,
-                        icon: Icons.check_rounded,
-                        color: confirmColor,
-                        compact: true,
-                        onTap: onConfirm),
-                  ),
-                ]),
-              ]),
-        ),
-      );
-}
 
 class _AddStopoverDialog extends StatefulWidget {
   const _AddStopoverDialog();

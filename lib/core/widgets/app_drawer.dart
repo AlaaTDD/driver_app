@@ -371,7 +371,7 @@ class _MessagesNavItemState extends State<_MessagesNavItem> {
         int unreadCount = 0;
         if (state is ConversationsLoaded) {
           for (final conv in state.conversations) {
-            unreadCount += (conv['unread_count'] as int?) ?? 0;
+            unreadCount += conv.unreadCount;
           }
         }
         return _NavItem(

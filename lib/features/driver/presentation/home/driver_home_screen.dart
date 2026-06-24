@@ -12,6 +12,7 @@ import '../../../../core/map/app_map.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/map_button.dart';
 import '../../../../core/widgets/location_permission_cta.dart';
@@ -21,15 +22,16 @@ import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../services/supabase_service.dart';
-import '../../../../services/heatmap_service.dart';
+import '../../../../core/services/supabase_service.dart';
+import '../../../../core/services/heatmap_service.dart';
 import '../../../../core/widgets/custom_animated_bottom_nav.dart';
-import '../../../../services/directions_service.dart';
+import '../../../../core/services/directions_service.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../widgets/driver_offer_overlay.dart';
 import '../../../../core/utils/map_camera_utils.dart';
 import 'widgets/neon_route_polyline.dart';
 import '../corridor/corridor_picker_screen.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -39,7 +41,7 @@ class DriverHomeScreen extends StatefulWidget {
 }
 
 class _DriverHomeScreenState extends State<DriverHomeScreen>
-    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   static const _corridorNeonLoopDuration = Duration(milliseconds: 3200);
   static const _corridorNeonFrameInterval = Duration(milliseconds: 33);
   static const _corridorNeonCoreWidth = 5;
@@ -69,6 +71,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
   late final AnimationController _corridorNeonCtrl;
   Duration _lastCorridorNeonFrame = Duration.zero;
 
+  // ── Heatmap fade-in ناعم عند التحديث (يمنع القفزة المفاجئة في الألوان) ────
+  late final AnimationController _heatmapFadeCtrl;
+  double _heatmapAlpha = 1.0;
+  List<HeatmapCell> _renderedHeatmapCells = const [];
+
   static const double _mapButtonSize = 48.0;
   static const double _mapButtonRadius = 14.0;
   static const double _topBarHorizontalPadding = 18.0;
@@ -82,6 +89,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       vsync: this,
       duration: _corridorNeonLoopDuration,
     )..addListener(_onCorridorNeonFrame);
+    _heatmapFadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..addListener(_onHeatmapFadeFrame);
     context.read<LocationPermissionCubit>().check();
     // Load any saved corridor from DB and draw on map
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadCorridorFromDb());
@@ -106,7 +117,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         _drawCorridorPolyline(LatLng(oLat, oLng), LatLng(dLat, dLng));
       }
     } catch (e) {
-      debugPrint('⚠️ DriverHome: loadCorridor failed: $e');
+      AppLogger.warning('DriverHome: loadCorridor failed: $e');
     }
   }
 
@@ -125,6 +136,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
     WidgetsBinding.instance.removeObserver(this);
 
     _corridorNeonCtrl.dispose();
+    _heatmapFadeCtrl.dispose();
     _mapController?.dispose();
     _mapController = null;
     super.dispose();
@@ -156,6 +168,29 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
       ..stop()
       ..reset();
     _lastCorridorNeonFrame = Duration.zero;
+  }
+
+  // ── Heatmap fade ──────────────────────────────────────────────────────────
+  // عند وصول داتا جديدة: نبدأ fade من 0.0 → 1.0، وكل frame نعيد بناء
+  // الـ hexagons بالألفا الحالية، فالتحديث بيظهر بنعومة بدل قفزة مفاجئة.
+  void _onHeatmapFadeFrame() {
+    final v = _heatmapFadeCtrl.value;
+    if (v >= 1.0) {
+      _heatmapAlpha = 1.0;
+    } else {
+      // منحنى ease-out ناعم
+      _heatmapAlpha = 1.0 - (1.0 - v) * (1.0 - v);
+    }
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _triggerHeatmapFade(List<HeatmapCell> cells) {
+    _renderedHeatmapCells = cells;
+    _heatmapFadeCtrl
+      ..stop()
+      ..reset()
+      ..forward();
   }
 
   Set<Polyline> _buildCorridorNeonPolylines() {
@@ -233,7 +268,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
         ),
       );
     } catch (e) {
-      debugPrint('⚠️ DriverHome: animateCamera failed: $e');
+      AppLogger.warning('DriverHome: animateCamera failed: $e');
     }
   }
 
@@ -316,7 +351,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
           prev.heatmapCells != curr.heatmapCells,
       builder: (context, state) {
         final markers = <Marker>{..._corridorMarkers};
-        final hexagons = _buildHeatmapHexagons(state.heatmapCells);
+        // فعّل fade عند وصول داتا heatmap جديدة (مرة واحدة لكل تحديث).
+        final cellsChanged = _renderedHeatmapCells.length != state.heatmapCells.length ||
+            !identical(_renderedHeatmapCells, state.heatmapCells);
+        if (cellsChanged) {
+          WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _triggerHeatmapFade(state.heatmapCells));
+        }
+        final hexagons = _buildHeatmapHexagons(
+            _renderedHeatmapCells, _heatmapAlpha);
         final initialCamera =
             (state.driverLat != null && state.driverLng != null)
                 ? CameraPosition(
@@ -352,23 +395,24 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
 
   static const double _hexRadiusMeters = 300.0;
 
-  Set<Polygon> _buildHeatmapHexagons(List<HeatmapCell> cells) {
+  Set<Polygon> _buildHeatmapHexagons(List<HeatmapCell> cells, double alpha) {
     return cells.map((cell) {
       Color fillColor;
       Color strokeColor;
 
+      // الألفا بتاعة الـ fade تُضرب في ألفا اللون الأصلي → fade ناعم.
       switch (cell.level) {
         case HeatmapLevel.high:
-          fillColor = AppColors.error.withValues(alpha: 0.35);
-          strokeColor = AppColors.error.withValues(alpha: 0.60);
+          fillColor = AppColors.error.withValues(alpha: 0.35 * alpha);
+          strokeColor = AppColors.error.withValues(alpha: 0.60 * alpha);
           break;
         case HeatmapLevel.medium:
-          fillColor = AppColors.warning.withValues(alpha: 0.25);
-          strokeColor = AppColors.warning.withValues(alpha: 0.50);
+          fillColor = AppColors.warning.withValues(alpha: 0.25 * alpha);
+          strokeColor = AppColors.warning.withValues(alpha: 0.50 * alpha);
           break;
         case HeatmapLevel.low:
-          fillColor = AppColors.warningLight.withValues(alpha: 0.16);
-          strokeColor = AppColors.warningLight.withValues(alpha: 0.35);
+          fillColor = AppColors.warningLight.withValues(alpha: 0.16 * alpha);
+          strokeColor = AppColors.warningLight.withValues(alpha: 0.35 * alpha);
           break;
       }
 
@@ -460,9 +504,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
                             color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          AppLocalizations.of(context)!.priceWithCurrency(
-                              state.availableBalance.toStringAsFixed(0),
-                              AppLocalizations.of(context)!.currencySar),
+                          PriceFormatter.displayWithCurrency(
+                              context, state.availableBalance),
                           style: TextStyle(
                             color: context.textPrimary,
                             fontWeight: FontWeight.bold,

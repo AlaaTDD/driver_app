@@ -179,6 +179,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requiredDocuments => 'Required Documents';
 
   @override
+  String get vehicleInformation => 'Vehicle Information';
+
+  @override
   String get vehicleType => 'Vehicle Type';
 
   @override
@@ -698,6 +701,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notUploaded => 'Not Uploaded';
+
+  @override
+  String get searchCountry => 'Search country';
 
   @override
   String get invalidPhoneFormat => 'Invalid phone format';
@@ -1730,4 +1736,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noData => '—';
+
+  @override
+  String get errorCouponNotStarted => 'This coupon has not started yet';
+
+  @override
+  String get errorCouponExpired => 'This coupon has expired';
+
+  @override
+  String get errorCouponMaxUsesReached =>
+      'Maximum uses for this coupon reached';
+
+  @override
+  String get errorCouponMinTripPriceNotMet =>
+      'Trip price is below the coupon minimum';
+
+  @override
+  String get errorCouponBudgetExhausted => 'Coupon budget has been exhausted';
+
+  @override
+  String get errorCouponFirstRideOnly =>
+      'This coupon is valid for your first ride only';
+
+  @override
+  String get enterValidYear =>
+      'Please enter a valid manufacture year (1990 - current year)';
+
+  @override
+  String get errorDriverProfileIncomplete =>
+      'Driver profile incomplete. Please contact support.';
+
+  @override
+  String get errorPhoneRegistered =>
+      'This phone number is already registered. Please use another.';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get forgotPasswordTitle => 'Reset Password';
+
+  @override
+  String get forgotPasswordDesc =>
+      'Enter your email and we will send you a password reset link.';
+
+  @override
+  String get forgotPasswordSent =>
+      'Password reset link has been sent to your email.';
 }

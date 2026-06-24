@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:snapix/core/theme/app_colors.dart';
 import 'package:snapix/core/utils/trip_status.dart';
 import 'package:snapix/core/widgets/app_badge.dart';
 
@@ -14,8 +13,10 @@ class AppTripStatusChip extends StatelessWidget {
   });
 
   AppBadgeVariant get _variant => switch (status) {
+        TripStatus.scheduled => AppBadgeVariant.warning,
         TripStatus.searching => AppBadgeVariant.primary,
         TripStatus.accepted => AppBadgeVariant.info,
+        TripStatus.driverArriving => AppBadgeVariant.info,
         TripStatus.inProgress => AppBadgeVariant.success,
         TripStatus.completed => AppBadgeVariant.neutral,
         TripStatus.cancelled => AppBadgeVariant.error,
@@ -26,7 +27,9 @@ class AppTripStatusChip extends StatelessWidget {
     return AppBadge(
       label: labelBuilder(status),
       variant: _variant,
-      dot: status == TripStatus.inProgress || status == TripStatus.searching,
+      dot: status == TripStatus.inProgress ||
+          status == TripStatus.driverArriving ||
+          status == TripStatus.searching,
     );
   }
 }

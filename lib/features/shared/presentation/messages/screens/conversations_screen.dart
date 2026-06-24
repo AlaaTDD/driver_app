@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/constants/app_routes.dart';
+import '../../../../../core/models/conversation_model.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
@@ -12,6 +13,7 @@ import '../bloc/messages_cubit.dart';
 import '../bloc/messages_state.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:snapix/core/widgets/app_button.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class ConversationsScreen extends StatelessWidget {
   final String? tripId;
@@ -42,12 +44,12 @@ class _ConversationsViewState extends State<_ConversationsView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  List<Map<String, dynamic>> _filterConversations(
-      List<Map<String, dynamic>> conversations) {
+  List<ConversationModel> _filterConversations(
+      List<ConversationModel> conversations) {
     if (_searchQuery.isEmpty) return conversations;
     return conversations.where((conv) {
-      final name = (conv['other_user_name'] as String? ?? '').toLowerCase();
-      final lastMsg = (conv['last_message'] as String? ?? '').toLowerCase();
+      final name = conv.otherUserName.toLowerCase();
+      final lastMsg = conv.lastMessage.toLowerCase();
       return name.contains(_searchQuery.toLowerCase()) ||
           lastMsg.contains(_searchQuery.toLowerCase());
     }).toList();
@@ -182,7 +184,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
   Widget _buildConversationsList(
     BuildContext context,
     AppLocalizations l,
-    List<Map<String, dynamic>> conversations,
+    List<ConversationModel> conversations,
     ConversationsLoaded state,
   ) {
     return RefreshIndicator(
@@ -197,20 +199,19 @@ class _ConversationsViewState extends State<_ConversationsView> {
         itemCount: conversations.length,
         itemBuilder: (context, index) {
           final conv = conversations[index];
-          final isMeSender = conv['is_me_sender'] as bool? ?? true;
-          final convIsRead =
-              isMeSender ? true : (conv['is_read'] as bool? ?? false);
-          final otherId = conv['other_user_id'] as String;
-          final lastTime = conv['last_message_at'] as String?;
-          final unreadCount = conv['unread_count'] as int? ?? 0;
+          final isMeSender = conv.isMeSender;
+          final convIsRead = isMeSender ? true : conv.isRead;
+          final otherId = conv.otherUserId;
+          final lastTime = conv.lastMessageAt;
+          final unreadCount = conv.unreadCount;
 
           return _ConversationTile(
             key: ValueKey('conv_$otherId'),
-            name: conv['other_user_name'] as String? ?? '',
-            lastMessage: conv['last_message'] as String? ?? '',
+            name: conv.otherUserName,
+            lastMessage: conv.lastMessage,
             lastTime: lastTime,
-            role: conv['other_user_role'] as String? ?? 'user',
-            avatarUrl: conv['other_user_avatar'] as String?,
+            role: conv.otherUserRole,
+            avatarUrl: conv.otherUserAvatar,
             isRead: convIsRead,
             isMeSender: isMeSender,
             unreadCount: unreadCount,
@@ -220,7 +221,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
                 MaterialPageRoute(
                   builder: (_) => MessagesScreen(
                     otherUserId: otherId,
-                    otherUserName: conv['other_user_name'] as String?,
+                    otherUserName: conv.otherUserName,
                   ),
                 ),
               );
@@ -508,7 +509,7 @@ class _ConversationTile extends StatelessWidget {
       }
       return '${dt.day}/${dt.month}/${dt.year}';
     } catch (e, st) {
-      debugPrint(
+      AppLogger.debug(
           '⚠️ ConversationsScreen: invalid last message time "$iso": $e\n$st');
       return '';
     }

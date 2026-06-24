@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:snapix/core/models/driver_profile_model.dart';
 
 abstract class DriverProfileState extends Equatable {
   const DriverProfileState();
@@ -12,7 +13,7 @@ class DriverProfileInitial extends DriverProfileState {}
 class DriverProfileLoading extends DriverProfileState {}
 
 class DriverProfileLoaded extends DriverProfileState {
-  final Map<String, dynamic> driver;
+  final DriverProfileModel driver;
 
   const DriverProfileLoaded(this.driver);
 

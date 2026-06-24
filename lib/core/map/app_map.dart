@@ -13,3 +13,7 @@ export 'package:snapix/core/map/builders/app_map_hexagon_builder.dart';
 export 'package:snapix/core/map/utils/app_map_bearing.dart';
 export 'package:snapix/core/map/utils/app_map_locating_overlay.dart';
 export 'package:snapix/core/map/constants/app_map_constants.dart';
+export 'package:snapix/core/map/utils/map_point_helpers.dart';
+export 'package:snapix/core/map/utils/map_marker_helpers.dart';
+export 'package:snapix/core/map/widgets/map_circle_button.dart';
+export 'package:snapix/core/map/widgets/trip_status_pill.dart';

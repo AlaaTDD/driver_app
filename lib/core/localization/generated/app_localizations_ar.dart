@@ -177,6 +177,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get requiredDocuments => 'الوثائق المطلوبة';
 
   @override
+  String get vehicleInformation => 'معلومات المركبة';
+
+  @override
   String get vehicleType => 'نوع المركبة';
 
   @override
@@ -691,6 +694,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notUploaded => 'غير مرفوع';
+
+  @override
+  String get searchCountry => 'ابحث عن الدولة';
 
   @override
   String get invalidPhoneFormat => 'صيغة رقم الهاتف غير صحيحة';
@@ -1707,4 +1713,50 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noData => '—';
+
+  @override
+  String get errorCouponNotStarted => 'الكوبون لم يبدأ بعد';
+
+  @override
+  String get errorCouponExpired => 'انتهت صلاحية الكوبون';
+
+  @override
+  String get errorCouponMaxUsesReached =>
+      'تم الوصول للحد الأقصى لاستخدام الكوبون';
+
+  @override
+  String get errorCouponMinTripPriceNotMet =>
+      'سعر الرحلة أقل من الحد الأدنى للكوبون';
+
+  @override
+  String get errorCouponBudgetExhausted => 'تم استنفاد ميزانية هذا الكوبون';
+
+  @override
+  String get errorCouponFirstRideOnly => 'هذا الكوبون للرحلة الأولى فقط';
+
+  @override
+  String get enterValidYear =>
+      'الرجاء إدخال سنة صنع صحيحة (1990 - السنة الحالية)';
+
+  @override
+  String get errorDriverProfileIncomplete =>
+      'حساب السائق غير مكتمل. الرجاء التواصل مع الدعم.';
+
+  @override
+  String get errorPhoneRegistered =>
+      'رقم الهاتف مسجّل مسبقاً، الرجاء استخدام رقم آخر.';
+
+  @override
+  String get forgotPassword => 'نسيت كلمة المرور؟';
+
+  @override
+  String get forgotPasswordTitle => 'استعادة كلمة المرور';
+
+  @override
+  String get forgotPasswordDesc =>
+      'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور.';
+
+  @override
+  String get forgotPasswordSent =>
+      'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.';
 }

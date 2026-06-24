@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "snapix · debug",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define-from-file=${workspaceFolder}/dart_defines.json"
+      ]
+    },
+    {
+      "name": "snapix · profile",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": [
+        "--dart-define-from-file=${workspaceFolder}/dart_defines.json"
+      ]
+    },
+    {
+      "name": "snapix · release",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "args": [
+        "--dart-define-from-file=${workspaceFolder}/dart_defines.json"
+      ]
+    }
+  ]
+}

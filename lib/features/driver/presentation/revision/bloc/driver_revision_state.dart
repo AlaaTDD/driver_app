@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:snapix/core/models/revision_request_model.dart';
 
 sealed class DriverRevisionState extends Equatable {
   const DriverRevisionState();
@@ -16,7 +17,7 @@ class DriverRevisionLoading extends DriverRevisionState {
 }
 
 class DriverRevisionLoaded extends DriverRevisionState {
-  final List<Map<String, dynamic>> requests;
+  final List<RevisionRequestModel> requests;
 
   const DriverRevisionLoaded({required this.requests});
 

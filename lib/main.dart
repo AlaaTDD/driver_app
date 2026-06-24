@@ -1,9 +1,9 @@
+import 'dart:async' show unawaited;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'core/bloc_observer.dart';
@@ -20,13 +20,15 @@ import 'core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'core/router/app_router.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
-import 'services/fcm_service.dart';
-import 'services/r2_storage_service.dart';
+import 'core/services/fcm_service.dart';
+import 'core/services/r2_storage_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'firebase_options.dart';
 import 'core/repositories/app_config_repository.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 final RegExp _terminalIconPattern = RegExp(
   r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]',
@@ -36,7 +38,8 @@ final RegExp _terminalIconPattern = RegExp(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installPlainTerminalLogs();
-  await dotenv.load(fileName: '.env');
+  // [APP-C-01 FIXED] dotenv.load removed — secrets are now compile-time constants
+  // injected via --dart-define. See env_constants.dart for details.
   await Supabase.initialize(
     url: EnvConstants.supabaseUrl,
     anonKey: EnvConstants.supabaseAnonKey,
@@ -48,37 +51,43 @@ void main() async {
           ? DefaultFirebaseOptions.currentPlatform
           : null,
     );
+    // [APP-H-03 FIXED] Activate Crashlytics for unhandled Flutter + Dart errors.
+    AppLogger.initCrashlytics();
     await FCMService().initialize();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
   } catch (e) {
-    debugPrint('⚠️ Firebase not configured — run: flutterfire configure');
+    AppLogger.warning('Firebase not configured — run: flutterfire configure');
   }
 
   await ConnectivityService().init().catchError((e) {
-    debugPrint('⚠️ ConnectivityService init failed: $e');
+    AppLogger.warning('ConnectivityService init failed: $e');
   });
 
   final appConfigRepository = AppConfigRepository();
-  final configuredMapCenter = await appConfigRepository
-      .getDefaultMapCenter()
-      .timeout(const Duration(seconds: 2), onTimeout: () => null)
-      .catchError((e) {
-    debugPrint('⚠️ Default map center load failed: $e');
-    return null;
-  });
-  if (configuredMapCenter != null) {
-    AppConstants.setDefaultMapCenter(configuredMapCenter);
-  }
+  // [APP-H-07 FIXED] Run map-center fetch in background — previously it blocked
+  // startup for up to 2 s on slow connections. AppConstants.setDefaultMapCenter
+  // is safe to call any time before the first map widget renders.
+  unawaited(
+    appConfigRepository
+        .getDefaultMapCenter()
+        .timeout(const Duration(seconds: 2), onTimeout: () => null)
+        .catchError((Object e) {
+      AppLogger.warning('Default map center load failed: $e');
+      return null;
+    }).then((center) {
+      if (center != null) AppConstants.setDefaultMapCenter(center);
+    }),
+  );
 
   // Activate AppConfigRepository — warms cache and checks maintenance mode.
   // Runs in background so it never blocks startup.
   appConfigRepository.getAll().then((config) {
-    debugPrint('✅ AppConfig loaded: ${config.keys.join(', ')}');
+    AppLogger.info('AppConfig loaded: ${config.keys.join(', ')}');
   }).catchError((e) {
-    debugPrint('⚠️ AppConfig load failed: $e');
+    AppLogger.warning('AppConfig load failed: $e');
   });
 
   final prefs = await SharedPreferences.getInstance();
@@ -155,6 +164,10 @@ class _MyAppState extends State<MyApp> {
           value: widget.r2StorageService,
         ),
         RepositoryProvider<AuthRepositoryImpl>.value(
+          value: widget.authRepository,
+        ),
+        // [AUTH-22 FIX] Also register abstract interface so context.read<AuthRepository>() works
+        RepositoryProvider<AuthRepository>.value(
           value: widget.authRepository,
         ),
       ],

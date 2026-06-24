@@ -11,7 +11,7 @@ import '../../../../../core/theme/theme_extensions.dart';
 import '../../../../../core/utils/app_toast.dart';
 import '../../../../../core/localization/generated/app_localizations.dart';
 import '../../../../../core/models/message_model.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import '../bloc/messages_cubit.dart';
 import '../bloc/messages_state.dart';
 import 'package:shimmer/shimmer.dart';

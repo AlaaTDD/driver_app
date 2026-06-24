@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import 'package:snapix/features/user/data/repositories/trips_repository.dart';
 import 'trips_event.dart';
 import 'trips_state.dart';
+import 'package:snapix/core/utils/trip_status.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class TripsBloc extends Bloc<TripsEvent, TripsState> {
   final TripsRepository _repository = TripsRepository();
@@ -30,8 +32,8 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
       final trips = await _repository.loadUserTrips(userId);
 
       final driverIds = trips
-          .where((t) => t['driver_id'] != null)
-          .map((t) => t['driver_id'] as String)
+          .where((t) => t.driverId != null)
+          .map((t) => t.driverId!)
           .toSet()
           .toList();
 
@@ -39,21 +41,21 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
         try {
           final driversMap = await _repository.fetchDriverDetails(driverIds);
 
-          for (final trip in trips) {
-            final driverId = trip['driver_id'];
+          for (int i = 0; i < trips.length; i++) {
+            final driverId = trips[i].driverId;
             if (driverId != null && driversMap.containsKey(driverId)) {
-              trip['driver'] = driversMap[driverId];
+              trips[i] = trips[i].copyWith(userData: driversMap[driverId]!.toJson());
             }
           }
         } catch (e) {
-          debugPrint('⚠️ TripsBloc: Could not fetch driver details: $e');
+          AppLogger.warning('TripsBloc: Could not fetch driver details: $e');
         }
       }
 
       emit(TripsLoaded(trips));
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error loading trips: $e');
+        AppLogger.debug('Error loading trips: $e');
       }
       emit(const TripsError('errorLoadTrips'));
     }
@@ -65,25 +67,25 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
   ) async {
     if (!event.silent) emit(TripDetailsLoading());
     try {
-      final trip = await _repository.loadTripDetails(event.tripId);
+      var trip = await _repository.loadTripDetails(event.tripId);
 
       if (trip == null) {
         emit(const TripsError('errorLoadTripDetails'));
         return;
       }
 
-      final driverId = trip['driver_id'];
+      final driverId = trip.driverId;
       if (driverId != null) {
-        final driverData = await _repository.fetchSingleDriverDetails(driverId);
-        if (driverData != null) {
-          trip['driver'] = driverData;
+        final driverInfo = await _repository.fetchSingleDriverDetails(driverId);
+        if (driverInfo != null) {
+          trip = trip.copyWith(driverData: driverInfo);
         }
       }
 
       emit(TripDetailsLoaded(trip));
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error loading trip details: $e');
+        AppLogger.debug('Error loading trip details: $e');
       }
       emit(const TripsError('errorLoadTripDetails'));
     }
@@ -112,9 +114,8 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
       }
 
       final status = trip['status'] as String?;
-      if (status != 'searching' &&
-          status != 'accepted' &&
-          status != 'in_progress') {
+      final tripStatus = TripStatus.fromString(status);
+      if (tripStatus == null || !tripStatus.isCancellable) {
         emit(const TripsError('errorCancelStatus'));
         return;
       }
@@ -123,7 +124,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
 
       emit(const TripActionSuccess('successTripCancelled'));
     } catch (e) {
-      debugPrint('❌ TripsBloc: CancelTrip failed: $e');
+      AppLogger.error('TripsBloc: CancelTrip failed: $e');
       emit(const TripsError('errorCancelTrip'));
     }
   }
@@ -143,7 +144,7 @@ class TripsBloc extends Bloc<TripsEvent, TripsState> {
       emit(const TripActionSuccess('successComplaintSent'));
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error submitting complaint: $e');
+        AppLogger.debug('Error submitting complaint: $e');
       }
       emit(const TripsError('errorSendComplaint'));
     }

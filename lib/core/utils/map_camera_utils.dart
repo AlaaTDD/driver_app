@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class MapCameraUtils {
   const MapCameraUtils._();
@@ -95,7 +97,9 @@ class MapCameraUtils {
       await controller.animateCamera(
         CameraUpdate.newLatLngBounds(bounds, padding),
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('MapCameraUtils: bounds animation failed, using center fallback: $e');
+      if (kDebugMode) debugPrintStack(stackTrace: st);
       await controller.animateCamera(
         CameraUpdate.newLatLngZoom(centerOf(bounds), 14),
       );

@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
+import '../../../../../core/models/revision_request_model.dart';
 import 'driver_revision_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverRevisionCubit extends Cubit<DriverRevisionState> {
   StreamSubscription? _subscription;
@@ -29,11 +30,11 @@ class DriverRevisionCubit extends Cubit<DriverRevisionState> {
           (rows) => emit(
             DriverRevisionLoaded(
               requests:
-                  rows.map((row) => Map<String, dynamic>.from(row)).toList(),
+                  rows.map((row) => RevisionRequestModel.fromJson(row)).toList(),
             ),
           ),
           onError: (Object error, StackTrace stackTrace) {
-            debugPrint(
+            AppLogger.debug(
               'DriverRevisionCubit: subscription failed: $error\n$stackTrace',
             );
             emit(const DriverRevisionError('errorUnexpected'));

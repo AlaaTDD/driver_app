@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../../../services/cell_subscription_service.dart';
+import '../../../../../core/services/cell_subscription_service.dart';
 
 abstract class UserHomeState extends Equatable {
   const UserHomeState();
@@ -52,7 +52,7 @@ class UserHomeLoaded extends UserHomeState {
       currentCellId: currentCellId ?? this.currentCellId,
       nearbyDrivers: nearbyDrivers ?? this.nearbyDrivers,
       driversVersion:
-          bumpDrivers ? DateTime.now().millisecondsSinceEpoch : driversVersion,
+          bumpDrivers ? DateTime.now().microsecondsSinceEpoch : driversVersion,
       coupons: coupons ?? this.coupons,
     );
   }

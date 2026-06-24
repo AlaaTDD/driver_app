@@ -19,7 +19,10 @@ enum WithdrawalMethod {
       case 'orange_money':
         return WithdrawalMethod.orangeMoney;
       default:
-        throw ArgumentError('Unknown WithdrawalMethod: $s');
+        // ✅ BUG-1 FIX: was `throw ArgumentError('Unknown WithdrawalMethod: $s')`
+        // which caused a crash on any unexpected value from DB.
+        // Now returns bankTransfer as a safe fallback instead of crashing.
+        return WithdrawalMethod.bankTransfer;
     }
   }
 

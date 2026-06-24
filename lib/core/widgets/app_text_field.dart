@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:snapix/core/theme/app_colors.dart';
-import 'package:snapix/core/theme/app_radius.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
 
 /// Enhanced text field that covers all use cases found across the app:

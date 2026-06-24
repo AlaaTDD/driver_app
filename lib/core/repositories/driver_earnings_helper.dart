@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
-import '../../services/supabase_service.dart';
+import 'package:snapix/core/models/driver_earnings_model.dart';
+import '../../core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 /// Shared helper to fetch driver earnings data from both the
 /// summary view and the detailed RPC. Used by DriverHomeRepository
@@ -9,7 +10,7 @@ class DriverEarningsHelper {
 
   /// Fetches merged earnings data from `driver_earnings_summary` view
   /// and `get_driver_earnings_detailed` RPC.
-  static Future<Map<String, dynamic>> fetch(String driverId) async {
+  static Future<DriverEarningsModel> fetch(String driverId) async {
     try {
       final results = await Future.wait([
         _client
@@ -29,28 +30,17 @@ class DriverEarningsHelper {
       final summary = results[0] as Map<String, dynamic>;
       final detailed = results[1] as Map<String, dynamic>? ?? {};
 
-      return {
-        'totalEarnings': (summary['total_earnings'] as num?)?.toDouble() ?? 0,
-        'availableBalance':
-            (summary['available_balance'] as num?)?.toDouble() ?? 0,
-        'earningsThisWeek': (detailed['earnings_7d'] as num?)?.toDouble() ?? 0,
-        'earningsLast30Days': (summary['earnings_30d'] as num?)?.toDouble() ??
-            (detailed['earnings_30d'] as num?)?.toDouble() ??
-            0,
-        'completedTrips': (summary['completed_trips'] as int?) ?? 0,
-        // pass through raw data for consumers that need it
-        '_raw_summary': summary,
-        '_raw_detailed': detailed,
-      };
+      return DriverEarningsModel.fromJson({
+        'total_earnings': summary['total_earnings'],
+        'available_balance': summary['available_balance'],
+        'earnings_7d': summary['earnings_7d'] ?? detailed['earnings_7d'],
+        'earnings_30d': summary['earnings_30d'] ?? detailed['earnings_30d'],
+        'completed_trips': summary['completed_trips'],
+        'pending_withdrawal': summary['pending_withdrawal'],
+      });
     } catch (e) {
-      debugPrint('⚠️ DriverEarningsHelper.fetch failed: $e');
-      return {
-        'totalEarnings': 0.0,
-        'availableBalance': 0.0,
-        'earningsThisWeek': 0.0,
-        'earningsLast30Days': 0.0,
-        'completedTrips': 0,
-      };
+      AppLogger.warning('DriverEarningsHelper.fetch failed: $e');
+      return const DriverEarningsModel();
     }
   }
 }

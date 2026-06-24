@@ -7,8 +7,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:snapix/core/map/app_map.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../../../core/constants/env_constants.dart';
-import '../../../../services/directions_service.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/directions_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../data/repositories/coupon_repository.dart';
 import 'bloc/location_bloc.dart';
 import 'bloc/location_event.dart';
@@ -23,6 +23,7 @@ import '../../../../core/utils/app_toast.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/map_camera_utils.dart';
 import 'package:snapix/core/widgets/app_button.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 enum _PickMode { none, origin, destination, waypoint }
 
@@ -203,7 +204,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
             if (parts.length > 1) detail = parts.skip(1).take(2).join(', ');
           }
         } catch (e) {
-          debugPrint('❌ Error: $e');
+          AppLogger.error('Error: $e');
         }
         if (detail.isEmpty) {
           detail =
@@ -221,7 +222,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
           _isSearching = false;
         });
     } catch (e) {
-      debugPrint('❌ Error: $e');
+      AppLogger.error('Error: $e');
       if (mounted)
         setState(() {
           _suggestions = [];
@@ -356,7 +357,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
               _isReversing = false;
             });
         } catch (e) {
-          debugPrint('❌ Error: $e');
+          AppLogger.error('Error: $e');
           if (mounted) setState(() => _isReversing = false);
         }
       });
@@ -382,7 +383,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
             if (parts.isNotEmpty) addr = parts.join(', ');
           }
         } catch (e) {
-          debugPrint('❌ Error: $e');
+          AppLogger.error('Error: $e');
         }
       }
       if (!mounted) return;
@@ -412,7 +413,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
       _fitMapToBothPoints();
       _fetchRoute();
     } catch (e) {
-      debugPrint('❌ Error: $e');
+      AppLogger.error('Error: $e');
       if (mounted) {
         setState(() {
           _pickMode = _PickMode.none;
@@ -510,7 +511,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
         });
       }
     } catch (e, st) {
-      debugPrint(
+      AppLogger.debug(
           '⚠️ LocationSelectionScreen: coupon validation failed: $e\n$st');
       if (!mounted) return;
       setState(() {
@@ -643,8 +644,6 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                     : Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildCouponSection(isDark),
-                          const SizedBox(height: 10),
                           _buildConfirmButton(isDark),
                         ],
                       ),
@@ -1618,7 +1617,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen>
                 _fitMapToBothPoints();
                 _fetchRoute();
               } catch (e) {
-                debugPrint('❌ Error: $e');
+                AppLogger.error('Error: $e');
               }
             }
           : null,

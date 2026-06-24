@@ -41,6 +41,15 @@ class TripCompleted extends TrackingEvent {
   const TripCompleted();
 }
 
+class TripTerminalStatusReceived extends TrackingEvent {
+  final String status;
+
+  const TripTerminalStatusReceived(this.status);
+
+  @override
+  List<Object?> get props => [status];
+}
+
 class RecalculateRoute extends TrackingEvent {
   final String tripId;
 

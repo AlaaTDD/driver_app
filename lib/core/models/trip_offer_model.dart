@@ -41,6 +41,9 @@ class TripOfferModel extends Equatable {
   final String driverId;
   final TripOfferStatus status;
   final double? proposedPrice;
+  final String? pickupAddress;
+  final String? destinationAddress;
+  final double? distanceKm;
   final DateTime? createdAt;
   final DateTime? respondedAt;
   final DateTime? updatedAt;
@@ -51,6 +54,9 @@ class TripOfferModel extends Equatable {
     required this.driverId,
     this.status = TripOfferStatus.pending,
     this.proposedPrice,
+    this.pickupAddress,
+    this.destinationAddress,
+    this.distanceKm,
     this.createdAt,
     this.respondedAt,
     this.updatedAt,
@@ -58,20 +64,23 @@ class TripOfferModel extends Equatable {
 
   factory TripOfferModel.fromJson(Map<String, dynamic> json) {
     return TripOfferModel(
-      id: json['id'] as String,
-      tripId: json['trip_id'] as String,
-      driverId: json['driver_id'] as String,
+      id: json['id'] as String? ?? '',
+      tripId: json['trip_id'] as String? ?? '',
+      driverId: json['driver_id'] as String? ?? '',
       status: TripOfferStatus.fromString(json['status'] as String?) ??
           TripOfferStatus.pending,
       proposedPrice: (json['proposed_price'] as num?)?.toDouble(),
+      pickupAddress: json['pickup_address'] as String?,
+      destinationAddress: json['destination_address'] as String?,
+      distanceKm: (json['distance_km'] as num?)?.toDouble(),
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'] as String)
           : null,
       respondedAt: json['responded_at'] != null
-          ? DateTime.parse(json['responded_at'] as String)
+          ? DateTime.tryParse(json['responded_at'] as String)
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
+          ? DateTime.tryParse(json['updated_at'] as String)
           : null,
     );
   }
@@ -86,6 +95,9 @@ class TripOfferModel extends Equatable {
         driverId,
         status,
         proposedPrice,
+        pickupAddress,
+        destinationAddress,
+        distanceKm,
         createdAt,
         respondedAt,
         updatedAt,

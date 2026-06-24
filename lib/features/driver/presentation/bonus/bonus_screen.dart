@@ -4,9 +4,12 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/models/bonus_rule_model.dart';
 import '../../../../core/widgets/app_button.dart';
 import 'bloc/bonus_cubit.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverBonusScreen extends StatelessWidget {
   const DriverBonusScreen({super.key});
@@ -17,33 +20,17 @@ class DriverBonusScreen extends StatelessWidget {
   String _t(BuildContext context, String ar, String en) =>
       _isAr(context) ? ar : en;
 
-  String? _ruleId(Map<String, dynamic> rule) =>
-      (rule['rule_id'] ?? rule['id'])?.toString();
-
-  int _asInt(Object? value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '') ?? 0;
+  int _completedForRule(BonusState state, BonusRuleModel rule) {
+    return rule.tripsCompleted > 0
+        ? rule.tripsCompleted
+        : state.progress.currentTrips;
   }
 
-  double _asDouble(Object? value) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
-
-  int _completedForRule(BonusState state, Map<String, dynamic> rule) {
-    return _asInt(
-      rule['trips_completed'] ??
-          state.progress['trips_today'] ??
-          state.progress['completed_trips'],
-    );
-  }
-
-  Map<String, dynamic>? _selectedRule(BonusState state) {
+  BonusRuleModel? _selectedRule(BonusState state) {
     final id = state.selectedRuleId;
     if (id == null) return null;
     for (final rule in state.rules) {
-      if (_ruleId(rule) == id) return rule;
+      if (rule.id == id) return rule;
     }
     return null;
   }
@@ -122,17 +109,15 @@ class DriverBonusScreen extends StatelessWidget {
       BuildContext context, BonusState state, AppLocalizations l) {
     final selectedRule = _selectedRule(state);
     final tripsToday = selectedRule == null
-        ? _asInt(state.progress['trips_today'])
+        ? state.progress.currentTrips
         : _completedForRule(state, selectedRule);
-    final target = selectedRule == null ? 0 : _asInt(selectedRule['threshold']);
-    final bonusAmount =
-        selectedRule == null ? 0.0 : _asDouble(selectedRule['bonus_amount']);
+    final target = selectedRule?.threshold ?? 0;
+    final bonusAmount = selectedRule == null ? 0.0 : selectedRule.bonusAmount;
     final progressPct =
         target > 0 ? (tripsToday / target).clamp(0.0, 1.0) : 0.0;
     final title = selectedRule == null
         ? _t(context, 'اختر تحدي المكافأة', 'Choose a reward challenge')
-        : (selectedRule['name_ar'] ?? selectedRule['name'] ?? l.bonusRewards)
-            .toString();
+        : (selectedRule.nameAr ?? selectedRule.name);
     final subtitle = selectedRule == null
         ? _t(
             context,
@@ -209,7 +194,7 @@ class DriverBonusScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '+${l.priceWithCurrency(bonusAmount.toStringAsFixed(0), l.currencySar)}',
+                    '+${PriceFormatter.displayCompactWithCurrency(context, bonusAmount)}',
                     style: const TextStyle(
                       color: AppColors.white,
                       fontWeight: FontWeight.bold,
@@ -288,17 +273,17 @@ class DriverBonusScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ...state.rules.map((rule) {
-          final ruleId = _ruleId(rule);
-          final name = (rule['name_ar'] ?? rule['name'] ?? '').toString();
-          final threshold = _asInt(rule['threshold']);
-          final amount = _asDouble(rule['bonus_amount']);
-          final trigger = (rule['trigger_type'] ?? 'daily_trips').toString();
-          final isActive = rule['is_active'] != false;
+          final ruleId = rule.id;
+          final name = rule.nameAr ?? rule.name;
+          final threshold = rule.threshold;
+          final amount = rule.bonusAmount;
+          final trigger = rule.triggerType;
+          final isActive = rule.isActive;
           final completed = _completedForRule(state, rule);
           final progressPct =
               threshold > 0 ? (completed / threshold).clamp(0.0, 1.0) : 0.0;
-          final isSelected = ruleId != null && ruleId == state.selectedRuleId;
-          final alreadyAwarded = rule['already_awarded'] == true;
+          final isSelected = ruleId == state.selectedRuleId;
+          final alreadyAwarded = rule.alreadyAwarded;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
@@ -374,7 +359,7 @@ class DriverBonusScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        '+${l.priceWithCurrency(amount.toStringAsFixed(0), l.currencySar)}',
+                        '+${PriceFormatter.displayCompactWithCurrency(context, amount)}',
                         style: const TextStyle(
                           color: AppColors.success,
                           fontWeight: FontWeight.bold,
@@ -386,7 +371,7 @@ class DriverBonusScreen extends StatelessWidget {
                     SizedBox(
                       height: 32,
                       child: FilledButton.icon(
-                        onPressed: alreadyAwarded || ruleId == null
+                        onPressed: alreadyAwarded || ruleId.isEmpty
                             ? null
                             : () =>
                                 context.read<BonusCubit>().selectRule(ruleId),
@@ -487,7 +472,7 @@ class DriverBonusScreen extends StatelessWidget {
                 formatted = DateFormat('yyyy/MM/dd HH:mm')
                     .format(DateTime.parse(dateStr).toLocal());
               } catch (e, st) {
-                debugPrint(
+                AppLogger.debug(
                     '⚠️ DriverBonusScreen: invalid awarded_at "$dateStr": $e\n$st');
               }
             }
@@ -535,7 +520,7 @@ class DriverBonusScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '+${l.priceWithCurrency(amount.toStringAsFixed(0), l.currencySar)}',
+                    '+${PriceFormatter.displayCompactWithCurrency(context, amount)}',
                     style: const TextStyle(
                       color: AppColors.success,
                       fontWeight: FontWeight.bold,

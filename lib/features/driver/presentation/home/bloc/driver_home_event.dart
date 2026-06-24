@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../../../services/heatmap_service.dart';
+import '../../../../../core/services/heatmap_service.dart';
 import '../../../../../features/trips/data/models/trip_model.dart';
 
 abstract class DriverHomeEvent extends Equatable {
@@ -13,6 +13,17 @@ class ToggleAvailability extends DriverHomeEvent {
   final bool isAvailable;
 
   const ToggleAvailability(this.isAvailable);
+
+  @override
+  List<Object?> get props => [isAvailable];
+}
+
+/// يُطلق من realtime stream على `drivers_profile.is_available`.
+/// يخلّي الزر "متاح/غير متاح" مرآة لمصدر الحقيقة في الداتابيز، فمثلاً لما
+/// الـ cron الـ 15 دقيقة يطلّع السواق offline، الواجهة تتحدث لوحدها بدون تدخل.
+class AvailabilitySynced extends DriverHomeEvent {
+  final bool isAvailable;
+  const AvailabilitySynced(this.isAvailable);
 
   @override
   List<Object?> get props => [isAvailable];

@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import '../../../../core/models/trip_route_plan_model.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 /// Repository for trip route plans and waypoints (stopovers).
 /// Wraps Supabase RPCs and direct queries for the route system.
@@ -15,14 +15,14 @@ class RouteRepository {
     try {
       final data = await _client
           .from('trip_route_plans')
-          .select('*')
+          .select('id, trip_id, status, total_distance_km, total_duration_min, encoded_polyline, created_at, updated_at')
           .eq('trip_id', tripId)
           .eq('status', 'active')
           .maybeSingle();
       if (data == null) return null;
       return TripRoutePlanModel.fromJson(Map<String, dynamic>.from(data));
     } catch (e) {
-      debugPrint('❌ RouteRepository.getActiveRoutePlan: $e');
+      AppLogger.error('RouteRepository.getActiveRoutePlan: $e');
       return null;
     }
   }
@@ -32,14 +32,14 @@ class RouteRepository {
     try {
       final data = await _client
           .from('trip_route_plans')
-          .select('*')
+          .select('id, trip_id, status, total_distance_km, total_duration_min, encoded_polyline, created_at, updated_at')
           .eq('trip_id', tripId)
           .order('created_at', ascending: true);
       return (data as List)
           .map((e) => TripRoutePlanModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      debugPrint('❌ RouteRepository.getAllRoutePlans: $e');
+      AppLogger.error('RouteRepository.getAllRoutePlans: $e');
       return [];
     }
   }
@@ -50,12 +50,12 @@ class RouteRepository {
     try {
       final data = await _client
           .from('v_trip_active_route')
-          .select('*')
+          .select('trip_id, route_plan_id, status, total_distance_km, total_duration_min, origin_lat, origin_lng, origin_address, dest_lat, dest_lng, dest_address')
           .eq('trip_id', tripId)
           .maybeSingle();
       return data != null ? Map<String, dynamic>.from(data) : null;
     } catch (e) {
-      debugPrint('❌ RouteRepository.getActiveRouteView: $e');
+      AppLogger.error('RouteRepository.getActiveRouteView: $e');
       return null;
     }
   }
@@ -69,7 +69,7 @@ class RouteRepository {
       );
       return result as String?;
     } catch (e) {
-      debugPrint('❌ RouteRepository.createRoutePlanFromLegacy: $e');
+      AppLogger.error('RouteRepository.createRoutePlanFromLegacy: $e');
       return null;
     }
   }
@@ -81,7 +81,7 @@ class RouteRepository {
     try {
       final data = await _client
           .from('trip_route_waypoints')
-          .select('*')
+          .select('id, route_plan_id, role, seq_order, lat, lng, address, place_id, planned_wait_min, actual_arrived_at, actual_departed_at, leg_duration_min, notes, created_at')
           .eq('route_plan_id', routePlanId)
           .order('seq_order', ascending: true);
       return (data as List)
@@ -89,7 +89,7 @@ class RouteRepository {
               TripRouteWaypointModel.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      debugPrint('❌ RouteRepository.getWaypoints: $e');
+      AppLogger.error('RouteRepository.getWaypoints: $e');
       return [];
     }
   }
@@ -118,7 +118,7 @@ class RouteRepository {
       );
       return result as String?;
     } catch (e) {
-      debugPrint('❌ RouteRepository.addStopover: $e');
+      AppLogger.error('RouteRepository.addStopover: $e');
       return null;
     }
   }
@@ -132,7 +132,7 @@ class RouteRepository {
       );
       return true;
     } catch (e) {
-      debugPrint('❌ RouteRepository.removeStopover: $e');
+      AppLogger.error('RouteRepository.removeStopover: $e');
       return false;
     }
   }
@@ -145,7 +145,7 @@ class RouteRepository {
       }).eq('id', waypointId);
       return true;
     } catch (e) {
-      debugPrint('❌ RouteRepository.markWaypointArrived: $e');
+      AppLogger.error('RouteRepository.markWaypointArrived: $e');
       return false;
     }
   }
@@ -158,7 +158,7 @@ class RouteRepository {
       }).eq('id', waypointId);
       return true;
     } catch (e) {
-      debugPrint('❌ RouteRepository.markWaypointDeparted: $e');
+      AppLogger.error('RouteRepository.markWaypointDeparted: $e');
       return false;
     }
   }

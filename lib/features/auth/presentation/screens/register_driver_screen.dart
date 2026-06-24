@@ -11,10 +11,11 @@ import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/errors/error_mapper.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../../../features/auth/domain/repositories/auth_repository.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../bloc/vehicle_types_cubit.dart';
+import '../../../../core/widgets/widgets.dart';
+import '../../../../core/utils/uuid_helper.dart';
 
 class RegisterDriverScreen extends StatefulWidget {
   const RegisterDriverScreen({super.key});
@@ -26,7 +27,6 @@ class RegisterDriverScreen extends StatefulWidget {
 class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -48,17 +48,21 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isUploading = false;
+  bool _isSubmitting = false; // guard ضد Double-Submit
+  String _fullPhone = ''; // رقم التليفون الكامل مع كود البلد
   String? _vehicleType;
+
+  VehicleTypesCubit? _vehicleTypesCubit;
 
   @override
   void initState() {
     super.initState();
+    _vehicleTypesCubit = VehicleTypesCubit()..fetchVehicleTypes();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -69,6 +73,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
     _vehicleYearController.dispose();
     _vehicleColorController.dispose();
     _vehiclePlateController.dispose();
+    _vehicleTypesCubit?.close();
     super.dispose();
   }
 
@@ -95,11 +100,12 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_passwordController.text != _confirmPasswordController.text) {
-      AppToast.error(AppLocalizations.of(context)!.passwordsNotMatch);
+    if (_isSubmitting) return; // مهمة 2: منع Double-Submit
+    if (_fullPhone.isEmpty) { // مهمة 1: phone validation
+      AppToast.error(AppLocalizations.of(context)!.enterPhone);
       return;
     }
+    if (!_formKey.currentState!.validate()) return;
     if (_nationalIdImage == null ||
         _licenseImage == null ||
         _criminalRecordImage == null ||
@@ -108,9 +114,12 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
       return;
     }
 
-    setState(() => _isUploading = true);
-    final repo = context.read<AuthRepositoryImpl>();
-    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+    setState(() {
+      _isUploading = true;
+      _isSubmitting = true; // مهمة 2: قفل الـ submit
+    });
+    final repo = context.read<AuthRepository>(); // مهمة 14: abstract interface
+    final tempId = UuidHelper.generateV4(); // [AUTH-08 FIX] UUID not timestamp
 
     final results = await Future.wait([
       repo.uploadDocument(
@@ -131,7 +140,13 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
       final result = results[i];
       final url = result.fold((_) => null, (u) => u);
       if (url == null) {
-        if (mounted) setState(() => _isUploading = false);
+        if (mounted) {
+          setState(() {
+            _isUploading = false;
+            _isSubmitting = false; // مهمة 2: رفع القفل عند الفشل
+          });
+          AppToast.error(AppLocalizations.of(context)!.errorUploadFailed); // مهمة 3
+        }
         return;
       }
       if (i == 0) nationalIdUrl = url;
@@ -141,11 +156,12 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
     }
 
     setState(() => _isUploading = false);
+    // _isSubmitting يبقى true حتى يرد الـ BLoC بـ AuthError أو AuthDriverPending
 
     if (!mounted) return;
     context.read<AuthBloc>().add(SignUpDriverRequested(
           name: _nameController.text.trim(),
-          phone: _phoneController.text.trim(),
+          phone: _fullPhone,
           email: _emailController.text.trim(),
           password: _passwordController.text,
           nationalId: _nationalIdController.text.trim(),
@@ -176,6 +192,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
           if (state is AuthDriverPending) {
             context.go(AppRoutes.pendingVerification);
           } else if (state is AuthError) {
+            setState(() => _isSubmitting = false); // مهمة 2: السماح بإعادة المحاولة
             AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
           }
         },
@@ -191,7 +208,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.fullName,
-                      prefixIcon: Icon(Icons.person_outlined),
+                      prefixIcon: const Icon(Icons.person_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -201,19 +218,12 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.phone,
-                      prefixIcon: Icon(Icons.phone_outlined),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return AppLocalizations.of(context)!.enterPhone;
-                      }
-                      return null;
+                  AppPhoneField(
+                    initialCountryCode: 'EG',
+                    onChanged: (number) {
+                      _fullPhone = number;
                     },
+                    textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -221,11 +231,14 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.email,
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return AppLocalizations.of(context)!.enterEmail;
+                      }
+                      if (!RegExp(r'^[\w.-]+@[\w.-]+\.\w+$').hasMatch(value)) {
+                        return AppLocalizations.of(context)!.invalidEmailFormat;
                       }
                       return null;
                     },
@@ -285,6 +298,9 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                         return AppLocalizations.of(context)!
                             .pleaseConfirmPassword;
                       }
+                      if (value != _passwordController.text) {
+                        return AppLocalizations.of(context)!.passwordsNotMatch;
+                      }
                       return null;
                     },
                   ),
@@ -307,7 +323,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _nationalIdController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.nationalId,
-                      prefixIcon: Icon(Icons.badge_outlined),
+                      prefixIcon: const Icon(Icons.badge_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -327,7 +343,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _licenseNumberController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.licenseNumber,
-                      prefixIcon: Icon(Icons.card_membership_outlined),
+                      prefixIcon: const Icon(Icons.card_membership_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -354,7 +370,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: Text(
-                      AppLocalizations.of(context)!.requiredDocuments,
+                      AppLocalizations.of(context)!.vehicleInformation,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -363,9 +379,8 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  BlocProvider(
-                    create: (context) =>
-                        VehicleTypesCubit()..fetchVehicleTypes(),
+                  BlocProvider<VehicleTypesCubit>.value(
+                    value: _vehicleTypesCubit!,
                     child: BlocBuilder<VehicleTypesCubit, VehicleTypesState>(
                       builder: (context, state) {
                         if (state.isLoading) {
@@ -390,11 +405,16 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
 
                         if (_vehicleType == null ||
                             !types.any((t) => t['name'] == _vehicleType)) {
-                          _vehicleType = types.first['name'] as String;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              setState(() =>
+                                  _vehicleType = types.first['name'] as String);
+                            }
+                          });
                         }
 
                         return DropdownButtonFormField<String>(
-                          value: _vehicleType,
+                          initialValue: _vehicleType,
                           decoration: InputDecoration(
                             labelText:
                                 AppLocalizations.of(context)!.vehicleType,
@@ -420,7 +440,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _vehicleBrandController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.vehicleBrand,
-                      prefixIcon: Icon(Icons.directions_car_outlined),
+                      prefixIcon: const Icon(Icons.directions_car_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -434,7 +454,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _vehicleModelController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.vehicleModel,
-                      prefixIcon: Icon(Icons.directions_car_outlined),
+                      prefixIcon: const Icon(Icons.directions_car_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -449,11 +469,15 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.vehicleYear,
-                      prefixIcon: Icon(Icons.calendar_today_outlined),
+                      prefixIcon: const Icon(Icons.calendar_today_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return AppLocalizations.of(context)!.enterVehicleYear;
+                      }
+                      final year = int.tryParse(value);
+                      if (year == null || year < 1990 || year > DateTime.now().year) {
+                        return AppLocalizations.of(context)!.enterValidYear;
                       }
                       return null;
                     },
@@ -463,7 +487,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _vehicleColorController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.vehicleColor,
-                      prefixIcon: Icon(Icons.palette_outlined),
+                      prefixIcon: const Icon(Icons.palette_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -477,7 +501,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                     controller: _vehiclePlateController,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.plateNumber,
-                      prefixIcon: Icon(Icons.confirmation_number_outlined),
+                      prefixIcon: const Icon(Icons.confirmation_number_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -498,7 +522,7 @@ class _RegisterDriverScreenState extends State<RegisterDriverScreen> {
                       return AppButton(
                         text: AppLocalizations.of(context)!.createAccount,
                         onPressed: _submit,
-                        isLoading: _isUploading || state is AuthLoading,
+                        isLoading: _isUploading || _isSubmitting || state is AuthLoading,
                       );
                     },
                   ),

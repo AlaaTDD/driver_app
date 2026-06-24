@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/driver_profile_model.dart';
+import 'package:snapix/core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class DriverProfileRepository {
   final _client = SupabaseService.client;
 
-  Future<Map<String, dynamic>?> loadDriverProfile(String driverId) async {
+  Future<DriverProfileModel?> loadDriverProfile(String driverId) async {
     final results = await Future.wait([
       _client
           .from('users')
@@ -14,7 +15,7 @@ class DriverProfileRepository {
               'id,name,phone,avatar_url,rating,total_trips,language,is_active')
           .eq('id', driverId)
           .single(),
-      _client.from('drivers_profile').select('*').eq('id', driverId).single(),
+      _client.from('drivers_profile').select('id, vehicle_type, vehicle_brand, vehicle_model, vehicle_plate, vehicle_color, is_verified, is_available, rating, total_trips, target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng, target_route_lat, target_route_lng, target_route_address, created_at').eq('id', driverId).single(),
       _client
           .from('driver_earnings_summary')
           .select('total_earnings, available_balance, completed_trips')
@@ -40,19 +41,19 @@ class DriverProfileRepository {
       merged['completed_trips_wallet'] = earningsData['completed_trips'];
     }
 
-    return merged;
+    return DriverProfileModel.fromJson(merged);
   }
 
   /// Realtime stream for driver profile changes (e.g. admin verification).
-  Stream<Map<String, dynamic>?> watchDriverProfile(String driverId) {
-    final controller = StreamController<Map<String, dynamic>?>.broadcast();
+  Stream<DriverProfileModel?> watchDriverProfile(String driverId) {
+    final controller = StreamController<DriverProfileModel?>.broadcast();
 
     Future<void> reload() async {
       try {
         final data = await loadDriverProfile(driverId);
         if (!controller.isClosed) controller.add(data);
       } catch (e, st) {
-        debugPrint('⚠️ DriverProfileRepository: reload failed: $e\n$st');
+        AppLogger.warning('DriverProfileRepository: reload failed: $e\n$st');
       }
     }
 
@@ -80,7 +81,7 @@ class DriverProfileRepository {
     return controller.stream;
   }
 
-  Future<Map<String, dynamic>?> updateDriverProfile(
+  Future<DriverProfileModel?> updateDriverProfile(
     String driverId,
     Map<String, dynamic> data,
   ) async {

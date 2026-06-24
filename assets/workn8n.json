@@ -1,0 +1,453 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "folder",
+        "path": "/host/Volumes/alaaMac/driverr/taxi/newcode",
+        "events": [
+          "add",
+          "change"
+        ],
+        "options": {
+          "ignoreInitial": true,
+          "usePolling": false
+        }
+      },
+      "id": "611bd27e-8ce2-4f73-8556-c652d8ed1441",
+      "name": "Watch newcode Folder",
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "command": "cat /host/Volumes/alaaMac/driverr/taxi/docs/settings.json 2>/dev/null || echo '{}'"
+      },
+      "id": "5491f05b-7623-4fe2-9a88-883954f0b491",
+      "name": "Read settings.json",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst cmdOut = $input.first().json;\nconst raw    = (cmdOut.stdout || '').trim();\n\nlet settings = {};\ntry {\n  const parsed = JSON.parse(raw);\n  if (parsed && typeof parsed === 'object') settings = parsed;\n} catch(e) {}\n\nsettings.paths          = settings.paths          || {};\nsettings.paths.watchDir = settings.paths.watchDir || '/host/Volumes/alaaMac/driverr/taxi/newcode';\nsettings.paths.tempBase = settings.paths.tempBase || '/host/Volumes/alaaMac/driverr/taxi/tmp_extract';\nsettings.paths.logFile  = settings.paths.logFile  || '/host/Volumes/alaaMac/driverr/taxi/sync_results.log';\n\nif (!settings.paths.codeDirs || !Array.isArray(settings.paths.codeDirs)) {\n  settings.paths.codeDirs = settings.paths.codeDir\n    ? [settings.paths.codeDir]\n    : ['/host/Volumes/alaaMac/driverr/taxi/code'];\n}\nsettings.paths.codeDirs = settings.paths.codeDirs.filter(\n  d => typeof d === 'string' && d.trim().length > 0\n);\n\nsettings.explicitPaths               = settings.explicitPaths               || {};\nsettings.smartMatch                  = settings.smartMatch                  || {};\nsettings.archiveHandling             = settings.archiveHandling             || {};\nsettings.archiveHandling.supportedTypes  = settings.archiveHandling.supportedTypes  || [];\nsettings.archiveHandling.macJunkPatterns = settings.archiveHandling.macJunkPatterns || [];\n\nreturn [{ json: { settings } }];\n"
+      },
+      "id": "3d20733d-0672-4383-a353-0198c301eccf",
+      "name": "Parse Settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $(\"Watch newcode Folder\").first();\n\nconst sourcePath =\n  item.json.path        ||\n  item.json.watchedFile ||\n  item.json.filePath    ||\n  item.json.fileName    ||\n  '';\n\nif (!sourcePath) {\n  throw new Error('No file path. Raw: ' + JSON.stringify(item.json));\n}\n\nconst parts    = sourcePath.split('/');\nconst fileName = parts[parts.length - 1];\n\nreturn [{ json: {\n  sourcePath,\n  fileName,\n  triggerTimestamp: new Date().toISOString()\n}}];\n"
+      },
+      "id": "83fdf8e5-3d90-4225-a8f2-9b3475705203",
+      "name": "Extract File Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item     = $input.first();\nconst settings = $('Parse Settings').first().json.settings;\nconst fileName = item.json.fileName || '';\nconst lower    = fileName.toLowerCase();\n\nconst supportedTypes = (settings.archiveHandling || {}).supportedTypes || [];\nlet archiveType = null;\n\nfor (const t of supportedTypes) {\n  if (lower.endsWith(t.ext)) {\n    archiveType = t.type;\n    break;\n  }\n}\n\nreturn [{ json: {\n  ...item.json,\n  isArchive:   archiveType !== null ? 'true' : 'false',\n  archiveType: archiveType || ''\n}}];\n"
+      },
+      "id": "57254fd5-ae4c-41f0-8116-9480e815f6f6",
+      "name": "Is Archive?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "id": "rule-is-file",
+                    "leftValue": "={{ $json.isArchive }}",
+                    "rightValue": "false",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              },
+              "renameOutput": true,
+              "outputKey": "direct_file"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "id": "rule-is-archive",
+                    "leftValue": "={{ $json.isArchive }}",
+                    "rightValue": "true",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              },
+              "renameOutput": true,
+              "outputKey": "archive"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "15feda11-a68f-425e-8f04-cb6b9648eb70",
+      "name": "Route Archive vs Direct",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        784,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item     = $input.first();\nconst settings = $('Parse Settings').first().json.settings;\n\nif (!settings || !settings.paths || !settings.paths.tempBase) {\n  throw new Error('settings.paths.tempBase undefined');\n}\n\nconst { sourcePath, fileName, archiveType } = item.json;\n\nconst TEMP_BASE    = settings.paths.tempBase;\nconst safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');\nconst tempDir      = TEMP_BASE + '/' + safeFileName + '_' + Date.now();\n\nfunction bEsc(s) {\n  return String(s)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/\"/g,  '\\\\\"')\n    .replace(/`/g,  '\\\\`')\n    .replace(/\\$/g, '\\\\$');\n}\n\nconst eSrc = bEsc(sourcePath);\nconst eTmp = bEsc(tempDir);\nlet extractCmd = '';\n\nif (archiveType === 'zip') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\"'\n    + ' && unzip -o \"' + eSrc + '\" -d \"' + eTmp + '\"'\n    + ' -x \"__MACOSX/*\" \"*/.__*\" \"**/.DS_Store\"'\n    + ' ; find \"' + eTmp + '\" -name \"._*\" -delete'\n    + ' ; find \"' + eTmp + '\" -name \".DS_Store\" -delete'\n    + ' ; rm -rf \"' + eTmp + '/__MACOSX\"';\n} else if (archiveType === 'tar.gz') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && tar -xzf \"' + eSrc + '\" -C \"' + eTmp + '\"'\n    + ' --exclude=\"._*\" --exclude=\".DS_Store\" --exclude=\"__MACOSX\"';\n} else if (archiveType === 'tar.bz2') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && tar -xjf \"' + eSrc + '\" -C \"' + eTmp + '\"'\n    + ' --exclude=\"._*\" --exclude=\".DS_Store\" --exclude=\"__MACOSX\"';\n} else if (archiveType === 'tar.xz') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && tar -xJf \"' + eSrc + '\" -C \"' + eTmp + '\"'\n    + ' --exclude=\"._*\" --exclude=\".DS_Store\" --exclude=\"__MACOSX\"';\n} else if (archiveType === 'tar') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && tar -xf \"' + eSrc + '\" -C \"' + eTmp + '\"'\n    + ' --exclude=\"._*\" --exclude=\".DS_Store\" --exclude=\"__MACOSX\"';\n} else if (archiveType === 'gz') {\n  const baseName = bEsc(fileName.replace(/\\.gz$/i, ''));\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && gunzip -c \"' + eSrc + '\" > \"' + eTmp + '/' + baseName + '\"';\n} else if (archiveType === '7z') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && 7z x \"' + eSrc + '\" -o\"' + eTmp + '\"'\n    + ' -x!\"__MACOSX\" -x!\"._*\" -x!\".DS_Store\"';\n} else if (archiveType === 'rar') {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && unrar x \"' + eSrc + '\" \"' + eTmp + '/\"'\n    + ' -x\"._*\" -x\".DS_Store\" -x\"__MACOSX\\\\\\\\*\"';\n} else {\n  extractCmd = 'mkdir -p \"' + eTmp + '\" && cp \"' + eSrc + '\" \"' + eTmp + '/\"';\n}\n\nreturn [{ json: { ...item.json, tempDir, extractCmd }}];\n"
+      },
+      "id": "73bcdd8c-fa65-4a51-a666-470b07e36c60",
+      "name": "Build Extract Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.extractCmd }}"
+      },
+      "id": "f6483c43-6c25-4c6d-aa1a-992cf8e993d6",
+      "name": "Extract Archive",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ 'find \"' + $('Build Extract Command').first().json.tempDir + '\" -type f 2>/dev/null | sort' }}"
+      },
+      "id": "b21db3a8-9afd-46a1-82dc-2d6fb1e681f6",
+      "name": "List Extracted Files",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst archiveInfo = $('Build Extract Command').first().json;\nconst settings    = $('Parse Settings').first().json.settings;\nconst cmdOut      = $input.first().json;\nconst stdout      = cmdOut.stdout || '';\nconst tempDir     = archiveInfo.tempDir;\n\nconst macJunkPatterns = (settings.archiveHandling || {}).macJunkPatterns || [];\n\nfunction isMacJunk(filePath) {\n  const parts = filePath.split('/');\n  const name  = parts[parts.length - 1];\n  for (const pattern of macJunkPatterns) {\n    if (pattern.endsWith('*')) {\n      const prefix = pattern.slice(0, -1);\n      if (name.startsWith(prefix)) return true;\n    } else {\n      if (parts.some(p => p === pattern)) return true;\n      if (name === pattern) return true;\n    }\n  }\n  return false;\n}\n\nconst files = stdout\n  .split('\\n')\n  .map(f => f.trim())\n  .filter(f => f.length > 0 && !f.startsWith('find:'))\n  .filter(f => !isMacJunk(f));\n\nif (files.length === 0) {\n  return [{ json: {\n    sourcePath:       archiveInfo.sourcePath,\n    fileName:         archiveInfo.fileName,\n    triggerTimestamp: archiveInfo.triggerTimestamp,\n    tempDir,\n    extractedFrom:    archiveInfo.fileName\n  }}];\n}\n\nreturn files.map(filePath => {\n  const parts    = filePath.split('/');\n  const fileName = parts[parts.length - 1];\n  return { json: {\n    sourcePath:       filePath,\n    fileName,\n    triggerTimestamp: archiveInfo.triggerTimestamp,\n    tempDir,\n    extractedFrom:    archiveInfo.fileName\n  }};\n});\n"
+      },
+      "id": "a549652a-2469-46c3-a873-491d1b51f3d9",
+      "name": "Split to File Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item     = $input.first();\nconst fileName = item.json.fileName || '';\n\nconst JUNK_NAMES = ['.DS_Store', 'Thumbs.db', 'desktop.ini', '.localized'];\nif (JUNK_NAMES.includes(fileName) || fileName.startsWith('._')) {\n  return [];\n}\n\nreturn [{ json: {\n  sourcePath:       item.json.sourcePath       || '',\n  fileName:         fileName,\n  triggerTimestamp: item.json.triggerTimestamp || new Date().toISOString(),\n  extractedFrom:    item.json.extractedFrom    || null,\n  tempDir:          item.json.tempDir          || null\n}}];\n"
+      },
+      "id": "6c4f619d-016a-45a5-87de-0cf1b979d060",
+      "name": "Normalize File Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════\n// Resolve Scenario\n// Explicit paths + Smart Match run TOGETHER in one step.\n//\n// SCENARIO 1 — file found in codeDirs (smart match) and no\n//              explicit path, OR explicit path == smart path\n//              → overwrite in-place, delete from newcode\n//\n// SCENARIO 2 — NOT found in codeDirs, but has explicit path\n//              → copy to explicit destination, delete from newcode\n//\n// SCENARIO 3 — found in codeDirs AND has explicit path,\n//              but the two paths DIFFER\n//              → copy to explicit dest, delete from OLD\n//              codeDirs location AND newcode\n//\n// MISSING     — no match anywhere\n//              → log error, delete from newcode\n// ══════════════════════════════════════════════════════════\n\nconst fileInfo   = $('Normalize File Info').first().json;\nconst settings   = $('Parse Settings').first().json.settings;\nconst cmdOut     = $input.first().json;\nconst stdout     = cmdOut.stdout || '';\n\nif (!settings || !settings.paths) throw new Error('settings.paths undefined');\n\nconst fileName   = fileInfo.fileName   || '';\nconst sourcePath = fileInfo.sourcePath || '';\nconst NEWCODE_DIR = settings.paths.watchDir;\nconst LOG_FILE    = settings.paths.logFile;\n\n// ── Helper functions ─────────────────────────────────────\nfunction bEsc(s) {\n  return String(s)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/\"/g,  '\\\\\"')\n    .replace(/`/g,  '\\\\`')\n    .replace(/\\$/g, '\\\\$');\n}\n\nfunction logLine(msg) {\n  const COLOR = msg.startsWith('SUCCESS') ? '\\\\033[0;32m'\n              : msg.startsWith('WARNING') ? '\\\\033[0;33m'\n              : '\\\\033[0;31m';\n  const RESET = '\\\\033[0m';\n  return `printf '%b\\\\n' \"${COLOR}$(date -u +%Y-%m-%dT%H:%M:%SZ) ${bEsc(msg)}${RESET}\" >> \"${bEsc(LOG_FILE)}\"`;\n}\n\n// ── 1. Explicit Paths lookup ─────────────────────────────\nconst rawExplicit      = settings.explicitPaths || {};\nconst explicitFiles    = rawExplicit.files    || {};\nconst explicitPatterns = rawExplicit.patterns || [];\n\nfunction wildcardToRegex(pattern) {\n  const escaped = pattern.replace(/[.+^${}()|[\\]\\\\]/g, '\\\\$&');\n  return new RegExp('^' + escaped.replace(/\\*/g, '.*') + '$', 'i');\n}\n\nlet explicitDest = explicitFiles[fileName] || null;\nif (!explicitDest) {\n  for (const rule of explicitPatterns) {\n    if (!rule.match || !rule.destinationFolder) continue;\n    const regex = wildcardToRegex(rule.match);\n    if (regex.test(fileName)) {\n      explicitDest = rule.destinationFolder.replace(/\\/$/, '') + '/' + fileName;\n      break;\n    }\n  }\n}\n\n// ── 2. Smart Match ───────────────────────────────────────\nconst sm          = settings.smartMatch || {};\nconst MIN_SCORE   = sm.minScore   !== undefined ? sm.minScore   : 50;\nconst HIGH_CONF   = sm.highConf   !== undefined ? sm.highConf   : 90;\nconst AMBIG_DELTA = sm.ambigDelta !== undefined ? sm.ambigDelta : 8;\n\nfunction normalize(name) {\n  return name.toLowerCase().replace(/[-_\\s]+/g, '').replace(/\\.[^.]+$/, '');\n}\n\nfunction levenshtein(a, b) {\n  const m = a.length, n = b.length;\n  const dp = Array.from({ length: m + 1 }, (_, i) => [i]);\n  for (let j = 1; j <= n; j++) dp[0][j] = j;\n  for (let i = 1; i <= m; i++) {\n    for (let j = 1; j <= n; j++) {\n      dp[i][j] = a[i-1] === b[j-1]\n        ? dp[i-1][j-1]\n        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);\n    }\n  }\n  return dp[m][n];\n}\n\nfunction simScore(a, b) {\n  const maxLen = Math.max(a.length, b.length);\n  if (maxLen === 0) return 100;\n  return Math.round((1 - levenshtein(a, b) / maxLen) * 100);\n}\n\nconst normalizedName = normalize(fileName);\n\nconst allFiles = stdout\n  .split('\\n')\n  .map(f => f.trim())\n  .filter(f => f.length > 0 && !f.startsWith('find:'));\n\nconst scored = allFiles.map(filePath => {\n  const parts = filePath.split('/');\n  const name  = parts[parts.length - 1];\n  const nc    = normalize(name);\n  let score = 0, matchType = 'none';\n  if (name === fileName) {\n    score = 100; matchType = 'exact';\n  } else if (name.toLowerCase() === fileName.toLowerCase()) {\n    score = 92;  matchType = 'case_insensitive';\n  } else {\n    score = Math.round(simScore(normalizedName, nc) * 0.85);\n    matchType = 'fuzzy';\n  }\n  return { filePath, name, score, matchType };\n});\n\nconst candidates = scored\n  .filter(c => c.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score);\n\nlet smartDest = null, smartScore = null, smartMatchType = null;\n\nif (candidates.length > 0) {\n  const best         = candidates[0];\n  const closeMatches = candidates.filter(c => best.score - c.score <= AMBIG_DELTA);\n  const isAmbiguous  = closeMatches.length > 1 && best.score < HIGH_CONF;\n  if (!isAmbiguous) {\n    smartDest      = best.filePath;\n    smartScore     = best.score;\n    smartMatchType = best.matchType;\n  }\n}\n\n// ── 3. Determine scenario ────────────────────────────────\nlet scenario, dest, deleteOldPath;\n\nif (smartDest && (!explicitDest || smartDest === explicitDest)) {\n  // SCENARIO 1 — file already exists in codeDirs at the right place\n  scenario     = 'scenario1';\n  dest         = smartDest;\n  deleteOldPath = null;\n\n} else if (!smartDest && explicitDest) {\n  // SCENARIO 2 — new file, put it where explicit says\n  scenario     = 'scenario2';\n  dest         = explicitDest;\n  deleteOldPath = null;\n\n} else if (smartDest && explicitDest && smartDest !== explicitDest) {\n  // SCENARIO 3 — file moved to a new path, clean old location\n  scenario     = 'scenario3';\n  dest         = explicitDest;\n  deleteOldPath = smartDest;\n\n} else {\n  // MISSING — no mapping anywhere\n  scenario     = 'missing';\n  dest         = null;\n  deleteOldPath = null;\n}\n\n// ── 4. Build shell command ───────────────────────────────\nconst fileToDelete = fileInfo.extractedFrom\n  ? NEWCODE_DIR + '/' + fileInfo.extractedFrom\n  : sourcePath;\n\nconst eSrc       = bEsc(sourcePath);\nconst eFileToDel = bEsc(fileToDelete);\nconst eFileName  = bEsc(fileName);\n\nlet copyCmd;\n\nif (scenario === 'missing') {\n  copyCmd = [\n    `echo \"MISSING: ${eFileName} — no match in codeDirs, no explicit path\"`,\n    logLine('MISSING|File:' + fileName + '|Reason:NoMatchAnywhere'),\n    `rm -f \"${eFileToDel}\"`,\n    `echo \"Removed from newcode.\"`\n  ].join('\\n');\n\n} else {\n  const eDest          = bEsc(dest);\n  const deleteOldLine  = deleteOldPath\n    ? `rm -f \"${bEsc(deleteOldPath)}\"`\n    : '# scenario1/2 — no old location to remove';\n  const scenarioLabel  = scenario.toUpperCase();\n  const logSuccess     = scenario === 'scenario1'\n    ? logLine('SUCCESS|SCENARIO1|File:' + fileName + '|Dest:' + dest + '|SmartScore:' + smartScore + '|MatchType:' + smartMatchType)\n    : scenario === 'scenario2'\n      ? logLine('SUCCESS|SCENARIO2|File:' + fileName + '|Dest:' + dest + '|Type:NewFile')\n      : logLine('SUCCESS|SCENARIO3|File:' + fileName + '|Dest:' + dest + '|DeletedOld:' + deleteOldPath);\n\n  copyCmd = `set -e\necho \">>> ${scenarioLabel} START <<<\"\necho \"File    : ${eFileName}\"\necho \"Source  : ${eSrc}\"\necho \"Dest    : ${eDest}\"\n\nif [ ! -f \"${eSrc}\" ]; then\n  echo \"WARNING: source not found: ${eSrc} (likely already processed by another trigger event)\"\n  ${logLine('WARNING|' + scenarioLabel + '|File:' + fileName + '|Reason:SourceNotFound_AlreadyProcessed')}\n  exit 0\nfi\n\nmkdir -p \"$(dirname \"${eDest}\")\"\n\nif cp -f -- \"${eSrc}\" \"${eDest}\"; then\n  echo \"Copy OK.\"\nelse\n  echo \"Copy FAILED.\"\n  ${logLine('ERROR|' + scenarioLabel + '|File:' + fileName + '|Reason:CopyFailed')}\n  exit 1\nfi\n\n${deleteOldLine}\n\nif rm -f \"${eFileToDel}\"; then\n  echo \"Removed from newcode.\"\nelse\n  echo \"Warning: could not remove from newcode (already gone?).\"\nfi\n\n${logSuccess}\necho \">>> ${scenarioLabel} SUCCESS <<<\"\n`;\n}\n\nreturn [{ json: {\n  ...fileInfo,\n  scenario,\n  dest,\n  smartDest,\n  smartScore,\n  smartMatchType,\n  explicitDest,\n  copyCmd\n}}];\n"
+      },
+      "id": "3d50d944-5b67-4dc3-82dd-78dae401e16c",
+      "name": "Resolve Scenario",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.copyCmd }}"
+      },
+      "id": "ed5c4592-f0a7-4f48-aebe-89cb00005409",
+      "name": "Execute Copy",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1808,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $('Normalize File Info').first().json.tempDir ? 'rm -rf \"' + $('Normalize File Info').first().json.tempDir + '\"' : 'echo \"no_archive_cleanup\"' }}"
+      },
+      "id": "44ee7d36-6b1a-4be1-915d-2b3443b195e3",
+      "name": "Cleanup Temp",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a TARGETED and HIGHLY OPTIMIZED find command\nconst fileInfo = $('Normalize File Info').first().json;\nconst settings = $('Parse Settings').first().json.settings;\n\nconst fileName = fileInfo.fileName || '';\nconst dirs = settings.paths.codeDirs || [];\n\nfunction esc(s) {\n  return String(s).replace(/\\\\/g, '\\\\\\\\').replace(/\"/g, '\\\\\"');\n}\n\n// فلترة المسارات عشان نتأكد مفيش مسار فاضي\nconst validDirs = dirs.filter(d => d.trim().length > 0);\nconst dirArgs = validDirs.map(d => '\"' + esc(d) + '\"').join(' ');\n\nconst safeFn  = esc(fileName);\n\n// استخراج الاسم الأساسي للبحث الذكي\nconst base = fileName\n  .replace(/\\.[^.]+$/, '')\n  .replace(/[^a-zA-Z0-9]/g, '')\n  .substring(0, 10);\n\n// 🔥 السرعة هنا: استبعاد الفولدرات الثقيلة اللي بتعمل شلل للبحث ومسارات النظام\nconst pruneExpr = \"\\\\( -name 'node_modules' -o -name '.git' -o -name 'build' -o -name '.dart_tool' -o -name '.pub-cache' -o -name 'newcode' -o -name 'tmp_extract' -o -name '__MACOSX' \\\\) -prune -o\";\n\n// أمر بحث واحد ذكي بيشمل كل الاحتمالات\nconst searchName = base.length >= 3 ? `*${base}*` : safeFn;\n\n// تجميع الأمر النهائي\nconst findCmd = `find ${dirArgs} -type d ${pruneExpr} -type f -iname \"${searchName}\" -print 2>/dev/null | sort -u | head -n 50`;\n\nreturn [{ json: { ...fileInfo, findCmd } }];"
+      },
+      "id": "2975bf4e-f12e-4534-a7dc-f8bbf75c6a79",
+      "name": "Build Find Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        1344
+      ]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.findCmd }}"
+      },
+      "id": "ab3af879-7c06-40af-80aa-41d742da7964",
+      "name": "List Matching Files in code",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        1344
+      ]
+    }
+  ],
+  "connections": {
+    "Watch newcode Folder": {
+      "main": [
+        [
+          {
+            "node": "Read settings.json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read settings.json": {
+      "main": [
+        [
+          {
+            "node": "Parse Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Settings": {
+      "main": [
+        [
+          {
+            "node": "Extract File Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract File Info": {
+      "main": [
+        [
+          {
+            "node": "Is Archive?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Archive?": {
+      "main": [
+        [
+          {
+            "node": "Route Archive vs Direct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Archive vs Direct": {
+      "main": [
+        [
+          {
+            "node": "Normalize File Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Extract Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Extract Command": {
+      "main": [
+        [
+          {
+            "node": "Extract Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Archive": {
+      "main": [
+        [
+          {
+            "node": "List Extracted Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Extracted Files": {
+      "main": [
+        [
+          {
+            "node": "Split to File Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split to File Items": {
+      "main": [
+        [
+          {
+            "node": "Normalize File Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize File Info": {
+      "main": [
+        [
+          {
+            "node": "Build Find Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Scenario": {
+      "main": [
+        [
+          {
+            "node": "Execute Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Copy": {
+      "main": [
+        [
+          {
+            "node": "Cleanup Temp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Find Command": {
+      "main": [
+        [
+          {
+            "node": "List Matching Files in code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Matching Files in code": {
+      "main": [
+        [
+          {
+            "node": "Resolve Scenario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "ac6007d93a0763a358f21852a13d2f0fbb464b5be442a02a66bf8272ff8d9360"
+  }
+}

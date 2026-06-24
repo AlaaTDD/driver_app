@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../../core/models/trip_details_model.dart';
 
 abstract class TripDetailsState extends Equatable {
   const TripDetailsState();
@@ -12,7 +13,7 @@ class TripDetailsInitial extends TripDetailsState {}
 class TripDetailsLoading extends TripDetailsState {}
 
 class TripDetailsLoaded extends TripDetailsState {
-  final Map<String, dynamic> trip;
+  final TripDetailsModel trip;
 
   const TripDetailsLoaded(this.trip);
 

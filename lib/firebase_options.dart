@@ -1,7 +1,10 @@
+// [APP-C-01 COMPLETE] Migrated from flutter_dotenv → --dart-define-from-file.
+// Firebase Web / Windows keys are injected at compile time via dart_defines.json.
+// Android / iOS / macOS use native config files (google-services.json / GoogleService-Info.plist).
+
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
@@ -29,69 +32,62 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // [APP-C-02 FIXED] Validates required keys at startup — fails loudly, not silently.
-  // To get FIREBASE_WEB_API_KEY:
-  //   1. https://console.firebase.google.com → project arai-449ca
-  //   2. Project Settings → General → Your apps
-  //   3. Find Web app (ID: 1:741233752146:web:33dc1f9bbf59ae6268878b)
-  //   4. Copy apiKey → paste into taxi_app/.env as FIREBASE_WEB_API_KEY=
+  // [APP-C-02] Web Firebase app: 1:741233752146:web:33dc1f9bbf59ae6268878b
+  // Keys come from dart_defines.json → FIREBASE_WEB_* entries.
   static FirebaseOptions get web {
-    final apiKey = dotenv.env['FIREBASE_WEB_API_KEY'] ?? '';
+    const apiKey = String.fromEnvironment('FIREBASE_WEB_API_KEY');
     assert(
       apiKey.isNotEmpty,
-      '\n\n[APP-C-02] FIREBASE_WEB_API_KEY is empty in .env!\n'
-      'FCM push notifications will fail silently on Web/Windows.\n'
-      'Get it from: Firebase Console → arai-449ca → Project Settings → Web app\n',
+      '\n\n[APP-C-02] FIREBASE_WEB_API_KEY is missing!\n'
+      'Add it to dart_defines.json under FIREBASE_WEB_API_KEY.\n',
     );
     if (apiKey.isEmpty) {
-      // In release mode, assert is disabled — throw explicitly so crash reports catch it
       throw StateError(
         '[APP-C-02] FIREBASE_WEB_API_KEY is not configured. '
-        'Set it in taxi_app/.env — see firebase_options.dart for instructions.',
+        'Add it to dart_defines.json — see firebase_options.dart.',
       );
     }
-    return FirebaseOptions(
+    return const FirebaseOptions(
       apiKey: apiKey,
-      appId: dotenv.env['FIREBASE_WEB_APP_ID'] ?? '',
-      messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-      projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-      authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-      storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-      measurementId: dotenv.env['FIREBASE_WEB_MEASUREMENT_ID'] ?? '',
+      appId: String.fromEnvironment('FIREBASE_WEB_APP_ID'),
+      messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+      projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+      authDomain: String.fromEnvironment('FIREBASE_AUTH_DOMAIN'),
+      storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+      measurementId: String.fromEnvironment('FIREBASE_WEB_MEASUREMENT_ID'),
     );
   }
 
   static FirebaseOptions get android => throw UnsupportedError(
-        'Use google-services.json for Android native initialization instead of hardcoded options.',
+        'Use google-services.json for Android native initialization.',
       );
 
   static FirebaseOptions get ios => throw UnsupportedError(
-        'Use GoogleService-Info.plist for iOS native initialization instead of hardcoded options.',
+        'Use GoogleService-Info.plist for iOS native initialization.',
       );
 
   static FirebaseOptions get macos => throw UnsupportedError(
-        'Use GoogleService-Info.plist for macOS native initialization instead of hardcoded options.',
+        'Use GoogleService-Info.plist for macOS native initialization.',
       );
 
-  // [APP-C-02 FIXED] Windows also needs its own API key.
-  // Get it from: Firebase Console → arai-449ca → Project Settings
-  //   → Windows app (ID: 1:741233752146:web:74b47ca31701645368878b) → apiKey
+  // [APP-C-02] Windows Firebase app: 1:741233752146:web:74b47ca31701645368878b
+  // Keys come from dart_defines.json → FIREBASE_WINDOWS_* entries.
   static FirebaseOptions get windows {
-    final apiKey = dotenv.env['FIREBASE_WINDOWS_API_KEY'] ?? '';
+    const apiKey = String.fromEnvironment('FIREBASE_WINDOWS_API_KEY');
     if (apiKey.isEmpty) {
       throw StateError(
         '[APP-C-02] FIREBASE_WINDOWS_API_KEY is not configured. '
-        'Set it in taxi_app/.env — see firebase_options.dart for instructions.',
+        'Add it to dart_defines.json — see firebase_options.dart.',
       );
     }
-    return FirebaseOptions(
+    return const FirebaseOptions(
       apiKey: apiKey,
-      appId: dotenv.env['FIREBASE_WINDOWS_APP_ID'] ?? '',
-      messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-      projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-      authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-      storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-      measurementId: dotenv.env['FIREBASE_WINDOWS_MEASUREMENT_ID'] ?? '',
+      appId: String.fromEnvironment('FIREBASE_WINDOWS_APP_ID'),
+      messagingSenderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+      projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
+      authDomain: String.fromEnvironment('FIREBASE_AUTH_DOMAIN'),
+      storageBucket: String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
+      measurementId: String.fromEnvironment('FIREBASE_WINDOWS_MEASUREMENT_ID'),
     );
   }
 }

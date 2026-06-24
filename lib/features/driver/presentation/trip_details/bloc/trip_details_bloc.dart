@@ -1,13 +1,11 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart';
-import '../../../../../services/supabase_service.dart';
-import '../../../../../services/location_service.dart';
-import '../../../../../core/utils/geohash_helper.dart';
+import '../../../../../core/services/supabase_service.dart';
+import '../../../../../core/services/location_service.dart';
 import 'package:snapix/features/driver/data/repositories/trip_details_repository.dart';
 import 'trip_details_event.dart';
 import 'trip_details_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
   final TripDetailsRepository _repository;
@@ -45,11 +43,11 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
     emit(TripDetailsLoading());
     try {
       final data = await _repository.loadTripDetails(event.tripId);
-      _manageLocationTracking(data['status'] as String?);
+      _manageLocationTracking(data.status);
       emit(TripDetailsLoaded(data));
     } catch (e, stackTrace) {
-      debugPrint('❌ TripDetailsBloc: Load failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('TripDetailsBloc: Load failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(TripDetailsError('errorLoadTripDetails'));
     }
   }
@@ -63,7 +61,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       if (result != null && result['success'] == true) {
         final updated = await _repository.loadTripDetails(event.tripId);
-        _manageLocationTracking(updated['status'] as String?);
+        _manageLocationTracking(updated.status);
         emit(TripDetailsLoaded(updated));
       } else {
         emit(TripDetailsError(
@@ -91,7 +89,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
       );
 
       final updated = await _repository.loadTripDetails(event.tripId);
-      _manageLocationTracking(updated['status'] as String?);
+      _manageLocationTracking(updated.status);
       emit(TripDetailsLoaded(updated));
     } catch (e) {
       emit(TripDetailsError('errorRejectTrip'));
@@ -116,7 +114,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       if (result != null && result['success'] == true) {
         final updated = await _repository.loadTripDetails(event.tripId);
-        _manageLocationTracking(updated['status'] as String?);
+        _manageLocationTracking(updated.status);
         emit(TripDetailsLoaded(updated));
       } else {
         emit(
@@ -145,15 +143,15 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
 
       if (result != null && result['success'] == true) {
         final updated = await _repository.loadTripDetails(event.tripId);
-        _manageLocationTracking(updated['status'] as String?);
+        _manageLocationTracking(updated.status);
         emit(TripDetailsLoaded(updated));
       } else {
         emit(TripDetailsError(
             result?['error']?.toString() ?? 'errorCompleteTrip'));
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ CompleteTrip failed: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.error('CompleteTrip failed: $e');
+      AppLogger.debug(stackTrace.toString());
       emit(TripDetailsError('errorCompleteTrip'));
     }
   }
@@ -178,7 +176,7 @@ class TripDetailsBloc extends Bloc<TripDetailsEvent, TripDetailsState> {
       _manageLocationTracking('cancelled');
       emit(const TripCancelled());
     } catch (e) {
-      debugPrint('❌ TripDetailsBloc: CancelTrip failed: $e');
+      AppLogger.error('TripDetailsBloc: CancelTrip failed: $e');
       emit(TripDetailsError('errorCancelTrip'));
     }
   }

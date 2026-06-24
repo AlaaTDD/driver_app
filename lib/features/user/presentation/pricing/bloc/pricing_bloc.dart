@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/errors/exceptions.dart';
-import '../../../../../services/supabase_service.dart';
+import '../../../../../core/services/supabase_service.dart';
 import 'package:snapix/features/user/data/repositories/coupon_repository.dart';
 import 'pricing_event.dart';
 import 'pricing_state.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class PricingBloc extends Bloc<PricingEvent, PricingState> {
   final CouponRepository _couponRepository;
@@ -58,11 +58,11 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
                     'price_per_km': r['price_per_km'],
                   })
               .toList();
-          debugPrint(
+          AppLogger.debug(
               '✅ PricingBloc: Loaded ${rows.length} types from pricing_config');
         }
       } catch (e, st) {
-        debugPrint(
+        AppLogger.debug(
             '⚠️ PricingBloc: pricing_config load failed, using vehicle_types fallback: $e\n$st');
         // pricing_config may not have all columns yet — fall through
       }
@@ -75,7 +75,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
             .eq('is_active', true)
             .order('sort_order', ascending: true);
         rows = (vtRows as List).cast<Map<String, dynamic>>();
-        debugPrint(
+        AppLogger.debug(
             '✅ PricingBloc: Loaded ${rows.length} types from vehicle_types (fallback)');
       }
 
@@ -83,7 +83,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
 
       emit(VehicleTypesLoaded(vehicleTypes: types));
     } catch (e) {
-      debugPrint('❌ PricingBloc: Failed to load vehicle types: $e');
+      AppLogger.error('PricingBloc: Failed to load vehicle types: $e');
       emit(PricingError('errorLoadVehicleTypes', vehicleTypes: []));
     }
   }
@@ -128,7 +128,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
         distanceKm: event.distanceKm,
       ));
     } catch (e) {
-      debugPrint('❌ PricingBloc: CalculatePrice RPC failed: $e');
+      AppLogger.error('PricingBloc: CalculatePrice RPC failed: $e');
       emit(PricingError('errorCalculatePrice', vehicleTypes: types));
     }
   }
@@ -159,6 +159,13 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
     );
 
     if (result.isSuccess) {
+      // Save valid coupon to user wallet
+      try {
+        await _couponRepository.assignCouponToUser(result.couponCode!, userId);
+      } catch (e) {
+        AppLogger.warning('PricingBloc: Failed to assign coupon: $e');
+      }
+
       emit(CouponApplied(
         vehicleTypes: types,
         couponCode: result.couponCode!,
@@ -166,7 +173,34 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
         finalPrice: result.finalPrice!,
       ));
     } else {
-      emit(PricingError(result.errorKey!, vehicleTypes: types));
+      final s = state;
+      if (s is PricingCalculated) {
+        emit(CouponApplyError(
+          errorMessage: result.errorKey!,
+          vehicleTypes: types,
+          basePrice: s.basePrice,
+          finalPrice: s.finalPrice,
+          vehicleType: s.vehicleType,
+          distanceKm: s.distanceKm,
+        ));
+        emit(PricingCalculated(
+          vehicleTypes: types,
+          basePrice: s.basePrice,
+          finalPrice: s.finalPrice,
+          vehicleType: s.vehicleType,
+          distanceKm: s.distanceKm,
+        ));
+      } else if (s is CouponApplied) {
+        emit(PricingError(result.errorKey!, vehicleTypes: types));
+        emit(CouponApplied(
+          vehicleTypes: types,
+          couponCode: s.couponCode,
+          discount: s.discount,
+          finalPrice: s.finalPrice,
+        ));
+      } else {
+        emit(PricingError(result.errorKey!, vehicleTypes: types));
+      }
     }
   }
 }

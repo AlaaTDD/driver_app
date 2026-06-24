@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 enum NetworkStatus { online, offline }
 
@@ -36,7 +37,7 @@ class ConnectivityService {
         _lastStatus = status;
         _controller.add(status);
         if (kDebugMode) {
-          debugPrint('ConnectivityService: ${status.name}');
+          AppLogger.debug('ConnectivityService: ${status.name}');
         }
       }
     });

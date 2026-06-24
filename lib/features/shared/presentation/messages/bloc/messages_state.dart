@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../../core/models/conversation_model.dart';
 import '../../../../../core/models/message_model.dart';
 
 abstract class MessagesState extends Equatable {
@@ -12,7 +13,7 @@ class MessagesInitial extends MessagesState {}
 class ConversationsLoading extends MessagesState {}
 
 class ConversationsLoaded extends MessagesState {
-  final List<Map<String, dynamic>> conversations;
+  final List<ConversationModel> conversations;
   final Map<String, bool> onlineMap;
   const ConversationsLoaded(this.conversations, {this.onlineMap = const {}});
   @override

@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
-import '../../../../../services/supabase_service.dart';
+import 'package:snapix/core/models/trip_details_model.dart';
+import 'package:snapix/core/services/supabase_service.dart';
 
 class TripDetailsRepository {
   final _client = SupabaseService.client;
@@ -7,20 +7,23 @@ class TripDetailsRepository {
   static const _tripSelectQuery =
       '*, user:users!trips_user_id_fkey(id, name, phone, rating, avatar_url)';
 
-  Future<Map<String, dynamic>> loadTripDetails(String tripId) async {
+  Future<TripDetailsModel> loadTripDetails(String tripId) async {
     final data = await _client
         .from('trips')
         .select(_tripSelectQuery)
         .eq('id', tripId)
         .single();
-    return Map<String, dynamic>.from(data);
+    return TripDetailsModel.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<Map<String, dynamic>?> acceptTrip(String tripId) async {
-    return await _client.rpc(
+    final response = await _client.rpc(
       'driver_accept_trip',
       params: {'p_trip_id': tripId},
     );
+    if (response == null) return {'success': true};
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return null;
   }
 
   Future<void> rejectTripOffer({
@@ -37,20 +40,26 @@ class TripDetailsRepository {
     required String tripId,
     required String driverId,
   }) async {
-    return await _client.rpc(
+    final response = await _client.rpc(
       'driver_start_trip',
       params: {'p_trip_id': tripId, 'p_driver_id': driverId},
     );
+    if (response == null) return {'success': true};
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return null;
   }
 
   Future<Map<String, dynamic>?> completeTrip({
     required String tripId,
     required String driverId,
   }) async {
-    return await _client.rpc(
+    final response = await _client.rpc(
       'driver_complete_trip',
       params: {'p_trip_id': tripId, 'p_driver_id': driverId},
     );
+    if (response == null) return {'success': true};
+    if (response is Map) return Map<String, dynamic>.from(response);
+    return null;
   }
 
   Future<void> cancelTrip({

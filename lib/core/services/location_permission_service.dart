@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 /// Unified location status covering both permission and service state.

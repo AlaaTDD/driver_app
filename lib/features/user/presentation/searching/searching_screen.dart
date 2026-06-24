@@ -9,7 +9,7 @@ import 'bloc/searching_state.dart';
 import '../../../../core/map/app_map.dart';
 import '../../../../core/constants/env_constants.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../services/directions_service.dart';
+import '../../../../core/services/directions_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/theme/theme_extensions.dart';
@@ -18,7 +18,8 @@ import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/map_camera_utils.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import '../trip_details/trip_details_screen.dart';
-import '../../../../services/supabase_service.dart';
+import '../../../../core/services/supabase_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class SearchingScreen extends StatefulWidget {
   final String tripId;
@@ -125,7 +126,7 @@ class _SearchingScreenState extends State<SearchingScreen>
       _driverNameCache[driverId] = result;
       return result;
     } catch (e, st) {
-      debugPrint(
+      AppLogger.debug(
           '⚠️ SearchingScreen: failed to fetch driver name for $driverId: $e\n$st');
       return fallback;
     }

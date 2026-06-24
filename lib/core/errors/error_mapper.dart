@@ -75,6 +75,15 @@ class ErrorMapper {
       'unexpectedError': () => l.unexpectedError,
       'failedLoadWallet': () => l.failedLoadWallet(l.errorUnexpected),
       'errorWalletNotFound': () => l.errorWalletNotFound,
+      'errorCouponNotStarted': () => l.errorCouponNotStarted,
+      'errorCouponExpired': () => l.errorCouponExpired,
+      'errorCouponMaxUsesReached': () => l.errorCouponMaxUsesReached,
+      'errorCouponMinTripPriceNotMet': () => l.errorCouponMinTripPriceNotMet,
+      'errorCouponBudgetExhausted': () => l.errorCouponBudgetExhausted,
+      'errorCouponFirstRideOnly': () => l.errorCouponFirstRideOnly,
+      'errorCancelTripFailed': () => l.errorCancelTripFailed,
+      'errorDriverProfileIncomplete': () => l.errorDriverProfileIncomplete,
+      'errorPhoneRegistered': () => l.errorPhoneRegistered,
     };
 
     return resolver[errorKey]?.call() ?? errorKey;

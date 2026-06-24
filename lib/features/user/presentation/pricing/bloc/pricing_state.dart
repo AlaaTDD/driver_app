@@ -93,6 +93,22 @@ class CouponApplied extends PricingState {
   List<Object?> get props => [vehicleTypes, couponCode, discount, finalPrice];
 }
 
+class CouponApplyError extends PricingCalculated {
+  final String errorMessage;
+
+  const CouponApplyError({
+    required this.errorMessage,
+    required super.vehicleTypes,
+    required super.basePrice,
+    required super.finalPrice,
+    required super.vehicleType,
+    required super.distanceKm,
+  });
+
+  @override
+  List<Object?> get props => [...super.props, errorMessage];
+}
+
 class PricingError extends PricingState {
   final String message;
   final List<VehicleTypeModel> vehicleTypes;

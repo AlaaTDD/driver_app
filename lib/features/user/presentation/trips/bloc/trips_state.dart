@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import '../../../../../core/models/trip_details_model.dart';
+import '../../../../trips/data/models/trip_model.dart';
 
 abstract class TripsState extends Equatable {
   const TripsState();
@@ -12,7 +14,7 @@ class TripsInitial extends TripsState {}
 class TripsLoading extends TripsState {}
 
 class TripsLoaded extends TripsState {
-  final List<Map<String, dynamic>> trips;
+  final List<TripModel> trips;
 
   const TripsLoaded(this.trips);
 
@@ -32,7 +34,7 @@ class TripsError extends TripsState {
 class TripDetailsLoading extends TripsState {}
 
 class TripDetailsLoaded extends TripsState {
-  final Map<String, dynamic> trip;
+  final TripDetailsModel trip;
 
   const TripDetailsLoaded(this.trip);
 

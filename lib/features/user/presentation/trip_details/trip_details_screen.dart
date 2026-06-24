@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:ui' as ui;
+
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/map/app_map.dart';
+import '../../../../core/models/trip_details_model.dart';
+import '../../../../core/models/driver_info_model.dart';
 import '../../../../core/constants/env_constants.dart';
-import '../../../../services/directions_service.dart';
+import '../../../../core/services/directions_service.dart';
 import '../trips/bloc/trips_bloc.dart';
 import '../trips/bloc/trips_event.dart';
 import '../trips/bloc/trips_state.dart';
@@ -20,8 +22,11 @@ import '../../../../core/utils/map_camera_utils.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/utils/trip_status.dart';
+import 'package:snapix/core/utils/app_logger.dart';
+import 'package:snapix/features/trips/presentation/widgets/trip_widgets.dart';
 
-// _C palette removed
+// Shared widgets imported from trip_widgets barrel
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 class UserTripDetailsScreen extends StatefulWidget {
@@ -35,7 +40,7 @@ class UserTripDetailsScreen extends StatefulWidget {
 class _ScreenState extends State<UserTripDetailsScreen>
     with TickerProviderStateMixin {
   GoogleMapController? _mapCtrl;
-  Map<String, dynamic>? _trip;
+  TripDetailsModel? _trip;
 
   // Route / polyline state
   List<LatLng> _routePoints = [];
@@ -95,28 +100,10 @@ class _ScreenState extends State<UserTripDetailsScreen>
   }
 
   Future<void> _loadCircleIcons() async {
-    _pickupIcon = await _createCircleMarker(AppColors.success);
-    _destIcon = await _createCircleMarker(AppColors.error);
-    _waypointIcon = await _createCircleMarker(AppColors.warning);
+    _pickupIcon = await createCircleMarker(AppColors.success);
+    _destIcon = await createCircleMarker(AppColors.error);
+    _waypointIcon = await createCircleMarker(AppColors.warning);
     if (mounted) setState(() {});
-  }
-
-  Future<BitmapDescriptor> _createCircleMarker(Color color) async {
-    final pictureRecorder = ui.PictureRecorder();
-    final canvas = Canvas(pictureRecorder);
-    final paint = Paint()..color = color;
-
-    final outerPaint = Paint()..color = color.withOpacity(0.2);
-    canvas.drawCircle(const Offset(20, 20), 18, outerPaint);
-    canvas.drawCircle(const Offset(20, 20), 10, paint);
-
-    final whitePaint = Paint()..color = AppColors.white;
-    canvas.drawCircle(const Offset(20, 20), 5, whitePaint);
-
-    final picture = pictureRecorder.endRecording();
-    final image = await picture.toImage(40, 40);
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
   }
 
   void _load({bool silent = false}) {
@@ -305,7 +292,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
             style: TextStyle(
                 color: context.textSecondary, fontSize: 14, height: 1.6)),
         const SizedBox(height: 32),
-        _Btn(
+        TripActionButton(
             label: l.retry,
             icon: Icons.refresh_rounded,
             color: AppColors.primary,
@@ -317,19 +304,19 @@ class _ScreenState extends State<UserTripDetailsScreen>
   // ══════════════════════════════════════════════════════════════════════════
   // MAIN BODY — completely new layout
   // ══════════════════════════════════════════════════════════════════════════
-  Widget _body(Map<String, dynamic> trip) {
-    final status = trip['status'] as String?;
-    final driver = trip['driver'] as Map<String, dynamic>?;
-    final canCancel = {'searching', 'accepted', 'in_progress'}.contains(status);
+  Widget _body(TripDetailsModel trip) {
+    final status = trip.status;
+    final driver = trip.driverData;
+    final canCancel = TripStatus.fromString(status)?.isCancellable ?? false;
     final canTrack = {'accepted', 'in_progress'}.contains(status);
     final canComplain = {'completed', 'cancelled'}.contains(status);
     final canRate =
-        status == 'completed' && trip['user_rating_to_driver'] == null;
+        status == 'completed' && trip.userRatingToDriver == null;
     final rated =
-        status == 'completed' && trip['user_rating_to_driver'] != null;
+        status == 'completed' && trip.userRatingToDriver != null;
 
-    final pLat = (trip['pickup_lat'] as num?)?.toDouble();
-    final pLng = (trip['pickup_lng'] as num?)?.toDouble();
+    final pLat = trip.pickupLat;
+    final pLng = trip.pickupLng;
 
     final screenH = MediaQuery.of(context).size.height;
     final mapH = screenH * 0.44;
@@ -366,7 +353,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _MapCircleBtn(
+                MapCircleButton(
                     icon: Icons.arrow_back_ios_new_rounded,
                     onTap: () => context.pop()),
                 Expanded(
@@ -375,7 +362,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _MapCircleBtn(
+                    MapCircleButton(
                       icon: _is3DMode ? Icons.view_in_ar : Icons.map_outlined,
                       onTap: () async {
                         final enabled = !_is3DMode;
@@ -400,7 +387,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
                       },
                     ),
                     const SizedBox(width: 8),
-                    _MapCircleBtn(icon: Icons.refresh_rounded, onTap: _load),
+                    MapCircleButton(icon: Icons.refresh_rounded, onTap: _load),
                   ],
                 ),
               ],
@@ -415,7 +402,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
         top: mapH - 70,
         end: 14,
         child: (pLat != null && pLng != null)
-            ? _MapCircleBtn(
+            ? MapCircleButton(
                 icon: Icons.my_location_rounded,
                 onTap: () {
                   if (_mapCtrl != null) {
@@ -468,10 +455,10 @@ class _ScreenState extends State<UserTripDetailsScreen>
                         if (driver != null) ...[
                           _DriverStrip(
                             driver: driver,
-                            tripId: _trip?['id'] as String? ?? '',
+                            tripId: _trip?.id ?? '',
                             canTrack: canTrack,
                             onTrack: () => context.push(
-                                '${AppRoutes.userTracking}?tripId=${_trip!['id']}'),
+                                '${AppRoutes.userTracking}?tripId=${_trip!.id}'),
                           ),
                           const SizedBox(height: 13),
                         ],
@@ -488,7 +475,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
                               'searching',
                               'accepted',
                               'in_progress'
-                            ].contains(trip['status']);
+                            ].contains(trip.status);
 
                             return _StopoverCard(
                               trip: trip,
@@ -508,15 +495,15 @@ class _ScreenState extends State<UserTripDetailsScreen>
                             child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(child: _PriceBox(trip: trip)),
+                            Expanded(child: TripPriceBox(trip: trip)),
                             const SizedBox(width: 12),
-                            Expanded(child: _StatsBox(trip: trip)),
+                            Expanded(child: TripStatsBox(trip: trip)),
                           ],
                         )),
                         const SizedBox(height: 13),
 
                         // Horizontal timeline
-                        _HTimeline(trip: trip),
+                        TripTimeline(trip: trip),
                         const SizedBox(height: 13),
 
                         // Rating badge
@@ -548,10 +535,10 @@ class _ScreenState extends State<UserTripDetailsScreen>
               canCancel: canCancel,
               canRate: canRate,
               canComplain: canComplain,
-              onCancel: () => _cancelDialog(trip['id'] as String),
+              onCancel: () => _cancelDialog(trip.id),
               onRate: () =>
-                  context.push('${AppRoutes.userRating}?tripId=${trip['id']}'),
-              onComplain: () => _complaintDialog(trip['id'] as String),
+                  context.push('${AppRoutes.userRating}?tripId=${trip.id}'),
+              onComplain: () => _complaintDialog(trip.id),
             ),
           ),
         ),
@@ -560,13 +547,13 @@ class _ScreenState extends State<UserTripDetailsScreen>
   }
 
   // ── Map ────────────────────────────────────────────────────────────────────
-  Widget _buildMap(Map<String, dynamic> trip, double bottomPadding,
+  Widget _buildMap(TripDetailsModel trip, double bottomPadding,
       [List<TripRouteWaypointModel> stopovers = const []]) {
     final l = AppLocalizations.of(context)!;
-    final pickupPoint = _tripPoint(trip, 'pickup_lat', 'pickup_lng');
-    final meetingPoint = _tripPoint(trip, 'meeting_lat', 'meeting_lng');
+    final pickupPoint = _tripPoint(trip.pickupLat, trip.pickupLng);
+    final meetingPoint = _tripPoint(trip.meetingLat, trip.meetingLng);
     final destinationPoint =
-        _tripPoint(trip, 'destination_lat', 'destination_lng');
+        _tripPoint(trip.destinationLat, trip.destinationLng);
     if (pickupPoint == null) return const SizedBox.shrink();
 
     final separateMeetingPoint =
@@ -756,9 +743,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
     ]);
   }
 
-  LatLng? _tripPoint(Map<String, dynamic> trip, String latKey, String lngKey) {
-    final lat = (trip[latKey] as num?)?.toDouble();
-    final lng = (trip[lngKey] as num?)?.toDouble();
+  LatLng? _tripPoint(double? lat, double? lng) {
     if (lat == null || lng == null) return null;
     if (lat == 0.0 && lng == 0.0) return null;
     if (!lat.isFinite || !lng.isFinite) return null;
@@ -879,7 +864,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
     final bloc = context.read<TripsBloc>();
     showDialog(
       context: context,
-      builder: (dialogCtx) => _NightDialog(
+      builder: (dialogCtx) => TripNightDialog(
         icon: Icons.warning_amber_rounded,
         iconColor: AppColors.error,
         title: l.cancelTrip,
@@ -928,7 +913,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
             Form(
                 key: formKey,
                 child: Column(children: [
-                  _NightField(
+                  TripNightField(
                       ctrl: tCtrl,
                       label: l.complaintSubject,
                       hint: l.complaintSubjectHint,
@@ -936,7 +921,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
                       validator: (v) =>
                           v!.isEmpty ? l.complaintSubjectHint : null),
                   const SizedBox(height: 12),
-                  _NightField(
+                  TripNightField(
                       ctrl: dCtrl,
                       label: l.complaintDetails,
                       hint: l.complaintDetailsHint,
@@ -955,7 +940,7 @@ class _ScreenState extends State<UserTripDetailsScreen>
                         fontWeight: FontWeight.w600)),
               ),
               const Spacer(),
-              _Btn(
+              TripActionButton(
                   label: l.send,
                   icon: Icons.send_rounded,
                   color: AppColors.primary,
@@ -977,10 +962,10 @@ class _ScreenState extends State<UserTripDetailsScreen>
   }
 
   void _showAddStopoverDialog(BuildContext context) {
-    final pLat = (_trip?['pickup_lat'] as num?)?.toDouble() ?? 0.0;
-    final pLng = (_trip?['pickup_lng'] as num?)?.toDouble() ?? 0.0;
-    final dLat = (_trip?['destination_lat'] as num?)?.toDouble();
-    final dLng = (_trip?['destination_lng'] as num?)?.toDouble();
+    final pLat = _trip?.pickupLat ?? 0.0;
+    final pLng = _trip?.pickupLng ?? 0.0;
+    final dLat = _trip?.destinationLat;
+    final dLng = _trip?.destinationLng;
 
     if (pLat == 0.0 || pLng == 0.0) return;
 
@@ -1036,40 +1021,12 @@ class _ScreenState extends State<UserTripDetailsScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  SUB-WIDGETS
-// ═══════════════════════════════════════════════════════════════════════════
 
-// ── Floating map button ───────────────────────────────────────────────────────
-class _MapCircleBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _MapCircleBtn({required this.icon, required this.onTap});
 
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: context.cardColor.withValues(alpha: 0.9),
-            shape: BoxShape.circle,
-            border: Border.all(color: context.divColor, width: 1),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.black.withValues(alpha: 0.38),
-                  blurRadius: 10)
-            ],
-          ),
-          child: Icon(icon, color: context.textPrimary, size: 18),
-        ),
-      );
-}
 
 // ── Driver strip (compact horizontal) ────────────────────────────────────────
 class _DriverStrip extends StatelessWidget {
-  final Map<String, dynamic> driver;
+  final DriverInfoModel driver;
   final String tripId;
   final bool canTrack;
   final VoidCallback onTrack;
@@ -1083,12 +1040,12 @@ class _DriverStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final name = driver['name'] as String? ?? l.theDriver;
-    final avatarUrl = driver['avatar_url'] as String?;
-    final rating = driver['rating']?.toString() ?? '0.0';
-    final plate = driver['vehicle_plate'] as String? ?? '';
-    final driverId = driver['id'] as String?;
-    final phone = driver['phone'] as String?;
+    final name = driver.name.isNotEmpty ? driver.name : l.theDriver;
+    final avatarUrl = driver.avatarUrl;
+    final rating = driver.rating?.toStringAsFixed(1) ?? '0.0';
+    final plate = driver.vehiclePlate ?? '';
+    final driverId = driver.id;
+    final phone = driver.phone;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1184,7 +1141,6 @@ class _DriverStrip extends StatelessWidget {
               color: AppColors.primary,
               onTap: () {
                 if (tripId.isNotEmpty &&
-                    driverId != null &&
                     driverId.isNotEmpty) {
                   context.push(
                       '${AppRoutes.userMessages}?tripId=$tripId&otherUserId=$driverId&otherUserName=${Uri.encodeComponent(name)}');
@@ -1237,7 +1193,7 @@ class _CircleAction extends StatelessWidget {
 
 // ── Stopover Card (unified route + stop management UI) ────────────────────────
 class _StopoverCard extends StatelessWidget {
-  final Map<String, dynamic> trip;
+  final TripDetailsModel trip;
   final List<TripRouteWaypointModel> stopovers;
   final bool isEditable;
   final TripRouteState routeState;
@@ -1256,8 +1212,8 @@ class _StopoverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final pickup = trip['pickup_address'] as String? ?? '';
-    final dest = trip['destination_address'] as String? ?? '';
+    final pickup = trip.pickupAddress ?? '';
+    final dest = trip.destinationAddress ?? '';
     final hasStops = stopovers.isNotEmpty;
 
     return Container(
@@ -1516,471 +1472,9 @@ class _SpineRow extends StatelessWidget {
   }
 }
 
-// ── Route Ticket ──────────────────────────────────────────────────────────────
-class _RouteTicket extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _RouteTicket({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final pickup = trip['meeting_address'] ?? trip['pickup_address'] ?? '';
-    final dest = trip['destination_address'] ?? '';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Stack(children: [
-        // notch left
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          child: Center(
-              child: Container(
-                  width: 5,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: context.cardColor,
-                    borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(8),
-                        bottomRight: Radius.circular(8)),
-                  ))),
-        ),
-        // notch right
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: Center(
-              child: Container(
-                  width: 5,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: context.cardColor,
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        bottomLeft: Radius.circular(8)),
-                  ))),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          child: Row(children: [
-            // FROM
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Row(children: [
-                    Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.success,
-                          boxShadow: [
-                            BoxShadow(
-                                color: AppColors.success.withValues(alpha: 0.5),
-                                blurRadius: 6)
-                          ],
-                        )),
-                    const SizedBox(width: 7),
-                    Text(l.meetingPointLabel.toUpperCase(),
-                        style: TextStyle(
-                            color: AppColors.success,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5)),
-                  ]),
-                  const SizedBox(height: 8),
-                  Text(pickup,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35)),
-                ])),
-
-            // divider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                ...List.generate(
-                    5,
-                    (i) => Container(
-                        width: 3,
-                        height: 3,
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        decoration: BoxDecoration(
-                          color: i.isEven
-                              ? context.divColor
-                              : AppColors.transparent,
-                          shape: BoxShape.circle,
-                        ))),
-                const SizedBox(height: 4),
-                Icon(Icons.east_rounded, color: context.textDisabled, size: 14),
-              ]),
-            ),
-
-            // TO
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                  Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                    Text(l.destination.toUpperCase(),
-                        style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 8,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.5)),
-                    const SizedBox(width: 7),
-                    Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary,
-                          boxShadow: [
-                            BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.25),
-                                blurRadius: 6)
-                          ],
-                        )),
-                  ]),
-                  const SizedBox(height: 8),
-                  Text(dest,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35)),
-                ])),
-          ]),
-        ),
-      ]),
-    );
-  }
-}
-
-// ── Price Box ─────────────────────────────────────────────────────────────────
-class _PriceBox extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _PriceBox({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final price = (trip['price'] as num?)?.toDouble() ?? 0;
-    final discount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
-    final finalPrice = price - discount;
-    final isPaid = trip['is_paid'] as bool? ?? false;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l.fareDetails.toUpperCase(),
-            style: TextStyle(
-                color: context.textDisabled,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8)),
-        const SizedBox(height: 10),
-
-        // hero number
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(finalPrice.toStringAsFixed(0),
-                  style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 44,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -2,
-                      height: 1)),
-              const SizedBox(width: 5),
-              Text(l.currencySar,
-                  style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-
-        const Spacer(),
-
-        // paid badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isPaid
-                ? AppColors.success.withValues(alpha: 0.1)
-                : AppColors.warning.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: isPaid
-                    ? AppColors.success.withValues(alpha: 0.28)
-                    : AppColors.warning.withValues(alpha: 0.28)),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                    color: isPaid ? AppColors.success : AppColors.warning,
-                    shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(isPaid ? l.paid : l.unpaid,
-                style: TextStyle(
-                    color: isPaid ? AppColors.success : AppColors.warning,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700)),
-          ]),
-        ),
-
-        if (discount > 0) ...[
-          const SizedBox(height: 8),
-          Text(
-              '-${l.priceWithCurrency(discount.toStringAsFixed(2), l.currencySar)}',
-              style: TextStyle(
-                  color: AppColors.success,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600)),
-        ],
-      ]),
-    );
-  }
-}
-
-// ── Stats Box ─────────────────────────────────────────────────────────────────
-class _StatsBox extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _StatsBox({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final dist = (trip['distance_km'] as num?)?.toStringAsFixed(1) ?? '0';
-    final vType = trip['vehicle_type'] as String? ?? 'car';
-    final pay = trip['payment_method'] as String? ?? 'cash';
-
-    final vName = switch (vType) {
-      'sedan' => l.sedan,
-      'suv' => l.suv,
-      'van' => l.van,
-      'minibus' => l.minibus,
-      'motorcycle' => l.motorcycle,
-      _ => l.car,
-    };
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l.tripDetails.toUpperCase(),
-            style: TextStyle(
-                color: context.textDisabled,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8)),
-        const SizedBox(height: 14),
-        _StatRow(
-            icon: Icons.straighten_rounded,
-            color: AppColors.primary,
-            label: l.distanceWithKm(dist)),
-        const SizedBox(height: 10),
-        _StatRow(
-            icon: Icons.directions_car_rounded,
-            color: AppColors.purple,
-            label: vName),
-        const SizedBox(height: 10),
-        _StatRow(
-          icon: pay == 'cash'
-              ? Icons.payments_rounded
-              : Icons.credit_card_rounded,
-          color: AppColors.warning,
-          label: pay == 'cash' ? l.cash : l.bankCard,
-        ),
-      ]),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  const _StatRow(
-      {required this.icon, required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Row(children: [
-        Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 14)),
-        const SizedBox(width: 10),
-        Flexible(
-            child: Text(label,
-                style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600))),
-      ]);
-}
-
-// ── Horizontal Timeline ───────────────────────────────────────────────────────
-class _HTimeline extends StatelessWidget {
-  final Map<String, dynamic> trip;
-  const _HTimeline({required this.trip});
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final steps = [
-      (l.tripRequest, trip['created_at'], true),
-      (l.acceptTrip, trip['accepted_at'], trip['accepted_at'] != null),
-      (l.startTrip, trip['started_at'], trip['started_at'] != null),
-      (l.completeTrip, trip['completed_at'], trip['completed_at'] != null),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.divColor, width: 1),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l.timeline.toUpperCase(),
-            style: TextStyle(
-                color: context.textDisabled,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8)),
-        const SizedBox(height: 18),
-        Row(
-          children: steps.asMap().entries.map((e) {
-            final i = e.key;
-            final s = e.value;
-            final done = s.$3 as bool;
-            final isLast = i == steps.length - 1;
-
-            String t = '';
-            final raw = s.$2;
-            if (raw != null) {
-              try {
-                final dt = DateTime.parse(raw.toString()).toLocal();
-                t = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-              } catch (e, st) {
-                debugPrint(
-                    '⚠️ UserTripDetailsScreen: invalid timeline timestamp "$raw": $e\n$st');
-              }
-            }
-
-            return Expanded(
-                child: Row(children: [
-              Expanded(
-                  child: Column(children: [
-                // dot
-                Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: done ? AppColors.success : context.elevatedColor,
-                    border: done
-                        ? null
-                        : Border.all(color: context.divColor, width: 1.5),
-                    boxShadow: done
-                        ? [
-                            BoxShadow(
-                                color: AppColors.success.withValues(alpha: 0.4),
-                                blurRadius: 8)
-                          ]
-                        : null,
-                  ),
-                  child: done
-                      ? const Icon(Icons.check_rounded,
-                          color: AppColors.white, size: 11)
-                      : null,
-                ),
-                const SizedBox(height: 7),
-                Text(s.$1,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    style: TextStyle(
-                      color: done ? context.textPrimary : context.textDisabled,
-                      fontSize: 9.5,
-                      fontWeight: done ? FontWeight.w600 : FontWeight.w400,
-                      height: 1.3,
-                    )),
-                if (t.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(t,
-                      style: TextStyle(
-                          color: AppColors.success,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700)),
-                ],
-              ])),
-
-              // connector
-              if (!isLast)
-                Expanded(
-                    child: Container(
-                  height: 1.5,
-                  margin: const EdgeInsets.only(bottom: 28),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: done
-                          ? [
-                              AppColors.success.withValues(alpha: 0.45),
-                              context.divColor
-                            ]
-                          : [context.divColor, context.divColor],
-                    ),
-                  ),
-                )),
-            ]));
-          }).toList(),
-        ),
-      ]),
-    );
-  }
-}
-
 // ── Rating Badge ──────────────────────────────────────────────────────────────
 class _RatingBadge extends StatelessWidget {
-  final Map<String, dynamic> trip;
+  final TripDetailsModel trip;
   const _RatingBadge({required this.trip});
 
   @override
@@ -2005,7 +1499,7 @@ class _RatingBadge extends StatelessWidget {
                     fontWeight: FontWeight.w700))),
         const Icon(Icons.star_rounded, color: AppColors.warning, size: 18),
         const SizedBox(width: 4),
-        Text(trip['user_rating_to_driver'].toString(),
+        Text(trip.userRatingToDriver?.toString() ?? '',
             style: TextStyle(
                 color: context.textPrimary,
                 fontSize: 15,
@@ -2048,7 +1542,7 @@ class _ActionBar extends StatelessWidget {
       child: Row(children: [
         if (canCancel) ...[
           Expanded(
-              child: _Btn(
+              child: TripActionButton(
                   label: l.cancelTrip,
                   icon: Icons.cancel_outlined,
                   color: AppColors.error,
@@ -2058,7 +1552,7 @@ class _ActionBar extends StatelessWidget {
         ],
         if (canRate) ...[
           Expanded(
-              child: _Btn(
+              child: TripActionButton(
                   label: l.rateTrip,
                   icon: Icons.star_rounded,
                   color: AppColors.warning,
@@ -2067,7 +1561,7 @@ class _ActionBar extends StatelessWidget {
         ],
         if (canComplain)
           Expanded(
-              child: _Btn(
+              child: TripActionButton(
                   label: l.complaints,
                   icon: Icons.report_problem_outlined,
                   color: AppColors.primary,
@@ -2079,186 +1573,6 @@ class _ActionBar extends StatelessWidget {
 }
 
 // ── Reusable button ───────────────────────────────────────────────────────────
-class _Btn extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool outlined;
-  final bool compact;
-  final VoidCallback onTap;
-  const _Btn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    this.outlined = false,
-    this.compact = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: compact ? 44 : 50,
-          padding: compact ? const EdgeInsets.symmetric(horizontal: 20) : null,
-          decoration: BoxDecoration(
-            gradient: outlined
-                ? null
-                : LinearGradient(
-                    colors: [color, color.withValues(alpha: 0.75)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-            borderRadius: BorderRadius.circular(14),
-            border: outlined
-                ? Border.all(color: color.withValues(alpha: 0.5), width: 1.2)
-                : null,
-            boxShadow: outlined
-                ? null
-                : [
-                    BoxShadow(
-                        color: color.withValues(alpha: 0.26),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4))
-                  ],
-          ),
-          child: Row(
-            mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: outlined ? color : AppColors.white, size: 17),
-              const SizedBox(width: 7),
-              Text(label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: outlined ? color : AppColors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  )),
-            ],
-          ),
-        ),
-      );
-}
-
-// ── Night dialog ──────────────────────────────────────────────────────────────
-class _NightDialog extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title, body, confirmLabel, cancelLabel;
-  final Color confirmColor;
-  final VoidCallback onConfirm;
-  const _NightDialog({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.body,
-    required this.confirmLabel,
-    required this.confirmColor,
-    required this.cancelLabel,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) => Dialog(
-        backgroundColor: context.cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          color: iconColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: iconColor.withValues(alpha: 0.25))),
-                      child: Icon(icon, color: iconColor, size: 20)),
-                  const SizedBox(width: 14),
-                  Text(title,
-                      style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800)),
-                ]),
-                const SizedBox(height: 14),
-                Text(body,
-                    style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 14,
-                        height: 1.6)),
-                const SizedBox(height: 24),
-                Row(children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(cancelLabel,
-                        style: TextStyle(
-                            color: context.textSecondary,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                  const Spacer(),
-                  _Btn(
-                      label: confirmLabel,
-                      icon: Icons.check_rounded,
-                      color: confirmColor,
-                      compact: true,
-                      onTap: onConfirm),
-                ]),
-              ]),
-        ),
-      );
-}
-
-// ── Night text field ──────────────────────────────────────────────────────────
-class _NightField extends StatelessWidget {
-  final TextEditingController ctrl;
-  final String label, hint;
-  final IconData icon;
-  final int maxLines;
-  final String? Function(String?)? validator;
-  const _NightField({
-    required this.ctrl,
-    required this.label,
-    required this.hint,
-    required this.icon,
-    this.maxLines = 1,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) => TextFormField(
-        controller: ctrl,
-        maxLines: maxLines,
-        style: TextStyle(color: context.textPrimary, fontSize: 14),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          labelStyle: TextStyle(color: context.textSecondary),
-          hintStyle: TextStyle(color: context.textDisabled),
-          prefixIcon: Icon(icon, color: context.textSecondary, size: 18),
-          filled: true,
-          fillColor: context.elevatedColor,
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.divColor)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 1.5)),
-          errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.error, width: 1.5)),
-          focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.error, width: 1.5)),
-        ),
-        validator: validator,
-      );
-}
-
 class MapStopoverPicker extends StatefulWidget {
   final LatLng initialCenter;
   final LatLng? originPoint; // optional: show pickup marker for context
@@ -2287,7 +1601,7 @@ class _MapStopoverPickerState extends State<MapStopoverPicker> {
       appBar: AppBar(
         backgroundColor: AppColors.transparent,
         elevation: 0,
-        leading: _MapCircleBtn(
+        leading: MapCircleButton(
           icon: Icons.arrow_back_ios_new_rounded,
           onTap: () => Navigator.pop(context),
         ),

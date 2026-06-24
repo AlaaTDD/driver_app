@@ -14,13 +14,17 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/env_constants.dart';
 import 'package:flutter/scheduler.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/map/app_map.dart';
 import '../../../../core/models/trip_route_waypoint_model.dart';
 import '../../../trips/presentation/bloc/trip_route_cubit.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 import 'package:snapix/core/theme/theme_extensions.dart';
 import '../../../../core/utils/map_camera_utils.dart';
-import '../../../../services/directions_service.dart';
+import '../../../../core/utils/app_toast.dart';
+import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/services/directions_service.dart';
+import 'package:snapix/core/utils/app_logger.dart';
 
 class TripTrackingScreen extends StatefulWidget {
   final String tripId;
@@ -157,7 +161,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
         }
       }
     } catch (e) {
-      debugPrint('⚠️ Failed to load car icon: $e');
+      AppLogger.warning('Failed to load car icon: $e');
     }
   }
 
@@ -327,14 +331,15 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
           : SystemUiOverlayStyle.dark,
       child: BlocListener<TrackingBloc, TrackingState>(
         listener: (context, state) {
+          // ── Transient error (e.g. cancel failed) → show toast, stay on screen ──
+          if (state is TrackingError) {
+            AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
+            return;
+          }
+
           if (state is TrackingLoaded) {
             final tripStatus = state.trip['status'] as String?;
 
-            // Only update map/marker when we are NOT about to navigate away.
-            // Updating _driverMarkerNotifier (ValueNotifier) marks semantics
-            // parentData dirty; if we immediately call context.go() in the
-            // same frame the widget tree is torn down before Flutter can flush
-            // semantics, triggering `!semantics.parentDataDirty` assertion.
             if (tripStatus != 'completed' && tripStatus != 'cancelled') {
               final loc = state.driverLocation;
               if (loc != null) {
@@ -342,13 +347,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
               }
             }
 
-            // Print one full simulator command:
-            // driver current route -> pickup/meeting -> destination route.
             unawaited(_printSimulatorRouteCommand(state));
 
             if (tripStatus == 'completed') {
-              // Defer navigation to after the current frame so Flutter can
-              // finish semantics flush on the existing tree first.
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   context
@@ -369,8 +370,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
             if (state is TrackingLoading || state is TrackingInitial) {
               return _buildSkeleton(context);
             }
-            if (state is TrackingError)
-              return _buildError(context, state.message);
+            // TrackingError after a loaded state is transient (handled by listener as toast)
+            // Only show full error screen on initial load failure
+            if (state is TrackingError) return _buildError(context, state.message);
             if (state is TrackingLoaded) return _buildTracking(context, state);
             return _buildSkeleton(context);
           }),
@@ -1022,7 +1024,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
       final zoom = await ctrl.getZoomLevel();
       return CameraPosition(
           target: MapCameraUtils.centerOf(bounds), zoom: zoom);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.warning('TrackingScreen: failed to read current map camera: $e');
+      AppLogger.debug(st.toString());
       return CameraPosition(target: AppConstants.defaultMapCenter, zoom: 14);
     }
   }
@@ -1447,7 +1451,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          '${price.toStringAsFixed(0)} ${l.currencySar}',
+                          PriceFormatter.displayCompactWithCurrency(context, price),
                           style: TextStyle(
                             color: context.textDisabled,
                             fontSize: 14,
@@ -1466,7 +1470,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
                           children: [
-                            Text(finalPrice.toStringAsFixed(0),
+                            Text(PriceFormatter.display(context, finalPrice),
                                 style: TextStyle(
                                     color: context.textPrimary,
                                     fontSize: 34,
@@ -1499,7 +1503,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              '-${couponDiscount.toStringAsFixed(0)} ${l.currencySar}',
+                              '-${PriceFormatter.displayWithCurrency(context, couponDiscount)}',
                               style: const TextStyle(
                                   color: AppColors.purple,
                                   fontSize: 10,
@@ -1518,7 +1522,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
                           children: [
-                            Text(price.toStringAsFixed(0),
+                            Text(PriceFormatter.display(context, price),
                                 style: TextStyle(
                                     color: context.textPrimary,
                                     fontSize: 34,

@@ -167,6 +167,52 @@ class TripModel extends TripEntity {
 
   TripEntity toEntity() => this;
 
+  TripModel copyWith({
+    Map<String, dynamic>? userData,
+  }) {
+    return TripModel(
+      id: id,
+      userId: userId,
+      driverId: driverId,
+      pickupAddress: pickupAddress,
+      pickupLat: pickupLat,
+      pickupLng: pickupLng,
+      destinationAddress: destinationAddress,
+      destinationLat: destinationLat,
+      destinationLng: destinationLng,
+      vehicleType: vehicleType,
+      distanceKm: distanceKm,
+      price: price,
+      status: status,
+      paymentMethod: paymentMethod,
+      isPaid: isPaid,
+      createdAt: createdAt,
+      acceptedAt: acceptedAt,
+      startedAt: startedAt,
+      completedAt: completedAt,
+      geohash: geohash,
+      meetingLat: meetingLat,
+      meetingLng: meetingLng,
+      meetingAddress: meetingAddress,
+      finalPrice: finalPrice,
+      userRatingToDriver: userRatingToDriver,
+      driverRatingToUser: driverRatingToUser,
+      cancelledAt: cancelledAt,
+      cancelReason: cancelReason,
+      cancelledBy: cancelledBy,
+      updatedAt: updatedAt,
+      driverEarnings: driverEarnings,
+      platformCommission: platformCommission,
+      couponDiscount: couponDiscount,
+      paymentSource: paymentSource,
+      serviceAreaId: serviceAreaId,
+      estimatedDurationMin: estimatedDurationMin,
+      scheduledAt: scheduledAt,
+      cancelReasonCategory: cancelReasonCategory,
+      userData: userData ?? this.userData,
+    );
+  }
+
   @override
   List<Object?> get props => [...super.props, userData];
 }

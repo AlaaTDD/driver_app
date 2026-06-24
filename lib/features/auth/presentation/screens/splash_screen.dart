@@ -7,6 +7,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../../../core/utils/app_toast.dart';
+import '../../../../core/errors/error_mapper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -98,6 +100,10 @@ class _SplashScreenState extends State<SplashScreen>
       context.go(AppRoutes.pendingVerification);
     } else if (state is AuthUnauthenticated) {
       context.go(AppRoutes.onboarding);
+    } else if (state is AuthError) {
+      // [AUTH-16 FIX] Show error (e.g. no internet) then go to login
+      AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
+      context.go(AppRoutes.login);
     }
   }
 
