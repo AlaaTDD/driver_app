@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' as intel;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_extensions.dart';
@@ -352,7 +352,7 @@ IconData _statusIcon(String status) => switch (status) {
 String _formatDate(String? iso) {
   if (iso == null) return '';
   try {
-    return DateFormat('dd/MM/yyyy – hh:mm a')
+    return intel.DateFormat('dd/MM/yyyy – hh:mm a')
         .format(DateTime.parse(iso).toLocal());
   } catch (e, st) {
     AppLogger.warning('ComplaintsScreen: invalid date "$iso": $e');
@@ -365,7 +365,7 @@ String _formatDate(String? iso) {
 String _formatTime(String? iso) {
   if (iso == null) return '';
   try {
-    return DateFormat('h:mm a')
+    return intel.DateFormat('h:mm a')
         .format(DateTime.parse(iso).toLocal());
   } catch (e) {
     return '';
@@ -384,7 +384,7 @@ String _formatDayLabel(String? iso, bool isAr) {
 
     if (msgDay == today) return isAr ? 'اليوم' : 'Today';
     if (msgDay == yesterday) return isAr ? 'أمس' : 'Yesterday';
-    return DateFormat(isAr ? 'd MMMM' : 'MMM d').format(date);
+    return intel.DateFormat(isAr ? 'd MMMM' : 'MMM d').format(date);
   } catch (e) {
     return '';
   }
@@ -1256,231 +1256,235 @@ class _MessageBubble extends StatelessWidget {
         bottom: isOriginal ? 24 : 14,
         top: isOriginal ? 8 : 0,
       ),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // ── Avatar (left for admin) ──────────────
-          if (!isMe) ...[
-            if (showAvatar)
-              const _Avatar(isMe: false, isOriginal: false)
-            else
-              const SizedBox(width: 36),
-            const SizedBox(width: 10),
-          ],
+      // Use Align so position is physical (direction-agnostic).
+      // Bypasses Flutter RTL reversal of MainAxisAlignment.start/end.
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          // Fix row child order in LTR regardless of app direction
+          textDirection: TextDirection.ltr,
+          children: [
+            // ── Avatar: always physically LEFT for admin ──────────
+            if (!isMe) ...[
+              if (showAvatar)
+                const _Avatar(isMe: false, isOriginal: false)
+              else
+                const SizedBox(width: 36),
+              const SizedBox(width: 10),
+            ],
 
-          // ── Bubble + label column ─────────────────────────────────
-          Flexible(
-            child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                // Original complaint card — special style
-                if (isOriginal) ...[
-                  Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.82,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.warning.withValues(alpha: 0.3),
-                        width: 1.5,
+            // ── Bubble + label column ─────────────────────────────
+            Flexible(
+              child: Column(
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  // Original complaint card — special style
+                  if (isOriginal) ...[
+                    Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.82,
                       ),
-                      color: AppColors.warning.withValues(alpha: 0.06),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.warning.withValues(alpha: 0.1),
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(18)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.flag_rounded,
-                                  size: 14, color: AppColors.warning),
-                              const SizedBox(width: 6),
-                              Text(
-                                isAr
-                                    ? 'الشكوى الأصلية'
-                                    : 'Original Complaint',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.warning,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                              const Spacer(),
-                              if (timeStr.isNotEmpty)
-                                Text(
-                                  timeStr,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: context.textDisabled,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                            ],
-                          ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.warning.withValues(alpha: 0.3),
+                          width: 1.5,
                         ),
-                        // Body
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
-                          child: Text(
-                            message,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              color: context.textPrimary,
-                              height: 1.55,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  // Regular chat bubble
-                  Container(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.74,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 11),
-                    decoration: BoxDecoration(
-                      // Admin → solid gradient; User → soft tinted
-                      gradient: isMe
-                          ? null
-                          : const LinearGradient(
-                              colors: [AppColors.secondary, AppColors.secondaryDark],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      color: isMe
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : null,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(20),
-                        topRight: const Radius.circular(20),
-                        // user is on the RIGHT → sharp tail at bottom-RIGHT
-                        // admin is on the LEFT  → sharp tail at bottom-LEFT
-                        bottomLeft:  Radius.circular(isMe ? 20 : 4),
-                        bottomRight: Radius.circular(isMe ? 4 : 20),
+                        color: AppColors.warning.withValues(alpha: 0.06),
                       ),
-                      border: isMe
-                          ? Border.all(
-                              color:
-                                  AppColors.primary.withValues(alpha: 0.18),
-                              width: 1.2,
-                            )
-                          : null,
-                      boxShadow: isMe
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: AppColors.secondary
-                                    .withValues(alpha: 0.18),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Sender name
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            isMe
-                                ? (isAr ? 'أنت' : 'You')
-                                : (isAr ? 'فريق الدعم' : 'Support'),
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              color: isMe
-                                  ? AppColors.primary
-                                  : AppColors.white.withValues(alpha: 0.85),
-                              letterSpacing: 0.2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withValues(alpha: 0.1),
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(18)),
                             ),
-                          ),
-                        ),
-                        // Message text
-                        Text(
-                          message,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            color: isMe
-                                ? context.textPrimary
-                                : AppColors.white,
-                            height: 1.5,
-                          ),
-                        ),
-                        // Timestamp
-                        if (timeStr.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 5),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.check_rounded,
-                                  size: 11,
-                                  color: isMe
-                                      ? context.textDisabled
-                                      : AppColors.white.withValues(alpha: 0.6),
-                                ),
-                                const SizedBox(width: 3),
+                                Icon(Icons.flag_rounded,
+                                    size: 14, color: AppColors.warning),
+                                const SizedBox(width: 6),
                                 Text(
-                                  timeStr,
+                                  isAr
+                                      ? 'الشكوى الأصلية'
+                                      : 'Original Complaint',
                                   style: TextStyle(
-                                    fontSize: 9.5,
-                                    color: isMe
-                                        ? context.textDisabled
-                                        : AppColors.white
-                                            .withValues(alpha: 0.65),
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.warning,
+                                    letterSpacing: 0.3,
                                   ),
                                 ),
+                                const Spacer(),
+                                if (timeStr.isNotEmpty)
+                                  Text(
+                                    timeStr,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: context.textDisabled,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
-                      ],
+                          // Body
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
+                            child: Text(
+                              message,
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                color: context.textPrimary,
+                                height: 1.55,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ] else ...[
+                    // Regular chat bubble
+                    Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.74,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 11),
+                      decoration: BoxDecoration(
+                        gradient: isMe
+                            ? null
+                            : const LinearGradient(
+                                colors: [AppColors.secondary, AppColors.secondaryDark],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                        color: isMe
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : null,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(20),
+                          topRight: const Radius.circular(20),
+                          // user RIGHT → sharp tail bottom-RIGHT
+                          // admin LEFT  → sharp tail bottom-LEFT
+                          bottomLeft: Radius.circular(isMe ? 20 : 4),
+                          bottomRight: Radius.circular(isMe ? 4 : 20),
+                        ),
+                        border: isMe
+                            ? Border.all(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.18),
+                                width: 1.2,
+                              )
+                            : null,
+                        boxShadow: isMe
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: AppColors.secondary
+                                      .withValues(alpha: 0.18),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Sender name
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              isMe
+                                  ? (isAr ? 'أنت' : 'You')
+                                  : (isAr ? 'فريق الدعم' : 'Support'),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: isMe
+                                    ? AppColors.primary
+                                    : AppColors.white.withValues(alpha: 0.85),
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                          // Message text
+                          Text(
+                            message,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: isMe
+                                  ? context.textPrimary
+                                  : AppColors.white,
+                              height: 1.5,
+                            ),
+                          ),
+                          // Timestamp
+                          if (timeStr.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_rounded,
+                                    size: 11,
+                                    color: isMe
+                                        ? context.textDisabled
+                                        : AppColors.white.withValues(alpha: 0.6),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    timeStr,
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      color: isMe
+                                          ? context.textDisabled
+                                          : AppColors.white
+                                              .withValues(alpha: 0.65),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
 
-          // ── Avatar (right for user) ──────────────────────────────
-          if (isMe) ...[
-            const SizedBox(width: 10),
-            if (showAvatar)
-              _Avatar(
-                isMe: true,
-                isOriginal: isOriginal,
-              )
-            else
-              const SizedBox(width: 36),
+            // ── Avatar: always physically RIGHT for user ──────────
+            if (isMe) ...[
+              const SizedBox(width: 10),
+              if (showAvatar)
+                _Avatar(
+                  isMe: true,
+                  isOriginal: isOriginal,
+                )
+              else
+                const SizedBox(width: 36),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  Avatar (gradient circle for user / admin)
 // ─────────────────────────────────────────────────────────────────────────────
