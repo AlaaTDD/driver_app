@@ -16,8 +16,10 @@ class CorridorCubit extends Cubit<CorridorState> {
     emit(state.copyWith(status: CorridorStatus.loading));
     try {
       final data = await _repo.loadCorridor(_driverId);
+      if (isClosed) return;
       emit(state.copyWith(status: CorridorStatus.loaded, data: data));
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
           status: CorridorStatus.error, errorMessage: e.toString()));
     }
@@ -27,8 +29,10 @@ class CorridorCubit extends Cubit<CorridorState> {
     emit(state.copyWith(status: CorridorStatus.saving));
     try {
       await _repo.saveCorridor(_driverId, data);
+      if (isClosed) return;
       emit(state.copyWith(status: CorridorStatus.saved, data: data));
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
           status: CorridorStatus.error, errorMessage: e.toString()));
     }
@@ -38,8 +42,10 @@ class CorridorCubit extends Cubit<CorridorState> {
     emit(state.copyWith(status: CorridorStatus.saving));
     try {
       await _repo.clearCorridor(_driverId);
+      if (isClosed) return;
       emit(const CorridorState.initial());
     } catch (e) {
+      if (isClosed) return;
       emit(state.copyWith(
           status: CorridorStatus.error, errorMessage: e.toString()));
     }

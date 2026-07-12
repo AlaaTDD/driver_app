@@ -122,9 +122,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         behavior: HitTestBehavior.opaque,
         onPanEnd: (d) {
           final v = d.velocity.pixelsPerSecond.dx;
-          if (v < -350)
+          if (v < -350) {
             _navigate(1);
-          else if (v > 350) _navigate(-1);
+          } else if (v > 350) {
+            _navigate(-1);
+          }
         },
         child: Stack(
           children: [
@@ -166,7 +168,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                   const EdgeInsets.symmetric(horizontal: 12),
                             ),
                             child: Text(AppLocalizations.of(context)!.skip,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 13, fontWeight: FontWeight.w500)),
                           ),
                         ),

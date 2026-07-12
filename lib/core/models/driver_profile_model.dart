@@ -1,5 +1,28 @@
 import 'package:equatable/equatable.dart';
 
+/// مصدر الحقيقة الوحيد لحالة اعتماد السائق — يوازي enum
+/// `driver_account_status` في Postgres (drivers_profile.account_status).
+/// دورة الحالات الرسمية: pendingReview ("Requires Action") → underReview
+/// ("Under Review", بعد إرسال السائق للتعديلات، بانتظار مراجعة الأدمن) →
+/// approved، مع إمكانية الرجوع من underReview إلى pendingReview عند رفض
+/// جزئي. blocked مستقلة عن هذه الدورة. انظر MASTER_PLAN.md القسم 4.4–4.6.
+enum DriverAccountStatus {
+  pendingReview('pending_review'),
+  underReview('under_review'),
+  approved('approved'),
+  blocked('blocked');
+
+  final String value;
+  const DriverAccountStatus(this.value);
+
+  static DriverAccountStatus fromValue(String? raw) {
+    return DriverAccountStatus.values.firstWhere(
+      (e) => e.value == raw,
+      orElse: () => DriverAccountStatus.pendingReview,
+    );
+  }
+}
+
 /// Full driver profile model – merges data from:
 ///   • `users` table
 ///   • `drivers_profile` table
@@ -24,6 +47,8 @@ class DriverProfileModel extends Equatable {
   final String licenseImageUrl;
   final String criminalRecordUrl;
   final String vehicleType;
+  final String? vehicleCategory; // جديد Phase 2
+  final int? vehicleSeats;       // جديد Phase 2
   final String vehicleBrand;
   final String vehicleModel;
   final String vehiclePlate;
@@ -32,6 +57,8 @@ class DriverProfileModel extends Equatable {
   final String vehicleImageUrl;
   final bool isVerified;
   final bool isAvailable;
+  final DriverAccountStatus accountStatus;
+  final String? revisionReason;
   final double? currentLat;
   final double? currentLng;
   final String? geohash;
@@ -66,6 +93,8 @@ class DriverProfileModel extends Equatable {
     this.licenseImageUrl = '',
     this.criminalRecordUrl = '',
     this.vehicleType = '',
+    this.vehicleCategory,
+    this.vehicleSeats,
     this.vehicleBrand = '',
     this.vehicleModel = '',
     this.vehiclePlate = '',
@@ -74,6 +103,8 @@ class DriverProfileModel extends Equatable {
     this.vehicleImageUrl = '',
     this.isVerified = false,
     this.isAvailable = false,
+    this.accountStatus = DriverAccountStatus.pendingReview,
+    this.revisionReason,
     this.currentLat,
     this.currentLng,
     this.geohash,
@@ -108,6 +139,8 @@ class DriverProfileModel extends Equatable {
       licenseImageUrl: json['license_image_url'] as String? ?? '',
       criminalRecordUrl: json['criminal_record_url'] as String? ?? '',
       vehicleType: json['vehicle_type'] as String? ?? '',
+      vehicleCategory: json['vehicle_category'] as String?,
+      vehicleSeats: _asInt(json['vehicle_seats']),
       vehicleBrand: json['vehicle_brand'] as String? ?? '',
       vehicleModel: json['vehicle_model'] as String? ?? '',
       vehiclePlate: json['vehicle_plate'] as String? ?? '',
@@ -116,6 +149,8 @@ class DriverProfileModel extends Equatable {
       vehicleImageUrl: json['vehicle_image_url'] as String? ?? '',
       isVerified: json['is_verified'] as bool? ?? false,
       isAvailable: json['is_available'] as bool? ?? false,
+      accountStatus: DriverAccountStatus.fromValue(json['account_status'] as String?),
+      revisionReason: json['revision_reason'] as String?,
       currentLat: _asDouble(json['current_lat']),
       currentLng: _asDouble(json['current_lng']),
       geohash: json['geohash'] as String?,
@@ -149,8 +184,13 @@ class DriverProfileModel extends Equatable {
         'license_number': licenseNumber,
         'license_image_url': licenseImageUrl,
         'criminal_record_url': criminalRecordUrl,
-        'vehicle_type': vehicleType,
-        'vehicle_brand': vehicleBrand,
+        // [إصلاح فئة↔نوع مركبة] 'vehicle_type' حُذف من هذا الماب: العمود محذوف
+        // فعليًا من drivers_profile (Phase 3). هذه toJson() غير مستدعاة في أي
+        // insert/update فعلي على drivers_profile في المشروع (مؤكد بالبحث) —
+        // كانت كودًا ميتًا آمنًا حاليًا لكنه فخ Postgres "column does not
+        // exist" لو استُخدمت مستقبلًا.
+        'vehicle_category': vehicleCategory,
+        'vehicle_seats': vehicleSeats,
         'vehicle_model': vehicleModel,
         'vehicle_plate': vehiclePlate,
         'vehicle_color': vehicleColor,
@@ -158,6 +198,8 @@ class DriverProfileModel extends Equatable {
         'vehicle_image_url': vehicleImageUrl,
         'is_verified': isVerified,
         'is_available': isAvailable,
+        'account_status': accountStatus.value,
+        'revision_reason': revisionReason,
         'current_lat': currentLat,
         'current_lng': currentLng,
         'geohash': geohash,
@@ -176,9 +218,14 @@ class DriverProfileModel extends Equatable {
         'completed_trips_wallet': completedTripsWallet,
       };
 
+  // [إصلاح فئة↔نوع مركبة] هذه الدالة غير مستدعاة في أي مكان بالمشروع (مؤكد
+  // بالبحث) — أُبقيت لتوافق شكلي محتمل، لكن حُذف 'vehicle_type' من الماب:
+  // عمود drivers_profile.vehicle_type محذوف فعليًا (Phase 3)؛ استدعاء هذه
+  // الدالة مستقبلًا في .update() كان سيفشل فورًا بخطأ Postgres "column
+  // vehicle_type does not exist" لولا هذا التنظيف.
   Map<String, dynamic> toVehicleUpdateJson() => {
-        'vehicle_type': vehicleType,
-        'vehicle_brand': vehicleBrand,
+        'vehicle_category': vehicleCategory,
+        'vehicle_seats': vehicleSeats,
         'vehicle_model': vehicleModel,
         'vehicle_year': vehicleYear,
         'vehicle_color': vehicleColor,
@@ -196,7 +243,8 @@ class DriverProfileModel extends Equatable {
     String? language,
     bool? isActive,
     String? vehicleType,
-    String? vehicleBrand,
+    String? vehicleCategory,
+    int? vehicleSeats,
     String? vehicleModel,
     String? vehiclePlate,
     String? vehicleColor,
@@ -204,6 +252,8 @@ class DriverProfileModel extends Equatable {
     String? vehicleImageUrl,
     bool? isVerified,
     bool? isAvailable,
+    DriverAccountStatus? accountStatus,
+    String? revisionReason,
     double? currentLat,
     double? currentLng,
     String? geohash,
@@ -227,7 +277,9 @@ class DriverProfileModel extends Equatable {
       licenseImageUrl: licenseImageUrl,
       criminalRecordUrl: criminalRecordUrl,
       vehicleType: vehicleType ?? this.vehicleType,
-      vehicleBrand: vehicleBrand ?? this.vehicleBrand,
+      vehicleCategory: vehicleCategory ?? this.vehicleCategory,
+      vehicleSeats: vehicleSeats ?? this.vehicleSeats,
+      vehicleBrand: vehicleBrand,
       vehicleModel: vehicleModel ?? this.vehicleModel,
       vehiclePlate: vehiclePlate ?? this.vehiclePlate,
       vehicleColor: vehicleColor ?? this.vehicleColor,
@@ -235,6 +287,8 @@ class DriverProfileModel extends Equatable {
       vehicleImageUrl: vehicleImageUrl ?? this.vehicleImageUrl,
       isVerified: isVerified ?? this.isVerified,
       isAvailable: isAvailable ?? this.isAvailable,
+      accountStatus: accountStatus ?? this.accountStatus,
+      revisionReason: revisionReason ?? this.revisionReason,
       currentLat: currentLat ?? this.currentLat,
       currentLng: currentLng ?? this.currentLng,
       geohash: geohash ?? this.geohash,
@@ -277,7 +331,8 @@ class DriverProfileModel extends Equatable {
         nationalId, nationalIdImageUrl, licenseNumber, licenseImageUrl,
         criminalRecordUrl, vehicleType, vehicleBrand, vehicleModel,
         vehiclePlate, vehicleColor, vehicleYear, vehicleImageUrl,
-        isVerified, isAvailable, currentLat, currentLng, geohash, geohash5,
+        isVerified, isAvailable, accountStatus, revisionReason,
+        currentLat, currentLng, geohash, geohash5,
         targetOriginLat, targetOriginLng, targetDestLat, targetDestLng,
         targetRouteLat, targetRouteLng, targetRouteAddress,
         createdAt, updatedAt,

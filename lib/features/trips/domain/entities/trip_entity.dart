@@ -11,7 +11,7 @@ class TripEntity extends Equatable {
   final String destinationAddress;
   final double destinationLat;
   final double destinationLng;
-  final String vehicleType;
+  final String? vehicleType; // Phase 3: nullable (field removed from DB)
   final double distanceKm;
   final double price;
   final TripStatus status;
@@ -40,6 +40,14 @@ class TripEntity extends Equatable {
   final double? estimatedDurationMin;
   final DateTime? scheduledAt;
   final String? cancelReasonCategory;
+  // Phase 3: service_tiers-based snapshot fields (trips.service_tier_id is
+  // NOT NULL in the DB; the rest are nullable snapshot columns).
+  final String? serviceTierId;
+  final String? serviceTierNameSnapshot;
+  final double? baseFareSnapshot;
+  final double? pricePerKmSnapshot;
+  final double? minimumFareSnapshot;
+  final String? driverVehicleCategorySnapshot;
 
   const TripEntity({
     required this.id,
@@ -51,7 +59,7 @@ class TripEntity extends Equatable {
     required this.destinationAddress,
     required this.destinationLat,
     required this.destinationLng,
-    required this.vehicleType,
+    this.vehicleType,
     required this.distanceKm,
     required this.price,
     required this.status,
@@ -80,6 +88,12 @@ class TripEntity extends Equatable {
     this.estimatedDurationMin,
     this.scheduledAt,
     this.cancelReasonCategory,
+    this.serviceTierId,
+    this.serviceTierNameSnapshot,
+    this.baseFareSnapshot,
+    this.pricePerKmSnapshot,
+    this.minimumFareSnapshot,
+    this.driverVehicleCategorySnapshot,
   });
 
   @override
@@ -122,5 +136,11 @@ class TripEntity extends Equatable {
         estimatedDurationMin,
         scheduledAt,
         cancelReasonCategory,
+        serviceTierId,
+        serviceTierNameSnapshot,
+        baseFareSnapshot,
+        pricePerKmSnapshot,
+        minimumFareSnapshot,
+        driverVehicleCategorySnapshot,
       ];
 }

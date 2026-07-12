@@ -15,6 +15,7 @@ class DriverInfoModel extends Equatable {
   final String? vehicleModel;
   final String? vehicleColor;
   final String? vehicleType;
+  final String? vehicleCategory;
 
   const DriverInfoModel({
     required this.id,
@@ -26,6 +27,7 @@ class DriverInfoModel extends Equatable {
     this.vehicleModel,
     this.vehicleColor,
     this.vehicleType,
+    this.vehicleCategory,
   });
 
   factory DriverInfoModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class DriverInfoModel extends Equatable {
       vehicleModel: json['vehicle_model'] as String?,
       vehicleColor: json['vehicle_color'] as String?,
       vehicleType: json['vehicle_type'] as String?,
+      vehicleCategory: json['vehicle_category'] as String?,
     );
   }
 
@@ -52,6 +55,7 @@ class DriverInfoModel extends Equatable {
         'vehicle_model': vehicleModel,
         'vehicle_color': vehicleColor,
         'vehicle_type': vehicleType,
+        'vehicle_category': vehicleCategory,
       };
 
   @override
@@ -65,5 +69,6 @@ class DriverInfoModel extends Equatable {
         vehicleModel,
         vehicleColor,
         vehicleType,
+        vehicleCategory,
       ];
 }

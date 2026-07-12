@@ -98,6 +98,11 @@ class _SplashScreenState extends State<SplashScreen>
       );
     } else if (state is AuthDriverPending) {
       context.go(AppRoutes.pendingVerification);
+    } else if (state is AuthDriverBlocked) {
+      // [AUTH-BLOCKED FIX] سائق محظور يعيد تشغيل التطبيق → يُوجَّه صراحةً
+      // لـ driverBlocked (GoRouter.redirect يتولى الأمر أيضاً لكن الصراحة
+      // هنا تضمن الاتساق وتتفادي أي edge case في توقيت الـ redirect).
+      context.go(AppRoutes.driverBlocked);
     } else if (state is AuthUnauthenticated) {
       context.go(AppRoutes.onboarding);
     } else if (state is AuthError) {
@@ -116,6 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
         }
       },
       child: Scaffold(
+        key: const ValueKey('splash_screen'),
         body: Container(
           width: double.infinity,
           height: double.infinity,

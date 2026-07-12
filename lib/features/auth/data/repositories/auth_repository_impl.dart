@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
@@ -7,6 +9,7 @@ import '../../../../core/services/supabase_service.dart';
 import '../models/user_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../../../core/models/driver_profile_model.dart' show DriverAccountStatus;
 import 'package:snapix/core/utils/app_logger.dart';
 
 String _mapError(Object e) {
@@ -21,9 +24,11 @@ String _mapError(Object e) {
   // Return it directly instead of trying to match toString() output.
   if (e is AppException) return e.message;
   final msg = e.toString().toLowerCase();
-  // [AUTH-25 FIX] TimeoutException → treat as network error, not unexpected
+  // [AUTH-25 FIX / Validation-refactor FIX] A native Dart TimeoutException
+  // (thrown when our own .timeout(...) call fires) means the request took
+  // too long to respond — distinct from having no internet connection at all.
   if (msg.contains('timeoutexception') || msg.contains('future not completed')) {
-    return 'errorNoInternet';
+    return 'errorRequestTimeout';
   }
   if (msg.contains('invalid login credentials') ||
       msg.contains('invalid_credentials')) {
@@ -38,6 +43,25 @@ String _mapError(Object e) {
   }
   if (msg.contains('password should be at least')) {
     return 'errorPasswordLength';
+  }
+  // [Validation-refactor FIX] Expired/invalid session or JWT — the user needs
+  // to sign in again; distinct from a plain connectivity failure.
+  if (msg.contains('jwt expired') ||
+      msg.contains('invalid jwt') ||
+      msg.contains('token expired') ||
+      msg.contains('session expired') ||
+      msg.contains('refresh_token_not_found') ||
+      msg.contains('invalid refresh token')) {
+    return 'errorSessionExpired';
+  }
+  // [Validation-refactor FIX] Row-Level Security / authorization failures.
+  if (msg.contains('permission denied') ||
+      msg.contains('not authorized') ||
+      msg.contains('forbidden') ||
+      msg.contains('42501') ||
+      msg.contains('row-level security') ||
+      msg.contains('row level security')) {
+    return 'errorPermissionDenied';
   }
   if (msg.contains('network') ||
       msg.contains('socket') ||
@@ -54,12 +78,48 @@ String _mapError(Object e) {
       (msg.contains('unique') || msg.contains('duplicate') || msg.contains('already'))) {
     return 'errorPhoneRegistered';
   }
+  // [Validation-refactor FIX] Upstream (Supabase/Postgres) temporarily down —
+  // distinct from a 500 caused specifically by our own DB trigger below.
+  if (msg.contains('status: 503') || msg.contains('status=503') ||
+      msg.contains('"status":503') || msg.contains('statuscode: 503') ||
+      msg.contains('status: 502') || msg.contains('status=502') ||
+      msg.contains('"status":502') || msg.contains('statuscode: 502') ||
+      msg.contains('status: 504') || msg.contains('status=504') ||
+      msg.contains('"status":504') || msg.contains('statuscode: 504') ||
+      msg.contains('service unavailable') || msg.contains('bad gateway') ||
+      msg.contains('gateway timeout')) {
+    return 'errorServerUnavailable';
+  }
   // [AUTH-500 FIX] Supabase returns status=500 when the on-auth-user-created
   // DB trigger fails (e.g. NOT NULL violation on users.phone or users.name).
   // Map this to a clear error so the user gets a meaningful message.
   if (msg.contains('status: 500') || msg.contains('status=500') ||
       msg.contains('"status":500') || msg.contains('statuscode: 500')) {
     return 'errorCreateAccountFailed';
+  }
+  // [Validation-refactor FIX] Malformed/invalid payload rejected by the DB.
+  if (msg.contains('invalid input syntax') ||
+      msg.contains('violates check constraint') ||
+      msg.contains('invalid text representation') ||
+      msg.contains('22p02') ||
+      msg.contains('status: 400') || msg.contains('status=400') ||
+      msg.contains('"status":400') || msg.contains('statuscode: 400')) {
+    return 'errorInvalidDataSent';
+  }
+  // [Validation-refactor FIX] Generic uniqueness/state conflict not already
+  // covered by the more specific email/phone checks above.
+  if (msg.contains('duplicate key') ||
+      msg.contains('unique constraint') ||
+      msg.contains('23505') ||
+      msg.contains('conflict') ||
+      msg.contains('status: 409') || msg.contains('status=409') ||
+      msg.contains('"status":409') || msg.contains('statuscode: 409')) {
+    return 'errorDataConflict';
+  }
+  // [Validation-refactor FIX] Generic client/HTTP failure while sending the
+  // request that wasn't already identified as a connectivity issue above.
+  if (msg.contains('clientexception') || msg.contains('httpexception')) {
+    return 'errorSendingData';
   }
   return 'errorUnexpected';
 }
@@ -249,7 +309,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String licenseNumber,
     required String licenseImageUrl,
     required String criminalRecordUrl,
-    required String vehicleType,
+    required String vehicleCategory,
     required String vehicleBrand,
     required String vehicleModel,
     required int vehicleYear,
@@ -257,59 +317,72 @@ class AuthRepositoryImpl implements AuthRepository {
     required String vehiclePlate,
     required String vehicleImageUrl,
   }) async {
+    // [ATOMIC-FIX] كانت العملية سابقًا خطوتين منفصلتين: auth.signUp() ثم
+    // rpc('create_driver_account') منفصل. لو الخطوة الثانية فشلت، حساب
+    // auth.users كان يفضل موجود فعليًا (auth.signOut() بيعمل logout بس،
+    // مش حذف)، فالمستخدم يواجه "الإيميل/الرقم مستخدم" عند إعادة المحاولة
+    // رغم إن التسجيل اعتُبر فاشلًا بالكامل.
+    //
+    // الحل: الخطوتين بقوا داخل Edge Function واحدة (create-driver-account)
+    // شغالة بصلاحيات service_role على السيرفر، بتعمل rollback حقيقي
+    // (auth.admin.deleteUser) لو فشلت أي خطوة بعد إنشاء حساب الـ auth —
+    // فالعملية بقت ذرّية فعليًا من منظور المستخدم.
     try {
-      final response = await SupabaseService.client.auth.signUp(
-        email: email,
-        password: password,
-        data: {
+      final response = await SupabaseService.client.functions.invoke(
+        'create-driver-account',
+        body: {
           'name': name,
+          'email': email,
           'phone': phone,
-          'role': 'driver',
+          'password': password,
+          'national_id': nationalId,
+          'license_number': licenseNumber,
+          'vehicle_category': vehicleCategory,
+          'vehicle_brand': vehicleBrand,
+          'vehicle_model': vehicleModel,
+          'vehicle_year': vehicleYear,
+          'vehicle_color': vehicleColor,
+          'vehicle_plate': vehiclePlate,
+          'national_id_image_url': nationalIdImageUrl,
+          'license_image_url': licenseImageUrl,
+          'criminal_record_image_url': criminalRecordUrl,
+          'vehicle_image_url': vehicleImageUrl,
         },
-      );
+      ).timeout(const Duration(seconds: 30));
 
-      final user = response.user;
-      if (user == null) {
-        return const Left('errorCreateAccountFailed');
+      final data = response.data;
+      if (data is! Map || data['success'] != true) {
+        final errorMsg =
+            (data is Map ? data['error'] as String? : null) ??
+                'errorCreateAccountFailed';
+        return Left(errorMsg);
       }
 
-      final rpcResponse =
-          await SupabaseService.client.rpc('create_driver_account', params: {
-        'p_user_id': user.id,
-        'p_name': name,
-        'p_email': email,
-        'p_phone': phone,
-        'p_national_id': nationalId,
-        'p_license_number': licenseNumber,
-        'p_vehicle_type': vehicleType,
-        'p_vehicle_brand': vehicleBrand,
-        'p_vehicle_model': vehicleModel,
-        'p_vehicle_year': vehicleYear,
-        'p_vehicle_color': vehicleColor,
-        'p_vehicle_plate': vehiclePlate,
-        'p_national_id_image': nationalIdImageUrl,
-        'p_license_image': licenseImageUrl,
-        'p_criminal_record_image': criminalRecordUrl,
-        'p_vehicle_image': vehicleImageUrl,
-      });
-
-      if (rpcResponse['success'] != true) {
-        // [AUTH-07 FIX] Cleanup orphaned auth account to prevent user lockout
-        try {
-          await SupabaseService.client.auth.signOut();
-        } catch (_) {}
-        return Left(rpcResponse['error'] ?? 'errorCreateAccountFailed');
-      }
-
-      final userData = await SupabaseService.client
-          .from('users')
-          .select(
-              'id,name,phone,email,avatar_url,role,rating,total_trips,language,is_active,is_admin,is_blocked,blocked_reason,blocked_at,created_at,updated_at')
-          .eq('id', user.id)
-          .single();
-
+      final userData = Map<String, dynamic>.from(data['user'] as Map);
       final userModel = UserModel.fromJson(userData);
       return Right(userModel.toEntity());
+    } on FunctionException catch (e) {
+      // [FUNCTION-EX FIX] supabase_flutter يرمي FunctionException كـ exception
+      // (مش response عادي) لأي status code غير 2xx — يعني كل حالات الفشل
+      // اللي الـ Edge Function نفسها بترجعها (400 لفشل RPC، 500 لفشل fetch)
+      // كانت بتوصل هنا مباشرة بدل السطر فوق، وبتضيع رسالة الخطأ الحقيقية
+      // لأن الكود القديم كان بيعامل كل الـ exceptions بنفس الطريقة العامة.
+      // e.details بيحمل جسم الـ JSON اللي رجّعته الدالة نفسها ({success,error}).
+      final details = e.details;
+      String? serverError;
+      if (details is Map) {
+        serverError = details['error'] as String?;
+      } else if (details is String) {
+        try {
+          final decoded = jsonDecode(details);
+          if (decoded is Map) serverError = decoded['error'] as String?;
+        } catch (_) {
+          // details مش JSON صالح — نتجاهله ونستخدم fallback تحت.
+        }
+      }
+      AppLogger.error(
+          'AuthRepositoryImpl: signUpDriver FunctionException status=${e.status} details=$details');
+      return Left(serverError ?? 'errorCreateAccountFailed');
     } catch (e) {
       return Left(_mapError(e));
     }
@@ -422,17 +495,64 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  // [البند 17 — المراجعة النهائية] حُذفت getDriverIsVerified() من هنا —
+  // كانت تستعلم is_verified مباشرة (الفحص لمرة واحدة القديم)، ولم يعد لها
+  // أي مستدعٍ في المشروع بعد اكتمال المرحلة ج (watchDriverAccountStatus
+  // أدناه حلّت محلها فعلياً في AuthBloc). تأكيد الحذف: grep_search على
+  // lib/ و test/ لم يُظهر أي استدعاء متبقٍّ، وdart analyze + flutter test
+  // رجعا نظيفَين بعد الحذف. انظر MASTER_PLAN.md القسم 4، البند 17.
+
   @override
-  Future<Either<String, bool>> getDriverIsVerified(String userId) async {
-    try {
-      final data = await SupabaseService.client
-          .from('drivers_profile')
-          .select('is_verified')
-          .eq('id', userId)
-          .single();
-      return Right(data['is_verified'] as bool? ?? false);
-    } catch (e) {
-      return const Right(false);
+  Stream<({DriverAccountStatus status, String? revisionReason})>
+      watchDriverAccountStatus(String driverId) {
+    final controller =
+        StreamController<({DriverAccountStatus status, String? revisionReason})>();
+
+    Future<void> emitCurrent() async {
+      try {
+        final data = await SupabaseService.client
+            .from('drivers_profile')
+            .select('account_status, revision_reason')
+            .eq('id', driverId)
+            .single();
+        controller.add((
+          status: DriverAccountStatus.fromValue(data['account_status'] as String?),
+          revisionReason: data['revision_reason'] as String?,
+        ));
+      } catch (e, st) {
+        AppLogger.error('AuthRepositoryImpl: watchDriverAccountStatus initial fetch failed',
+            tag: 'AuthRepositoryImpl', error: e, stackTrace: st);
+      }
     }
+
+    // قيمة أولية فوراً (قبل أول حدث Realtime)، بنفس نمط watchDriverProfileة.
+    emitCurrent();
+
+    final channel = SupabaseService.client
+        .channel('driver_account_status_$driverId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'drivers_profile',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: driverId,
+          ),
+          callback: (payload) {
+            final newRow = payload.newRecord;
+            controller.add((
+              status: DriverAccountStatus.fromValue(newRow['account_status'] as String?),
+              revisionReason: newRow['revision_reason'] as String?,
+            ));
+          },
+        )
+        .subscribe();
+
+    controller.onCancel = () {
+      SupabaseService.client.removeChannel(channel);
+    };
+
+    return controller.stream;
   }
 }

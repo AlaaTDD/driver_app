@@ -143,7 +143,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordMinLength => 'Password must be at least 6 characters';
 
   @override
+  String get passwordMaxLength => 'Password must not exceed 72 characters';
+
+  @override
+  String get nameTooShort => 'Name is too short';
+
+  @override
+  String get nameTooLong => 'Name is too long';
+
+  @override
+  String get nameInvalidChars =>
+      'Name can only contain letters, spaces, and hyphens';
+
+  @override
+  String get emailContainsSpaces => 'Email must not contain spaces';
+
+  @override
+  String get emailInvalidLength => 'Email is too long';
+
+  @override
+  String get invalidPhoneLength => 'Phone number length is invalid';
+
+  @override
   String get createAccount => 'Create Account';
+
+  @override
+  String get accountCreatedSuccessfully => 'Account created successfully';
 
   @override
   String get passwordsNotMatch => 'Passwords don\'t match';
@@ -161,6 +186,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterNationalId => 'Please enter your national ID';
 
   @override
+  String get nationalIdInvalidFormat => 'National ID must contain digits only';
+
+  @override
+  String get nationalIdInvalidLength => 'National ID must be exactly 14 digits';
+
+  @override
   String get nationalIdPhoto => 'National ID Photo';
 
   @override
@@ -168,6 +199,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterLicenseNumber => 'Please enter your license number';
+
+  @override
+  String get licenseNumberTooShort => 'License number is too short';
+
+  @override
+  String get licenseNumberTooLong => 'License number is too long';
+
+  @override
+  String get licenseNumberInvalidChars =>
+      'License number contains invalid characters';
 
   @override
   String get licensePhoto => 'Driving License Photo';
@@ -206,10 +247,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterVehicleBrand => 'Please enter vehicle brand';
 
   @override
+  String get vehicleBrandTooShort => 'Vehicle brand is too short';
+
+  @override
+  String get vehicleBrandTooLong => 'Vehicle brand is too long';
+
+  @override
   String get vehicleModel => 'Vehicle Model';
 
   @override
   String get enterVehicleModel => 'Please enter vehicle model';
+
+  @override
+  String get vehicleModelTooShort => 'Vehicle model is too short';
+
+  @override
+  String get vehicleModelTooLong => 'Vehicle model is too long';
 
   @override
   String get vehicleYear => 'Vehicle Year';
@@ -224,10 +277,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterVehicleColor => 'Please enter vehicle color';
 
   @override
+  String get vehicleColorTooShort => 'Vehicle color is too short';
+
+  @override
+  String get vehicleColorTooLong => 'Vehicle color is too long';
+
+  @override
   String get plateNumber => 'Plate Number';
 
   @override
   String get enterPlateNumber => 'Please enter plate number';
+
+  @override
+  String get plateNumberTooShort => 'Plate number is too short';
+
+  @override
+  String get plateNumberTooLong => 'Plate number is too long';
+
+  @override
+  String get plateNumberInvalidChars =>
+      'Plate number contains invalid characters';
+
+  @override
+  String get plateNumberInvalidFormat =>
+      'Plate number must contain at least one digit';
 
   @override
   String get vehiclePhoto => 'Vehicle Photo';
@@ -237,11 +310,72 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please upload all required documents and photos';
 
   @override
+  String get vehicleCategory => 'Vehicle Category';
+
+  @override
+  String get vehicleCategoryCar => 'Car';
+
+  @override
+  String get vehicleCategorySuv => 'SUV';
+
+  @override
+  String get vehicleCategoryBike => 'Motorcycle';
+
+  @override
+  String get vehicleCategoryVan => 'Van';
+
+  @override
+  String get vehicleCategoryPickup => 'Pickup';
+
+  @override
+  String get vehicleCategoryTruck => 'Truck';
+
+  @override
+  String get vehicleCategoryMinivan => 'Minivan';
+
+  @override
+  String get vehicleCategoryLuxury => 'Luxury';
+
+  @override
+  String get vehicleCategoryElectric => 'Electric';
+
+  @override
+  String get vehicleCategoryTaxi => 'Taxi';
+
+  @override
+  String get vehicleCategoryBus => 'Bus';
+
+  @override
+  String get vehicleCategoryBicycle => 'Bicycle';
+
+  @override
+  String get vehicleCategoryScooter => 'Scooter';
+
+  @override
+  String get vehicleCategoryRickshaw => 'Rickshaw';
+
+  @override
+  String get fieldCannotBeEmpty => 'This field is required and cannot be empty';
+
+  @override
+  String get uploadDocument => 'Upload document';
+
+  @override
+  String get changeDocument => 'Change document';
+
+  @override
   String get accountUnderReview => 'Your account is under review';
 
   @override
   String get reviewDesc =>
       'We are reviewing your data and will notify you once done';
+
+  @override
+  String get accountRequiresAction => 'Action required on your account';
+
+  @override
+  String get requiresActionDesc =>
+      'Please review the notes below, update the requested information, and submit for review';
 
   @override
   String get rateTrip => 'Rate Trip';
@@ -836,6 +970,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorCreateAccountFailed => 'Failed to create account';
 
   @override
+  String get errorPermissionDenied =>
+      'You don\'t have permission to perform this action';
+
+  @override
+  String get errorRequestTimeout =>
+      'The request took too long, please try again';
+
+  @override
+  String get errorSessionExpired =>
+      'Your session has expired, please sign in again';
+
+  @override
+  String get errorServerUnavailable =>
+      'Server is currently unavailable, please try again later';
+
+  @override
+  String get errorSendingData => 'An error occurred while sending your data';
+
+  @override
+  String get errorInvalidDataSent => 'The data sent is invalid';
+
+  @override
+  String get errorDataConflict => 'A data conflict occurred, please try again';
+
+  @override
   String get failedFetchTrips => 'Failed to fetch trips';
 
   @override
@@ -1358,6 +1517,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cannot go online while on an active trip';
 
   @override
+  String get errorDriverNotApproved =>
+      'Your account is not currently approved. Please complete your account review';
+
+  @override
   String get errorWithdrawalPending =>
       'You already have a pending withdrawal request';
 
@@ -1492,6 +1655,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ratingStars => 'Stars Rating';
+
+  @override
+  String get bonusStartChallenge => 'Start';
+
+  @override
+  String get bonusActive => 'Active';
+
+  @override
+  String get bonusRequestClaim => 'Claim reward';
+
+  @override
+  String get bonusClaimPending => 'Under review';
+
+  @override
+  String get bonusClaimReceived => 'Received';
+
+  @override
+  String get bonusNoneAvailable => 'No challenges available right now';
+
+  @override
+  String get bonusReadyToClaimTitle => 'You have a reward ready to claim!';
+
+  @override
+  String get bonusKeepGoing => 'Keep going, you\'re on track';
+
+  @override
+  String get bonusStartFirstChallenge => 'Start your first challenge below';
+
+  @override
+  String get bonusCheckBackLater =>
+      'Check back later — new challenges may be added anytime.';
+
+  @override
+  String bonusSummaryStats(int active, int ready, int total) {
+    return '$active active · $ready ready to claim · $total total';
+  }
 
   @override
   String get scheduledTrip => 'Scheduled';
@@ -1684,6 +1883,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get savePreferredCorridor => 'Save preferred corridor';
 
   @override
+  String get corridorModePoints => 'Two points';
+
+  @override
+  String get corridorModeLine => 'Route line';
+
+  @override
+  String get corridorModePointsDesc => 'Two separate circles at start and end';
+
+  @override
+  String get corridorModeLineDesc => 'Matches any point along the actual route';
+
+  @override
+  String get corridorLineWidth => 'Corridor width';
+
+  @override
+  String get corridorLineModeHint =>
+      'The route drawn between the two points will be used with the selected width';
+
+  @override
+  String get corridorLineRequiresRoute =>
+      'Select both points first to get the route';
+
+  @override
   String get tapMap => 'Tap the map';
 
   @override
@@ -1783,4 +2005,61 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get forgotPasswordSent =>
       'Password reset link has been sent to your email.';
+
+  @override
+  String get nationalIdImage => 'National ID Front Photo';
+
+  @override
+  String get licenseImage => 'Driver License Photo';
+
+  @override
+  String get targetedEditTitle => 'Edit Required Fields';
+
+  @override
+  String get targetedEditSubtitle =>
+      'Please update only the fields requested below';
+
+  @override
+  String get fieldStatusApproved => 'Approved';
+
+  @override
+  String get fieldStatusPending => 'Under Review';
+
+  @override
+  String get fieldStatusRequiresAction => 'Action Required';
+
+  @override
+  String get reviewReason => 'Reason';
+
+  @override
+  String get approvedReadOnly =>
+      'This field has been approved and cannot be edited';
+
+  @override
+  String get submitChanges => 'Submit Changes';
+
+  @override
+  String get submittingChanges => 'Submitting...';
+
+  @override
+  String get changesSubmitted => 'Changes submitted successfully';
+
+  @override
+  String get noFieldsToEdit => 'No fields require editing';
+
+  @override
+  String get pendingReviewInfo => 'This field is pending admin review';
+
+  @override
+  String get editOnlyRequiredFields =>
+      'Only fields requested by admin are shown here';
+
+  @override
+  String get tapToSelectFromGallery => 'Tap to select from gallery';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get uploading => 'Uploading...';
 }

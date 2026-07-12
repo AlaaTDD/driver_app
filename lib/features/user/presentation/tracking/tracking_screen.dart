@@ -263,7 +263,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
       if (fullRoutePoints.length < 2) return;
 
       _routeCommandPrinted = true;
-      print(_simulatorRouteCommand(fullRoutePoints));
+      AppLogger.debug(_simulatorRouteCommand(fullRoutePoints));
     } finally {
       _routeCommandPrinting = false;
     }
@@ -1407,7 +1407,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     final couponDiscount = (trip['coupon_discount'] as num?)?.toDouble() ?? 0;
     final finalPrice = (trip['final_price'] as num?)?.toDouble() ?? price;
     final hasCoupon = couponDiscount > 0;
-    final vType = trip['vehicle_type'] as String? ?? 'car';
+    final vType = trip['service_tier_name_snapshot'] as String? ?? trip['vehicle_type'] as String? ?? 'car';
     final pay = trip['payment_method'] as String? ?? 'cash';
     final isPaid = trip['is_paid'] as bool? ?? false;
 

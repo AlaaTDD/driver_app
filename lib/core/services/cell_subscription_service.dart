@@ -120,7 +120,9 @@ class CellSubscriptionService {
           driverId: driverId,
           lat: driverLat,
           lng: driverLng,
-          vehicleType: row['vehicle_type'] as String? ?? 'car',
+          vehicleType: row['vehicle_category'] as String?
+              ?? row['vehicle_type'] as String?
+              ?? 'car',
           lastUpdatedAt: lastUpdated,
         );
       }
@@ -325,7 +327,9 @@ class CellSubscriptionService {
       driverId: driverId,
       lat: lat,
       lng: lng,
-      vehicleType: row['vehicle_type'] as String? ?? 'car',
+      vehicleType: row['vehicle_category'] as String?
+          ?? row['vehicle_type'] as String?
+          ?? 'car',
       lastUpdatedAt: updatedAt,
     );
   }

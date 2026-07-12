@@ -121,10 +121,9 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
 
     setState(() => _isCreatingTrip = true);
     try {
-      final vehicleType =
-          (args.vehicleType?.isNotEmpty ?? false) ? args.vehicleType! : 'sedan';
+      final serviceTierId = args.serviceTierId;
       AppLogger.debug(
-          '🚗 MeetingPoint: inserting trip with vehicle_type=$vehicleType');
+          '🚗 MeetingPoint: inserting trip with service_tier_id=$serviceTierId');
 
       final activeTripId = await _repository.getActiveTripId(authState.user.id);
 
@@ -150,7 +149,6 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             : l10n.unspecified,
         'distance_km': args.distanceKm ?? 0.0,
         'price': args.price ?? 0.0,
-        'vehicle_type': vehicleType,
         'payment_method': args.paymentMethod ?? 'cash',
         'status': 'searching',
       };
@@ -176,7 +174,7 @@ class _MeetingPointScreenState extends State<MeetingPointScreen> {
             : l10n.unspecified,
         distanceKm: args.distanceKm ?? 0.0,
         price: args.price ?? 0.0,
-        vehicleType: vehicleType,
+        serviceTierId: serviceTierId,
         paymentMethod: args.paymentMethod ?? 'cash',
         geohash: tripData['geohash'] as String?,
         couponCode: args.couponCode,

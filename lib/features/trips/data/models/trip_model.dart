@@ -43,6 +43,12 @@ class TripModel extends TripEntity {
     super.estimatedDurationMin,
     super.scheduledAt,
     super.cancelReasonCategory,
+    super.serviceTierId,
+    super.serviceTierNameSnapshot,
+    super.baseFareSnapshot,
+    super.pricePerKmSnapshot,
+    super.minimumFareSnapshot,
+    super.driverVehicleCategorySnapshot,
     this.userData,
   });
 
@@ -57,7 +63,11 @@ class TripModel extends TripEntity {
       destinationAddress: json['destination_address'] as String,
       destinationLat: (json['destination_lat'] as num).toDouble(),
       destinationLng: (json['destination_lng'] as num).toDouble(),
-      vehicleType: json['vehicle_type'] as String,
+      // [إصلاح فئة↔نوع مركبة] trips.vehicle_type محذوف من الـ schema (Phase 3)؛
+      // المصدر الحي الوحيد هو service_tier_name_snapshot. عُكس ترتيب الـ
+      // fallback لتوضيح النية الفعلية (الفرع الأول كان دائمًا null بأمان، دون
+      // أي تغيير سلوكي حقيقي).
+      vehicleType: json['service_tier_name_snapshot'] as String? ?? json['vehicle_type'] as String? ?? '',
       distanceKm: (json['distance_km'] as num).toDouble(),
       price: (json['price'] as num).toDouble(),
       status: TripStatus.fromString(json['status'] as String?) ??
@@ -117,6 +127,19 @@ class TripModel extends TripEntity {
           ? DateTime.parse(json['scheduled_at'] as String)
           : null,
       cancelReasonCategory: json['cancel_reason_category'] as String?,
+      serviceTierId: json['service_tier_id'] as String?,
+      serviceTierNameSnapshot: json['service_tier_name_snapshot'] as String?,
+      baseFareSnapshot: json['base_fare_snapshot'] != null
+          ? (json['base_fare_snapshot'] as num).toDouble()
+          : null,
+      pricePerKmSnapshot: json['price_per_km_snapshot'] != null
+          ? (json['price_per_km_snapshot'] as num).toDouble()
+          : null,
+      minimumFareSnapshot: json['minimum_fare_snapshot'] != null
+          ? (json['minimum_fare_snapshot'] as num).toDouble()
+          : null,
+      driverVehicleCategorySnapshot:
+          json['driver_vehicle_category_snapshot'] as String?,
       userData: json['user'] as Map<String, dynamic>?,
     );
   }
@@ -132,7 +155,9 @@ class TripModel extends TripEntity {
       'destination_address': destinationAddress,
       'destination_lat': destinationLat,
       'destination_lng': destinationLng,
-      'vehicle_type': vehicleType,
+      // [إصلاح فئة↔نوع مركبة] 'vehicle_type' حُذف من هذا الماب: العمود محذوف
+      // فعليًا من جدول trips (Phase 3)، وTripModel.toJson() غير مستدعاة في أي
+      // إدراج/تحديث فعلي على trips في المشروع (مؤكد بالبحث) — كانت كودًا ميتًا.
       'distance_km': distanceKm,
       'price': price,
       'status': status.toDbString(),
@@ -161,6 +186,16 @@ class TripModel extends TripEntity {
       'estimated_duration_min': estimatedDurationMin,
       'scheduled_at': scheduledAt?.toIso8601String(),
       'cancel_reason_category': cancelReasonCategory,
+      if (serviceTierId != null) 'service_tier_id': serviceTierId,
+      if (serviceTierNameSnapshot != null)
+        'service_tier_name_snapshot': serviceTierNameSnapshot,
+      if (baseFareSnapshot != null) 'base_fare_snapshot': baseFareSnapshot,
+      if (pricePerKmSnapshot != null)
+        'price_per_km_snapshot': pricePerKmSnapshot,
+      if (minimumFareSnapshot != null)
+        'minimum_fare_snapshot': minimumFareSnapshot,
+      if (driverVehicleCategorySnapshot != null)
+        'driver_vehicle_category_snapshot': driverVehicleCategorySnapshot,
       if (userData != null) 'user': userData,
     };
   }
@@ -209,6 +244,12 @@ class TripModel extends TripEntity {
       estimatedDurationMin: estimatedDurationMin,
       scheduledAt: scheduledAt,
       cancelReasonCategory: cancelReasonCategory,
+      serviceTierId: serviceTierId,
+      serviceTierNameSnapshot: serviceTierNameSnapshot,
+      baseFareSnapshot: baseFareSnapshot,
+      pricePerKmSnapshot: pricePerKmSnapshot,
+      minimumFareSnapshot: minimumFareSnapshot,
+      driverVehicleCategorySnapshot: driverVehicleCategorySnapshot,
       userData: userData ?? this.userData,
     );
   }

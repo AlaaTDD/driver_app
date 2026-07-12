@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:snapix/core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/design_system.dart';
 
@@ -87,16 +88,23 @@ const List<_Country> _kCountries = [
 ///
 /// [onChanged] receives the complete number, e.g. "+201001234567".
 /// [initialCountryCode] is the 2-letter ISO code, default "EG" (Egypt).
+/// [initialFullNumber] — مطلب 7 من MASTER_PLAN.md: رقم كامل موجود مسبقًا
+/// (مثال "+201001234567") لسياقات التعديل (شاشات البروفايل). يُفصل تلقائيًا
+/// داخل initState إلى dialCode + رقم محلي — لا تُمرَّر القيمة الكاملة مباشرة
+/// عبر initialCountryCode أو أي طريق آخر أبدًا، تفاديًا لدمج/تكرار الكود الدولي
+/// عند _fireChange(). null (الافتراضي) يعني حقلًا فارغًا كسياق الإنشاء الحالي.
 class AppPhoneField extends StatefulWidget {
   final void Function(String completeNumber) onChanged;
   final String initialCountryCode;
   final TextInputAction textInputAction;
+  final String? initialFullNumber;
 
   const AppPhoneField({
     super.key,
     required this.onChanged,
     this.initialCountryCode = 'EG',
     this.textInputAction = TextInputAction.next,
+    this.initialFullNumber,
   });
 
   @override
@@ -114,6 +122,39 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       (c) => c.code == widget.initialCountryCode,
       orElse: () => _kCountries.first,
     );
+    _applyInitialFullNumber();
+  }
+
+  // مطلب 7 من MASTER_PLAN.md: يفصل dialCode عن الرقم المحلي عند تمرير
+  // initialFullNumber (سياق التعديل)، بمطابقة أطول dialCode من _kCountries
+  // يبدأ به الرقم الكامل (الأطول أولاً لتفادي تطابق خاطئ لو تداخلت
+  // بادئات أكواد الدول). لا يستدعي widget.onChanged عمدًا: القيمة الابتدائية
+  // مسؤولية الشاشة الأب (هي أصلًا مرّرتها)، وهذه الدالة فقط تهيئ العرض الداخلي.
+  void _applyInitialFullNumber() {
+    final full = widget.initialFullNumber?.trim();
+    if (full == null || full.isEmpty) return;
+
+    _Country? matched;
+    for (final country in _kCountries) {
+      if (full.startsWith(country.dialCode)) {
+        if (matched == null ||
+            country.dialCode.length > matched.dialCode.length) {
+          matched = country;
+        }
+      }
+    }
+
+    if (matched != null) {
+      _selected = matched;
+      _controller.text = full
+          .substring(matched.dialCode.length)
+          .replaceAll(RegExp(r'[^0-9]'), '');
+    } else {
+      // لا يوجد كود دولة معروف يطابق بداية الرقم — fallback آمن: الإبقاء على
+      // _selected الافتراضي (initialCountryCode) وعرض كل الأرقام كما هي بدل
+      // فقدان البيانات بالكامل.
+      _controller.text = full.replaceAll(RegExp(r'[^0-9]'), '');
+    }
   }
 
   @override
@@ -150,6 +191,7 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
     return TextFormField(
       controller: _controller,
       keyboardType: TextInputType.phone,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       textInputAction: widget.textInputAction,
       // Phone numbers are globally LTR — force LTR regardless of app locale
       textDirection: TextDirection.ltr,
@@ -210,6 +252,9 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
       onChanged: (_) => _fireChange(),
       validator: (value) {
         if (value == null || value.trim().isEmpty) return l.enterPhone;
+        final digits = value.trim();
+        if (!RegExp(r'^[0-9]+$').hasMatch(digits)) return l.invalidPhoneFormat;
+        if (digits.length < 7 || digits.length > 15) return l.invalidPhoneLength;
         return null;
       },
     );

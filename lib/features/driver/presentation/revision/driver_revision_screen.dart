@@ -11,6 +11,9 @@ import '../../../../core/widgets/app_empty_state.dart';
 import 'bloc/driver_revision_cubit.dart';
 import 'bloc/driver_revision_state.dart';
 import '../../../../core/models/revision_request_model.dart';
+import '../../../../core/models/revision_request_labels.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 
 class DriverRevisionScreen extends StatelessWidget {
   const DriverRevisionScreen({super.key});
@@ -30,6 +33,12 @@ class _DriverRevisionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+
+    // [دورة المراجعة الثلاثية] مصدر الحقيقة الوحيد لإظهار زر التعديل هو
+    // account_status عبر AuthBloc — وليس driver_revision_requests.status
+    // (isResolved/resolved). نفس القاعدة المطبَّقة في
+    // pending_verification_screen.dart. انظر MASTER_PLAN.md القسم 3.1 و7.
+    final canEdit = context.watch<AuthBloc>().state is AuthDriverPending;
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -62,6 +71,7 @@ class _DriverRevisionView extends StatelessWidget {
                       itemBuilder: (context, index) {
                         return _RevisionRequestCard(
                           revision: requests[index],
+                          canEdit: canEdit,
                         );
                       },
                     ),
@@ -75,13 +85,14 @@ class _DriverRevisionView extends StatelessWidget {
 
 class _RevisionRequestCard extends StatelessWidget {
   final RevisionRequestModel revision;
+  final bool canEdit;
 
-  const _RevisionRequestCard({required this.revision});
+  const _RevisionRequestCard({required this.revision, required this.canEdit});
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final fields = _fields(context);
+    final fields = revision.displayFields(context);
     final message = revision.message ?? '';
     final createdAt = _formatDate(revision.createdAt);
     final resolved = revision.isResolved;
@@ -186,7 +197,7 @@ class _RevisionRequestCard extends StatelessWidget {
             ],
           ),
 
-          if (!resolved) ...[
+          if (canEdit && !resolved) ...[
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -200,32 +211,6 @@ class _RevisionRequestCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  List<String> _fields(BuildContext context) {
-    final values = List<String>.from(revision.fieldsRequested);
-    if (values.isEmpty && revision.fieldName != null) {
-      values.add(revision.fieldName!);
-    }
-    if (values.isEmpty) return [AppLocalizations.of(context)!.unspecified];
-    return values.map((field) => _fieldLabel(context, field)).toList();
-  }
-
-  String _fieldLabel(BuildContext context, String field) {
-    final l = AppLocalizations.of(context)!;
-    return switch (field) {
-      'national_id' || 'national_id_image_url' => l.nationalId,
-      'license_number' || 'license_image_url' => l.driverLicense,
-      'criminal_record_url' => l.criminalRecord,
-      'vehicle_type' => l.vehicleType,
-      'vehicle_brand' => l.vehicleBrand,
-      'vehicle_model' => l.vehicleModel,
-      'vehicle_year' => l.vehicleYear,
-      'vehicle_color' => l.vehicleColor,
-      'vehicle_plate' => l.plateNumber,
-      'vehicle_image_url' => l.vehiclePhoto,
-      _ => field,
-    };
   }
 
   String? _formatDate(DateTime? value) {

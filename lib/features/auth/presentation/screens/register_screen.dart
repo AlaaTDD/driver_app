@@ -36,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: const ValueKey('signup_screen'),
       backgroundColor: context.bgColor,
       body: Stack(
         children: [
@@ -93,6 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                     const SizedBox(height: 40),
                     _AccountTypeCard(
+                      key: const ValueKey('register_as_user_card'),
                       icon: Icons.person_rounded,
                       title: AppLocalizations.of(context)!.user,
                       subtitle: AppLocalizations.of(context)!.userDesc,
@@ -104,6 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                     const SizedBox(height: 16),
                     _AccountTypeCard(
+                      key: const ValueKey('register_as_driver_card'),
                       icon: Icons.drive_eta_rounded,
                       title: AppLocalizations.of(context)!.driver,
                       subtitle: AppLocalizations.of(context)!.driverDesc,
@@ -126,10 +129,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                             ),
                           ),
                           GestureDetector(
+                            key: const ValueKey('go_to_login_button'),
                             onTap: () => context.pop(),
                             child: Text(
                               AppLocalizations.of(context)!.login,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -159,6 +163,7 @@ class _AccountTypeCard extends StatefulWidget {
   final VoidCallback onTap;
 
   const _AccountTypeCard({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

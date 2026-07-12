@@ -80,7 +80,7 @@ class MeetingPointRepository {
     required String destAddress,
     required double distanceKm,
     required double price,
-    required String vehicleType,
+    String? serviceTierId, // Phase 3: service_tiers UUID
     required String paymentMethod,
     String? geohash,
     String? couponCode,
@@ -102,7 +102,8 @@ class MeetingPointRepository {
       'destination_address': destAddress,
       'distance_km': distanceKm,
       'price': price,
-      'vehicle_type': vehicleType,
+      if (serviceTierId != null && serviceTierId.isNotEmpty)
+        'service_tier_id': serviceTierId,
       'payment_method': paymentMethod,
       'payment_source': paymentMethod == 'wallet' ? 'wallet' : 'cash',
       'status': isScheduled ? 'scheduled' : 'searching',

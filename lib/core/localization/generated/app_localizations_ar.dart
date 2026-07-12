@@ -141,7 +141,33 @@ class AppLocalizationsAr extends AppLocalizations {
   String get passwordMinLength => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
 
   @override
+  String get passwordMaxLength => 'كلمة المرور يجب ألا تتجاوز 72 حرفًا';
+
+  @override
+  String get nameTooShort => 'الاسم قصير جدًا';
+
+  @override
+  String get nameTooLong => 'الاسم طويل جدًا';
+
+  @override
+  String get nameInvalidChars =>
+      'الاسم يجب أن يحتوي على حروف ومسافات وشرطات فقط';
+
+  @override
+  String get emailContainsSpaces =>
+      'البريد الإلكتروني يجب ألا يحتوي على مسافات';
+
+  @override
+  String get emailInvalidLength => 'البريد الإلكتروني طويل جدًا';
+
+  @override
+  String get invalidPhoneLength => 'طول رقم الهاتف غير صحيح';
+
+  @override
   String get createAccount => 'إنشاء الحساب';
+
+  @override
+  String get accountCreatedSuccessfully => 'تم إنشاء الحساب بنجاح';
 
   @override
   String get passwordsNotMatch => 'كلمات المرور غير متطابقة';
@@ -159,6 +185,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get enterNationalId => 'الرجاء إدخال رقم الهوية';
 
   @override
+  String get nationalIdInvalidFormat =>
+      'الرقم القومي يجب أن يتكون من أرقام فقط';
+
+  @override
+  String get nationalIdInvalidLength =>
+      'الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط';
+
+  @override
   String get nationalIdPhoto => 'صورة الهوية الوطنية';
 
   @override
@@ -166,6 +200,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get enterLicenseNumber => 'الرجاء إدخال رقم الرخصة';
+
+  @override
+  String get licenseNumberTooShort => 'رقم الرخصة قصير جدًا';
+
+  @override
+  String get licenseNumberTooLong => 'رقم الرخصة طويل جدًا';
+
+  @override
+  String get licenseNumberInvalidChars =>
+      'رقم الرخصة يحتوي على رموز غير مسموحة';
 
   @override
   String get licensePhoto => 'صورة رخصة القيادة';
@@ -204,10 +248,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get enterVehicleBrand => 'الرجاء إدخال ماركة المركبة';
 
   @override
+  String get vehicleBrandTooShort => 'ماركة المركبة قصيرة جدًا';
+
+  @override
+  String get vehicleBrandTooLong => 'ماركة المركبة طويلة جدًا';
+
+  @override
   String get vehicleModel => 'موديل المركبة';
 
   @override
   String get enterVehicleModel => 'الرجاء إدخال موديل المركبة';
+
+  @override
+  String get vehicleModelTooShort => 'موديل المركبة قصير جدًا';
+
+  @override
+  String get vehicleModelTooLong => 'موديل المركبة طويل جدًا';
 
   @override
   String get vehicleYear => 'سنة الصنع';
@@ -222,10 +278,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get enterVehicleColor => 'الرجاء إدخال لون المركبة';
 
   @override
+  String get vehicleColorTooShort => 'لون المركبة قصير جدًا';
+
+  @override
+  String get vehicleColorTooLong => 'لون المركبة طويل جدًا';
+
+  @override
   String get plateNumber => 'رقم اللوحة';
 
   @override
   String get enterPlateNumber => 'الرجاء إدخال رقم اللوحة';
+
+  @override
+  String get plateNumberTooShort => 'رقم اللوحة قصير جدًا';
+
+  @override
+  String get plateNumberTooLong => 'رقم اللوحة طويل جدًا';
+
+  @override
+  String get plateNumberInvalidChars => 'رقم اللوحة يحتوي على رموز غير مسموحة';
+
+  @override
+  String get plateNumberInvalidFormat =>
+      'رقم اللوحة يجب أن يحتوي على رقم واحد على الأقل';
 
   @override
   String get vehiclePhoto => 'صورة المركبة';
@@ -234,10 +309,71 @@ class AppLocalizationsAr extends AppLocalizations {
   String get uploadAllDocuments => 'الرجاء رفع جميع المستندات والصور المطلوبة';
 
   @override
+  String get vehicleCategory => 'فئة المركبة';
+
+  @override
+  String get vehicleCategoryCar => 'سيارة';
+
+  @override
+  String get vehicleCategorySuv => 'دفع رباعي';
+
+  @override
+  String get vehicleCategoryBike => 'دراجة نارية';
+
+  @override
+  String get vehicleCategoryVan => 'فان';
+
+  @override
+  String get vehicleCategoryPickup => 'بيك أب';
+
+  @override
+  String get vehicleCategoryTruck => 'شاحنة';
+
+  @override
+  String get vehicleCategoryMinivan => 'ميني فان';
+
+  @override
+  String get vehicleCategoryLuxury => 'فاخرة';
+
+  @override
+  String get vehicleCategoryElectric => 'كهربائية';
+
+  @override
+  String get vehicleCategoryTaxi => 'تاكسي';
+
+  @override
+  String get vehicleCategoryBus => 'أتوبيس';
+
+  @override
+  String get vehicleCategoryBicycle => 'دراجة هوائية';
+
+  @override
+  String get vehicleCategoryScooter => 'سكوتر';
+
+  @override
+  String get vehicleCategoryRickshaw => 'توك توك';
+
+  @override
+  String get fieldCannotBeEmpty => 'هذا الحقل مطلوب ولا يمكن أن يكون فارغًا';
+
+  @override
+  String get uploadDocument => 'ارفع المستند';
+
+  @override
+  String get changeDocument => 'تغيير المستند';
+
+  @override
   String get accountUnderReview => 'حسابك قيد المراجعة';
 
   @override
   String get reviewDesc => 'نقوم بمراجعة بياناتك وسيتم إشعارك بمجرد الانتهاء';
+
+  @override
+  String get accountRequiresAction => 'مطلوب منك تعديل بياناتك';
+
+  @override
+  String get requiresActionDesc =>
+      'يرجى مراجعة الملاحظات أدناه وتحديث البيانات المطلوبة ثم إرسالها للمراجعة';
 
   @override
   String get rateTrip => 'قيّم الرحلة';
@@ -825,6 +961,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errorCreateAccountFailed => 'فشل إنشاء الحساب';
 
   @override
+  String get errorPermissionDenied => 'ليس لديك صلاحية للقيام بهذا الإجراء';
+
+  @override
+  String get errorRequestTimeout => 'استغرق الطلب وقتًا طويلاً، حاول مجدداً';
+
+  @override
+  String get errorSessionExpired =>
+      'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً';
+
+  @override
+  String get errorServerUnavailable =>
+      'الخادم غير متاح حالياً، حاول مرة أخرى لاحقاً';
+
+  @override
+  String get errorSendingData => 'حدث خطأ أثناء إرسال البيانات';
+
+  @override
+  String get errorInvalidDataSent => 'البيانات المرسلة غير صحيحة';
+
+  @override
+  String get errorDataConflict => 'حدث تعارض في البيانات، حاول مجدداً';
+
+  @override
   String get failedFetchTrips => 'حدث خطأ أثناء جلب الرحلات';
 
   @override
@@ -1342,6 +1501,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يمكنك التواجد في وضع المتاح أثناء رحلة نشطة';
 
   @override
+  String get errorDriverNotApproved =>
+      'حسابك غير معتمد حالياً. يرجى إكمال مراجعة حسابك';
+
+  @override
   String get errorWithdrawalPending => 'لديك طلب سحب قيد المعالجة بالفعل';
 
   @override
@@ -1475,6 +1638,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ratingStars => 'تقييم بالنجوم';
+
+  @override
+  String get bonusStartChallenge => 'ابدأ';
+
+  @override
+  String get bonusActive => 'نشط';
+
+  @override
+  String get bonusRequestClaim => 'طلب استلام المكافأة';
+
+  @override
+  String get bonusClaimPending => 'قيد المراجعة';
+
+  @override
+  String get bonusClaimReceived => 'تم الاستلام';
+
+  @override
+  String get bonusNoneAvailable => 'لا توجد حوافز متاحة حالياً';
+
+  @override
+  String get bonusReadyToClaimTitle => 'لديك مكافأة جاهزة للاستلام!';
+
+  @override
+  String get bonusKeepGoing => 'استمر، أنت على الطريق الصحيح';
+
+  @override
+  String get bonusStartFirstChallenge => 'ابدأ أول تحدٍ من القائمة بالأسفل';
+
+  @override
+  String get bonusCheckBackLater =>
+      'راجع لاحقاً — الإدارة قد تضيف حوافز جديدة في أي وقت.';
+
+  @override
+  String bonusSummaryStats(int active, int ready, int total) {
+    return '$active نشطة · $ready جاهزة للاستلام · $total إجمالاً';
+  }
 
   @override
   String get scheduledTrip => 'مجدولة';
@@ -1662,6 +1861,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get savePreferredCorridor => 'حفظ الممر المفضل';
 
   @override
+  String get corridorModePoints => 'نقطتان';
+
+  @override
+  String get corridorModeLine => 'مسار خطي';
+
+  @override
+  String get corridorModePointsDesc => 'دائرتان منفصلتان عند البداية والنهاية';
+
+  @override
+  String get corridorModeLineDesc => 'تطابق مع أي نقطة على مسار الطريق الفعلي';
+
+  @override
+  String get corridorLineWidth => 'عرض المسار';
+
+  @override
+  String get corridorLineModeHint =>
+      'سيتم استخدام المسار المرسوم بين النقطتين مع العرض المحدد';
+
+  @override
+  String get corridorLineRequiresRoute =>
+      'يجب تحديد نقطتين أولاً للحصول على مسار الطريق';
+
+  @override
   String get tapMap => 'اضغط على الخريطة';
 
   @override
@@ -1759,4 +1981,58 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get forgotPasswordSent =>
       'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.';
+
+  @override
+  String get nationalIdImage => 'صورة الهوية الأمامية';
+
+  @override
+  String get licenseImage => 'صورة رخصة القيادة';
+
+  @override
+  String get targetedEditTitle => 'تعديل البيانات المطلوبة';
+
+  @override
+  String get targetedEditSubtitle => 'يرجى تعديل الحقول المطلوبة فقط';
+
+  @override
+  String get fieldStatusApproved => 'معتمد';
+
+  @override
+  String get fieldStatusPending => 'قيد المراجعة';
+
+  @override
+  String get fieldStatusRequiresAction => 'مطلوب تعديل';
+
+  @override
+  String get reviewReason => 'السبب';
+
+  @override
+  String get approvedReadOnly => 'هذا الحقل تم اعتماده ولا يمكن تعديله';
+
+  @override
+  String get submitChanges => 'إرسال التعديلات';
+
+  @override
+  String get submittingChanges => 'جاري الإرسال...';
+
+  @override
+  String get changesSubmitted => 'تم إرسال التعديلات بنجاح';
+
+  @override
+  String get noFieldsToEdit => 'لا توجد حقول تحتاج إلى تعديل';
+
+  @override
+  String get pendingReviewInfo => 'هذا الحقل قيد المراجعة من المشرف';
+
+  @override
+  String get editOnlyRequiredFields => 'يظهر هنا فقط ما طلب المشرف تعديله';
+
+  @override
+  String get tapToSelectFromGallery => 'اضغط لاختيار من المعرض';
+
+  @override
+  String get changePhoto => 'تغيير الصورة';
+
+  @override
+  String get uploading => 'جاري الرفع...';
 }

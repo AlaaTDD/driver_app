@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../core/errors/exceptions.dart';
 import '../../../../../core/services/supabase_service.dart';
 import 'package:snapix/features/user/data/repositories/coupon_repository.dart';
 import 'pricing_event.dart';
@@ -35,55 +34,23 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
   ) async {
     emit(PricingLoading());
     try {
-      // Fix #5: Read pricing_config first (updated by admin dashboard via
-      // admin_update_pricing RPC). Fall back to vehicle_types if empty.
-      List<Map<String, dynamic>> rows = [];
+      // Phase 3: Read directly from service_tiers
+      final stRows = await SupabaseService.client
+          .from('service_tiers')
+          .select(
+              'id, name, display_name, icon, base_fare, price_per_km, minimum_fare, is_active, sort_order')
+          .eq('is_active', true)
+          .order('sort_order', ascending: true);
 
-      try {
-        final pcRows = await SupabaseService.client
-            .from('pricing_config')
-            .select(
-                'vehicle_type, display_name, icon, base_fare, price_per_km, is_active, sort_order')
-            .eq('is_active', true)
-            .order('sort_order', ascending: true);
-
-        if ((pcRows as List).isNotEmpty) {
-          // Map pricing_config columns → VehicleTypeModel field names
-          rows = pcRows
-              .map((r) => <String, dynamic>{
-                    'name': r['vehicle_type'],
-                    'display_name': r['display_name'] ?? r['vehicle_type'],
-                    'icon': r['icon'] ?? 'directions_car',
-                    'base_fare': r['base_fare'],
-                    'price_per_km': r['price_per_km'],
-                  })
-              .toList();
-          AppLogger.debug(
-              '✅ PricingBloc: Loaded ${rows.length} types from pricing_config');
-        }
-      } catch (e, st) {
-        AppLogger.debug(
-            '⚠️ PricingBloc: pricing_config load failed, using vehicle_types fallback: $e\n$st');
-        // pricing_config may not have all columns yet — fall through
-      }
-
-      // Fallback: read from vehicle_types if pricing_config gave nothing
-      if (rows.isEmpty) {
-        final vtRows = await SupabaseService.client
-            .from('vehicle_types')
-            .select('name, display_name, icon, base_fare, price_per_km')
-            .eq('is_active', true)
-            .order('sort_order', ascending: true);
-        rows = (vtRows as List).cast<Map<String, dynamic>>();
-        AppLogger.debug(
-            '✅ PricingBloc: Loaded ${rows.length} types from vehicle_types (fallback)');
-      }
+      final rows = (stRows as List).cast<Map<String, dynamic>>();
+      AppLogger.debug(
+          '✅ PricingBloc: Loaded ${rows.length} service tiers');
 
       final types = rows.map((r) => VehicleTypeModel.fromJson(r)).toList();
 
       emit(VehicleTypesLoaded(vehicleTypes: types));
     } catch (e) {
-      AppLogger.error('PricingBloc: Failed to load vehicle types: $e');
+      AppLogger.error('PricingBloc: Failed to load service tiers: $e');
       emit(PricingError('errorLoadVehicleTypes', vehicleTypes: []));
     }
   }
@@ -99,6 +66,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
         orElse: () => types.isNotEmpty
             ? types.first
             : const VehicleTypeModel(
+                id: '', // no real service_tier resolved — matches fromJson's empty-id fallback
                 name: 'sedan',
                 displayName: 'Sedan',
                 icon: 'directions_car',
@@ -107,24 +75,18 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
               ),
       );
 
-      final result = await SupabaseService.client.rpc(
-        'calculate_trip_price',
-        params: {
-          'p_vehicle_type': event.vehicleType,
-          'p_distance_km': event.distanceKm,
-        },
-      );
-
-      if (result == null) {
-        throw ServerException('errorNullPrice');
-      }
-      final finalPrice = (result as num).toDouble();
+      // Phase 3: Calculate client-side (calculate_trip_price RPC removed)
+      final rawPrice = vehicle.baseFare + vehicle.pricePerKm * event.distanceKm;
+      final finalPrice = rawPrice < vehicle.minimumFare && vehicle.minimumFare > 0
+          ? vehicle.minimumFare
+          : rawPrice;
 
       emit(PricingCalculated(
         vehicleTypes: types,
         basePrice: finalPrice,
         finalPrice: finalPrice,
         vehicleType: event.vehicleType,
+        serviceTierId: vehicle.id,
         distanceKm: event.distanceKm,
       ));
     } catch (e) {
@@ -181,6 +143,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
           basePrice: s.basePrice,
           finalPrice: s.finalPrice,
           vehicleType: s.vehicleType,
+          serviceTierId: s.serviceTierId,
           distanceKm: s.distanceKm,
         ));
         emit(PricingCalculated(
@@ -188,6 +151,7 @@ class PricingBloc extends Bloc<PricingEvent, PricingState> {
           basePrice: s.basePrice,
           finalPrice: s.finalPrice,
           vehicleType: s.vehicleType,
+          serviceTierId: s.serviceTierId,
           distanceKm: s.distanceKm,
         ));
       } else if (s is CouponApplied) {

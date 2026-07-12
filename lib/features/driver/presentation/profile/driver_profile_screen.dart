@@ -17,6 +17,7 @@ import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/services/r2_storage_service.dart';
 import '../../../../core/services/supabase_service.dart';
+import '../../../../core/widgets/app_phone_field.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -27,11 +28,32 @@ class DriverProfileScreen extends StatefulWidget {
 
 class _DriverProfileScreenState extends State<DriverProfileScreen> {
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  String _phoneValue = '';
   final _plateController = TextEditingController();
+  // [إصلاح 2026-07-10 — الجزء ب] controllers للحقول النصية/الرقمية التسعة
+  // الناقصة سابقًا. كانت الشاشة تدعم فقط name/phone/vehicle_plate رغم أن
+  // السائق قد يُطلب منه (عبر driver_revision_requests) تعديل أيٍّ من
+  // national_id/license_number/vehicle_category/brand/model/year/color.
+  final _nationalIdController = TextEditingController();
+  final _licenseNumberController = TextEditingController();
+  final _vehicleBrandController = TextEditingController();
+  final _vehicleModelController = TextEditingController();
+  final _vehicleYearController = TextEditingController();
+  final _vehicleColorController = TextEditingController();
+  // القيم المسموحة مطابقة لـ chk_dp_vehicle_category (CHECK constraint فعلي
+  // على drivers_profile — تم التحقق من قيمه الأربعة عشر عبر x-ray CSV قبل
+  // البناء، وليست افتراضًا).
+  static const _vehicleCategoryValues = [
+    'car', 'suv', 'bike', 'van', 'pickup', 'truck', 'minivan', 'luxury',
+    'electric', 'taxi', 'bus', 'bicycle', 'scooter', 'rickshaw',
+  ];
+  String? _selectedVehicleCategory;
   bool _populated = false;
   bool _uploadingAvatar = false;
   File? _localAvatarFile;
+  // [الجزء ب.2] مفتاح رفع لكل مستند على حدة (بدل boolean واحد) لأن الأربعة
+  // مستندات (هوية/رخصة/سجل جنائي/صورة مركبة) قابلة للرفع المستقل المتزامن.
+  final Map<String, bool> _uploadingField = {};
 
   @override
   void initState() {
@@ -42,17 +64,72 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _plateController.dispose();
+    _nationalIdController.dispose();
+    _licenseNumberController.dispose();
+    _vehicleBrandController.dispose();
+    _vehicleModelController.dispose();
+    _vehicleYearController.dispose();
+    _vehicleColorController.dispose();
     super.dispose();
   }
 
   void _populate(DriverProfileModel driver) {
     if (_populated) return;
     _nameController.text = driver.name ?? '';
-    _phoneController.text = driver.phone ?? '';
+    _phoneValue = driver.phone ?? '';
     _plateController.text = driver.vehiclePlate;
+    _nationalIdController.text = driver.nationalId;
+    _licenseNumberController.text = driver.licenseNumber;
+    _vehicleBrandController.text = driver.vehicleBrand;
+    _vehicleModelController.text = driver.vehicleModel;
+    _vehicleYearController.text =
+        driver.vehicleYear != null ? '${driver.vehicleYear}' : '';
+    _vehicleColorController.text = driver.vehicleColor;
+    // vehicle_category قد تكون فارغة لسائق قديم لم يُهاجَر بعد — لا نجبر
+    // قيمة افتراضية هنا حتى لا نرسلها للحفظ دون قصد السائق الفعلي.
+    _selectedVehicleCategory = _vehicleCategoryValues.contains(driver.vehicleCategory)
+        ? driver.vehicleCategory
+        : null;
     _populated = true;
+  }
+
+  // [إصلاح 2026-07-10 — الجزء ب.3] كل أعمدة drivers_profile التي تعدّلها هذه
+  // الشاشة هي NOT NULL في الداتابيز (مؤكد من x-ray CSV) — إرسال قيمة فارغة
+  // لأي منها يفشل الـ UPDATE بخطأ constraint. لذلك: أي حقل نصي جديد يُترك
+  // خارج الـ payload كليًا إذا كان فارغًا بعد trim (بدل إرسال ''), فتبقى
+  // القيمة القديمة في الداتابيز كما هي دون تغيير — بالضبط سلوك "الإبقاء على
+  // القيمة القديمة لو الحقل فارغ" الذي حددته الخطة. name/phone/vehicle_plate
+  // ليست NOT NULL بنفس القيد فتبقى تُرسَل دائمًا كما كانت.
+  Map<String, dynamic> _buildUpdatePayload() {
+    final payload = <String, dynamic>{
+      'name': _nameController.text.trim(),
+      'phone': _phoneValue.trim(),
+      'vehicle_plate': _plateController.text.trim(),
+    };
+
+    void addIfNotEmpty(String key, String value) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) payload[key] = trimmed;
+    }
+
+    addIfNotEmpty('national_id', _nationalIdController.text);
+    addIfNotEmpty('license_number', _licenseNumberController.text);
+    addIfNotEmpty('vehicle_brand', _vehicleBrandController.text);
+    addIfNotEmpty('vehicle_model', _vehicleModelController.text);
+    addIfNotEmpty('vehicle_color', _vehicleColorController.text);
+
+    final yearText = _vehicleYearController.text.trim();
+    if (yearText.isNotEmpty) {
+      final year = int.tryParse(yearText);
+      if (year != null) payload['vehicle_year'] = year;
+    }
+
+    if (_selectedVehicleCategory != null) {
+      payload['vehicle_category'] = _selectedVehicleCategory;
+    }
+
+    return payload;
   }
 
   @override
@@ -119,13 +196,23 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     }
     final rating = driver.rating;
     final totalTrips = driver.totalTrips;
-    final isVerified = driver.isVerified;
-    final vehicleType = driver.vehicleType.isNotEmpty ? driver.vehicleType : null;
-    final vehicleBrand = driver.vehicleBrand.isNotEmpty ? driver.vehicleBrand : null;
-    final vehicleModel = driver.vehicleModel.isNotEmpty ? driver.vehicleModel : null;
-    final vehicleYear = driver.vehicleYear;
-    final vehicleColor = driver.vehicleColor.isNotEmpty ? driver.vehicleColor : null;
-    final vehiclePlate = driver.vehiclePlate;
+    // [البند 17 — المراجعة النهائية] استُبدل driver.isVerified (العمود القديم)
+    // بـ accountStatus الموحّد — الشاشة نفسها غير قابلة للوصول أصلاً لسائق
+    // محظور (AppRouter.redirect يعترضه عبر AuthDriverBlocked قبل وصوله هنا،
+    // البند 11)، لذا تبقى الشارة ثنائية (معتمد/قيد المراجعة) بنفس التصميم
+    // الأصلي، لكن بمصدر بيانات صحيح بدلاً من is_verified القديم.
+    final isVerified = driver.accountStatus == DriverAccountStatus.approved;
+    // [إصلاح فئة↔نوع مركبة] drivers_profile.vehicle_type محذوف من الـ schema
+    // (Phase 3) — العمود الحي الوحيد الذي يصف مركبة السائق هو vehicle_category
+    // (تُحمَّل فعليًا من DriverProfileRepository.loadDriverProfile). كان هذا
+    // السطر يقرأ حقل vehicleType الذي يبقى فارغًا دائمًا فيُخفي الشارة بأمان
+    // لكن دون داعٍ. راجع _vehicleCategoryLabel أدناه، وهي مصممة أصلًا للقيم
+    // الأربعة عشر الحقيقية في chk_dp_vehicle_category (بخلاف _vehicleLabel
+    // القديمة المبنية على باقات تسعير قديمة مثل sedan/motorcycle).
+    final vehicleCategory =
+        driver.vehicleCategory != null && driver.vehicleCategory!.isNotEmpty
+            ? driver.vehicleCategory
+            : null;
     final vehicleImageUrl = driver.vehicleImageUrl.isNotEmpty ? driver.vehicleImageUrl : null;
 
     return CustomScrollView(
@@ -233,7 +320,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      if (vehicleType != null)
+                      if (vehicleCategory != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 5),
@@ -248,7 +335,12 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                vehicleType == 'motorcycle'
+                                // فئات ذات عجلتين ضمن الأربعة عشر الحقيقية
+                                // (chk_dp_vehicle_category) — bike/scooter، بدل
+                                // القيمة القديمة 'motorcycle' غير الموجودة أصلًا
+                                // في القيم المسموحة الحالية.
+                                vehicleCategory == 'bike' ||
+                                        vehicleCategory == 'scooter'
                                     ? Icons.two_wheeler_rounded
                                     : Icons.directions_car_rounded,
                                 size: 14,
@@ -256,7 +348,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _vehicleLabel(vehicleType),
+                                _vehicleCategoryLabel(vehicleCategory),
                                 style: const TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 12,
@@ -305,20 +397,70 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   icon: Icons.directions_car_filled_rounded,
                 ),
                 const SizedBox(height: 12),
-                if (vehicleImageUrl != null)
-                  Container(
+                // [الجزء ب.2] كانت الصورة تُعرض فقط عند وجودها بدون أي إمكانية
+                // للرفع الأول أو التغيير — أصبحت الآن دائمة الظهور (بمكان فارغ
+                // قابل للضغط عند غيابها) بنفس نمط رفع الأفاتار.
+                GestureDetector(
+                  onTap: (_uploadingField['vehicle_image_url'] ?? false)
+                      ? null
+                      : () => _pickAndUploadDocument(
+                          'vehicle', 'vehicle_image_url'),
+                  child: Container(
                     width: double.infinity,
                     height: 160,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
+                      color: context.elevatedColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: context.divColor, width: 1),
-                      image: DecorationImage(
-                        image: NetworkImage(vehicleImageUrl),
-                        fit: BoxFit.cover,
-                      ),
+                      image: vehicleImageUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(vehicleImageUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
+                    child: (_uploadingField['vehicle_image_url'] ?? false)
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                                color: AppColors.primary, strokeWidth: 2),
+                          )
+                        : vehicleImageUrl == null
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_a_photo_outlined,
+                                      color: context.textSecondary, size: 28),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    l.uploadDocument,
+                                    style: TextStyle(
+                                      color: context.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Align(
+                                alignment: AlignmentDirectional.bottomEnd,
+                                child: Container(
+                                  margin: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.edit,
+                                      size: 14, color: AppColors.white),
+                                ),
+                              ),
                   ),
+                ),
+                // [إصلاح 2026-07-10 — الجزء ب.1] كانت هذه البطاقة عرضًا للقراءة
+                // فقط (_DetailRow) لبيانات المركبة الأربعة — أصبحت الآن حقول
+                // تعديل فعلية (dropdown لفئة المركبة + TextField لكل من
+                // الماركة/الموديل/السنة/اللون)، لأن هذه بالضبط الحقول التي قد
+                // يطلب الأدمن من السائق تصحيحها عبر driver_revision_requests.
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -327,45 +469,63 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     border: Border.all(color: context.divColor),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (vehicleBrand != null)
-                        _DetailRow(
-                          icon: Icons.branding_watermark_outlined,
-                          label: l.vehicleBrand,
-                          value: vehicleBrand,
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedVehicleCategory,
+                        decoration: InputDecoration(
+                          labelText: l.vehicleCategory,
+                          prefixIcon:
+                              const Icon(Icons.directions_car_filled_outlined),
                         ),
-                      if (vehicleModel != null) ...[
-                        Divider(color: context.divColor, height: 20),
-                        _DetailRow(
-                          icon: Icons.car_rental_outlined,
-                          label: l.vehicleModel,
-                          value: vehicleModel,
+                        items: _vehicleCategoryValues
+                            .map((v) => DropdownMenuItem(
+                                  value: v,
+                                  child: Text(_vehicleCategoryLabel(v)),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _selectedVehicleCategory = v),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _vehicleBrandController,
+                        style: TextStyle(color: context.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: l.vehicleBrand,
+                          prefixIcon:
+                              const Icon(Icons.branding_watermark_outlined),
                         ),
-                      ],
-                      if (vehicleYear != null) ...[
-                        Divider(color: context.divColor, height: 20),
-                        _DetailRow(
-                          icon: Icons.calendar_today_outlined,
-                          label: l.vehicleYear,
-                          value: '$vehicleYear',
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _vehicleModelController,
+                        style: TextStyle(color: context.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: l.vehicleModel,
+                          prefixIcon: const Icon(Icons.car_rental_outlined),
                         ),
-                      ],
-                      if (vehicleColor != null) ...[
-                        Divider(color: context.divColor, height: 20),
-                        _DetailRow(
-                          icon: Icons.color_lens_outlined,
-                          label: l.vehicleColor,
-                          value: vehicleColor,
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _vehicleYearController,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(color: context.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: l.vehicleYear,
+                          prefixIcon:
+                              const Icon(Icons.calendar_today_outlined),
                         ),
-                      ],
-                      if (vehiclePlate != null && vehiclePlate.isNotEmpty) ...[
-                        Divider(color: context.divColor, height: 20),
-                        _DetailRow(
-                          icon: Icons.confirmation_number_outlined,
-                          label: l.plateNumber,
-                          value: vehiclePlate,
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _vehicleColorController,
+                        style: TextStyle(color: context.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: l.vehicleColor,
+                          prefixIcon: const Icon(Icons.color_lens_outlined),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -384,22 +544,36 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                   child: Column(
                     children: [
+                      // [الجزء ب.2] الثلاثة صفوف أصبحوا قابلين للضغط لرفع/تغيير
+                      // المستند عبر _pickAndUploadDocument، بدل عرض للقراءة فقط.
                       _DocumentRow(
                         icon: Icons.badge_outlined,
                         label: l.nationalId,
                         hasUrl: driver.nationalIdImageUrl.isNotEmpty,
+                        isUploading:
+                            _uploadingField['national_id_image_url'] ?? false,
+                        onTap: () => _pickAndUploadDocument(
+                            'national_id', 'national_id_image_url'),
                       ),
                       Divider(color: context.divColor, height: 20),
                       _DocumentRow(
                         icon: Icons.card_membership_outlined,
                         label: l.driverLicense,
                         hasUrl: driver.licenseImageUrl.isNotEmpty,
+                        isUploading:
+                            _uploadingField['license_image_url'] ?? false,
+                        onTap: () => _pickAndUploadDocument(
+                            'license', 'license_image_url'),
                       ),
                       Divider(color: context.divColor, height: 20),
                       _DocumentRow(
                         icon: Icons.description_outlined,
                         label: l.criminalRecord,
                         hasUrl: driver.criminalRecordUrl.isNotEmpty,
+                        isUploading:
+                            _uploadingField['criminal_record_url'] ?? false,
+                        onTap: () => _pickAndUploadDocument(
+                            'criminal_record', 'criminal_record_url'),
                       ),
                     ],
                   ),
@@ -419,14 +593,35 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
+                // [الجزء ب.1] رقم الهوية ورقم الرخصة نصّان منفصلان عن صورهما
+                // (national_id_image_url / license_image_url أعلاه) — كانا
+                // مفقودين تمامًا من الشاشة رغم كونهما NOT NULL في الداتابيز.
                 TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
+                  controller: _nationalIdController,
+                  keyboardType: TextInputType.number,
                   style: TextStyle(color: context.textPrimary),
                   decoration: InputDecoration(
-                    labelText: l.phone,
-                    prefixIcon: const Icon(Icons.phone_outlined),
+                    labelText: l.nationalId,
+                    prefixIcon: const Icon(Icons.badge_outlined),
                   ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _licenseNumberController,
+                  style: TextStyle(color: context.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: l.driverLicense,
+                    prefixIcon: const Icon(Icons.card_membership_outlined),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                AppPhoneField(
+                  key: ValueKey('driver_phone_field_${driver.phone ?? ''}'),
+                  initialCountryCode: 'EG',
+                  initialFullNumber: driver.phone,
+                  onChanged: (number) {
+                    _phoneValue = number;
+                  },
                 ),
                 const SizedBox(height: 14),
                 TextField(
@@ -445,11 +640,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       ? null
                       : () => context
                           .read<DriverProfileBloc>()
-                          .add(UpdateDriverProfile({
-                            'name': _nameController.text.trim(),
-                            'phone': _phoneController.text.trim(),
-                            'vehicle_plate': _plateController.text.trim(),
-                          })),
+                          .add(UpdateDriverProfile(_buildUpdatePayload())),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -504,6 +695,50 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     }
   }
 
+  // [الجزء ب.2] دالة موحّدة لرفع أي مستند من الأربعة (هوية/رخصة/سجل جنائي/
+  // صورة مركبة) — نفس نمط _pickAndUploadAvatar لكن بمفتاح رفع خاص بكل حقل
+  // في _uploadingField (بدل boolean واحد) لأن المستندات ترفع باستقلالية، ثم
+  // تُحفظ فورًا عند نجاح الرفع (مثل الأفاتار) وليس عند الضغط على "حفظ".
+  Future<void> _pickAndUploadDocument(
+      String r2PathSegment, String updateFieldKey) async {
+    final source = await _chooseAvatarSource();
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (image == null) return;
+
+    setState(() => _uploadingField[updateFieldKey] = true);
+    try {
+      final uid = SupabaseService.currentUser?.id;
+      if (uid == null) throw AuthException('errorNotLoggedIn');
+      final r2 = R2StorageService();
+      final ext = _imageExtension(image.path);
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final url = await r2.uploadFile(
+        file: File(image.path),
+        path: 'documents/driver_${uid}_${r2PathSegment}_$stamp.$ext',
+      );
+      if (mounted) {
+        context
+            .read<DriverProfileBloc>()
+            .add(UpdateDriverProfile({updateFieldKey: url}));
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is AppException ? e.message : 'errorUploadFailed';
+        AppToast.error(ErrorMapper.getErrorMessage(context, message));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingField[updateFieldKey] = false);
+    }
+  }
+
   String _imageExtension(String path) {
     final ext = path.split('.').last.toLowerCase();
     return switch (ext) {
@@ -547,16 +782,33 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     );
   }
 
-  String _vehicleLabel(String type) {
+  // [إصلاح فئة↔نوع مركبة] حُذفت _vehicleLabel(القديمة، مبنية على باقات تسعير
+  // قديمة مثل sedan/motorcycle لا وجود لها في drivers_profile.vehicle_category
+  // الحقيقي) بعد أن حل _vehicleCategoryLabel محلها في الشارة أعلاه — لم يعد
+  // لها أي استدعاء في هذا الملف.
+
+  // [الجزء ب.1] تسمية عربية/إنجليزية لكل قيمة من قيم vehicle_category
+  // الأربعة عشر المسموحة (chk_dp_vehicle_category)، تُستخدم في dropdown
+  // تعديل فئة المركبة.
+  String _vehicleCategoryLabel(String category) {
     final l = AppLocalizations.of(context)!;
     final labels = {
-      'sedan': l.sedan,
-      'suv': l.suv,
-      'van': l.van,
-      'motorcycle': l.motorcycle,
-      'car': l.sedan,
+      'car': l.vehicleCategoryCar,
+      'suv': l.vehicleCategorySuv,
+      'bike': l.vehicleCategoryBike,
+      'van': l.vehicleCategoryVan,
+      'pickup': l.vehicleCategoryPickup,
+      'truck': l.vehicleCategoryTruck,
+      'minivan': l.vehicleCategoryMinivan,
+      'luxury': l.vehicleCategoryLuxury,
+      'electric': l.vehicleCategoryElectric,
+      'taxi': l.vehicleCategoryTaxi,
+      'bus': l.vehicleCategoryBus,
+      'bicycle': l.vehicleCategoryBicycle,
+      'scooter': l.vehicleCategoryScooter,
+      'rickshaw': l.vehicleCategoryRickshaw,
     };
-    return labels[type] ?? type;
+    return labels[category] ?? category;
   }
 }
 
@@ -593,107 +845,93 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: context.textSecondary, size: 18),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: context.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
+// [الجزء ب.2] أصبح الصف قابلاً للضغط لرفع/تغيير المستند — نفس بيانات العرض
+// الأصلية (hasUrl) بالإضافة إلى onTap اختياري وحالة isUploading خاصة بهذا
+// الحقل فقط (من _uploadingField في الشاشة الأب).
 class _DocumentRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool hasUrl;
+  final VoidCallback? onTap;
+  final bool isUploading;
 
   const _DocumentRow({
     required this.icon,
     required this.label,
     required this.hasUrl,
+    this.onTap,
+    this.isUploading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: context.textSecondary, size: 18),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: hasUrl
-                ? AppColors.success.withValues(alpha: 0.12)
-                : AppColors.warning.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                hasUrl ? Icons.check_circle_rounded : Icons.upload_file_rounded,
-                size: 12,
-                color: hasUrl ? AppColors.success : AppColors.warning,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                hasUrl
-                    ? AppLocalizations.of(context)!.uploaded
-                    : AppLocalizations.of(context)!.notUploaded,
+    final l = AppLocalizations.of(context)!;
+    return InkWell(
+      onTap: isUploading ? null : onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            Icon(icon, color: context.textSecondary, size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
                 style: TextStyle(
-                  color: hasUrl ? AppColors.success : AppColors.warning,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+                  color: context.textPrimary,
+                  fontSize: 14,
                 ),
               ),
+            ),
+            if (isUploading)
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    color: AppColors.primary, strokeWidth: 2),
+              )
+            else ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: hasUrl
+                      ? AppColors.success.withValues(alpha: 0.12)
+                      : AppColors.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      hasUrl
+                          ? Icons.check_circle_rounded
+                          : Icons.upload_file_rounded,
+                      size: 12,
+                      color: hasUrl ? AppColors.success : AppColors.warning,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      hasUrl ? l.uploaded : l.notUploaded,
+                      style: TextStyle(
+                        color: hasUrl ? AppColors.success : AppColors.warning,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right_rounded,
+                    size: 16, color: context.textSecondary),
+              ],
             ],
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

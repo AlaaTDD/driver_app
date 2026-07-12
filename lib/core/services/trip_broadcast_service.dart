@@ -15,6 +15,8 @@ class TripBroadcastService {
     required String tripId,
     required double originLat,
     required double originLng,
+    required double destLat,
+    required double destLng,
     required String vehicleType,
     required String title,
     required String body,
@@ -36,6 +38,8 @@ class TripBroadcastService {
           'p_trip_id': tripId,
           'p_search_cells': searchCells,
           'p_vehicle_type': vehicleType.trim().toLowerCase(),
+          'p_dest_lat': destLat,
+          'p_dest_lng': destLng,
         },
       );
 

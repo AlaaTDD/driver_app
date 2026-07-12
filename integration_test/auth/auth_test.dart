@@ -56,6 +56,13 @@ void main() {
 
       await helper.waitForKey(tester, 'signup_screen', timeout: 5);
 
+      // اختيار "راكب" من شاشة اختيار نوع الحساب للوصول لشاشة تسجيل
+      // حساب الراكب الفعلية (signup_screen هي شاشة اختيار النوع فقط،
+      // وليست شاشة التسجيل نفسها).
+      await helper.tapKey(tester, 'register_as_user_card');
+      await tester.pumpAndSettle();
+      await helper.waitForKey(tester, 'register_user_screen', timeout: 5);
+
       // تجربة الإرسال بدون بيانات
       await helper.tapKey(tester, 'signup_button');
       await tester.pumpAndSettle();
@@ -68,7 +75,9 @@ void main() {
       // التقاط صورة للتأكيد
       await helper.takeScreenshot(tester, 'signup_validation_errors');
 
-      // العودة لصفحة الدخول
+      // العودة لصفحة الدخول (عبر شاشة اختيار النوع أولاً، ثم صفحة الدخول)
+      await helper.tapKey(tester, 'back_button');
+      await tester.pumpAndSettle();
       await helper.tapKey(tester, 'go_to_login_button');
       await tester.pumpAndSettle();
     });

@@ -173,12 +173,14 @@ class _PricingScreenState extends State<PricingScreen>
 
   void _goToMeetingPoint(double price, PricingState state) {
     final a = widget.extra;
+    final tierId = state is PricingCalculated ? state.serviceTierId : '';
     context.push(AppRoutes.userMeetingPoint,
         extra: MeetingPointArgs(
           originLat: a!.originLat, originLng: a.originLng,
           originAddress: a.originAddress,
           destLat: a.destLat, destLng: a.destLng, destAddress: a.destAddress,
           distanceKm: _distanceKm, price: price, vehicleType: _selectedVehicle,
+          serviceTierId: tierId,
           paymentMethod: _paymentMethod.name,
           couponCode: _couponCtrl.text.trim(),
           waypoints: a.waypoints,

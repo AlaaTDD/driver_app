@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 import 'package:snapix/core/utils/app_logger.dart';
 
@@ -7,7 +8,6 @@ class HeatmapService {
   static final HeatmapService instance = HeatmapService._();
 
   static const double hexRadiusMeters = 300.0;
-  static const Duration _refreshInterval = Duration(seconds: 10);
 
   /// أقل عدد خلايا يُعتبر تحديثًا صالحًا. أقل من كده بنتجاهل التحديث
   /// ونحتفظ بالـ hexagons القديمة — ده بيمنع الوميض/الاختفاء المؤقت
@@ -18,7 +18,9 @@ class HeatmapService {
   /// ونأخذ 20% من الجديدة، عشان الألوان متهزّش مع كل تحديث.
   static const double _maxCountSmoothing = 0.8;
 
-  Timer? _refreshTimer;
+  RealtimeChannel? _signalChannel;
+  int _channelGeneration = 0;
+  bool _isRealtimeSubscribed = false;
   bool _isDisposed = false;
 
   final _heatmapController = StreamController<List<HeatmapCell>>.broadcast();
@@ -33,10 +35,17 @@ class HeatmapService {
 
   List<HeatmapCell> get currentCells => List.unmodifiable(_currentCells);
 
+  /// يبدأ التحديث اللحظي: fetch أولي فوري، ثم اشتراك Realtime في جدول
+  /// الإشارة الخفيف `heatmap_refresh_signal` (لأن `user_presence` نفسه
+  /// UNLOGGED ولا يمكن الاشتراك فيه مباشرة). كل تغيير في `user_presence`
+  /// يلمس صف الإشارة عبر Trigger في قاعدة البيانات (مُقيَّد هناك بمرة
+  /// واحدة/ثانية على الأكثر عبر شرط WHERE في الـ Trigger نفسه — وليس عبر
+  /// أي Timer أو تأخير في هذا الكود). كل حدث UPDATE يصل هنا من Realtime
+  /// يُستدعى معه `_fetchHeatmap()` فورًا وبدون أي تأخير من جهة الـ Client.
   Future<void> startRealtimeUpdates() async {
     _isDisposed = false; // Allow restarting after sign-out
 
-    if (_refreshTimer != null) {
+    if (_signalChannel != null) {
       if (!_heatmapController.isClosed) {
         _heatmapController.add(List.unmodifiable(_currentCells));
       }
@@ -46,17 +55,101 @@ class HeatmapService {
     }
 
     await _fetchHeatmap();
-    _refreshTimer ??= Timer.periodic(
-      _refreshInterval,
-      (_) => unawaited(_fetchHeatmap()),
-    );
+    _ensureRealtimeSubscription();
   }
 
-  /// يوقف التحديث الدوري. افتراضيًا بيحتفظ بالـ hexagons ظاهرة (منع وميض)
+  void _ensureRealtimeSubscription() {
+    if (_signalChannel != null) return;
+    _subscribeToRealtimeChanges();
+  }
+
+  void _subscribeToRealtimeChanges() {
+    final generation = ++_channelGeneration;
+    final channel = SupabaseService.client.channel('heatmap-refresh-signal');
+
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.update,
+      schema: 'public',
+      table: 'heatmap_refresh_signal',
+      callback: (payload) {
+        if (generation != _channelGeneration) return;
+        // استدعاء فوري بدون أي تأخير — الحماية من الحمل الزائد (110K+
+        // تحديث/يوم على user_presence) متحققة بالكامل داخل الـ SQL Trigger
+        // (signal_heatmap_refresh) الذي يرفض لمس صف الإشارة أكثر من مرة
+        // في الثانية، فلا حاجة لأي throttling إضافي هنا.
+        unawaited(_fetchHeatmap());
+      },
+    );
+
+    _signalChannel = channel;
+    channel.subscribe((status, [error]) {
+      _handleRealtimeStatus(generation, status, error);
+    });
+  }
+
+  void _handleRealtimeStatus(
+    int generation,
+    RealtimeSubscribeStatus status,
+    Object? error,
+  ) {
+    if (generation != _channelGeneration) return;
+
+    if (status == RealtimeSubscribeStatus.subscribed) {
+      if (!_isRealtimeSubscribed) {
+        AppLogger.info('Heatmap: Realtime signal subscribed');
+        // Snapshot refresh: presence changes between app-start and
+        // channel-ready are missed by the initial fetch above.
+        // Re-fetch now that the realtime pipe is open so the map reflects
+        // anything that changed in that gap.
+        unawaited(_fetchHeatmap());
+      }
+      _isRealtimeSubscribed = true;
+      return;
+    }
+
+    if (status == RealtimeSubscribeStatus.closed) {
+      _isRealtimeSubscribed = false;
+      _signalChannel = null;
+      AppLogger.info('Heatmap: Realtime signal closed');
+      // أعد الاتصال أوتوماتيكياً — بدون ده الـ heatmap بيرجع Static بعد أول قطع اتصال.
+      if (generation == _channelGeneration && !_isDisposed) {
+        AppLogger.debug('Heatmap: Signal channel closed — scheduling auto-reconnect');
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (generation == _channelGeneration &&
+              _signalChannel == null &&
+              !_isDisposed) {
+            AppLogger.info('Heatmap: Auto-reconnecting signal channel...');
+            _subscribeToRealtimeChanges();
+          }
+        });
+      }
+      return;
+    }
+
+    final errorText = error?.toString() ?? '';
+    final isAutoReconnectNoise =
+        status == RealtimeSubscribeStatus.channelError &&
+            (error == null || errorText.contains('code: 1006'));
+    if (isAutoReconnectNoise) return;
+
+    _dropRealtimeChannel();
+    AppLogger.info('Heatmap: Realtime signal status=$status error=$error');
+  }
+
+  void _dropRealtimeChannel() {
+    final channel = _signalChannel;
+    _signalChannel = null;
+    _isRealtimeSubscribed = false;
+    if (channel != null) {
+      unawaited(SupabaseService.client.removeChannel(channel));
+    }
+  }
+
+  /// يوقف التحديث اللحظي. افتراضيًا بيحتفظ بالـ hexagons ظاهرة (منع وميض)
   /// إلا لو `clearOnStop: true` (يُستخدم فقط عند الـ dispose الحقيقي).
   void stopRealtimeUpdates({bool clearOnStop = false}) {
-    _refreshTimer?.cancel();
-    _refreshTimer = null;
+    _channelGeneration++; // invalidate any in-flight callbacks/reconnect timers
+    _dropRealtimeChannel();
     if (clearOnStop) {
       _currentCells = [];
       _smoothedMaxCount = 1.0;

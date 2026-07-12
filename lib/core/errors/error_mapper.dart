@@ -18,6 +18,13 @@ class ErrorMapper {
       'errorUnexpected': () => l.errorUnexpected,
       'errorLoginFailed': () => l.errorLoginFailed,
       'errorCreateAccountFailed': () => l.errorCreateAccountFailed,
+      'errorPermissionDenied': () => l.errorPermissionDenied,
+      'errorRequestTimeout': () => l.errorRequestTimeout,
+      'errorSessionExpired': () => l.errorSessionExpired,
+      'errorServerUnavailable': () => l.errorServerUnavailable,
+      'errorSendingData': () => l.errorSendingData,
+      'errorInvalidDataSent': () => l.errorInvalidDataSent,
+      'errorDataConflict': () => l.errorDataConflict,
       'failedCreateTrip': () => l.failedCreateTrip,
       'failedFetchTrips': () => l.failedFetchTrips,
       'failedCancelTrip': () => l.failedCancelTrip,
@@ -84,6 +91,7 @@ class ErrorMapper {
       'errorCancelTripFailed': () => l.errorCancelTripFailed,
       'errorDriverProfileIncomplete': () => l.errorDriverProfileIncomplete,
       'errorPhoneRegistered': () => l.errorPhoneRegistered,
+      'errorDriverNotApproved': () => l.errorDriverNotApproved,
     };
 
     return resolver[errorKey]?.call() ?? errorKey;

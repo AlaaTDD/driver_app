@@ -15,7 +15,13 @@ class DriverProfileRepository {
               'id,name,phone,avatar_url,rating,total_trips,language,is_active')
           .eq('id', driverId)
           .single(),
-      _client.from('drivers_profile').select('id, vehicle_type, vehicle_brand, vehicle_model, vehicle_plate, vehicle_color, is_verified, is_available, rating, total_trips, target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng, target_route_lat, target_route_lng, target_route_address, created_at').eq('id', driverId).single(),
+      // [البند 17 — المراجعة النهائية] أُضيف account_status و revision_reason
+      // هنا بعد اكتشاف أن استعلام شاشة البروفايل لم يكن يجلبهما إطلاقاً —
+      // ما كان يعني أن DriverProfileModel.fromJson كانت تُسقِط دائماً على
+      // pendingReview الافتراضية (orElse في DriverAccountStatus.fromValue)
+      // بصرف النظر عن الحالة الحقيقية للسائق. انظر MASTER_PLAN.md القسم 4،
+      // المرحلة د، البند 17.
+      _client.from('drivers_profile').select('id, vehicle_category, vehicle_brand, vehicle_model, vehicle_plate, vehicle_color, is_verified, is_available, account_status, revision_reason, target_origin_lat, target_origin_lng, target_dest_lat, target_dest_lng, target_route_lat, target_route_lng, target_route_address, updated_at').eq('id', driverId).single(),
       _client
           .from('driver_earnings_summary')
           .select('total_earnings, available_balance, completed_trips')
@@ -25,11 +31,11 @@ class DriverProfileRepository {
 
     final userData = results[0] as Map<String, dynamic>;
     final driverData = results[1] as Map<String, dynamic>;
-    final earningsData = results[2] as Map<String, dynamic>?;
+    final earningsData = results[2];
 
     final merged = Map<String, dynamic>.from(userData);
     driverData.forEach((key, value) {
-      if (key != 'id' && key != 'updated_at' && key != 'created_at') {
+      if (key != 'id' && key != 'updated_at') {
         merged[key] = value;
       }
     });

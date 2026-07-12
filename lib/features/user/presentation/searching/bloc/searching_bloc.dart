@@ -95,7 +95,8 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
     try {
       final tripDetails = await SupabaseService.client
           .from('trips')
-          .select('pickup_lat, pickup_lng, vehicle_type, status')
+          .select(
+              'pickup_lat, pickup_lng, destination_lat, destination_lng, service_tier_name_snapshot, status')
           .eq('id', tripId)
           .single();
 
@@ -106,14 +107,16 @@ class SearchingBloc extends Bloc<SearchingEvent, SearchingState> {
       }
 
       AppLogger.debug(
-          '🔍 SearchingBloc: Trip $tripId - lat=${tripDetails['pickup_lat']}, lng=${tripDetails['pickup_lng']}, vehicle=${tripDetails['vehicle_type']}');
+          '🔍 SearchingBloc: Trip $tripId - lat=${tripDetails['pickup_lat']}, lng=${tripDetails['pickup_lng']}, tier=${tripDetails['service_tier_name_snapshot']}');
 
       final notifiedDriverIds = await _broadcastService.findAndBroadcast(
         tripId: tripId,
         originLat: (tripDetails['pickup_lat'] as num).toDouble(),
         originLng: (tripDetails['pickup_lng'] as num).toDouble(),
+        destLat: (tripDetails['destination_lat'] as num).toDouble(),
+        destLng: (tripDetails['destination_lng'] as num).toDouble(),
         vehicleType:
-            (tripDetails['vehicle_type'] as String).trim().toLowerCase(),
+            (tripDetails['service_tier_name_snapshot'] as String? ?? 'car').trim().toLowerCase(),
         title: title,
         body: body,
         excludedDriverIds: _broadcastedDriverIds,

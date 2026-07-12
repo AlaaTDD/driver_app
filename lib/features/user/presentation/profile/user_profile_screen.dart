@@ -13,6 +13,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../../../core/services/r2_storage_service.dart';
 import '../../../../core/services/supabase_service.dart';
+import '../../../../core/widgets/app_phone_field.dart';
 import 'package:snapix/core/widgets/app_button.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class UserProfileScreen extends StatefulWidget {
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  String _phoneValue = '';
   final _emailController = TextEditingController();
   bool _populated = false;
   Map<String, dynamic> _userData = {};
@@ -40,7 +41,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
     super.dispose();
   }
@@ -50,7 +50,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _localAvatarFile = null;
     if (_populated) return;
     _nameController.text = user['name'] as String? ?? '';
-    _phoneController.text = user['phone'] as String? ?? '';
+    _phoneValue = user['phone'] as String? ?? '';
     _emailController.text = user['email'] as String? ?? '';
     _populated = true;
   }
@@ -214,14 +214,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            style: TextStyle(color: context.textPrimary),
-            decoration: InputDecoration(
-              labelText: l.phone,
-              prefixIcon: const Icon(Icons.phone_outlined),
-            ),
+          AppPhoneField(
+            key: ValueKey('user_phone_field_${_userData['phone'] ?? ''}'),
+            initialCountryCode: 'EG',
+            initialFullNumber: _userData['phone'] as String?,
+            onChanged: (number) {
+              _phoneValue = number;
+            },
           ),
           const SizedBox(height: 16),
           TextField(
@@ -240,7 +239,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ? null
                 : () => context.read<ProfileBloc>().add(UpdateProfile({
                       'name': _nameController.text.trim(),
-                      'phone': _phoneController.text.trim(),
+                      'phone': _phoneValue.trim(),
                     })),
             isLoading: state is ProfileLoading,
           ),

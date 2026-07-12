@@ -26,6 +26,7 @@ import '../../features/driver/presentation/trip_details/trip_details_screen.dart
 import '../../features/driver/presentation/trips/driver_trips_screen.dart';
 import '../../features/driver/presentation/profile/driver_profile_screen.dart';
 import '../../features/shared/presentation/screens/pending_verification_screen.dart';
+import '../../features/shared/presentation/screens/driver_blocked_screen.dart';
 import '../../features/shared/presentation/messages/screens/conversations_screen.dart';
 import '../../features/shared/presentation/messages/screens/messages_screen.dart';
 import '../../features/shared/presentation/notifications/notifications_screen.dart';
@@ -40,6 +41,8 @@ import '../../features/wallet/presentation/screens/user_wallet_screen.dart';
 import '../../features/driver/presentation/bonus/bonus_screen.dart';
 import '../../features/driver/presentation/request_feed/driver_request_feed_screen.dart';
 import '../../features/driver/presentation/revision/driver_revision_screen.dart';
+import '../../features/driver/presentation/targeted_edit/driver_targeted_edit_screen.dart';
+import '../../core/models/revision_request_model.dart';
 import '../../features/shared/presentation/screens/privacy_policy_screen.dart';
 import '../constants/app_routes.dart';
 import '../localization/generated/app_localizations.dart';
@@ -171,8 +174,46 @@ class AppRouter {
           return homeRoute;
         }
 
+        if (authState is AuthDriverBlocked) {
+          if (loc == AppRoutes.driverBlocked) return null;
+          return AppRoutes.driverBlocked;
+        }
+
         if (authState is AuthDriverPending) {
-          if (loc == AppRoutes.pendingVerification) return null;
+          // [إصلاح 2026-07-10] كان السائق محبوسًا في pendingVerification بلا أي
+          // مخرج: كل مسار غير pendingVerification كان يُعاد توجيهه فورًا إليها،
+          // بما في ذلك driverProfile — فحتى لو ضغط زر "تعديل البروفايل" الموجود
+          // في DriverRevisionScreen، كان يُعاد فورًا لنفس الشاشة بلا فورم إدخال.
+          // نسمح الآن بوصول driverProfile أثناء pendingReview (بنفس نمط
+          // الاستثناء الوحيد الموجود لـ driverBlocked أعلاه) حتى يقدر السائق
+          // يعدّل الحقول المطلوبة (رقم الهوية، المستندات، بيانات المركبة...)
+          // ويرسلها، ثم ينتظر مراجعة الأدمن عبر resolve-revision.
+          //
+          // هذه الحالة الآن هي "Requires Action" حصراً — السائق ما زال يحتاج
+          // يعدّل، لذا يبقى الوصول لـ driverTargetedEdit مسموحاً هنا. حالة
+          // "Under Review" (بعد الإرسال) صارت AuthDriverUnderReview منفصلة
+          // أدناه، وهي من تمنع driverTargetedEdit تحديداً. انظر MASTER_PLAN.md
+          // القسم 3.2 و4.4 — هذا الإصلاح لم يُلغَ، بل بقي لحالته الصحيحة فقط.
+          if (loc == AppRoutes.pendingVerification ||
+              loc == AppRoutes.driverProfile ||
+              loc == AppRoutes.driverTargetedEdit ||
+              loc == AppRoutes.driverRevision) {
+            return null;
+          }
+          return AppRoutes.pendingVerification;
+        }
+
+        if (authState is AuthDriverUnderReview) {
+          // حالة قراءة فقط: السائق أرسل تعديلاته وينتظر مراجعة الأدمن. يُسمح
+          // بعرض pendingVerification وdriverProfile (للاطّلاع)، لكن يُمنع
+          // driverTargetedEdit صراحةً — هذا هو ما يحقق متطلب "إخفاء تام لزر
+          // التعديل، البيانات للقراءة فقط" من MASTER_PLAN.md القسم 2. يُسمح
+          // أيضاً بـ driverRevision لعرض حالة الطلب دون تعديل.
+          if (loc == AppRoutes.pendingVerification ||
+              loc == AppRoutes.driverProfile ||
+              loc == AppRoutes.driverRevision) {
+            return null;
+          }
           return AppRoutes.pendingVerification;
         }
 
@@ -224,6 +265,12 @@ class AppRouter {
           name: AppRoutes.pendingVerification,
           pageBuilder: (context, state) =>
               const MaterialPage(child: PendingVerificationScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.driverBlocked,
+          name: AppRoutes.driverBlocked,
+          pageBuilder: (context, state) =>
+              const MaterialPage(child: DriverBlockedScreen()),
         ),
         GoRoute(
           path: AppRoutes.privacyPolicy,
@@ -537,6 +584,16 @@ class AppRouter {
           name: AppRoutes.driverRevision,
           pageBuilder: (context, state) =>
               const MaterialPage(child: DriverRevisionScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.driverTargetedEdit,
+          name: AppRoutes.driverTargetedEdit,
+          pageBuilder: (context, state) {
+            final revision = state.extra as RevisionRequestModel?;
+            return MaterialPage(
+              child: DriverTargetedEditScreen(revision: revision),
+            );
+          },
         ),
       ],
     );

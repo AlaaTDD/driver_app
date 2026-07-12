@@ -27,6 +27,7 @@ import '../../../../core/services/heatmap_service.dart';
 import '../../../../core/widgets/custom_animated_bottom_nav.dart';
 import '../../../../core/services/directions_service.dart';
 import '../../../../core/constants/env_constants.dart';
+import '../../../../core/errors/error_mapper.dart';
 import '../widgets/driver_offer_overlay.dart';
 import '../../../../core/utils/map_camera_utils.dart';
 import 'widgets/neon_route_polyline.dart';
@@ -310,14 +311,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen>
             listener: (context, state) {
               if (state.errorMessage != null &&
                   state.errorMessage!.isNotEmpty) {
-                final l = AppLocalizations.of(context)!;
-                final msg = switch (state.errorMessage) {
-                  'errorCannotGoOnlineDuringTrip' =>
-                    l.errorCannotGoOnlineDuringTrip,
-                  'errorUnexpected' => l.errorUnexpected,
-                  _ => state.errorMessage!,
-                };
-                AppToast.error(msg);
+                // [المرحلة ج، البند 14] استبدال الـ switch المحلي الذي كان
+                // يعالج فقط مفتاحين ويعرض أي مفتاح آخر خاماً بـ ErrorMapper
+                // العام (نفس الآلية المستخدمة في بقية المشروع)، مما كان
+                // سيمنع رسالة errorDriverNotApproved الجديدة من الظهور مترجمة.
+                AppToast.error(
+                  ErrorMapper.getErrorMessage(context, state.errorMessage!),
+                );
               }
             },
           ),

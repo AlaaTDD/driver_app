@@ -18,6 +18,7 @@ import 'widgets/corridor_hint_pill.dart';
 import 'widgets/point_chip.dart';
 import 'widgets/corridor_panel_action.dart';
 import 'widgets/radius_slider.dart';
+import 'widgets/corridor_mode_toggle.dart';
 import 'package:snapix/core/utils/app_logger.dart';
 
 /// Arguments needed to push the [CorridorPickerScreen].
@@ -63,6 +64,11 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
   double _destRadiusKm = 3.0;
   bool _isResolving = false;
   bool _isSaving = false;
+
+  // Line-mode fields
+  CorridorMode _mode = CorridorMode.points;
+  String? _routePolyline;
+  double _lineWidthKm = 1.5;
 
   List<LatLng> _routePoints = [];
   late final AnimationController _neonRouteCtrl;
@@ -128,6 +134,9 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
           _destPt = LatLng(data.destLat!, data.destLng!);
           _originRadiusKm = data.originRadiusKm ?? 2.0;
           _destRadiusKm = data.destRadiusKm ?? 3.0;
+          _mode = data.mode;
+          _routePolyline = data.polyline;
+          _lineWidthKm = data.lineWidthKm ?? 1.5;
           _step = 2;
           _pickTarget = _CorridorPointTarget.origin;
 
@@ -237,6 +246,9 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
     if (!mounted || result == null) return;
     setState(() {
       _routePoints = result.points;
+      // Same encoded polyline used to draw the visual route is stored
+      // verbatim for line-mode matching (same format as trip_route_plans).
+      _routePolyline = result.encodedPolyline;
     });
     _restartNeonRouteLoop();
 
@@ -261,7 +273,14 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
       _originAddr = null;
       _destAddr = null;
       _routePoints = [];
+      _routePolyline = null;
+      _mode = CorridorMode.points;
+      _lineWidthKm = 1.5;
     });
+  }
+
+  void _onModeChanged(CorridorMode mode) {
+    setState(() => _mode = mode);
   }
 
   void _onOriginChipTap() {
@@ -294,6 +313,12 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
 
   Future<void> _save() async {
     if (_originPt == null || _destPt == null) return;
+    if (_mode == CorridorMode.line &&
+        (_routePolyline == null || _routePolyline!.isEmpty)) {
+      final l = AppLocalizations.of(context)!;
+      AppToast.error(l.corridorLineRequiresRoute);
+      return;
+    }
     setState(() => _isSaving = true);
     try {
       final uid = SupabaseService.currentUser!.id;
@@ -306,6 +331,9 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
           destLng: _destPt!.longitude,
           originRadiusKm: _originRadiusKm,
           destRadiusKm: _destRadiusKm,
+          mode: _mode,
+          polyline: _mode == CorridorMode.line ? _routePolyline : null,
+          lineWidthKm: _mode == CorridorMode.line ? _lineWidthKm : null,
         ),
       );
       if (mounted) {
@@ -393,7 +421,7 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
           onTap: _onMapTap,
           myLocationEnabled: true,
           circles: {
-            if (_originPt != null)
+            if (_mode == CorridorMode.points && _originPt != null)
               Circle(
                 circleId: const CircleId('origin_zone'),
                 center: _originPt!,
@@ -402,13 +430,34 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
                 strokeColor: AppColors.success.withValues(alpha: 0.8),
                 strokeWidth: 2,
               ),
-            if (_destPt != null)
+            if (_mode == CorridorMode.points && _destPt != null)
               Circle(
                 circleId: const CircleId('dest_zone'),
                 center: _destPt!,
                 radius: _destRadiusKm * 1000,
                 fillColor: AppColors.primary.withValues(alpha: 0.12),
                 strokeColor: AppColors.primary.withValues(alpha: 0.8),
+                strokeWidth: 2,
+              ),
+            // Line mode: small anchor circles at both ends showing the match
+            // radius (the corridor width) so the driver sees the tolerance
+            // band around the endpoints, not just the polyline itself.
+            if (_mode == CorridorMode.line && _originPt != null)
+              Circle(
+                circleId: const CircleId('line_origin_anchor'),
+                center: _originPt!,
+                radius: _lineWidthKm * 1000,
+                fillColor: AppColors.success.withValues(alpha: 0.10),
+                strokeColor: AppColors.success.withValues(alpha: 0.7),
+                strokeWidth: 2,
+              ),
+            if (_mode == CorridorMode.line && _destPt != null)
+              Circle(
+                circleId: const CircleId('line_dest_anchor'),
+                center: _destPt!,
+                radius: _lineWidthKm * 1000,
+                fillColor: AppColors.primary.withValues(alpha: 0.10),
+                strokeColor: AppColors.primary.withValues(alpha: 0.7),
                 strokeWidth: 2,
               ),
           },
@@ -603,28 +652,55 @@ class _CorridorPickerScreenState extends State<CorridorPickerScreen>
                     ),
                   ]),
 
-                  // Sliders — only visible when both points are set
+                  // Mode toggle + radius/width controls — only visible once
+                  // both points are set.
                   if (_step == 2) ...[
                     const SizedBox(height: 16),
-                    RadiusSlider(
-                      label: l.corridorOriginRadius,
-                      color: AppColors.success,
-                      value: _originRadiusKm,
-                      min: 0.5,
-                      max: 10.0,
-                      onChanged: (v) =>
-                          setState(() => _originRadiusKm = v),
+                    CorridorModeToggle(
+                      mode: _mode,
+                      enabled: !_isSaving,
+                      onChanged: _onModeChanged,
                     ),
-                    const SizedBox(height: 8),
-                    RadiusSlider(
-                      label: l.corridorDestinationRadius,
-                      color: AppColors.primary,
-                      value: _destRadiusKm,
-                      min: 0.5,
-                      max: 15.0,
-                      onChanged: (v) =>
-                          setState(() => _destRadiusKm = v),
-                    ),
+                    const SizedBox(height: 12),
+                    if (_mode == CorridorMode.points) ...[
+                      RadiusSlider(
+                        label: l.corridorOriginRadius,
+                        color: AppColors.success,
+                        value: _originRadiusKm,
+                        min: 0.5,
+                        max: 10.0,
+                        onChanged: (v) =>
+                            setState(() => _originRadiusKm = v),
+                      ),
+                      const SizedBox(height: 8),
+                      RadiusSlider(
+                        label: l.corridorDestinationRadius,
+                        color: AppColors.primary,
+                        value: _destRadiusKm,
+                        min: 0.5,
+                        max: 15.0,
+                        onChanged: (v) =>
+                            setState(() => _destRadiusKm = v),
+                      ),
+                    ] else ...[
+                      RadiusSlider(
+                        label: l.corridorLineWidth,
+                        color: AppColors.primary,
+                        value: _lineWidthKm,
+                        min: 0.3,
+                        max: 5.0,
+                        onChanged: (v) => setState(() => _lineWidthKm = v),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        l.corridorLineModeHint,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: AppColors.grey.withValues(alpha: 0.9),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
                   ],
 
                   const SizedBox(height: 16),

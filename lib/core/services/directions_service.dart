@@ -8,11 +8,17 @@ class DirectionsResult {
   final List<LatLng> points;
   final int distanceMeters;
   final int durationSeconds;
+  /// The raw Google-encoded polyline string as returned by the Directions
+  /// API (same format stored in trip_route_plans.encoded_polyline). Kept
+  /// alongside the decoded [points] so callers that need to persist the
+  /// route (e.g. driver corridor line mode) don't have to re-encode it.
+  final String encodedPolyline;
 
   const DirectionsResult({
     required this.points,
     required this.distanceMeters,
     required this.durationSeconds,
+    required this.encodedPolyline,
   });
 
   double get distanceKm => distanceMeters / 1000.0;
@@ -88,6 +94,7 @@ class DirectionsService {
         points: _decodePolyline(encodedPolyline),
         distanceMeters: distanceMeters,
         durationSeconds: durationSeconds,
+        encodedPolyline: encodedPolyline,
       );
 
       if (_cache.length >= _maxCacheSize) {

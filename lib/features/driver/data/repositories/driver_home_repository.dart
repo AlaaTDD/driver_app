@@ -16,6 +16,28 @@ import 'package:snapix/core/utils/app_logger.dart';
 class DriverHomeRepository {
   final _client = SupabaseService.client;
 
+  /// فحص دفاعي في العمق: يتحقق أن `account_status == 'approved'` مباشرة من
+  /// الداتابيز قبل تفعيل أي إجراء حساس (تفعيل التوفر، قبول رحلة). لا يعتمد
+  /// حصرياً على أن AppRouter منع السائق من الوصول لهذه الشاشة أصلاً — لأن
+  /// RLS على `trips`/`driver_locations` (المرحلة ب، البند 6) لم تُكتب بعد
+  /// حتى وقت كتابة هذه الدالة، فهذا الفحص هو خط الدفاع الفعلي الوحيد حالياً
+  /// ضد استدعاء الإجراءات الحساسة مباشرة عبر .rpc() متجاوزاً الواجهة.
+  /// انظر MASTER_PLAN.md القسم 4، المرحلة ج، البند 14.
+  Future<bool> isDriverApproved(String userId) async {
+    try {
+      final data = await _client
+          .from('drivers_profile')
+          .select('account_status')
+          .eq('id', userId)
+          .single();
+      return data['account_status'] == 'approved';
+    } catch (e) {
+      AppLogger.error('DriverHomeRepository: isDriverApproved check failed: $e');
+      // فشل الفحص نفسه (مشكلة شبكة مثلاً) → نرفض بحذر بدلاً من افتراض الاعتماد.
+      return false;
+    }
+  }
+
   Future<Map<String, dynamic>> loadDriverStatus(String userId) async {
     final results = await Future.wait([
       _client

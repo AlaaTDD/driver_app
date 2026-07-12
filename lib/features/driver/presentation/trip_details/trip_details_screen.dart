@@ -289,17 +289,6 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
         body: BlocConsumer<TripDetailsBloc, TripDetailsState>(
           listener: (ctx, state) {
             if (state is TripDetailsLoaded) {
-              // ✅ FIX: use typed property instead of map bracket access
-              final status = state.trip.status;
-              if (status == 'completed') {
-                _toast(ctx, AppLocalizations.of(ctx)!.tripCompleted, ok: true);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (ctx.mounted) {
-                    ctx.go('${AppRoutes.driverRating}?tripId=${widget.tripId}');
-                  }
-                });
-                return;
-              }
               if (!_animationTriggered) {
                 _animationTriggered = true;
                 _sheetCtrl.forward(from: 0);
@@ -439,7 +428,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
     final pLng = trip.pickupLng;
     final dLat = trip.destinationLat;
     final dLng = trip.destinationLng;
-    final hasAction = _hasAction(status);
+    final canRate = status == 'completed' && trip.driverRatingToUser == null;
+    final hasAction = _hasAction(status) || canRate;
 
     return Stack(children: [
       // ── [1] Map (rebuilds when waypoints change)
@@ -639,6 +629,7 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
             opacity: _fadeAnim,
             child: _ActionBar(
               status: status,
+              canRate: canRate,
               onAccept: () => context
                   .read<TripDetailsBloc>()
                   .add(AcceptTrip(widget.tripId)),
@@ -647,6 +638,8 @@ class _DriverTripDetailsScreenState extends State<DriverTripDetailsScreen>
                   context.read<TripDetailsBloc>().add(StartTrip(widget.tripId)),
               onComplete: () => _completeDialog(),
               onCancel: () => _cancelDialog(),
+              onRate: () =>
+                  context.push('${AppRoutes.driverRating}?tripId=${widget.tripId}'),
             ),
           ),
         ),
@@ -1576,14 +1569,17 @@ class _RouteTicket extends StatelessWidget {
 // ── Sticky action bar ─────────────────────────────────────────────────────────
 class _ActionBar extends StatelessWidget {
   final String? status;
-  final VoidCallback onAccept, onReject, onStart, onComplete, onCancel;
+  final bool canRate;
+  final VoidCallback onAccept, onReject, onStart, onComplete, onCancel, onRate;
   const _ActionBar({
     required this.status,
+    required this.canRate,
     required this.onAccept,
     required this.onReject,
     required this.onStart,
     required this.onComplete,
     required this.onCancel,
+    required this.onRate,
   });
 
   @override
@@ -1649,6 +1645,15 @@ class _ActionBar extends StatelessWidget {
               onTap: onCancel),
         ],
       );
+    } else if (status == 'completed' && canRate) {
+      content = Row(children: [
+        Expanded(
+            child: TripActionButton(
+                label: l.rateTrip,
+                icon: Icons.star_rounded,
+                color: AppColors.warning,
+                onTap: onRate)),
+      ]);
     } else {
       content = const SizedBox.shrink();
     }

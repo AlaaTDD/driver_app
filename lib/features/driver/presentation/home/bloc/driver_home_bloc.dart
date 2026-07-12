@@ -184,6 +184,21 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       }
 
       if (event.isAvailable) {
+        // [المرحلة ج، البند 14 — دفاع في العمق] فحص مباشر لحالة الاعتماد
+        // قبل السماح بالتفعيل، بدلاً من الاعتماد حصرياً على أن AppRouter
+        // منع السائق من الوصول لهذه الشاشة أصلاً. انظر توثيق isDriverApproved
+        // في driver_home_repository.dart.
+        final isApproved = await _repository.isDriverApproved(userId);
+        if (!isApproved) {
+          AppLogger.debug(
+              '⚠️ DriverHomeBloc: Cannot go online — driver not approved');
+          emit(state.copyWith(
+            isLoading: false,
+            errorMessage: 'errorDriverNotApproved',
+          ));
+          return;
+        }
+
         final hasActive = await _repository.hasActiveTrip(userId);
         if (hasActive) {
           AppLogger.debug(
@@ -415,6 +430,18 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
 
     AppLogger.debug(
         '🚦 DriverHomeBloc: Accepting trip ${event.tripId} for driver $userId');
+
+    // [المرحلة ج، البند 14 — دفاع في العمق] فحص مباشر قبل قبول أي رحلة
+    // فعلياً — نفس المبدأ المطبَّق في _onToggleAvailability أعلاه.
+    final isApproved = await _repository.isDriverApproved(userId);
+    if (!isApproved) {
+      AppLogger.debug(
+          '⚠️ DriverHomeBloc: Cannot accept trip — driver not approved');
+      _shownOfferTripIds.clear();
+      _isAccepting = false;
+      emit(state.copyWith(clearOffer: true, errorMessage: 'errorDriverNotApproved'));
+      return;
+    }
 
     try {
       final tripRepo = TripDetailsRepository();

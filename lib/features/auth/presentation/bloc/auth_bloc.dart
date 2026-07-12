@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/services/user_presence_service.dart';
 import '../../../../core/services/fcm_service.dart';
 import '../../../../core/services/supabase_service.dart';
 import '../../../../core/services/logout_coordinator.dart';
+import '../../../../core/models/driver_profile_model.dart' show DriverAccountStatus;
+import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -11,6 +14,12 @@ import 'package:snapix/core/utils/app_logger.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
 
+  // اشتراك Realtime دائم على account_status للسائق الحالي، يبقى فعّالاً
+  // طوال الجلسة المفتوحة وليس فقط عند CheckAuthStatus/SignInRequested.
+  // انظر MASTER_PLAN.md القسم 4، المرحلة ج، البند 10.
+  StreamSubscription<({DriverAccountStatus status, String? revisionReason})>?
+      _driverStatusSubscription;
+
   AuthBloc(this._authRepository) : super(AuthInitial()) {
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<SignInRequested>(_onSignInRequested);
@@ -18,7 +27,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignUpDriverRequested>(_onSignUpDriverRequested);
     on<SignOutRequested>(_onSignOutRequested);
     on<UpdateProfileRequested>(_onUpdateProfileRequested);
-    on<ResetAuth>((_, emit) => emit(AuthUnauthenticated()));
+    on<DriverAccountStatusChanged>(_onDriverAccountStatusChanged);
+    on<ResetAuth>((_, emit) {
+      _driverStatusSubscription?.cancel();
+      _driverStatusSubscription = null;
+      emit(AuthUnauthenticated());
+    });
+  }
+
+  /// يبدأ (أو يعيد بدء) اشتراك Realtime دائم لسائق معين، ويحوّل كل
+  /// حدث إلى حدث داخلي `add()` على الـ bloc نفسه، ليمر عبر مسار emit الطبيعي.
+  void _startWatchingDriverStatus(UserEntity user) {
+    _driverStatusSubscription?.cancel();
+    _driverStatusSubscription =
+        _authRepository.watchDriverAccountStatus(user.id).listen(
+      (event) => add(DriverAccountStatusChanged(user, event.status, event.revisionReason)),
+      onError: (Object e, StackTrace st) {
+        AppLogger.error('AuthBloc: driver status watch failed', tag: 'AuthBloc', error: e, stackTrace: st);
+      },
+    );
+  }
+
+  Future<void> _onDriverAccountStatusChanged(
+    DriverAccountStatusChanged event,
+    Emitter<AuthState> emit,
+  ) async {
+    switch (event.status) {
+      case DriverAccountStatus.blocked:
+        emit(AuthDriverBlocked(event.user, reason: event.revisionReason));
+      case DriverAccountStatus.pendingReview:
+        emit(AuthDriverPending(event.user, revisionReason: event.revisionReason));
+      case DriverAccountStatus.underReview:
+        // السائق أرسل تعديلاته فعلاً وينتظر مراجعة الأدمن — حالة قراءة فقط،
+        // مصدرها account_status من الـ DB حصراً. انظر MASTER_PLAN.md القسم 4.4.
+        emit(AuthDriverUnderReview(event.user));
+      case DriverAccountStatus.approved:
+        try {
+          await UserPresenceService.instance.startBroadcasting();
+        } catch (_) {
+          // لا يمنع الاعتماد لو فشل البث فقط، بنفس المنطق الموجود في بقية الملف.
+        }
+        emit(AuthAuthenticated(event.user));
+    }
   }
 
   Future<void> _onCheckAuthStatus(
@@ -45,15 +95,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(const AuthError('errorUserBlocked'));
         } else if (user.role == 'driver') {
           try {
-            final verifiedResult =
-                await _authRepository.getDriverIsVerified(user.id);
-            final isVerified = verifiedResult.getOrElse(() => false);
-            if (isVerified) {
-              await UserPresenceService.instance.startBroadcasting();
-              emit(AuthAuthenticated(user));
-            } else {
-              emit(AuthDriverPending(user));
-            }
+            // [المرحلة ج، البند 10] يبدأ اشتراك Realtime دائم بدلاً من
+            // الفحص لمرة واحدة؛ القيمة الأولية تصل فوراً عبر emitCurrent()
+            // داخل watchDriverAccountStatus، ثم يبقى الاشتراك مفتوحاً طوال الجلسة.
+            _startWatchingDriverStatus(user);
           } catch (e, st) {
             AppLogger.error('AuthBloc: checkAuth driver failed', tag: 'AuthBloc', error: e, stackTrace: st);
             emit(const AuthError('errorUnexpected'));
@@ -93,15 +138,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         try {
           await _storeFcmToken(user.id);
           if (user.role == 'driver') {
-            final verifiedResult =
-                await _authRepository.getDriverIsVerified(user.id);
-            final isVerified = verifiedResult.getOrElse(() => false);
-            if (isVerified) {
-              await UserPresenceService.instance.startBroadcasting();
-              emit(AuthAuthenticated(user));
-            } else {
-              emit(AuthDriverPending(user));
-            }
+            // [المرحلة ج، البند 10] نفس المنطق: اشتراك دائم بدل فحص لمرة واحدة.
+            _startWatchingDriverStatus(user);
           } else {
             await UserPresenceService.instance.startBroadcasting();
             emit(AuthAuthenticated(user));
@@ -170,7 +208,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       licenseNumber: event.licenseNumber,
       licenseImageUrl: event.licenseImageUrl,
       criminalRecordUrl: event.criminalRecordUrl,
-      vehicleType: event.vehicleType,
+      vehicleCategory: event.vehicleCategory,
       vehicleBrand: event.vehicleBrand,
       vehicleModel: event.vehicleModel,
       vehicleYear: event.vehicleYear,
@@ -197,12 +235,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    await _driverStatusSubscription?.cancel();
+    _driverStatusSubscription = null;
     await LogoutCoordinator.instance.performLogout();
     final result = await _authRepository.signOut();
     result.fold(
       (error) => emit(AuthError(error)),
       (_) => emit(AuthUnauthenticated()),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _driverStatusSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onUpdateProfileRequested(

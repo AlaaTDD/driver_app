@@ -10,6 +10,7 @@ class MeetingPointArgs {
   final double? distanceKm;
   final double? price;
   final String? vehicleType;
+  final String? serviceTierId; // Phase 3: service_tiers UUID
   final String? paymentMethod;
   final String? couponCode;
   final List<WaypointArg>? waypoints;
@@ -25,6 +26,7 @@ class MeetingPointArgs {
     this.distanceKm,
     this.price,
     this.vehicleType,
+    this.serviceTierId,
     this.paymentMethod,
     this.couponCode,
     this.waypoints,

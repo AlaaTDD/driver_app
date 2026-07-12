@@ -101,9 +101,18 @@ class TripDetailsModel extends Equatable {
       isPaid: json['is_paid'] as bool? ?? false,
       paymentMethod: json['payment_method'] as String?,
       paymentSource: json['payment_source'] as String?,
-      vehicleType: json['vehicle_type'] as String?,
+      // [إصلاح فئة↔نوع مركبة] trips.vehicle_type محذوف من الـ schema (Phase 3)؛
+      // fallback احترازي على service_tier_name_snapshot بنفس نمط trip_model.dart
+      // لضمان امتلاء الحقل صحيحًا لو استُخدم TripDetailsModel مستقبلًا في مسار
+      // يقرأ من هذا العمود مباشرة (حاليًا لا يوجد استخدام عرضي لهذا الحقل
+      // بالذات في أي شاشة، لكن الفولباك يمنع فخًا صامتًا لاحقًا).
+      vehicleType: json['service_tier_name_snapshot'] as String? ?? json['vehicle_type'] as String?,
       distanceKm: _asDouble(json['distance_km']),
-      durationMin: _asDouble(json['duration_min']),
+      // [إصلاح duration_min] trips.duration_min غير موجود في الـ schema أصلًا (لم يُنشأ قط)؛
+      // العمود الصحيح الموجود فعليًا هو estimated_duration_min (مدة الرحلة التقديرية من
+      // Directions API وقت الحجز). نقرأه أولًا، مع الإبقاء على duration_min كـ fallback
+      // احترازي بنفس نمط vehicleType أعلاه، تحسبًا لأي مصدر بيانات مستقبلي بهذا الاسم.
+      durationMin: _asDouble(json['estimated_duration_min'] ?? json['duration_min']),
       driverEarnings: _asDouble(json['driver_earnings']),
       platformCommission: _asDouble(json['platform_commission']),
       createdAt: _date(json['created_at']),

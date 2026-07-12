@@ -356,11 +356,59 @@ abstract class AppLocalizations {
   /// **'كلمة المرور يجب أن تكون 6 أحرف على الأقل'**
   String get passwordMinLength;
 
+  /// No description provided for @passwordMaxLength.
+  ///
+  /// In ar, this message translates to:
+  /// **'كلمة المرور يجب ألا تتجاوز 72 حرفًا'**
+  String get passwordMaxLength;
+
+  /// No description provided for @nameTooShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاسم قصير جدًا'**
+  String get nameTooShort;
+
+  /// No description provided for @nameTooLong.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاسم طويل جدًا'**
+  String get nameTooLong;
+
+  /// No description provided for @nameInvalidChars.
+  ///
+  /// In ar, this message translates to:
+  /// **'الاسم يجب أن يحتوي على حروف ومسافات وشرطات فقط'**
+  String get nameInvalidChars;
+
+  /// No description provided for @emailContainsSpaces.
+  ///
+  /// In ar, this message translates to:
+  /// **'البريد الإلكتروني يجب ألا يحتوي على مسافات'**
+  String get emailContainsSpaces;
+
+  /// No description provided for @emailInvalidLength.
+  ///
+  /// In ar, this message translates to:
+  /// **'البريد الإلكتروني طويل جدًا'**
+  String get emailInvalidLength;
+
+  /// No description provided for @invalidPhoneLength.
+  ///
+  /// In ar, this message translates to:
+  /// **'طول رقم الهاتف غير صحيح'**
+  String get invalidPhoneLength;
+
   /// No description provided for @createAccount.
   ///
   /// In ar, this message translates to:
   /// **'إنشاء الحساب'**
   String get createAccount;
+
+  /// No description provided for @accountCreatedSuccessfully.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إنشاء الحساب بنجاح'**
+  String get accountCreatedSuccessfully;
 
   /// No description provided for @passwordsNotMatch.
   ///
@@ -392,6 +440,18 @@ abstract class AppLocalizations {
   /// **'الرجاء إدخال رقم الهوية'**
   String get enterNationalId;
 
+  /// No description provided for @nationalIdInvalidFormat.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرقم القومي يجب أن يتكون من أرقام فقط'**
+  String get nationalIdInvalidFormat;
+
+  /// No description provided for @nationalIdInvalidLength.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرقم القومي يجب أن يتكون من 14 رقمًا بالضبط'**
+  String get nationalIdInvalidLength;
+
   /// No description provided for @nationalIdPhoto.
   ///
   /// In ar, this message translates to:
@@ -409,6 +469,24 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'الرجاء إدخال رقم الرخصة'**
   String get enterLicenseNumber;
+
+  /// No description provided for @licenseNumberTooShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الرخصة قصير جدًا'**
+  String get licenseNumberTooShort;
+
+  /// No description provided for @licenseNumberTooLong.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الرخصة طويل جدًا'**
+  String get licenseNumberTooLong;
+
+  /// No description provided for @licenseNumberInvalidChars.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الرخصة يحتوي على رموز غير مسموحة'**
+  String get licenseNumberInvalidChars;
 
   /// No description provided for @licensePhoto.
   ///
@@ -482,6 +560,18 @@ abstract class AppLocalizations {
   /// **'الرجاء إدخال ماركة المركبة'**
   String get enterVehicleBrand;
 
+  /// No description provided for @vehicleBrandTooShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'ماركة المركبة قصيرة جدًا'**
+  String get vehicleBrandTooShort;
+
+  /// No description provided for @vehicleBrandTooLong.
+  ///
+  /// In ar, this message translates to:
+  /// **'ماركة المركبة طويلة جدًا'**
+  String get vehicleBrandTooLong;
+
   /// No description provided for @vehicleModel.
   ///
   /// In ar, this message translates to:
@@ -493,6 +583,18 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'الرجاء إدخال موديل المركبة'**
   String get enterVehicleModel;
+
+  /// No description provided for @vehicleModelTooShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'موديل المركبة قصير جدًا'**
+  String get vehicleModelTooShort;
+
+  /// No description provided for @vehicleModelTooLong.
+  ///
+  /// In ar, this message translates to:
+  /// **'موديل المركبة طويل جدًا'**
+  String get vehicleModelTooLong;
 
   /// No description provided for @vehicleYear.
   ///
@@ -518,6 +620,18 @@ abstract class AppLocalizations {
   /// **'الرجاء إدخال لون المركبة'**
   String get enterVehicleColor;
 
+  /// No description provided for @vehicleColorTooShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'لون المركبة قصير جدًا'**
+  String get vehicleColorTooShort;
+
+  /// No description provided for @vehicleColorTooLong.
+  ///
+  /// In ar, this message translates to:
+  /// **'لون المركبة طويل جدًا'**
+  String get vehicleColorTooLong;
+
   /// No description provided for @plateNumber.
   ///
   /// In ar, this message translates to:
@@ -529,6 +643,30 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'الرجاء إدخال رقم اللوحة'**
   String get enterPlateNumber;
+
+  /// No description provided for @plateNumberTooShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم اللوحة قصير جدًا'**
+  String get plateNumberTooShort;
+
+  /// No description provided for @plateNumberTooLong.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم اللوحة طويل جدًا'**
+  String get plateNumberTooLong;
+
+  /// No description provided for @plateNumberInvalidChars.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم اللوحة يحتوي على رموز غير مسموحة'**
+  String get plateNumberInvalidChars;
+
+  /// No description provided for @plateNumberInvalidFormat.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم اللوحة يجب أن يحتوي على رقم واحد على الأقل'**
+  String get plateNumberInvalidFormat;
 
   /// No description provided for @vehiclePhoto.
   ///
@@ -542,6 +680,114 @@ abstract class AppLocalizations {
   /// **'الرجاء رفع جميع المستندات والصور المطلوبة'**
   String get uploadAllDocuments;
 
+  /// No description provided for @vehicleCategory.
+  ///
+  /// In ar, this message translates to:
+  /// **'فئة المركبة'**
+  String get vehicleCategory;
+
+  /// No description provided for @vehicleCategoryCar.
+  ///
+  /// In ar, this message translates to:
+  /// **'سيارة'**
+  String get vehicleCategoryCar;
+
+  /// No description provided for @vehicleCategorySuv.
+  ///
+  /// In ar, this message translates to:
+  /// **'دفع رباعي'**
+  String get vehicleCategorySuv;
+
+  /// No description provided for @vehicleCategoryBike.
+  ///
+  /// In ar, this message translates to:
+  /// **'دراجة نارية'**
+  String get vehicleCategoryBike;
+
+  /// No description provided for @vehicleCategoryVan.
+  ///
+  /// In ar, this message translates to:
+  /// **'فان'**
+  String get vehicleCategoryVan;
+
+  /// No description provided for @vehicleCategoryPickup.
+  ///
+  /// In ar, this message translates to:
+  /// **'بيك أب'**
+  String get vehicleCategoryPickup;
+
+  /// No description provided for @vehicleCategoryTruck.
+  ///
+  /// In ar, this message translates to:
+  /// **'شاحنة'**
+  String get vehicleCategoryTruck;
+
+  /// No description provided for @vehicleCategoryMinivan.
+  ///
+  /// In ar, this message translates to:
+  /// **'ميني فان'**
+  String get vehicleCategoryMinivan;
+
+  /// No description provided for @vehicleCategoryLuxury.
+  ///
+  /// In ar, this message translates to:
+  /// **'فاخرة'**
+  String get vehicleCategoryLuxury;
+
+  /// No description provided for @vehicleCategoryElectric.
+  ///
+  /// In ar, this message translates to:
+  /// **'كهربائية'**
+  String get vehicleCategoryElectric;
+
+  /// No description provided for @vehicleCategoryTaxi.
+  ///
+  /// In ar, this message translates to:
+  /// **'تاكسي'**
+  String get vehicleCategoryTaxi;
+
+  /// No description provided for @vehicleCategoryBus.
+  ///
+  /// In ar, this message translates to:
+  /// **'أتوبيس'**
+  String get vehicleCategoryBus;
+
+  /// No description provided for @vehicleCategoryBicycle.
+  ///
+  /// In ar, this message translates to:
+  /// **'دراجة هوائية'**
+  String get vehicleCategoryBicycle;
+
+  /// No description provided for @vehicleCategoryScooter.
+  ///
+  /// In ar, this message translates to:
+  /// **'سكوتر'**
+  String get vehicleCategoryScooter;
+
+  /// No description provided for @vehicleCategoryRickshaw.
+  ///
+  /// In ar, this message translates to:
+  /// **'توك توك'**
+  String get vehicleCategoryRickshaw;
+
+  /// No description provided for @fieldCannotBeEmpty.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الحقل مطلوب ولا يمكن أن يكون فارغًا'**
+  String get fieldCannotBeEmpty;
+
+  /// No description provided for @uploadDocument.
+  ///
+  /// In ar, this message translates to:
+  /// **'ارفع المستند'**
+  String get uploadDocument;
+
+  /// No description provided for @changeDocument.
+  ///
+  /// In ar, this message translates to:
+  /// **'تغيير المستند'**
+  String get changeDocument;
+
   /// No description provided for @accountUnderReview.
   ///
   /// In ar, this message translates to:
@@ -553,6 +799,18 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'نقوم بمراجعة بياناتك وسيتم إشعارك بمجرد الانتهاء'**
   String get reviewDesc;
+
+  /// No description provided for @accountRequiresAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'مطلوب منك تعديل بياناتك'**
+  String get accountRequiresAction;
+
+  /// No description provided for @requiresActionDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'يرجى مراجعة الملاحظات أدناه وتحديث البيانات المطلوبة ثم إرسالها للمراجعة'**
+  String get requiresActionDesc;
 
   /// No description provided for @rateTrip.
   ///
@@ -1682,6 +1940,48 @@ abstract class AppLocalizations {
   /// **'فشل إنشاء الحساب'**
   String get errorCreateAccountFailed;
 
+  /// No description provided for @errorPermissionDenied.
+  ///
+  /// In ar, this message translates to:
+  /// **'ليس لديك صلاحية للقيام بهذا الإجراء'**
+  String get errorPermissionDenied;
+
+  /// No description provided for @errorRequestTimeout.
+  ///
+  /// In ar, this message translates to:
+  /// **'استغرق الطلب وقتًا طويلاً، حاول مجدداً'**
+  String get errorRequestTimeout;
+
+  /// No description provided for @errorSessionExpired.
+  ///
+  /// In ar, this message translates to:
+  /// **'انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً'**
+  String get errorSessionExpired;
+
+  /// No description provided for @errorServerUnavailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'الخادم غير متاح حالياً، حاول مرة أخرى لاحقاً'**
+  String get errorServerUnavailable;
+
+  /// No description provided for @errorSendingData.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ أثناء إرسال البيانات'**
+  String get errorSendingData;
+
+  /// No description provided for @errorInvalidDataSent.
+  ///
+  /// In ar, this message translates to:
+  /// **'البيانات المرسلة غير صحيحة'**
+  String get errorInvalidDataSent;
+
+  /// No description provided for @errorDataConflict.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث تعارض في البيانات، حاول مجدداً'**
+  String get errorDataConflict;
+
   /// No description provided for @failedFetchTrips.
   ///
   /// In ar, this message translates to:
@@ -2661,6 +2961,12 @@ abstract class AppLocalizations {
   /// **'لا يمكنك التواجد في وضع المتاح أثناء رحلة نشطة'**
   String get errorCannotGoOnlineDuringTrip;
 
+  /// No description provided for @errorDriverNotApproved.
+  ///
+  /// In ar, this message translates to:
+  /// **'حسابك غير معتمد حالياً. يرجى إكمال مراجعة حسابك'**
+  String get errorDriverNotApproved;
+
   /// No description provided for @errorWithdrawalPending.
   ///
   /// In ar, this message translates to:
@@ -2912,6 +3218,72 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تقييم بالنجوم'**
   String get ratingStars;
+
+  /// No description provided for @bonusStartChallenge.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابدأ'**
+  String get bonusStartChallenge;
+
+  /// No description provided for @bonusActive.
+  ///
+  /// In ar, this message translates to:
+  /// **'نشط'**
+  String get bonusActive;
+
+  /// No description provided for @bonusRequestClaim.
+  ///
+  /// In ar, this message translates to:
+  /// **'طلب استلام المكافأة'**
+  String get bonusRequestClaim;
+
+  /// No description provided for @bonusClaimPending.
+  ///
+  /// In ar, this message translates to:
+  /// **'قيد المراجعة'**
+  String get bonusClaimPending;
+
+  /// No description provided for @bonusClaimReceived.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم الاستلام'**
+  String get bonusClaimReceived;
+
+  /// No description provided for @bonusNoneAvailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد حوافز متاحة حالياً'**
+  String get bonusNoneAvailable;
+
+  /// No description provided for @bonusReadyToClaimTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'لديك مكافأة جاهزة للاستلام!'**
+  String get bonusReadyToClaimTitle;
+
+  /// No description provided for @bonusKeepGoing.
+  ///
+  /// In ar, this message translates to:
+  /// **'استمر، أنت على الطريق الصحيح'**
+  String get bonusKeepGoing;
+
+  /// No description provided for @bonusStartFirstChallenge.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابدأ أول تحدٍ من القائمة بالأسفل'**
+  String get bonusStartFirstChallenge;
+
+  /// No description provided for @bonusCheckBackLater.
+  ///
+  /// In ar, this message translates to:
+  /// **'راجع لاحقاً — الإدارة قد تضيف حوافز جديدة في أي وقت.'**
+  String get bonusCheckBackLater;
+
+  /// No description provided for @bonusSummaryStats.
+  ///
+  /// In ar, this message translates to:
+  /// **'{active} نشطة · {ready} جاهزة للاستلام · {total} إجمالاً'**
+  String bonusSummaryStats(int active, int ready, int total);
 
   /// No description provided for @scheduledTrip.
   ///
@@ -3255,6 +3627,48 @@ abstract class AppLocalizations {
   /// **'حفظ الممر المفضل'**
   String get savePreferredCorridor;
 
+  /// No description provided for @corridorModePoints.
+  ///
+  /// In ar, this message translates to:
+  /// **'نقطتان'**
+  String get corridorModePoints;
+
+  /// No description provided for @corridorModeLine.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسار خطي'**
+  String get corridorModeLine;
+
+  /// No description provided for @corridorModePointsDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'دائرتان منفصلتان عند البداية والنهاية'**
+  String get corridorModePointsDesc;
+
+  /// No description provided for @corridorModeLineDesc.
+  ///
+  /// In ar, this message translates to:
+  /// **'تطابق مع أي نقطة على مسار الطريق الفعلي'**
+  String get corridorModeLineDesc;
+
+  /// No description provided for @corridorLineWidth.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض المسار'**
+  String get corridorLineWidth;
+
+  /// No description provided for @corridorLineModeHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'سيتم استخدام المسار المرسوم بين النقطتين مع العرض المحدد'**
+  String get corridorLineModeHint;
+
+  /// No description provided for @corridorLineRequiresRoute.
+  ///
+  /// In ar, this message translates to:
+  /// **'يجب تحديد نقطتين أولاً للحصول على مسار الطريق'**
+  String get corridorLineRequiresRoute;
+
   /// No description provided for @tapMap.
   ///
   /// In ar, this message translates to:
@@ -3434,6 +3848,114 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.'**
   String get forgotPasswordSent;
+
+  /// No description provided for @nationalIdImage.
+  ///
+  /// In ar, this message translates to:
+  /// **'صورة الهوية الأمامية'**
+  String get nationalIdImage;
+
+  /// No description provided for @licenseImage.
+  ///
+  /// In ar, this message translates to:
+  /// **'صورة رخصة القيادة'**
+  String get licenseImage;
+
+  /// No description provided for @targetedEditTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعديل البيانات المطلوبة'**
+  String get targetedEditTitle;
+
+  /// No description provided for @targetedEditSubtitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'يرجى تعديل الحقول المطلوبة فقط'**
+  String get targetedEditSubtitle;
+
+  /// No description provided for @fieldStatusApproved.
+  ///
+  /// In ar, this message translates to:
+  /// **'معتمد'**
+  String get fieldStatusApproved;
+
+  /// No description provided for @fieldStatusPending.
+  ///
+  /// In ar, this message translates to:
+  /// **'قيد المراجعة'**
+  String get fieldStatusPending;
+
+  /// No description provided for @fieldStatusRequiresAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'مطلوب تعديل'**
+  String get fieldStatusRequiresAction;
+
+  /// No description provided for @reviewReason.
+  ///
+  /// In ar, this message translates to:
+  /// **'السبب'**
+  String get reviewReason;
+
+  /// No description provided for @approvedReadOnly.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الحقل تم اعتماده ولا يمكن تعديله'**
+  String get approvedReadOnly;
+
+  /// No description provided for @submitChanges.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال التعديلات'**
+  String get submitChanges;
+
+  /// No description provided for @submittingChanges.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري الإرسال...'**
+  String get submittingChanges;
+
+  /// No description provided for @changesSubmitted.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرسال التعديلات بنجاح'**
+  String get changesSubmitted;
+
+  /// No description provided for @noFieldsToEdit.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد حقول تحتاج إلى تعديل'**
+  String get noFieldsToEdit;
+
+  /// No description provided for @pendingReviewInfo.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا الحقل قيد المراجعة من المشرف'**
+  String get pendingReviewInfo;
+
+  /// No description provided for @editOnlyRequiredFields.
+  ///
+  /// In ar, this message translates to:
+  /// **'يظهر هنا فقط ما طلب المشرف تعديله'**
+  String get editOnlyRequiredFields;
+
+  /// No description provided for @tapToSelectFromGallery.
+  ///
+  /// In ar, this message translates to:
+  /// **'اضغط لاختيار من المعرض'**
+  String get tapToSelectFromGallery;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In ar, this message translates to:
+  /// **'تغيير الصورة'**
+  String get changePhoto;
+
+  /// No description provided for @uploading.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري الرفع...'**
+  String get uploading;
 }
 
 class _AppLocalizationsDelegate

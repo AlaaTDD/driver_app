@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/models/driver_profile_model.dart' show DriverAccountStatus;
+import '../../domain/entities/user_entity.dart';
 
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -49,7 +51,7 @@ class SignUpDriverRequested extends AuthEvent {
   final String licenseNumber;
   final String licenseImageUrl;
   final String criminalRecordUrl;
-  final String vehicleType;
+  final String vehicleCategory;
   final String vehicleBrand;
   final String vehicleModel;
   final int vehicleYear;
@@ -67,7 +69,7 @@ class SignUpDriverRequested extends AuthEvent {
     required this.licenseNumber,
     required this.licenseImageUrl,
     required this.criminalRecordUrl,
-    required this.vehicleType,
+    required this.vehicleCategory,
     required this.vehicleBrand,
     required this.vehicleModel,
     required this.vehicleYear,
@@ -87,7 +89,7 @@ class SignUpDriverRequested extends AuthEvent {
         licenseNumber,
         licenseImageUrl,
         criminalRecordUrl,
-        vehicleType,
+        vehicleCategory,
         vehicleBrand,
         vehicleModel,
         vehicleYear,
@@ -114,4 +116,19 @@ class UpdateProfileRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [userId, name, avatarUrl];
+}
+
+/// حدث داخلي يحمله اشتراك Realtime الدائم في AuthBloc عند تغيّر
+/// account_status للسائق الحالي أثناء الجلسة المفتوحة. لا يُرسل من
+/// الواجهة مباشرة، بل من داخل الـ bloc نفسه عند وصول حدث من الـ Stream.
+/// انظر MASTER_PLAN.md القسم 4، المرحلة ج، البند 10.
+class DriverAccountStatusChanged extends AuthEvent {
+  final UserEntity user;
+  final DriverAccountStatus status;
+  final String? revisionReason;
+
+  const DriverAccountStatusChanged(this.user, this.status, this.revisionReason);
+
+  @override
+  List<Object?> get props => [user, status, revisionReason];
 }

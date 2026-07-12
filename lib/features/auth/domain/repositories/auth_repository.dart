@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import '../entities/user_entity.dart';
+import '../../../../core/models/driver_profile_model.dart' show DriverAccountStatus;
 
 abstract class AuthRepository {
   Future<Either<String, UserEntity>> signIn({
@@ -25,7 +26,7 @@ abstract class AuthRepository {
     required String licenseNumber,
     required String licenseImageUrl,
     required String criminalRecordUrl,
-    required String vehicleType,
+    required String vehicleCategory,
     required String vehicleBrand,
     required String vehicleModel,
     required int vehicleYear,
@@ -49,5 +50,14 @@ abstract class AuthRepository {
     required String path,
   });
 
-  Future<Either<String, bool>> getDriverIsVerified(String userId);
+  /// اشتراك Realtime دائم على account_status/revision_reason لسائق معين،
+  /// يبقى فعّالاً طوال الجلسة وليس فقط عند CheckAuthStatus/SignInRequested.
+  /// [البند 17 — المراجعة النهائية] حلّت محل getDriverIsVerified (الفحص
+  /// لمرة واحدة على is_verified) التي حُذفت لعدم وجود أي مستدعٍ لها في
+  /// المشروع بعد اكتمال المرحلة ج — إبقاؤها كانت ستُبقي مصدر حقيقة موازياً
+  /// ميتاً، بالضبط ما حذّر منه القسم 2.3 من MASTER_PLAN.md.
+  /// انظر MASTER_PLAN.md القسم 4، المرحلة ج، البند 10.
+  Stream<({DriverAccountStatus status, String? revisionReason})> watchDriverAccountStatus(
+    String driverId,
+  );
 }

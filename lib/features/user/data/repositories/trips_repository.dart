@@ -11,7 +11,7 @@ class TripsRepository {
     final data = await _client
         .from('trips')
         .select(
-            'id, user_id, driver_id, status, price, vehicle_type, pickup_address, destination_address, pickup_lat, pickup_lng, destination_lat, destination_lng, distance_km, duration_min, payment_method, cancel_reason, created_at, user_rating_to_driver, driver_rating_to_user')
+            'id, user_id, driver_id, status, price, service_tier_name_snapshot, pickup_address, destination_address, pickup_lat, pickup_lng, destination_lat, destination_lng, distance_km, payment_method, cancel_reason, created_at, user_rating_to_driver, driver_rating_to_user')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
@@ -33,7 +33,7 @@ class TripsRepository {
       _client
           .from('driver_public_profile')
           .select(
-              'id, vehicle_type, vehicle_plate, vehicle_model, vehicle_color')
+              'id, vehicle_category, vehicle_plate, vehicle_model, vehicle_color')
           .inFilter('id', driverIds),
     ]);
 
@@ -48,7 +48,7 @@ class TripsRepository {
     for (final profile in profilesData) {
       final id = profile['id'] as String;
       if (mergedMap.containsKey(id)) {
-        mergedMap[id]!['vehicle_type'] = profile['vehicle_type'];
+        mergedMap[id]!['vehicle_type'] = profile['vehicle_category'];
         mergedMap[id]!['vehicle_plate'] = profile['vehicle_plate'];
         mergedMap[id]!['vehicle_model'] = profile['vehicle_model'];
         mergedMap[id]!['vehicle_color'] = profile['vehicle_color'];
@@ -64,7 +64,7 @@ class TripsRepository {
     final data = await _client
         .from('trips')
         .select(
-            'id, user_id, driver_id, status, price, vehicle_type, pickup_address, destination_address, pickup_lat, pickup_lng, destination_lat, destination_lng, distance_km, duration_min, payment_method, payment_source, cancel_reason, cancel_reason_category, cancelled_by, meeting_lat, meeting_lng, meeting_address, geohash, scheduled_at, created_at, user_rating_to_driver, driver_rating_to_user')
+            'id, user_id, driver_id, status, price, service_tier_name_snapshot, pickup_address, destination_address, pickup_lat, pickup_lng, destination_lat, destination_lng, distance_km, estimated_duration_min, payment_method, payment_source, cancel_reason, cancel_reason_category, cancelled_by, meeting_lat, meeting_lng, meeting_address, geohash, scheduled_at, created_at, user_rating_to_driver, driver_rating_to_user')
         .eq('id', tripId)
         .single();
     return TripDetailsModel.fromJson(Map<String, dynamic>.from(data));

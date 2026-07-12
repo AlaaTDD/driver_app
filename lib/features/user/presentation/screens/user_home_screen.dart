@@ -355,17 +355,23 @@ class _UserHomeScreenState extends State<UserHomeScreen>
           AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
         }
       },
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: context.bgColor,
-        drawer: _buildDrawer(context),
-        body: Stack(
-          children: [
-            _buildMap(),
-            _buildTopBar(),
-            _buildLocationButton(),
-            _buildBottomSheet(),
-          ],
+      child: KeyedSubtree(
+        // مفتاح اختبار منفصل عن _scaffoldKey (GlobalKey<ScaffoldState> يُستخدم
+        // فعليًا لفتح الـ drawer عبر _scaffoldKey.currentState?.openDrawer())؛
+        // لا يجوز استبداله، فنلف الشاشة بعنصر خارجي بمفتاح اختبار مستقل.
+        key: const ValueKey('user_home_screen'),
+        child: Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: context.bgColor,
+          drawer: _buildDrawer(context),
+          body: Stack(
+            children: [
+              _buildMap(),
+              _buildTopBar(),
+              _buildLocationButton(),
+              _buildBottomSheet(),
+            ],
+          ),
         ),
       ),
     );

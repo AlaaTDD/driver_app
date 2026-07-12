@@ -7,7 +7,9 @@ import '../bloc/auth_state.dart';
 import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/utils/app_toast.dart';
+import '../../../../core/utils/email_utils.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/utils/form_validators.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import 'package:snapix/core/theme/app_colors.dart';
 import 'package:snapix/core/widgets/widgets.dart';
@@ -25,43 +27,92 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _nameFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _fullPhone = ''; // رقم التليفون الكامل مع كود البلد
+  // يُفعّل بعد محاولة إرسال فاشلة، لعرض رسائل خطأ دائمة بجانب الاسم/الهاتف/الإيميل،
+  // قابلة للإمساك عبر find.byKey في الاختبارات، مدفوعة مباشرة من نفس دوال FormValidators
+  // الممررة لـ validator كل حقل أدناه — مصدر حقيقة واحد، لا منطق مكرر.
+  bool _showErrors = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // لو المستخدم يعدّل كلمة المرور الأصلية بعد فشل أول محاولة إرسال، رسالة
+    // خطأ "كلمتا المرور غير متطابقتين" تحت حقل التأكيد لازم تُعاد حسابها فورًا
+    // (وليس فقط عند الكتابة داخل حقل التأكيد نفسه)، لأن confirmPassword
+    // validator يعتمد على _passwordController.text كمرجع للمطابقة.
+    _passwordController.addListener(_onPasswordChanged);
+  }
+
+  void _onPasswordChanged() {
+    if (_showErrors) setState(() {});
+  }
 
   @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _nameFocus.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
   void _submit() {
-    if (_fullPhone.isEmpty) {
-      AppToast.error(AppLocalizations.of(context)!.enterPhone);
-      return;
-    }
-    if (_formKey.currentState!.validate()) {
+    final isValid = _formKey.currentState!.validate();
+    setState(() => _showErrors = !isValid);
+    if (isValid) {
       context.read<AuthBloc>().add(SignUpUserRequested(
             name: _nameController.text.trim(),
             phone: _fullPhone,
-            email: _emailController.text.trim(),
+            email: normalizeEmailInput(_emailController.text),
             password: _passwordController.text,
           ));
+    } else {
+      _focusFirstInvalidField();
+    }
+  }
+
+  // يُركّز تلقائيًا على أول حقل فشل التحقق منه (الهاتف مستثنى: AppPhoneField
+  // لا يعرض FocusNode خارجياً حالياً؛ التركيز عليه يبقى تحسينًا مستقبليًا).
+  void _focusFirstInvalidField() {
+    if (FormValidators.name(context, _nameController.text) != null) {
+      _nameFocus.requestFocus();
+    } else if (FormValidators.email(context, _emailController.text) != null) {
+      _emailFocus.requestFocus();
+    } else if (FormValidators.password(context, _passwordController.text) !=
+        null) {
+      _passwordFocus.requestFocus();
+    } else if (FormValidators.confirmPassword(
+          context,
+          _confirmPasswordController.text,
+          _passwordController.text,
+        ) !=
+        null) {
+      _confirmPasswordFocus.requestFocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: const ValueKey('register_user_screen'),
       backgroundColor: context.bgColor,
       appBar: AppBar(
         backgroundColor: context.bgColor,
         title: Text(AppLocalizations.of(context)!.createUserAccount),
         centerTitle: true,
         leading: IconButton(
+          key: const ValueKey('back_button'),
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => context.pop(),
         ),
@@ -69,6 +120,8 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
+            AppToast.success(
+                AppLocalizations.of(context)!.accountCreatedSuccessfully);
             context.go(AppRoutes.userHome);
           } else if (state is AuthError) {
             AppToast.error(ErrorMapper.getErrorMessage(context, state.message));
@@ -79,6 +132,7 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.disabled,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -138,49 +192,89 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                   _sectionLabel(AppLocalizations.of(context)!.basicData),
                   const SizedBox(height: 12),
                   TextFormField(
+                    key: const ValueKey('name_field'),
                     controller: _nameController,
+                    focusNode: _nameFocus,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.fullName,
                       prefixIcon: const Icon(Icons.person_outlined),
+                      errorStyle: const TextStyle(height: 0, fontSize: 0),
                     ),
-                    validator: (v) => (v == null || v.isEmpty)
-                        ? AppLocalizations.of(context)!.enterFullName
-                        : null,
+                    validator: (v) => FormValidators.name(context, v),
+                    onChanged: _showErrors ? (_) => setState(() {}) : null,
                   ),
+                  if (_showErrors &&
+                      FormValidators.name(context, _nameController.text) !=
+                          null) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        key: const ValueKey('name_error_text'),
+                        FormValidators.name(context, _nameController.text)!,
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   AppPhoneField(
+                    key: const ValueKey('phone_field'),
                     initialCountryCode: 'EG',
                     onChanged: (number) {
-                      _fullPhone = number;
+                      setState(() => _fullPhone = number);
                     },
                     textInputAction: TextInputAction.next,
                   ),
+                  if (_showErrors && _fullPhone.isEmpty) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        key: const ValueKey('phone_error_text'),
+                        AppLocalizations.of(context)!.enterPhone,
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   TextFormField(
+                    key: const ValueKey('email_field'),
                     controller: _emailController,
+                    focusNode: _emailFocus,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: AppLocalizations.of(context)!.email,
                       hintText: AppLocalizations.of(context)!.emailExample,
                       prefixIcon: const Icon(Icons.email_outlined),
+                      errorStyle: const TextStyle(height: 0, fontSize: 0),
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return AppLocalizations.of(context)!.enterEmail;
-                      }
-                      if (!RegExp(r'^[\w.-]+@[\w.-]+\.\w+$').hasMatch(v)) {
-                        return AppLocalizations.of(context)!.invalidEmailFormat;
-                      }
-                      return null;
-                    },
+                    validator: (v) => FormValidators.email(context, v),
+                    onChanged: _showErrors ? (_) => setState(() {}) : null,
                   ),
+                  if (_showErrors &&
+                      FormValidators.email(context, _emailController.text) !=
+                          null) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        key: const ValueKey('email_error_text'),
+                        FormValidators.email(context, _emailController.text)!,
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   _sectionLabel(AppLocalizations.of(context)!.password),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
+                    focusNode: _passwordFocus,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
@@ -195,20 +289,30 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                         onPressed: () => setState(
                             () => _obscurePassword = !_obscurePassword),
                       ),
+                      errorStyle: const TextStyle(height: 0, fontSize: 0),
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return AppLocalizations.of(context)!.enterPassword;
-                      }
-                      if (v.length < 6) {
-                        return AppLocalizations.of(context)!.passwordMinLength;
-                      }
-                      return null;
-                    },
+                    validator: (v) => FormValidators.password(context, v),
+                    onChanged: _showErrors ? (_) => setState(() {}) : null,
                   ),
+                  if (_showErrors &&
+                      FormValidators.password(context, _passwordController.text) !=
+                          null) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        key: const ValueKey('password_error_text'),
+                        FormValidators.password(
+                            context, _passwordController.text)!,
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _confirmPasswordController,
+                    focusNode: _confirmPasswordFocus,
                     obscureText: _obscureConfirmPassword,
                     textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
@@ -225,20 +329,41 @@ class _RegisterUserScreenState extends State<RegisterUserScreen> {
                               !_obscureConfirmPassword,
                         ),
                       ),
+                      errorStyle: const TextStyle(height: 0, fontSize: 0),
                     ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return AppLocalizations.of(context)!.pleaseConfirmPassword;
-                      }
-                      if (v != _passwordController.text) {
-                        return AppLocalizations.of(context)!.passwordsNotMatch;
-                      }
-                      return null;
-                    },
+                    validator: (v) => FormValidators.confirmPassword(
+                      context,
+                      v,
+                      _passwordController.text,
+                    ),
+                    onChanged: _showErrors ? (_) => setState(() {}) : null,
                   ),
+                  if (_showErrors &&
+                      FormValidators.confirmPassword(
+                            context,
+                            _confirmPasswordController.text,
+                            _passwordController.text,
+                          ) !=
+                          null) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        key: const ValueKey('confirm_password_error_text'),
+                        FormValidators.confirmPassword(
+                          context,
+                          _confirmPasswordController.text,
+                          _passwordController.text,
+                        )!,
+                        style: const TextStyle(
+                            color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 36),
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) => AppButton(
+                      key: const ValueKey('signup_button'),
                       text: AppLocalizations.of(context)!.createAccount,
                       onPressed: _submit,
                       isLoading: state is AuthLoading,
